@@ -66,7 +66,7 @@
 - `research/ipsw-x/iOSRoot.img.HOLLOW-DO-NOT-USE` 16GB（sparse 占位，不是真镜像）：不搬。
 - `rings/` 107MB：r34 窗口读环取证件，只跟旧案有关。
 - `reference/ios-sweet`、`reference/ios-topaz`：旧路线参照，不再用。
-- `shim/out/` 180MB：除上表四个文件外不搬。
+- `shim/out/` 180MB：除上表三个镜像外不搬。
 - `.re/` 3MB：旧 RE 工装；需要时回旧仓。
 - `.github/`、`fix-round` 之外的旧 CI/脚本：不搬。
 - `README.md`、`.gitignore`、`NOTES.md` 原件：旧仓保留；新仓重写。
