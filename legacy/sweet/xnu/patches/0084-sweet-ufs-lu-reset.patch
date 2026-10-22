@@ -1,0 +1,169 @@
+diff --git a/bsd/dev/sweet_ufs.c b/bsd/dev/sweet_ufs.c
+--- a/bsd/dev/sweet_ufs.c
++++ b/bsd/dev/sweet_ufs.c
+@@ -64,9 +64,15 @@ extern void sweet_usb_probe(void);
+ #define REG_UTRLDBR     0x58
+ #define REG_UTRLCLR     0x5c
+ #define REG_UTRLRSR     0x60
++#define REG_UTMRLBA     0x70
++#define REG_UTMRLBAU    0x74
++#define REG_UTMRLDBR    0x78
++#define REG_UTMRLCLR    0x7c
++#define REG_UTMRLRSR    0x80
+ 
+ #define HCS_DP          (1u << 0)
+ #define HCS_UTRLRDY     (1u << 1)
++#define HCS_TMREADY     (1u << 2)
+ #define CAP_64AS        (1u << 24)              /* 64-bit DMA addressing */
+ 
+ #define UFS_BLOCK       4096u
+@@ -95,6 +101,7 @@ struct ucd {
+ /* Layout of the contiguous DMA allocation. */
+ #define DMA_UTRL        0x0000                  /* 1 KiB aligned */
+ #define DMA_UCD         0x1000                  /* 128 byte aligned */
++#define DMA_UTMR        0x2000                  /* 1 KiB aligned, 80 byte UTMRD */
+ #define DMA_BOUNCE      0x4000
+ #define DMA_SIZE        (DMA_BOUNCE + BOUNCE_SIZE)
+ 
+@@ -299,9 +306,9 @@ ufs_scsi(const uint8_t *cdb, unsigned cdb_len, uint32_t len, bool write)
+  * Query request (UPIU type 0x16): set or read one device flag. The query
+  * response carries its result in the response byte of the UPIU header
+  * (0 = QUERY_RESULT_SUCCESS) and, for READ_FLAG, the flag value at offset
+- * 20. The request goes out with command type 1 (UFS storage), the value
+- * Linux sends on this host: with CT 2 the device answers INVALID_OPCODE.
+- * Returns 0 or an errno.
++ * 20. Built byte-for-byte like Linux; in the not-ready state this device
++ * answers INVALID_OPCODE regardless of the transfer descriptor command
++ * type (1 or 2). Returns 0 or an errno.
+  */
+ static int
+ ufs_query_flag(uint8_t opcode, uint8_t idn, uint32_t *value)
+@@ -364,6 +371,82 @@ ufs_query_flag(uint8_t opcode, uint8_t idn, uint32_t *value)
+ 	return 0;
+ }
+ 
++/*
++ * Task management request (UPIU type 0x04) through the task request list:
++ * one 80 byte UTMRD with the response embedded at DW12 (Linux struct
++ * utp_task_req_desc). LOGICAL UNIT RESET (function 0x08) is the SAM cure
++ * for sense 04/02 "initializing command required": the LU reinitializes
++ * and comes back ready. The TM service result lands in output_param1
++ * (0x0 = completed, 0x8 = succeeded). Returns 0 or an errno.
++ */
++static int
++ufs_tm(uint8_t func, uint8_t lun, uint32_t task_id, uint32_t *result)
++{
++	static bool taken;
++	uint32_t *tmrd = (uint32_t *)(su.dma + DMA_UTMR);
++	uint64_t tm_pa = su.dma_pa + DMA_UTMR;
++	uint8_t *p = (uint8_t *)tmrd;
++
++	if (!taken) {
++		taken = true;
++		ufs_wr(REG_UTMRLRSR, 0);
++		ufs_wr(REG_UTMRLBA, (uint32_t)tm_pa);
++		ufs_wr(REG_UTMRLBAU, (uint32_t)(tm_pa >> 32));
++		ufs_wr(REG_UTMRLRSR, 1);
++		if (ufs_rd(REG_UTMRLBA) != (uint32_t)tm_pa ||
++		    ufs_rd(REG_UTMRLBAU) != (uint32_t)(tm_pa >> 32) ||
++		    !(ufs_rd(REG_UTMRLRSR) & 1) || !(ufs_rd(REG_HCS) & HCS_TMREADY)) {
++			printf("SWEET UFS: host did not take our task list\n");
++			return EIO;
++		}
++	}
++
++	bzero(tmrd, 80);
++	tmrd[0] = 1u << 24;                     /* interrupt, command type 0 */
++	tmrd[2] = 0x0f;                         /* OCS invalid until updated */
++	p[16] = 0x04;                           /* TASK REQUEST UPIU */
++	p[18] = lun;
++	p[19] = ++su.tag;
++	p[21] = func;
++	p[31] = (uint8_t)lun;                   /* input_param1 = lun (BE32) */
++	p[32] = (uint8_t)(task_id >> 24);       /* input_param2 = task id */
++	p[33] = (uint8_t)(task_id >> 16);
++	p[34] = (uint8_t)(task_id >> 8);
++	p[35] = (uint8_t)task_id;
++
++	dma_sync(DMA_UTMR, 80);
++	__builtin_arm_dsb(0xf);
++
++	ufs_wr(REG_UTMRLDBR, 1);
++	uint64_t deadline;
++	nanoseconds_to_absolutetime(CMD_TIMEOUT_NS, &deadline);
++	deadline += mach_absolute_time();
++	while (ufs_rd(REG_UTMRLDBR) & 1) {
++		if (mach_absolute_time() > deadline) {
++			ufs_wr(REG_UTMRLCLR, ~1u);
++			printf("SWEET UFS: task 0x%x timed out\n", func);
++			return ETIMEDOUT;
++		}
++		delay(1);
++	}
++	__builtin_arm_dsb(0xf);
++	ufs_wr(REG_IS, ufs_rd(REG_IS));         /* acknowledge completion status */
++
++	dma_sync(DMA_UTMR, 80);
++
++	uint32_t ocs = tmrd[2] & 0xff;
++	if (ocs || p[48] != 0x24) {
++		printf("SWEET UFS: task 0x%x failed: ocs 0x%x upiu 0x%x\n",
++		    func, ocs, p[48]);
++		return EIO;
++	}
++	if (result) {
++		*result = (uint32_t)p[64] << 24 | (uint32_t)p[65] << 16 |
++		    (uint32_t)p[66] << 8 | p[67];
++	}
++	return 0;
++}
++
+ /*
+  * Wait for LUN 0 to answer TEST UNIT READY. The device can reject the early
+  * commands with CHECK CONDITION while it comes up: a pending unit attention
+@@ -397,28 +480,29 @@ ufs_wait_ready(void)
+ 		}
+ 		/*
+ 		 * Still not ready after a second of polling: the sense says
+-		 * NOT READY/initializing command required (04/02), so release
+-		 * UFS device initialization: set fDeviceInit and poll until
+-		 * the device clears it (Linux ufshcd_complete_dev_init).
++		 * NOT READY/initializing command required (04/02). Query
++		 * requests come back INVALID_OPCODE in this state no matter
++		 * how they are built, so apply the SAM cure for 04/02:
++		 * LOGICAL UNIT RESET through the task request list, then
++		 * offer fDeviceInit again.
+ 		 */
+ 		if (i >= 10 && !fdeviceinit) {
+-			uint32_t flag = 1;
+-			int qerr = 0;
++			uint32_t res = 0;
+ 
+ 			fdeviceinit = true;
+-			for (int r = 0; r < 3 && (qerr = ufs_query_flag(0x06, 0x01, NULL)); r++) {
++			if (ufs_query_flag(0x05, 0x01, &res)) {
++				printf("SWEET UFS: READ fDeviceInit failed\n");
++			} else {
++				printf("SWEET UFS: fDeviceInit reads 0x%x\n", res);
+ 			}
+-			if (qerr) {
+-				printf("SWEET UFS: SET fDeviceInit failed, keep polling\n");
++			res = 0;
++			if (ufs_tm(0x08, su.lun, 0, &res)) {
++				printf("SWEET UFS: LU RESET failed\n");
+ 			} else {
+-				printf("SWEET UFS: fDeviceInit set, polling\n");
+-				for (int m = 0; m < 1500; m++) {
+-					if (ufs_query_flag(0x05, 0x01, &flag) || !flag) {
+-						break;
+-					}
+-					delay(1000);            /* 1 ms */
+-				}
+-				printf("SWEET UFS: fDeviceInit now 0x%x\n", flag);
++				printf("SWEET UFS: LU RESET done, result 0x%x\n", res);
++			}
++			if (!ufs_query_flag(0x06, 0x01, NULL)) {
++				printf("SWEET UFS: fDeviceInit set\n");
+ 			}
+ 		}
+ 		delay(100 * 1000);              /* 100 ms */

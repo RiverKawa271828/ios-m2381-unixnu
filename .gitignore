@@ -2,7 +2,6 @@
 /build/
 /Build/
 /Conf/
-/out/
 /.cache/
 /refer/
 /.local*/
@@ -14,7 +13,6 @@
 /docs/.vitepress/cache/
 
 # Local development files
-*.log
 *.terminal
 *.swp
 *.swo
@@ -22,8 +20,6 @@
 .DS_Store
 .vscode/
 .idea/
-__pycache__/
-*.pyc
 *.dSYM/
 
 # Inputs, images and products that never belong in Git
@@ -48,3 +44,27 @@ __pycache__/
 *.key
 .env
 local.toml
+
+# 只读上游克隆 / 大件研究树
+reference/
+research/
+backups/
+rings/
+
+# 本地构建/刷写产物
+artifacts/*
+!artifacts/README.md
+devices/*/out/
+devices/*/esp/out/
+legacy/sweet/images/
+legacy/sweet/shim/out/
+legacy/sweet/xnu/out*/
+
+# Python
+__pycache__/
+*.pyc
+
+# 临时
+*.tmp
+*.log
+out/
