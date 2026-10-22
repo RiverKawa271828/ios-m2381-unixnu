@@ -6,6 +6,10 @@
 >
 > 设备：魅族 20 Classic = **m2381**，SM8550（kalama MTP 参考布局），16GB LPDDR5X，
 > 1080×2400 BOE AMOLED（cmd-mode DSC），UFS 4.0 512GB。
+>
+> **上游（2026-10-22 重定向）**：基座 = `UniXNU/UniXNU`（remote `upstream`，
+> pin `e95b37d`）；设备模板 = `hanzi123-bilp/uefi-fuxi` + `unixnu-fuxi`。
+> 详见 `docs/UPSTREAM.md`；`reference/` 只读，不 push upstream。
 
 ## 0. 一句话
 
@@ -157,11 +161,15 @@ README.md                 入口
 docs/PLAN-unixnu.md       完整评估 + B2/B1/A 方案
 docs/STATE.md             当前状态、资产、下一步、开放问题
 docs/BOOT-CHAIN.md        B2 启动链、内存窗、ESP 布局、构建步骤
+docs/UPSTREAM.md          上游 pin、更新流程、remote 策略
 docs/FLASHING.md          刷写/读回/回滚纪律
 docs/HARDWARE-m2381.md    硬件常量与地址
 docs/hardware/            stock FDT/DTS、nura DTS、DTB（只读参考）
 docs/archive/             旧 sweet 笔记/交接（只作历史）
 reference/                UniXNU/uefi-fuxi/guacamole 等克隆（gitignore）
+research/ipsw/            iPhone X 16.7.16 IPSW + 抽取 DMG（gitignore）
+research/legacy-sweet/    16K 内核重建套件 xnu-8796/buildtree（gitignore）
+research/bin/ipsw         ipsw 抽取工具（gitignore）
 research/ipsw-x/d22ap.adt mkadt.py 的输入（gitignore）
 tools/                    mkadt.py / adt.py / remotezip.py
 artifacts/kernel/         内核 zip + kernel.development.m2381（gitignore）
