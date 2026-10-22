@@ -84,9 +84,11 @@ ABL 的 83.5MB 解压上限和 boot_b 96MiB 上限。boot.img 只有约 3MB 固�
    - `BootShim` 保存 ABL 传入的 x0 DTB（HOB 或全局变量），供
      FuxiBootMemoryDxe/DarwinBoot 使用。
 2. **`unixnu-m2381`（设备仓）**：从 `reference/unixnu-fuxi` 派生。
-   - `board.toml`：SoC SM8550；IPSW 仍用 iPhone X 16.7.16（20H392）还是
-     只取 kernel/ADT？B2 不需要 iPad IPSW；kernel 用现有 Mach-O，ADT 用
-     `tools/mkadt.py`。
+   - `board.toml`：SoC SM8550；B2 的设备身份 = **iPhone X（iPhone10,3 /
+     iOS 16.7.16 20H392 / d22ap / chip 0x8015）**。`[ipsw]` 只是模板占位，
+     B2 **不跑** `unixnu kernel` / `unixnu userdata`，**不需要 iPad IPSW**；
+     kernel 用现有 Mach-O，ADT 用 `tools/mkadt.py`。不要照抄 fuxi 模板的
+     `iPad7,1 / 21H461`。
    - `[payload]` 改为 **ESP 内容**而不是 boot.img ramdisk；`loader = firmware`；
      `size_mib` 不再受 96MiB 限制（ESP 100MiB）。
    - `[bootimg.image]` `header_version = 4`、`base 0`、`kernel_offset 0x8000`、
