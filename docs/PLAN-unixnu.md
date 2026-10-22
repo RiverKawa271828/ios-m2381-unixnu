@@ -228,6 +228,8 @@ nura 的“内核放 recovery”不是 Android recovery 内核，而是 **recove
 
 目标：boot_b = Mu-Silicium/UniXNU 固件（~3MB）；recovery_a = iOS 专用 100MiB FAT32 ESP，放 `UniXNU.efi` + `unixnu.toml` + `kernel.development.m2381` + ADT；userdata 仍是 iPhone X 16.7.16 root。**不做多系统；nura 要回来时整盘重刷 nura 镜像。**
 
+**B2 不用 iPadOS**：B2 的 kernel 是现有 m2381 16K Mach-O（`xnu-8796` / iOS 16.7.16 20H392），root 是设备上的 iPhone X 16.7.16；`unixnu kernel` / `unixnu userdata` 两步完全不跑，`[ipsw]` 只作模板占位。iPadOS 17.7.11 只属于 A（4K 源码 XNU + NativePrelink 那条线），不要把它带进 B2。
+
 1. **桌面 UEFI（3–5 天）**：以 `uefi-fuxi` 为模板建 `uefi-m2381`：`fuxiPkg` → `m2381Pkg`，保留 `SimpleFbDxe`（ABL framebuffer 0xB8000000/0x2B00000）、`FuxiBootMemoryDxe`（把高段 0x8c0000000 起的 13GiB 连续段加进 GCD；不再需要 payload 预留）、按键驱动；DSC/FDF 把 `UniXNUPkg/Application/UniXNU`、`UniXNUDxe`、`DarwinBoot` 从注释状态打开。不需要 `M2381PayloadDxe`。**另加 OEM UFSDxe + DiskIo/Partition/Fat（`artifacts/vendor/meizu20-uefi-mods/`），先单独验证 Mu 能列出 `M2381ESP`**；没有它 Mu 看不到 recovery_a。
 2. **移植 guacamole 三补丁**：DarwinBoot 的 32MiB 同余（16K 内核硬条件）；BootShim 保存 x0 DTB（Mu BootShim 若已保存则跳过）；UniXNU 的 config-volume/卷根修正；`aloha-guacamole.patch` 里 Aloha 专用的 shim header 检查在 Mu-Silicium 上不适用，按实际 header 形态裁剪。
 3. **设备仓 + ESP（1–2 天）**：以 `unixnu-fuxi` 为模板建 `unixnu-m2381`；`[payload.adt]` 包一层 `tools/mkadt.py --m2381`，补 `darwinboot-memory-size`（3–4GiB，2MiB 对齐）并让 ADT 的 `dram-base=0x8c0000000`、`dram-size` 与 DarwinBoot 窗口一致；构建 `UniXNU.efi`、`unixnu.toml`、`kernel.macho`（17,208,544B）、`kernel.macho.adt`（12,636B）。建 100MiB FAT32 ESP（label `M2381ESP`，几何照 nura 的 `-T 204800 -h 16 -s 63 -H 0 -r 0 -c 2`）：
