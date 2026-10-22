@@ -39,12 +39,17 @@
 | `artifacts/vendor/meizu20-uefi-mods/` | 6.5 MB | OEM UEFI DXE 集合（vendor blob，不入 git） |
 | `artifacts/vendor/meizu20-uefi-mods/UFSDxe.efi` | 135,168 B | `e9df76b4abe3dec1b9f434f99a9ca0d12c5868708e742b73a3393ae3b5ebac09` |
 | `artifacts/vendor/meizu20-uefi-mods/UFSDxe-meizu20-157assertNOP.efi` | 135,168 B | `8203aa89b37b384a0c3b57a0bec5442215fc4c2c530f6e5fcb40a867f9bfa853` |
+| `research/ipsw/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw` | 6,171,035,648 B | `ece1194f7e233e9109c5790a8d23a4564a10a254e15ec5b09978a343265568fb` |
+| `research/ipsw/*.dmg` + `BuildManifest.plist` | 13 GB | IPSW 抽取件（Apple 本地） |
+| `research/legacy-sweet/` | 296 MB | 16K 内核重建套件（xnu-8796/buildtree/patches 脚本） |
+| `research/bin/ipsw` | 104 MB | ipsw CLI（DSC/IM4P 抽取） |
 | `legacy/sweet/images/shim-boot-m2381.img` | 5,734,400 B | `339b8480…` |
 | `legacy/sweet/images/Image.gz` | 5,723,780 B | — |
 | `legacy/sweet/images/payload-r34.bin` | 16,599,584 B | — |
 
 - `artifacts/kernel/kernel.development.m2381` 的 `SHA256SUMS` 与 zip 内一致。
 - `research/ipsw-x/d22ap.adt`（182K）是 `tools/mkadt.py` 的输入，保持该相对路径。
+- `research/` 全部在 `.gitignore`；IPSW/DMG 是 Apple 版权件，只本地使用、不外发。
 
 ## 4. 当前没做/不能声称的
 

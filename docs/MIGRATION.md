@@ -34,6 +34,10 @@
 | `fix-round/` | `docs/archive/fix-round/` | 小补丁记录 |
 | `tools/mkadt.py`、`adt.py`、`remotezip.py` | `tools/` | ADT 生成 + IPSW 远程读取 |
 | `research/ipsw-x/d22ap.adt` | `research/ipsw-x/d22ap.adt` | `mkadt.py` 的输入（保持相对路径） |
+| `research/ipsw/` | `research/ipsw/` | iPhone X 16.7.16 IPSW + 5 个 DMG + BuildManifest（13GB，Apple 本地） |
+| `research/xnu-8796`、`buildtree-m2381`、`patchgen-orig`、`apply-*.sh`、`walk/gate/regen` | `research/legacy-sweet/` | 16K 内核重建套件（gitignore） |
+| `research/bin/ipsw` | `research/bin/ipsw` | ipsw CLI（104MB，gitignore） |
+| `research/ipsw-x/Firmware/all_flash` | `research/ipsw-x/Firmware/all_flash` | d22ap DeviceTree im4p |
 | `shim/out/m2381.adt` | `artifacts/adt/m2381-sweet-13g.adt` | 旧 13GiB ADT，只作对照 |
 | `research/m2381.adt` | `artifacts/adt/m2381-old.adt` | 旧 ADT 样本 |
 | `shim/*.c/*.h/*.S/*.ld/build.sh` | `legacy/sweet/shim/` | 旧 shim 源（B1 机制参考） |
@@ -58,8 +62,8 @@
 
 ## 3. 没搬（留在旧仓）
 
-- `research/` 18GB：XNU 源码、IPSW 抽取、`ipsw-x/iOSRoot.img.HOLLOW-DO-NOT-USE`（16GB）。
-  B2 不重建内核、不重建 userdata；需要时回旧仓查。
+- `research/dsc` 3.9GB：dyld shared cache 抽取，符号化用，B2 不需要；留在旧仓。
+- `research/ipsw-x/iOSRoot.img.HOLLOW-DO-NOT-USE` 16GB（sparse 占位，不是真镜像）：不搬。
 - `rings/` 107MB：r34 窗口读环取证件，只跟旧案有关。
 - `reference/ios-sweet`、`reference/ios-topaz`：旧路线参照，不再用。
 - `shim/out/` 180MB：除上表四个文件外不搬。
@@ -67,13 +71,14 @@
 - `.github/`、`fix-round` 之外的旧 CI/脚本：不搬。
 - `README.md`、`.gitignore`、`NOTES.md` 原件：旧仓保留；新仓重写。
 
-旧仓仍然完整可查（除了被 move 的 UniXNU 克隆和 `xnu-kernel.zip`）。旧仓根有
-`DEPRECATED.md` 指向本仓。
+旧仓仍可查；UniXNU 克隆、`xnu-kernel.zip`、IPSW/DMG、16K 重建套件已 move，
+其余留在原处。旧仓根有 `DEPRECATED.md` 指向本仓。
 
 ## 4. 为什么这么切
 
-- B2 不需要 18GB 的 XNU/ISPW 研究树，也不需要 84 补丁；需要的是
-  **UniXNU 启动链 + 现有 kernel/ADT + ESP + 回滚件**。
+- B2 不需要 `dsc`/`rings`/16GB hollow；但保留 **IPSW + DMG + 16K 重建套件**，
+  以防后面要重建内核或根盘。真正需要的是 **UniXNU 启动链 + 现有 kernel/ADT +
+  ESP + 回滚件**。
 - `reference/` 是只读克隆，move 避免 600MB 重复；`uefi-fuxi` 288MB 是 B2 的母本。
 - `legacy/sweet/` 只保留可复用的 B1 机制（shim 的 kernel 尾嵌 payload）和硬件史料，
   避免新仓看起来还像 sweet 施工面。
