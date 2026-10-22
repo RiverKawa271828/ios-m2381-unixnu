@@ -12,6 +12,8 @@
 - 旧 ios-sweet 路线已废弃，源码/笔记只作史料放在 `legacy/sweet/` 和
   `docs/archive/`。
 - 还没有上机；下一步是桌面 spike（UEFI 包 + ESP + boot.img）。
+- 云端构建：`.github/workflows/xnu-16k.yml` 保留旧 16K 内核的 macOS 流水线；
+  B2 用现成 kernel，不依赖它。
 
 入口：
 
@@ -25,6 +27,7 @@
 | [docs/FLASHING.md](docs/FLASHING.md) | 刷写、读回、回滚 |
 | [docs/HARDWARE-m2381.md](docs/HARDWARE-m2381.md) | 硬件常量与地址 |
 | [docs/MIGRATION.md](docs/MIGRATION.md) | 从旧工作区搬了什么、没搬什么 |
+| [docs/CI.md](docs/CI.md) | 云端构建：`xnu-16k` workflow、产物、UEFI CI 待办 |
 
 本地资产（不入 git）：
 
