@@ -165,7 +165,7 @@ nura 的“内核放 recovery”不是 Android recovery 内核，而是 **recove
   - `Payloads/kernel.macho` = `kernel.development.m2381`（17,208,544B）；
   - `Payloads/kernel.macho.adt`（12,636B）。
 - `boot_b` 只装 `gzip(BootShim + FV)`（~3MB）+ 空 ramdisk；ABL 的 96MiB、83.5MB、v4 ramdisk 取件问题全部不涉及。
-- Mu 的 MsBootPolicy 扫 FAT 卷找 `\EFI\BOOT\BOOTAA64.EFI`，UniXNU 起来后再扫所有卷（`UniXNULib/Config.c:1298,1548`）找 `unixnu.toml`，找到同一 ESP；Mu 已经证明这个 ESP 可读。
+- nura 的 Mu（自带 stock UFSDxe）已证明这种 ESP 可读；但 **uefi-fuxi / uefi-sheng 的 FV 默认没有 UFS DXE**，m2381Pkg 必须加 stock `UFSDxe` + `DiskIoDxe`/`PartitionDxe`/`Fat.efi`（`artifacts/vendor/meizu20-uefi-mods/`，见 `docs/BOOT-CHAIN.md` §7.1.1），否则 Mu 看不到 recovery_a。这是 B2 的第一道门，先过它再谈 UniXNU 菜单。
 - 现役 nura ESP 的实测（`BOOTAA64.EFI` 13,885,952B、free 90,138,624B）只作备份参考；B2 直接重刷 recovery_a，不保留 nura 文件。回 nura = 刷 nura 的 boot_b + recovery_a + userdata（整盘重刷）。
 - 与 B1（payload 内嵌 kernel 成员）比较：B2 无尺寸/ABL 风险、不需要 `M2381PayloadDxe`、boot_b ~3MB；代价是 recovery_a 专用。**用户已拍板接受，所以 B2 为主，B1 仅作“绝不碰 recovery”的备选。**
 
@@ -199,7 +199,7 @@ nura 的“内核放 recovery”不是 Android recovery 内核，而是 **recove
 | 路线 | 内容 | 到桌面预期 | 优点 | 风险 |
 |---|---|---|---|---|
 | **A 全量切换（后续可选）** | 4K UniXNU + iPadOS 17.7.11 + 新 userdata + 新设备仓 | 3–6 周（含 spike） | 机制上绕开 r34 死结；同 SoC 模板成熟；4K 栈可长期维护；GPU 有路线 | 96MiB payload、ABL/initrd 实测、新 port、触摸/PMGR、需抹 userdata、macOS CI |
-| **B2 混合 · ESP（主路线，推荐先做）** | boot_b = Mu/UniXNU 固件（~3MB）；recovery_a = iOS 专用 100MiB FAT32 ESP（UniXNU.efi + toml + kernel/ADT）；userdata = 现有 16K iOS16 root | 1–2 周 | boot_b 只有 ~3MB，96MiB/83.5MB/v4 ramdisk 全部绕开；ESP 100MiB 放 17.2MB kernel 只占 ~18%；UEFI/ESP 可在 Linux 做 | 不解决 mad/launchd（kernel/root 侧）；recovery_a 专用（nura 需整盘重刷，已拍板）；高段 DRAM/窗口需实测 |
+| **B2 混合 · ESP（主路线，推荐先做）** | boot_b = Mu/UniXNU 固件（~3MB）；recovery_a = iOS 专用 100MiB FAT32 ESP（UniXNU.efi + toml + kernel/ADT）；userdata = 现有 16K iOS16 root | 1–2 周 | boot_b 只有 ~3MB，96MiB/83.5MB/v4 ramdisk 全部绕开；ESP 100MiB 放 17.2MB kernel 只占 ~18%；UEFI/ESP 可在 Linux 做 | 不解决 mad/launchd（kernel/root 侧）；recovery_a 专用（nura 需整盘重刷，已拍板）；UFS DXE（vendor 二进制）需集成；高段 DRAM/窗口需实测 |
 | **B1 混合 · kernel 内嵌（备选）** | boot_b = Mu/UniXNU 固件 + 64MiB payload 内嵌 kernel 成员 | 1–2 周 | 绝不碰 recovery；仍保留现有 root | boot_b 67MB / 83.5MB / ABL 读入缓冲需实测；比 B2 多一个 payload 发布 DXE |
 | **C 不换** | 继续 r35（mobileactivationd 原地 stub 化） | 1–2 周（乐观，不保证） | 最快可能到桌面；不动大结构 | 16K 改造栈长期脆弱；launchd 缓存/签名类问题会反复；每次升级重做 |
 
@@ -228,7 +228,7 @@ nura 的“内核放 recovery”不是 Android recovery 内核，而是 **recove
 
 目标：boot_b = Mu-Silicium/UniXNU 固件（~3MB）；recovery_a = iOS 专用 100MiB FAT32 ESP，放 `UniXNU.efi` + `unixnu.toml` + `kernel.development.m2381` + ADT；userdata 仍是 iPhone X 16.7.16 root。**不做多系统；nura 要回来时整盘重刷 nura 镜像。**
 
-1. **桌面 UEFI（3–5 天）**：以 `uefi-fuxi` 为模板建 `uefi-m2381`：`fuxiPkg` → `m2381Pkg`，保留 `SimpleFbDxe`（ABL framebuffer 0xB8000000/0x2B00000）、`FuxiBootMemoryDxe`（把高段 0x8c0000000 起的 13GiB 连续段加进 GCD；不再需要 payload 预留）、按键驱动；DSC/FDF 把 `UniXNUPkg/Application/UniXNU`、`UniXNUDxe`、`DarwinBoot` 从注释状态打开。不需要 `M2381PayloadDxe`。
+1. **桌面 UEFI（3–5 天）**：以 `uefi-fuxi` 为模板建 `uefi-m2381`：`fuxiPkg` → `m2381Pkg`，保留 `SimpleFbDxe`（ABL framebuffer 0xB8000000/0x2B00000）、`FuxiBootMemoryDxe`（把高段 0x8c0000000 起的 13GiB 连续段加进 GCD；不再需要 payload 预留）、按键驱动；DSC/FDF 把 `UniXNUPkg/Application/UniXNU`、`UniXNUDxe`、`DarwinBoot` 从注释状态打开。不需要 `M2381PayloadDxe`。**另加 OEM UFSDxe + DiskIo/Partition/Fat（`artifacts/vendor/meizu20-uefi-mods/`），先单独验证 Mu 能列出 `M2381ESP`**；没有它 Mu 看不到 recovery_a。
 2. **移植 guacamole 三补丁**：DarwinBoot 的 32MiB 同余（16K 内核硬条件）；BootShim 保存 x0 DTB（Mu BootShim 若已保存则跳过）；UniXNU 的 config-volume/卷根修正；`aloha-guacamole.patch` 里 Aloha 专用的 shim header 检查在 Mu-Silicium 上不适用，按实际 header 形态裁剪。
 3. **设备仓 + ESP（1–2 天）**：以 `unixnu-fuxi` 为模板建 `unixnu-m2381`；`[payload.adt]` 包一层 `tools/mkadt.py --m2381`，补 `darwinboot-memory-size`（3–4GiB，2MiB 对齐）并让 ADT 的 `dram-base=0x8c0000000`、`dram-size` 与 DarwinBoot 窗口一致；构建 `UniXNU.efi`、`unixnu.toml`、`kernel.macho`（17,208,544B）、`kernel.macho.adt`（12,636B）。建 100MiB FAT32 ESP（label `M2381ESP`，几何照 nura 的 `-T 204800 -h 16 -s 63 -H 0 -r 0 -c 2`）：
    - `\EFI\BOOT\BOOTAA64.EFI` = `UniXNU.efi`
@@ -236,7 +236,7 @@ nura 的“内核放 recovery”不是 Android recovery 内核，而是 **recove
    - `Payloads/kernel.macho`、`Payloads/kernel.macho.adt`
    boot.img：kernel = `gzip(BootShim + FV)`，ramdisk = 空 cpio，header v4、pagesize 4096、`abl_base=0x80000000`；**不装 payload、不 append DTB**。
 4. **尺寸**：boot.img ~3–4MB；ESP 100MiB，kernel+ADT 占 ~18%；ABL 的 83.5MB/96MiB 全部无关。
-5. **上机（2–4 天，刷 boot_b + recovery_a）**：先看 UniXNU 菜单（可先只放 `UniXNU.efi` + 最小 toml），再带 kernel/ADT 看 DarwinBoot → XNU banner → launchd。失败判读：菜单不出现（Mu fallback / ESP FAT / `BOOTAA64.EFI` 路径）；`NO WINDOW`（高段 DRAM 未进 GCD / 窗口不对）；ADT 缺 `darwinboot-memory-size`；XNU 早期 panic。
+5. **上机（2–4 天，刷 boot_b + recovery_a）**：先看 UniXNU 菜单（可先只放 `UniXNU.efi` + 最小 toml），再带 kernel/ADT 看 DarwinBoot → XNU banner → launchd。失败判读：菜单不出现（Mu fallback / UFS DXE 未加载 / ESP FAT / `BOOTAA64.EFI` 路径）；`NO WINDOW`（高段 DRAM 未进 GCD / 窗口不对）；ADT 缺 `darwinboot-memory-size`；XNU 早期 panic。
 6. **回滚**：回 nura = 刷 nura 的 boot_b + recovery_a + userdata（整盘重刷）；回 r34 = boot_b shim + 现有 userdata。B2 不动 userdata。
 7. **B2 成功后**：mad/launchd 仍在 → 继续 r35（root 侧）或评估 A；B2 只换启动链，不解决 kernel/root 侧。
 
