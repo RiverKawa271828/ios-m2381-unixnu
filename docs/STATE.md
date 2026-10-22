@@ -71,6 +71,10 @@
 
 ## 5. 下一步（桌面 spike，先不刷机）
 
+- 云端构建：`.github/workflows/xnu-16k.yml` 已保留旧 16K 内核的 macOS 流水线
+  （见 `docs/CI.md`）；B2 用现成 kernel，不依赖它；UEFI 的 CI 等 `m2381Pkg`
+  落地后再加。
+
 1. **UEFI 包**：从 `reference/uefi-fuxi` 复制 `fuxiPkg` → `m2381Pkg`，改
    DSC/FDF/DEC、FD base/size、SimpleFbDxe、FuxiBootMemoryDxe + 高段 DRAM、
    FuxiKeyInputDxe、UniXNUDxe + DarwinBoot、BootShim DTB 保存；加 OEM
