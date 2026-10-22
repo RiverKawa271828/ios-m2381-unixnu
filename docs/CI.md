@@ -23,9 +23,11 @@
 ## 本地预检
 
 ```bash
-legacy/sweet/tools/xnu-gate-walk.sh   # 99 个补丁严格 walk（会重置 xnu-8796）
+legacy/sweet/tools/xnu-gate-walk.sh   # 96 个 patch + 3 个 .sh 严格 walk（会重置 xnu-8796）
 python3 legacy/sweet/tools/xnu-cc.py --help
 ```
+
+- 2026-10-22 本地实测：`=== gate: 96 patches, 0 failures`（base `258d99a`）。
 
 ## UEFI 构建（B2 主线，待加 CI）
 
