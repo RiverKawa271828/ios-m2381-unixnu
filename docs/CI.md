@@ -36,6 +36,11 @@ EDK2/CLANGPDB 在 Linux 可构建，等 `m2381Pkg` 落地后再加
 `.github/workflows/uefi.yml`；现在先在本机跑 `uefi-fuxi/Resources/Scripts/
 build_uefi.py`（设备名 `m2381`）。CI 只构建 UEFI FV，不跑 `fastboot`。
 
+## 首次云端运行
+
+- 2026-10-22 推 `m2381` 后，`xnu-16k` 已自动触发（run #1，macOS-14）。
+- run 页面：`https://github.com/RiverKawa271828/ios-m2381-unixnu/actions`
+
 ## 推送
 
 - `origin` = `RiverKawa271828/ios-m2381-unixnu`；工作区分支是 `m2381`，
