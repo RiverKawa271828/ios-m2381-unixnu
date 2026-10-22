@@ -11,6 +11,9 @@
   FAT32 ESP，放 UniXNU.efi、`unixnu.toml`、`kernel.macho`、ADT；userdata 不动。
 - 旧 ios-sweet 路线已废弃，源码/笔记只作史料放在 `legacy/sweet/` 和
   `docs/archive/`。
+- GitHub：`origin` = `RiverKawa271828/ios-m2381-unixnu`；分支 `m2381` 是工作区，
+  `main` 保留为 UniXNU 上游镜像。建议在 GitHub Settings → Branches 把默认分支
+  设为 `m2381`。
 - 还没有上机；下一步是桌面 spike（UEFI 包 + ESP + boot.img）。
 - 云端构建：`.github/workflows/xnu-16k.yml` 保留旧 16K 内核的 macOS 流水线；
   B2 用现成 kernel，不依赖它。
