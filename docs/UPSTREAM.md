@@ -65,12 +65,16 @@ git -C reference/unixnu diff e95b37d..origin/main -- drivers/UniXNUPkg patches/x
 ## 4. 本工作区的远端
 
 ```text
-upstream  https://github.com/UniXNU/UniXNU.git   (fetch only; push = no_push)
-origin    （未设；用户 fork 后自行添加）
+upstream  https://github.com/UniXNU/UniXNU.git                   (fetch only; push = no_push)
+origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git
+          main  = UniXNU e95b37d 的镜像（保留，不覆盖）
+          m2381 = 本工作区（默认在这里开发）
 ```
 
-- 需要提交到用户 fork 时：`git remote add origin <fork-url>`，再 `git push -u origin master`。
-- 不要 `git push upstream`；`no_push` 会直接拒绝。
+- 本工作区在 `origin/m2381`；`origin/main` 保持上游镜像，避免把 fork 的上游
+  history 冲掉。需要改默认分支时，在 GitHub Settings → Branches 把默认分支
+  设为 `m2381`（这样 Actions 页面才列出本仓 workflow）。
+- 推送：`git push origin m2381`；不要推 `main`，也不要 `git push upstream`。
 
 ## 5. 和旧 sweet 上游的关系
 
