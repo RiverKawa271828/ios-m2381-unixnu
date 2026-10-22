@@ -1,0 +1,80 @@
+diff --git a/bsd/sweet_hfs/core/hfs_readwrite.c b/bsd/sweet_hfs/core/hfs_readwrite.c
+index 6a182c4..6b52a90 100644
+--- a/bsd/sweet_hfs/core/hfs_readwrite.c
++++ b/bsd/sweet_hfs/core/hfs_readwrite.c
+@@ -360,6 +360,75 @@ hfs_vnop_write(struct vnop_write_args *ap)
+ 	int io_return_on_throttle = 0;
+ 	int throttled_count = 0;
+ 
++#if defined(ARM64_BOARD_CONFIG_SWEET) || defined(ARM64_BOARD_CONFIG_M2381)
++	/*
++	 * SweetHID/M2381 bring-up: daemon stderr is /dev/null on this stack, so
++	 * the reason a process aborted only ever reaches disk inside the crash
++	 * report ReportCrash writes to /cores. Mirror the first bytes of ours to
++	 * the kernel console (and so to the fb screen and the persistent log):
++	 * without this a SIGABRT in backboardd is completely undiagnosable.
++	 */
++	{
++		static char line[160];
++		static int len;
++		static uint32_t mirrored;
++
++		struct cat_desc *cd = &VTOC(vp)->c_desc;
++		const u_int8_t *nm = cd->cd_nameptr;
++		int nmlen = cd->cd_namelen;
++		user_addr_t iovbase;
++		user_size_t iovlen;
++		int wanted = 0;
++
++		if (nm != NULL && nmlen >= 8 &&
++		    nm[nmlen - 4] == '.' && nm[nmlen - 3] == 'i' &&
++		    nm[nmlen - 2] == 'p' && nm[nmlen - 1] == 's') {
++			static const u_int8_t bbd[10] =
++			    { 'b', 'a', 'c', 'k', 'b', 'o', 'a', 'r', 'd', 'd' };
++			static const u_int8_t sbd[11] =
++			    { 'S', 'p', 'r', 'i', 'n', 'g', 'B', 'o', 'a', 'r', 'd' };
++			int i;
++
++			if (nmlen >= 10) {
++				for (i = 0; i < 10 && nm[i] == bbd[i]; i++) {}
++				wanted = (i == 10);
++			}
++			if (!wanted && nmlen >= 11) {
++				for (i = 0; i < 11 && nm[i] == sbd[i]; i++) {}
++				wanted = (i == 11);
++			}
++		}
++
++		if (wanted && mirrored < 65536 && uio_resid(uio) > 0 &&
++		    uio_getiov(uio, 0, &iovbase, &iovlen) == 0) {
++			uint8_t buf[512];
++			size_t want = (size_t)MIN((user_ssize_t)sizeof(buf), uio_resid(uio));
++			want = (size_t)MIN(want, iovlen);
++
++			if (!copyin(iovbase, buf, want)) {
++				for (size_t i = 0; i < want && mirrored < 65536; i++) {
++					char c = buf[i];
++					if (c == '\r') {
++						continue;
++					}
++					if (c == '\n' || len == (int)sizeof(line) - 1) {
++						line[len] = 0;
++						printf("IPS| %s\n", line);
++						len = 0;
++						if (c == '\n') {
++							mirrored++;
++							continue;
++						}
++					} else {
++						line[len++] = c;
++					}
++					mirrored++;
++				}
++			}
++		}
++	}
++#endif
++
+ #if HFS_COMPRESSION
+ 	if ( hfs_file_is_compressed(VTOC(vp), 1) ) { /* 1 == don't take the cnode lock */
+ 		int state = decmpfs_cnode_get_vnode_state(VTOCMP(vp));
