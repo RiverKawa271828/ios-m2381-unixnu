@@ -1,0 +1,43 @@
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -126,6 +126,20 @@ public:
+ 
+ OSDefineMetaClassAndStructors(AppleCLCD, IOMobileFramebuffer);
+ 
++/*
++ * The A11 display pipeline's scaler/CSC service. IOMobileFramebuffer in the
++ * iPhone X userland registers an IOServiceNotificationUser for it and re-runs
++ * the match forever when nothing answers (29k matching-failed stderr lines per
++ * window, no swap). Our present path is the AppleCLCD CPU copy, which needs no
++ * scaler hardware: publish an empty service so the match fires and the
++ * pipeline moves on.
++ */
++class AppleM2ScalerCSCDriver : public IOService {
++	OSDeclareDefaultStructors(AppleM2ScalerCSCDriver);
++};
++
++OSDefineMetaClassAndStructors(AppleM2ScalerCSCDriver, IOService);
++
+ class IOMobileFramebufferUserClient : public IOUserClient {
+ 	OSDeclareDefaultStructors(IOMobileFramebufferUserClient);
+ 
+@@ -197,6 +211,19 @@ AppleCLCD::start(IOService *provider)
+ 	fFlushTicks = (hz == 0 || hz >= 60) ? 1 : 60 / hz;
+ 	fVsync->setTimeoutUS(SWEET_FB_VSYNC_US);
+ 
++	/*
++	 * See the class comment: an empty provider is enough for IOMobile-
++	 * Framebuffer's AppleM2ScalerCSCDriver match/notification to fire.
++	 */
++	AppleM2ScalerCSCDriver *m2 = OSTypeAlloc(AppleM2ScalerCSCDriver);
++	if (m2 != NULL && m2->init()) {
++		if (m2->attach(this)) {
++			m2->registerService();
++			IOLog("SWEET FB: empty AppleM2ScalerCSCDriver published\n");
++		}
++	}
++	OSSafeReleaseNULL(m2);
++
+ 	setProperty(kIOUserClientClassKey, "IOMobileFramebufferUserClient");
+ 	setProperty("external", false);
+ 	setProperty("DisplayPipePlaneBaseAlignment", 64ULL, 32);

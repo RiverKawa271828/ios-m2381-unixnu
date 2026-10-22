@@ -1,0 +1,101 @@
+--- a/iokit/Kernel/arm/SweetSurface.cpp
++++ b/iokit/Kernel/arm/SweetSurface.cpp
+@@ -744,6 +744,14 @@ IOSurfaceRootUserClient::create(IOExternalMethodArguments *args)
+ 			used = owned;
+ 		}
+ 		ret = sweet_surface_use_task_memory(s, fTask, client_address->unsigned64BitValue(), used);
++		/*
++		 * Published here: the two branches below only run for surfaces that still need
++		 * memory. Unpublished, every such surface had id 0, and the framework took them
++		 * all for one surface: releasing any of them unmapped the views of the others.
++		 */
++		if (ret == kIOReturnSuccess && !sweet_surface_publish(s)) {
++			ret = kIOReturnNoResources;
++		}
+ 		static uint32_t told;
+ 		if (told++ < 6) {
+ 			IOLog("SWEET SURF: create around client memory %#llx (%llu bytes) %ux%u fmt 0x%x -> 0x%x\n",
+--- a/iokit/Kernel/arm/SweetSurface.cpp.orig
++++ b/iokit/Kernel/arm/SweetSurface.cpp.orig
+@@ -384,8 +384,9 @@ public:
+ 	IOMemoryMap  *state;
+ 	uint32_t      count;
+ 	bool          detached;     /* trap 4 seen: the framework is releasing this view */
++	bool          released;     /* released: only its state page stays mapped (fZombies) */
+ 
+-	bool init() APPLE_KEXT_OVERRIDE { detached = false; return OSObject::init(); }
++	bool init() APPLE_KEXT_OVERRIDE { detached = false; released = false; return OSObject::init(); }
+ 	void free() APPLE_KEXT_OVERRIDE;
+ };
+ 
+@@ -397,7 +398,9 @@ SweetSurfaceRef::free()
+ 	OSSafeReleaseNULL(data);
+ 	OSSafeReleaseNULL(state);
+ 	if (surface != NULL) {
+-		sweet_surface_put(surface);
++		if (!released) {
++			sweet_surface_put(surface);
++		}
+ 		surface->release();
+ 		surface = NULL;
+ 	}
+@@ -432,6 +435,7 @@ class IOSurfaceRootUserClient : public IOUserClient {
+ 	task_t   fTask;
+ 	IOLock  *fLock;
+ 	OSArray *fRefs;
++	OSArray *fZombies;      /* released views whose state page is still mapped, oldest first */
+ 
+ 	SweetSurfaceRef *findRef(uint32_t id, unsigned int *index, bool detached = false);
+ 	IOReturn addRef(SweetSurface *s, SweetSurfaceRef **refOut, bool *existing);
+@@ -483,6 +487,7 @@ IOSurfaceRootUserClient::initWithTask(task_t owningTask, void *securityID, UInt3
+ 	fTask = owningTask;
+ 	fLock = IOLockAlloc();
+ 	fRefs = OSArray::withCapacity(16);
++	fZombies = OSArray::withCapacity(16);
+ 	return fLock != NULL && fRefs != NULL;
+ }
+ 
+@@ -490,6 +495,7 @@ void
+ IOSurfaceRootUserClient::free()
+ {
+ 	OSSafeReleaseNULL(fRefs);
++	OSSafeReleaseNULL(fZombies);
+ 	if (fLock != NULL) {
+ 		IOLockFree(fLock);
+ 		fLock = NULL;
+@@ -502,6 +508,9 @@ IOSurfaceRootUserClient::clientClose(void)
+ {
+ 	IOLockLock(fLock);
+ 	fRefs->flushCollection();
++	if (fZombies != NULL) {
++		fZombies->flushCollection();
++	}
+ 	IOLockUnlock(fLock);
+ 	terminate();
+ 	return kIOReturnSuccess;
+@@ -1310,7 +1319,24 @@ IOSurfaceRootUserClient::trapRelease(void *id, void *, void *, void *, void *, v
+ 		ref = findRef((uint32_t)(uintptr_t)id, &index);
+ 	}
+ 	if (ref != NULL && --ref->count == 0) {
+-		fRefs->removeObject(index);     /* unmaps and drops the user count */
++		/*
++		 * The pixels are unmapped now; the state page (read-only) stays mapped a while.
++		 * In backboardd another IOSurface object can still hold a framework client of
++		 * the same surface after this one is released (CoreAnimation and the GL layer
++		 * both keep surfaces): reading its seed from an unmapped page crashed
++		 * backboardd in IOSurfaceClientGetSeed. The last 256 released views keep
++		 * their page (16 KB each), the oldest goes first.
++		 */
++		OSSafeReleaseNULL(ref->data);
++		sweet_surface_put(ref->surface);
++		ref->released = true;
++		ref->detached = false;
++		if (fZombies != NULL && fZombies->setObject(ref)) {
++			if (fZombies->getCount() > 256) {
++				fZombies->removeObject(0);
++			}
++		}
++		fRefs->removeObject(index);
+ 	}
+ 	IOLockUnlock(fLock);
+ 	return ref != NULL ? kIOReturnSuccess : kIOReturnNotFound;

@@ -1,0 +1,43 @@
+--- a/iokit/Kernel/arm/SweetFramebuffer.cpp
++++ b/iokit/Kernel/arm/SweetFramebuffer.cpp
+@@ -128,6 +128,21 @@
+ 
+ OSDefineMetaClassAndStructors(AppleM2ScalerCSCDriver, IOService);
+ 
++/*
++ * The graphics accelerator's service class. QuartzCore (CAMetalContextCreate,
++ * once per process) polls IOServiceMatching("IOAcceleratorES") before it goes
++ * on, and on this stack backboardd notification-waits for it (with
++ * IOAcceleratorESLegacy and AGXAccelerator in rotation) instead of ever
++ * presenting. One without MetalPluginName/MetalPluginClassName is found and
++ * then passed over by Metal (MTLRegisterDevices), which leaves the renderer
++ * as the AppleCLCD CPU copy.
++ */
++class IOAcceleratorES : public IOService {
++	OSDeclareDefaultStructors(IOAcceleratorES);
++};
++
++OSDefineMetaClassAndStructors(IOAcceleratorES, IOService);
++
+ class IOMobileFramebufferUserClient : public IOUserClient {
+ 	OSDeclareDefaultStructors(IOMobileFramebufferUserClient);
+ 
+@@ -208,6 +223,18 @@
+ 		}
+ 	}
+ 	OSSafeReleaseNULL(m2);
++	/*
++	 * See the class comment: the empty accelerator unblocks the QuartzCore
++	 * accelerator wait (topaz 0138 pattern).
++	 */
++	IOAcceleratorES *accel = OSTypeAlloc(IOAcceleratorES);
++	if (accel != NULL && accel->init()) {
++		if (accel->attach(this)) {
++			accel->registerService();
++			IOLog("SWEET FB: empty IOAcceleratorES published\n");
++		}
++	}
++	OSSafeReleaseNULL(accel);
+ 
+ 	setProperty(kIOUserClientClassKey, "IOMobileFramebufferUserClient");
+ 	setProperty("external", false);
