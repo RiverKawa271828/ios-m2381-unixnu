@@ -20,6 +20,13 @@
   `upstream` 的 push URL 已设为 `no_push`；`origin` 留空，等用户 fork 后再设。
 - 上游 = 机制/驱动/补丁的来源；设备模板 = 板级值的来源。两者都不整段 merge。
 
+### 1.1 同步记录
+
+- 2026-10-22 11:40：`git fetch` 后所有 pin 未变；`upstream/main` = `e95b37d`，
+  `uefi-fuxi` = `7b7ec15`，`unixnu-fuxi` = `59a91fb`，`darwinboot` = `85332b3`，
+  guacamole = `6269d31`，qemu = `97b75b1`，sheng = `77490e5`，uefi-sheng =
+  `0eb4514`；没有新主题要移植。
+
 ## 2. 更新流程
 
 ```bash
