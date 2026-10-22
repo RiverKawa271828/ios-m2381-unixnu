@@ -13,7 +13,7 @@
   `legacy/sweet/xnu/patches/*.patch|*.sh` 拷进 `dxb/patches/`，运行
   `dxb/build.sh`，收集 `fakeroot/System/Library/Kernels/kernel.*`。
 - 产物：`xnu-kernel-16k`（`out/`，含 `SHA256SUMS` 与 `buildtree.tgz`）。
-- 触发：手动 `workflow_dispatch`，或 push 到 `main` 且改动
+- 触发：手动 `workflow_dispatch`，或 push 到 `main`/`m2381` 且改动
   `legacy/sweet/xnu/patches/**` / 本 workflow。
 - 用途：只在需要重建 16K 内核时用；重建后把 `kernel.development.m2381`
   放回 `artifacts/kernel/`，并把新 sha256 记到 `docs/STATE.md`。
@@ -38,5 +38,6 @@ build_uefi.py`（设备名 `m2381`）。CI 只构建 UEFI FV，不跑 `fastboot`
 
 ## 推送
 
-- 本仓 `origin` 还没设；设好后 push 才会触发云构建。
+- `origin` = `RiverKawa271828/ios-m2381-unixnu`；工作区分支是 `m2381`，
+  `main` 保留为上游镜像。push `m2381` 才会触发云构建。
 - `upstream` 是 UniXNU/UniXNU，**fetch-only**（push URL 写成 `no_push`）。
