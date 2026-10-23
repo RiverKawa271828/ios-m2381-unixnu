@@ -32,25 +32,13 @@ sha256sum boot_b.before.img recovery_a.before.img
   （本机 254GB 空闲）和用户拍板。
 - 读回件存 `backups/`（不入 git），文件名带日期/分区。
 
-## 3. 刷 B2
+## 3. 刷写（具体镜像待设备仓/UEFI 产出后补）
 
-先刷 ESP，再刷固件（ESP 失败时 boot_b 还是旧固件，可回退）：
+路线 A 的刷写流程等 `devices/m2381/` 出第一版镜像后补全。原则不变：
 
-```bash
-# 1) recovery_a = 100MiB FAT32 ESP
-fastboot flash recovery_a out/esp.img
-
-# 2) boot_b = 3MB BootShim+FV
-fastboot flash boot_b out/boot.img
-
-# 3) 读回对拍
-fastboot reboot-bootloader
-# 读回方式见 §2；boot_b 应为 100,663,296B 分区，前 ~3MB 是 boot.img 内容
-```
-
-- 刷 recovery_a 前确认其中不是 nura 正在用的 ESP；若是，先备份/告知。
-- 刷完不要 `fastboot boot`；直接 `fastboot reboot` 让 ABL 走 boot_b。
-- 上机门：Mu 菜单 → UniXNU 菜单 → DarwinBoot → XNU banner → launchd。
+- 先刷可回退的那个槽（当前 = recovery_a，boot_b 保留 r34 shim）；
+- 每槽刷完立即读回 sha 对拍；
+- 刷完不要 `fastboot boot`（死路）；直接 `fastboot reboot` 让 ABL 走 boot_b。
 
 ## 4. 回滚
 
@@ -69,7 +57,7 @@ fastboot reboot
 ### 4.2 回 r34 iOS16（boot_b = r34 shim）
 
 ```bash
-fastboot flash boot_b legacy/sweet/images/shim-boot-m2381.img
+fastboot flash boot_b artifacts/images/shim-boot-m2381.img
 fastboot set_active b
 fastboot reboot
 ```
@@ -101,8 +89,9 @@ boot_b 不动；Mu 会重新扫描 ESP。
 | recovery_a | 未读回 | nura ESP v71 只是模板 |
 | userdata | r34 iPhone X 16.7.16 root，sha `7aaab96f…` | 12GB；无本地完整镜像 |
 
-回滚件：
+回滚件（都在 `artifacts/images/`）：
 
 - `artifacts/images/mu-r69-97cdea20.img`（sha `97cdea20…`）
 - `artifacts/images/esp-recovery-v71.img.gz`（sha `6fe7811a…`）
-- `legacy/sweet/images/shim-boot-m2381.img`（sha `339b8480…`）
+- `artifacts/images/shim-boot-m2381.img`（sha `339b8480…`；2026-10-23 从
+  已删除的 `legacy/sweet/images/` 移入）
