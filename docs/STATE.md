@@ -147,6 +147,7 @@
 
 ## 7. 下一步（按顺序）
 
+0. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，推送授权已给）。
 1. ~~**P2 开工**~~ **完成（2026-10-23）**：FV + boot.img 均在本机产出；
    overlay 工作流 = `devices/m2381/uefi/sync.sh` → `unixnu build firmware
    --uefi out/m2381/uefi` → `package-m2381-boot.py`。P2 遗留 = 上机验证
