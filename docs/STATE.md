@@ -8,8 +8,10 @@
   `docs/archive/BOOT-CHAIN-b2.md`；`legacy/` 已出 git，死库存（16K 内核/ADT/
   旧 IPSW/16K 重建套件）已从本地删除。
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
-  内核 + iPad7,1 / iPadOS 17.7.11 `21H461` IPSW root + `unixnu-m2381` 设备仓
-  + `m2381Pkg`（Mu-Silicium UEFI）。母版/指南见 `docs/porting-notes.md`。
+  内核 + **iPhone10,3 / iOS 16.7.16 `20H392`** IPSW root（用户拍板：手机
+  镜像、不用 iPadOS；与 negroni userland 同版本、与 nuwa 同身份）+
+  `unixnu-m2381` 设备仓 + `m2381Pkg`（Mu-Silicium UEFI）。母版/指南见
+  `docs/porting-notes.md`。
 - **设备数据豁免（用户 2026-10-23 拍板）**：无须保留设备数据，随时可刷。
   userdata 现为 nura root；抹除/重建不再需要逐次拍板（红线 2 相应更新），
   但每次实际写入仍按 `docs/FLASHING.md` 流程走。
@@ -52,7 +54,7 @@
 | `artifacts/vendor/meizu20-uefi-mods/`、`inner-fv-A.bin` | 路线 A 要用（m2381Pkg FV） |
 | `research/bin/ipsw` | ipsw CLI，保留（DSC/IM4P 抽取） |
 | `research/ipsw-x/`（220K，d22ap.adt + DeviceTree im4p） | ADT 解析样本，保留 |
-| `research/ipsw-ipad/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw` | **下载中**（P1 构建输入；也可不落地，unixnu 工具支持远程 range 读） |
+| `research/ipsw/`（**待用户下载**：iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw，6,171,035,648 B） | 链接与 sha 见 `docs/porting-notes.md` §5；sha 必须 = `ece1194f…`（与旧路线用过的镜像同文件，Apple 仍在签名） |
 | `reference/`（10 个 UniXNU/UEFI 克隆 + 5 个参照设备仓） | 见 `docs/porting-notes.md` |
 
 ## 4. 当前没做/不能声称的
