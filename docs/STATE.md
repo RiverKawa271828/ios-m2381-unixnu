@@ -79,6 +79,14 @@
 
 - **内核没编**：kernel 步只能 macOS；CI 需先推设备仓（用户拍板）。
   Linux 侧到 xcodebuild 缺口为止全部跑通。
+- **P2 已达成（2026-10-23 深夜，commits `8e78e03`+`c9dc5d4`）**：m2381Pkg
+  overlay（`devices/m2381/uefi/`）+ uefi-sheng 工作树（`out/m2381/uefi`，
+  Binaries@036ba9f7 mars）→ **Linux 本机出 FV**（3MiB，DEBUG_CLANGPDB），
+  FV 体检：UniXNU/UniXNUDxe/DarwinBoot/UFSDxe/BdsDxe/SimpleFbDxe/ButtonsDxe
+  全在卷；KEP 库虽在 Silicon 树编译但 FV map 零命中（未链接，无雷）。
+  `package-m2381-boot.py` 产出确定性 boot.img（1,662,976B，v4 头 + 无
+  appended DTB + Gunyah WDT off shim，两次构建同 sha `40f2a199…`）。
+  **未上机，不能声称 ABL 收这枚镜像**。
 - **prelink 三值待重derive**：slide / early_security_init / text_fixups
   还是 21H461 的值，20H392 的要在 CI/kernel 步重derive（board.toml 已标注
   TODO；prelink 指针绑定核对会大声失败，failsafe）。
@@ -139,8 +147,10 @@
 
 ## 7. 下一步（按顺序）
 
-1. **P2 开工**：搭 m2381Pkg 构建树（uefi-sheng 克隆 + Platforms/Meizu/
-   m2381Pkg overlay + Binaries @036ba9f7 + m2381.toml），Linux 本机出 FV。
+1. ~~**P2 开工**~~ **完成（2026-10-23）**：FV + boot.img 均在本机产出；
+   overlay 工作流 = `devices/m2381/uefi/sync.sh` → `unixnu build firmware
+   --uefi out/m2381/uefi` → `package-m2381-boot.py`。P2 遗留 = 上机验证
+   （P4 才做）。
 2. **CI 内核**（等推送拍板）：设备仓独立成库 → dispatch macos.yml
    （steps=kernel，defconfig=m2381_defconfig，ipsw_url=本地件需公网可达或
    用 board.toml url）→ 顺路重derive prelink 三值。
