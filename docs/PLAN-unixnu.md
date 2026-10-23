@@ -66,7 +66,7 @@ iPadOS 21H461 IPSW 下载中。
 
 | # | 任务 | 产出/门槛 |
 |---|---|---|
-| 1 | 通读 `docs/porting/` 五篇 + `docs/devices/fuxi.md` + nx729j 三份 playbook | `docs/porting-notes.md` 补全为 m2381 施工骨架 |
+| 1 | ~~通读 `docs/porting/` 五篇 + fuxi.md + nx729j playbook~~ **完成（2026-10-23）** | `docs/m2381-bringup.md`（施工骨架：值源/构建序列/阶段表/风险） |
 | 2 | 收集 m2381 stock fastboot 包（`gpt_main0.bin`/`rawprogram0.xml`） | userdata 几何 `[FW]` 侧佐证（现在只有 sysfs/GPT 源） |
 | 3 | 派生 `devices/m2381/unixnu-m2381/board.toml`（ipsw/userdata/defconfig/归档构建器） | unixnu 构建树能吃进 m2381 |
 | 4 | 确认构建主机方案：Linux x86_64 交叉 or 上游 macOS CI or 容器 | kernel 步骤在本仓跑通（P1 门槛） |

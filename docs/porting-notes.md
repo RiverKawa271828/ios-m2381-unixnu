@@ -110,8 +110,9 @@ m2381 动作：payload 加 `serial=3 boot-progress=1 panic_screen` 一组；ADT
 
 ## 6. 待办（并入 PLAN P0/P1）
 
-- [ ] 通读上游 `docs/porting/` 五篇
-- [ ] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，抽成 m2381 版骨架
+- [x] 通读上游 `docs/porting/` 五篇（2026-10-23）
+- [x] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，产出 `docs/m2381-bringup.md`
+  施工骨架（2026-10-23）
 - [ ] 读 pong 的 userdata 镜像构建器与 negroni README 的 ESP 流程
 - [ ] 收集 m2381 的 stock fastboot 包 / GPT 备份（`[FW]` 类值来源）
 - [ ] 实机测量：`fastboot getvar partition-size:userdata` 等（刷机窗口做，
