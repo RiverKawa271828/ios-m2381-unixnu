@@ -1,22 +1,30 @@
-# m2381 施工骨架（P0 产出，2026-10-23）
+# m2381 施工骨架（P0 产出，2026-10-23；P1 会话修订同日）
 
 > 输入：上游 `docs/porting/` 五篇 + `docs/devices/fuxi.md` + nx729j 三份
 > playbook（`reference/UniXNU-nx729j/`）。本文只记 m2381 的结论与差异，通用
 > 流程不重复，出处见上。
+>
+> **P1 修订（2026-10-23 晚）**：① P2 基座改为 shengPkg 骨架 + mars blob
+> （§0/§3，评估记录见 STATE §1/§5-A3）；② 内核步只能在 macOS（xcodebuild
+> + iphoneos SDK，本机实测），Linux 侧到该缺口为止全链路已跑通；③ payload
+> 走 ESP 的依据从"忽略 ramdisk"升级为窗口算术（~85MB 装不下 192MiB ramdisk
+> 载荷，RdLoad 负值必拒载）。
 
 ## 0. 结论
 
 - **最重的两块上游已做完**：SM8550 的 XNU 驱动链（sheng 实机全通过：UFS/
   DPU/GMU/Adreno740/PMGR）+ ESP 载荷形态（`shengPkg`/`nx729jPkg` 的
   `<BOARD>ESP` FAT 卷就是上游标准做法，boot.img 只装 BootShim+FV）——
-  m2381 的 ABL 约束（83.5MB、忽略 ramdisk）恰好被这个形态天然满足。
-- **m2381 真正要做的四件事**：
+  m2381 的 ABL 约束恰好被这个形态天然满足，且是**硬数学**：gunzip 窗
+  [0x80080000, 0x85580000) 共 ~85MB，fuxi/sheng 式 192MiB ramdisk 载荷
+  在此窗内 RdLoad 为负必拒载（BOOT-CHAIN-RE §5.3），ESP 路线无悬念。
+- **m2381 真正要做的四件事**（P1 修订基座后）：
   | # | 事项 | 量 |
   |---|---|---|
-  | 1 | UEFI `m2381Pkg`：fuxiPkg 派生 + **从 uefi-sheng 的 shengPkg/nx729jPkg 移植 UFS 源码 DXE**（同 SoC；OEM UFSDxe blob 降为备选） | 中 |
-  | 2 | 设备仓 delta：board.toml / defconfig / make-m2381-adt.py / check-m2381.py / package/unixnu.toml | 小 |
+  | 1 | UEFI `m2381Pkg`：**shengPkg 骨架派生**（UniXNU 全链在 FV 的唯一同 SoC 模板；fuxiPkg 是半程态不能当母版）+ **Device-Binaries `@036ba9f7` mars blob**（nura 现役链实证的 UFSDxe/时钟/RPMh 胶水；注意 mars ≠ infiniti）+ nura m2381Pkg 常量（MemoryMapLib/m2381.toml/FdtBlob） | 中 |
+  | 2 | 设备仓 delta：board.toml / defconfig / make-m2381-adt.py / check-m2381.py / package/unixnu.toml | 小（**P1 已完成**） |
   | 3 | Goodix GT9916 触摸驱动（与 nx729j 同款，但其为 SPI、m2381 为 I2C4@0x5d，传输层要改） | 大（后置，P4+） |
-  | 4 | 实测补齐：unique-chip-id、stock fastboot 包、`fastboot getvar` 复核 | 小 |
+  | 4 | 内核 CI：设备仓推独立库 → macos.yml（kernel 步 = xcodebuild，只能 macOS）+ 20H392 prelink 三值重derive | 中（等推送拍板） |
 - **m2381 特有红线**：魅族 ABL 无 `CmdBoot` ⇒ **没有 nx729j 那条 "fastboot
   boot 临时启动" 保命通道**。首刷前核对 nura 侧镜像版本：全套在
   `/home/ri/work/nura-meizu-m2381/artifacts/`（mu-r62…r91、esp-recovery
@@ -55,32 +63,53 @@ nx729j 经验：`sheng-` 前缀内核参数（`sheng-pmgr=2`、`sheng-touch=4`�
 | `[payload.adt]` | tool=make-m2381-adt.py；unique_chip_id=required；model/compatible=`meizu,m2381`；artwork-device-subtype=2400；artwork-scale-factor=3（1080/3=360pt） | [DTB]/推算 |
 | `[[bootimg.dtb_node]]` | 预计**不需要**追加 splash_region：stock FDT 已有 cont_splash_region 0xb8000000+0x2b00000（与 nx729j 同款判断）；以预检 vs DTB 比对为准 | [DTB] 待核 |
 
-[TODO] 测量项：`unique-chip-id`（nura OS 下找读取路径）、stock fastboot 包
-（gpt_main0/rawprogram 佐证）、刷机窗口 `fastboot getvar current-slot` +
-`partition-size:userdata` 三源复核。
+[TODO]（P1 更新）：`unique-chip-id` **已定**（软件种子 `3645ad55d47e77c1`，
+设备无可暴露硬件序列号，STATE §1）；stock fastboot 包本地未找到，改用
+**实机 GPT 直读**闭环几何（三源吻合，STATE §2），stock 包留作以后第四源；
+刷机窗口 `fastboot getvar current-slot` + `partition-size:userdata` 形式
+复核仍留。另 [TODO P3] root_match_volume_uuid / OWNER_DATA_VOLUME_UUID、
+[TODO kernel 步] 20H392 slide/early_security_init/text_fixups。
 
-## 3. m2381Pkg 要点
+## 3. m2381Pkg 要点（P1 修订：shengPkg 骨架 + mars blob）
 
-1. FD `0xA7100000+0x300000`（ABL 拷入窗，旧实证）；`boot_shim.requires_kernel_header=true`。
-2. SimpleFbDxe 在 ABL 帧缓冲 `0xb8000000`（1080×2400 stride 4320）。
-3. **UFS 源码移植**：从 `reference/uefi-sheng` 的 shengPkg/nx729jPkg 拿 UFS
-   DXE（控制器同为 `0x1d84000`）；OEM `UFSDxe` blobs（`artifacts/vendor/`）
-   只作源码路线卡死时的备选。
-4. `FuxiBootMemoryDxe` 加高段 DRAM `0x8c0000000` 起（fuxi 版默认只加 4GB 下）。
-5. 按键 PMK8550 PON（pwrkey+resin），SID/键码与 fuxi 对比后定。
+1. 基座 = `reference/uefi-sheng` 的 shengPkg（UniXNUDxe/DarwinBoot/菜单全
+   编进 FV，`SHENG_VENDOR_HW=1` 时加载 Binaries blob 族）；m2381Pkg =
+   Platforms/Meizu/m2381Pkg overlay，板级常量从 nura fork（`reference/
+   uefi-m2381-nura`）搬：MemoryMapLib（FD/Kernel 窗/Display/TZApps 全表
+   实证）、m2381.toml（header v4/gzip/append_dtb=false/Gunyah WDT off）、
+   FdtBlob/sm8550-meizu-20.dtb。
+2. blob = Device-Binaries `@036ba9f7` 的 **mars** 集（nura 实证；
+   mars/infiniti 的 UFSDxe.efi 哈希不同，不可混用）；本机 OEM blobs
+   （`artifacts/vendor/`）为备选。sheng blob 公开仓没有（只有 nuwa）。
+3. FD `0xA7100000+0x300000`（与 sheng 同窗）；`requires_kernel_header=true`
+   + `disable_gunyah_watchdog=true`。**FD 保持 3MB**：FD>15MB 死因是
+   BootShim 拷贝跨 0xA8000000 栅栏（BOOT-CHAIN-RE §5.7），不扩。
+4. SimpleFbDxe 在 ABL 帧缓冲 `0xb8000000`（1080×2400 stride 4320）。
+5. 按键 PMK8550 PON（pwrkey+resin），SID/键码与 sheng 对比后定；出 FV 后
+   grep 复核 FV 内无 KEP/Winload（nura 旧雷，现源码已无）。
 
 ## 4. 构建与刷写序列
 
 ```bash
+# Linux 本机（P1 全部实测通过，到 xcodebuild 缺口为止）：
 ./unixnu defconfig m2381_defconfig -D devices/m2381/unixnu-m2381
 ./unixnu fetch
 ./unixnu ipsw fetch --ipsw research/ipsw/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw
-./unixnu build kernel            # Linux 可跑（nx729j §5.4）；卡住再评估 CI/macOS
-./unixnu build package
-./unixnu build firmware --uefi devices/m2381/uefi
-./unixnu build payload --unique-chip-id <hex> --trust-cache <bundle> --data-ramdisk <seed>
-./unixnu bootimg --uefi devices/m2381/uefi --dtb <m2381.dtb>
-python3 scripts/check-m2381.py --uefi devices/m2381/uefi   # 预检挡两类致命错
+#   Linux 无 /usr/bin/compression_tool：kernelcache 预置
+#   out/ipsw/20H392/kernelcache.decompressed（research/bin/ipsw extract --kernel
+#   产出，sha 须 = board.toml pin）即跳过解码。
+
+# kernel 步 = macOS 专用（xcodebuild + iphoneos SDK，本机实测卡点）：
+#   GitHub Actions macos.yml dispatch：device_repository=<m2381 设备仓>，
+#   device_ref=main，defconfig=m2381_defconfig，steps=kernel。
+#   前提：设备仓独立成库推送（用户拍板）+ UNIXNU_UNIQUE_CHIP_ID secret
+#   （= 3645ad55d47e77c1）。CI 产 kernel.macho 拷回本机再走后续。
+
+./unixnu build package           # Linux
+./unixnu build firmware --uefi <uefi-sheng+m2381Pkg overlay>   # P2 门槛：Linux 出 FV
+./unixnu build payload --unique-chip-id 3645ad55d47e77c1 --trust-cache <bundle> --data-ramdisk <seed>
+./unixnu bootimg --uefi <同上> --dtb <m2381.dtb>
+python3 scripts/check-m2381.py --uefi <同上>   # 预检挡 TODO 值与不一致
 ```
 
 刷写（与 nx729j 的差异点）：
@@ -110,17 +139,19 @@ python3 scripts/check-m2381.py --uefi devices/m2381/uefi   # 预检挡两类致�
 | 风险 | 等级 | 对策 |
 |---|---|---|
 | iPhone 镜像+SM8550 无实机先例 | 中 | 上游官方第二目标（requirements.md）；negroni 证 userland、sheng 证 SoC 链；不行退 nuwa 源码内核路线 |
-| ABL 83.5MB / 无 CmdBoot | 已消解 | ESP 载荷形态天然合规；刷写纪律替代临时启动 |
+| ABL 85MB 窗 / 无 CmdBoot | 已消解 | 窗口算术定死 ESP 载荷（192MiB ramdisk 必拒载）；刷写纪律替代临时启动 |
 | 触摸 GT9916 I2C 驱动开发 | 大（后置） | nx729j `drivers/NativeGoodixTouch` 规格起步；P4 前 UI 用按键+串口 |
-| 内核构建主机不确定 | 小 | nx729j 明确"Linux 亦可"；P1 实测 |
+| 内核构建主机 | 已定案 | kernel 步只能 macOS（xcodebuild，P1 实测）；CI = macos.yml，设备仓推送等拍板 |
+| 20H392 prelink 三值未derive | 中 | slide/early_security_init/text_fixups 仍是 21H461 值；prelink 指针绑定核对会大声失败（failsafe），CI kernel 步顺路derive |
 | 面板 cmd-mode DSC 初始化 | 中 | stock FDT 有完整 init 序列，照 `build-native-legacy-display.py` 输入格式转换（nx729j 同款待办） |
 
-## 7. 立即行动（P1 开工顺序，详见 STATE §5）
+## 7. 立即行动（P1 已完成 2026-10-23；下一步 = STATE §7）
 
-1. **消化 nura 资产**：BOOT-CHAIN-RE 全文 + 现役镜像对拍 + **P2 基座评估**
-   （nura 的 m2381Pkg 终形态可能替代 fuxiPkg 重派生——他们的 Mu 链在这台
-   设备上每天在跑）。
-2. 起 `devices/m2381/unixnu-m2381` 骨架（fork fuxi + §1 delta 文件）。
-3. `make-m2381-adt.py` 初版（从 nx729j 改身份/面板/DRAM）。
-4. nura OS 下找 `unique-chip-id` 读取路径；收集 stock fastboot 包。
-5. 构建环境实测：Linux 跑通 `build kernel`。
+1. ~~消化 nura 资产~~ **完成**（现役镜像对拍 ✓、P2 基座评估 → shengPkg+
+   mars、ABL 约束逐条对回源文档并新增 KEP/栅栏/kernel-log 三条）。
+2. ~~`devices/m2381/unixnu-m2381` 骨架~~ **完成**（board.toml/defconfig/
+   菜单/check-m2381.py，几何三源对拍）。
+3. ~~`make-m2381-adt.py` 初版~~ **完成**（iPhone 身份 + d22ap 真值）。
+4. ~~unique-chip-id~~ **已定**（软件种子 `3645ad55d47e77c1`）；stock 包
+   改由实机 GPT 直读闭环。
+5. ~~构建环境实测~~ **完成**：Linux 到 xcodebuild 缺口全绿；kernel = CI。
