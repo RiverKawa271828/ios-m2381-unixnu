@@ -54,5 +54,25 @@
 ## 5. 明确不做
 
 - 不再维护/重建 16K 内核；不跑旧 shim；不保留 sweet 补丁树为施工面。
-- 不在 userdata 拍板前做任何破坏性操作。
 - 不向 upstream push；Apple 件不入 git。
+
+## 6. 下阶段执行计划（2026-10-23 定；设备在线、数据豁免已给）
+
+前置已就绪：设备 nura OS 在线（devsh USB-net，root 可用）、分区几何与四槽
+sha 已实测（`docs/STATE.md` §2）、参照设备仓齐（`docs/porting-notes.md`）、
+iPadOS 21H461 IPSW 下载中。
+
+| # | 任务 | 产出/门槛 |
+|---|---|---|
+| 1 | 通读 `docs/porting/` 五篇 + `docs/devices/fuxi.md` + nx729j 三份 playbook | `docs/porting-notes.md` 补全为 m2381 施工骨架 |
+| 2 | 收集 m2381 stock fastboot 包（`gpt_main0.bin`/`rawprogram0.xml`） | userdata 几何 `[FW]` 侧佐证（现在只有 sysfs/GPT 源） |
+| 3 | 派生 `devices/m2381/unixnu-m2381/board.toml`（ipsw/userdata/defconfig/归档构建器） | unixnu 构建树能吃进 m2381 |
+| 4 | 确认构建主机方案：Linux x86_64 交叉 or 上游 macOS CI or 容器 | kernel 步骤在本仓跑通（P1 门槛） |
+| 5 | 派生 `devices/m2381/uefi/m2381Pkg` + UFSDxe 集成 | Linux 本机出 FV（P2 门槛） |
+| 6 | 桌面镜像（boot 固件 + payload + userdata 件）+ 哈希对拍 | 全部校验通过，不刷机（P3） |
+| 7 | 上机：先 recovery_a 后 boot_b；四道门逐个过（P4） | UEFI 菜单 → UniXNU → XNU banner → launchd |
+
+- 设备当前是 nura 现役件在跑，刷写顺序与回滚纪律照 `docs/FLASHING.md`；
+  第一次上机前先在 fastboot 窗口补 `getvar current-slot`/
+  `partition-size:userdata` 复核。
+- 任务 1（读文档）与任务 2（找 stock 包）可并行，互不依赖。

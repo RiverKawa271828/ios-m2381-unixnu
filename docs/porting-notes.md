@@ -44,7 +44,26 @@
    `CHECKLIST-勾选清单.md` / `STATUS-适配进度.md` 几乎是现成的 m2381 施工
    文档模板，P1 起逐条翻译成 m2381 版。
 
-## 3. 待办（并入 PLAN P0/P1）
+## 3. m2381 实测值（2026-10-23，devsh 只读取证，nura OS 在跑）
+
+可直接填 board.toml 的 `[DEVICE]` 值（详细表见 `docs/STATE.md` §2）：
+
+```toml
+[userdata]
+first_lba = 2330472        # sysfs start 18,643,776 × 512B ÷ 4096
+last_lba  = 123871226      # first + 121,540,755 − 1（972,326,040 × 512B ÷ 4096）
+lba_bytes = 4096           # sda logical_block_size = 4096（与 nx729j 同款陷阱）
+```
+
+- 分区：boot_b = 96MiB（100,663,296B）@ sde43；recovery_a = 100MiB
+  （104,857,600B）@ sde27；userdata ≈463.7GiB @ sda22（= nura root）。
+- 四槽读回 sha 已记录（`docs/FLASHING.md` §6）；**boot_b 现役是 nura 件**
+  （`af574775…`），旧 "r34 shim `339b8480`" 记录作废。
+- 待补：`fastboot getvar partition-size:userdata` + `current-slot` 复核
+  （刷机窗口做）；m2381 stock fastboot 包（`gpt_main0.bin`/`rawprogram0.xml`）
+  作 `[FW]` 侧佐证。
+
+## 4. 待办（并入 PLAN P0/P1）
 
 - [ ] 通读上游 `docs/porting/` 五篇
 - [ ] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，抽成 m2381 版骨架
