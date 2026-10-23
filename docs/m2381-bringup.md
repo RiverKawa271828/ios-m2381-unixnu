@@ -18,8 +18,11 @@
   | 3 | Goodix GT9916 触摸驱动（与 nx729j 同款，但其为 SPI、m2381 为 I2C4@0x5d，传输层要改） | 大（后置，P4+） |
   | 4 | 实测补齐：unique-chip-id、stock fastboot 包、`fastboot getvar` 复核 | 小 |
 - **m2381 特有红线**：魅族 ABL 无 `CmdBoot` ⇒ **没有 nx729j 那条 "fastboot
-  boot 临时启动" 保命通道**。首刷前必须先用 devpull 把 nura 的
-  boot_b/recovery_a 整分区备份到本地 `backups/`（现在只有 sha 没有镜像）。
+  boot 临时启动" 保命通道**。首刷前核对 nura 侧镜像版本：全套在
+  `/home/ri/work/nura-meizu-m2381/artifacts/`（mu-r62…r91、esp-recovery
+  v46+），与实测现役 sha（boot_b `af574775…` / recovery_a `0a102220…`）
+  对拍；启动链逆向全集 = nura `docs/BOOT-CHAIN-RE.md`（§3.4 m2381Pkg
+  终形态、§5 ABL 约束、§6.3 ramoops 0xa5100000）。
 
 ## 1. 落地方式（照 nx729j 方式一：fork + delta 覆盖）
 
@@ -112,10 +115,11 @@ python3 scripts/check-m2381.py --uefi devices/m2381/uefi   # 预检挡两类致�
 | 内核构建主机不确定 | 小 | nx729j 明确"Linux 亦可"；P1 实测 |
 | 面板 cmd-mode DSC 初始化 | 中 | stock FDT 有完整 init 序列，照 `build-native-legacy-display.py` 输入格式转换（nx729j 同款待办） |
 
-## 7. 立即行动（P1 开工顺序）
+## 7. 立即行动（P1 开工顺序，详见 STATE §5）
 
-1. **备份 nura**：devpull boot_b/recovery_a 整分区 → `backups/`（只有 sha
-   没有镜像，首刷前必须补）。
+1. **消化 nura 资产**：BOOT-CHAIN-RE 全文 + 现役镜像对拍 + **P2 基座评估**
+   （nura 的 m2381Pkg 终形态可能替代 fuxiPkg 重派生——他们的 Mu 链在这台
+   设备上每天在跑）。
 2. 起 `devices/m2381/unixnu-m2381` 骨架（fork fuxi + §1 delta 文件）。
 3. `make-m2381-adt.py` 初版（从 nx729j 改身份/面板/DRAM）。
 4. nura OS 下找 `unique-chip-id` 读取路径；收集 stock fastboot 包。
