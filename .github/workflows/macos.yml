@@ -60,6 +60,10 @@ on:
         description: Hosted runner label (macos-15 = Intel lane when arm64 pools are congested)
         required: false
         default: "macos-15-arm64"
+      upload_kernel:
+        description: Upload the unlinked (pre-prelink) source kernel; the prelink embeds Apple restore-image kexts and stays local
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -290,6 +294,18 @@ jobs:
           name: unixnu-${{ steps.check.outputs.board }}-logs-${{ github.run_attempt }}
           path: ${{ runner.temp }}/public-logs/*.log
           if-no-files-found: warn
+          retention-days: 7
+
+      # The unlinked kernel is built from Apple open source (xnu) plus the port's
+      # own patches; the prelink embeds Apple restore-image kexts and never leaves
+      # the runner. m2381: the prelink itself is pure Python and runs on Linux.
+      - name: Upload the unlinked kernel
+        if: always() && inputs.upload_kernel && steps.kernel.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unixnu-${{ steps.check.outputs.board }}-unlinked-kernel-${{ github.run_attempt }}
+          path: out/*/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf
+          if-no-files-found: error
           retention-days: 7
 
       - name: Summary
