@@ -112,7 +112,8 @@ stock FDT / nura DTS。
 AGENTS.md                 本文件
 README.md                 入口
 docs/PLAN-unixnu.md       当前路线（原生移植）计划
-docs/porting-notes.md     参照设备清单与移植笔记（P0）
+docs/porting-notes.md     参照设备清单、实测值、取证方法（P0）
+docs/m2381-bringup.md     m2381 施工骨架：值源、构建/刷写序列、阶段表（P0 产出）
 docs/STATE.md             当前状态、资产、下一步、开放问题
 docs/UPSTREAM.md          上游 pin、rebase 同步流程、remote 策略
 docs/FLASHING.md          刷写/读回/回滚纪律

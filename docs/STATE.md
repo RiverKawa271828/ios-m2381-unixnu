@@ -65,15 +65,15 @@
 - `fastboot getvar` 侧的槽位/分区复核未做（需要重启进 bootloader）。
 - 上游 3 个 workflow（docs/macos/terminal）是否已在 GitHub UI 禁用未确认。
 
-## 5. 下一步（P0 → P1）
+## 5. 下一步（P0 已完成 → P1）
 
-1. 通读上游 `docs/porting/` 五篇 + `docs/devices/fuxi.md`；读 nx729j 的
-   PORTING/GUIDE/CHECKLIST 抽 m2381 版骨架。
-2. 派生 `devices/m2381/unixnu-m2381/board.toml`：`[ipsw]` 照 sheng 系；
-   `[userdata]` 用 §2 实测值；`[kernel]` defconfig 从 fuxi/sheng 派生。
-3. 派生 `devices/m2381/uefi/m2381Pkg`：FD/显示/按键/高段 DRAM + UFSDxe。
-4. 桌面构建 spike + 哈希校验，不刷机。
-5. 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd。
+P0 产出 = `docs/m2381-bringup.md`（施工骨架）。P1 开工顺序：
+
+1. **备份 nura**：devpull boot_b/recovery_a 整分区 → `backups/`（首刷前置）。
+2. 起 `devices/m2381/unixnu-m2381` 骨架（fork fuxi + delta 文件）。
+3. `make-m2381-adt.py` 初版；`unique-chip-id` 读取路径；stock fastboot 包。
+4. Linux 实测 `./unixnu build kernel` 跑通（P1 门槛）。
+5. `m2381Pkg` 派生 + UFS 源码移植（P2）。
 
 ## 6. 开放问题
 
