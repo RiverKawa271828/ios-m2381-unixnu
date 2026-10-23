@@ -1,56 +1,20 @@
 # 云端构建（GitHub Actions）
 
-新仓保留旧 sweet 路线的 macOS 内核构建，并把它放到**归档路径**下；B2 正常
-不需要它（B2 用现成的 `artifacts/kernel/kernel.development.m2381`）。
+## 现状（2026-10-23）
 
-## `xnu-16k`（已移植，手动 + 路径触发）
+- 本仓自己的 workflow：**无**。旧 16K 内核构建 `xnu-16k.yml` 随 B2 废弃删除
+  （文件内容可在 git 历史查：删除前的 `.github/workflows/xnu-16k.yml`）。
+- 上游的 `docs.yml` / `macos.yml` / `terminal.yml` 随 rebase 进入本仓树，push
+  会触发它们——在 GitHub Actions 页面逐个 **Disable**（只禁用、不改文件，
+  避免以后每次 rebase 都多一处冲突）。
 
-- 文件：`.github/workflows/xnu-16k.yml`
-- runner：`macos-14`（Xcode 15；iig 与 xnu-8796 的 IORPC ABI 匹配）
-- 输入：`macos_version`（默认 13.5）、`kernel_config`（DEVELOPMENT）、
-  `machine_config`（M2381 / SWEET）、`keep_going`
-- 做法：拉 `blacktop/darwin-xnu-build`（pin `6639065`），把
-  `legacy/sweet/xnu/patches/*.patch|*.sh` 拷进 `dxb/patches/`，运行
-  `dxb/build.sh`，收集 `fakeroot/System/Library/Kernels/kernel.*`。
-- 产物：`xnu-kernel-16k`（`out/`，含 `SHA256SUMS` 与 `buildtree.tgz`）。
-- 触发：手动 `workflow_dispatch`，或 push 到 `main`/`m2381` 且改动
-  `legacy/sweet/xnu/patches/**` / 本 workflow。
-- 用途：只在需要重建 16K 内核时用；重建后把 `kernel.development.m2381`
-  放回 `artifacts/kernel/`，并把新 sha256 记到 `docs/STATE.md`。
-- 旧 workflow 原件也归档在 `legacy/sweet/.github/workflows/xnu.yml`（GitHub
-  只运行根 `.github/workflows`，归档件仅作参照）。
+## 未来 CI（待设备落地后加）
 
-## 本地预检
+- `uefi.yml`：Linux 构建 m2381Pkg FV（EDK2 CLANGPDB），等
+  `devices/m2381/uefi/m2381Pkg` 落地后加。
+- 设备仓构建：`unixnu` 构建树吃 `unixnu-m2381` 的流水，先本机跑通再考虑。
 
-```bash
-legacy/sweet/tools/xnu-gate-walk.sh   # 96 个 patch + 3 个 .sh 严格 walk（会重置 xnu-8796）
-python3 legacy/sweet/tools/xnu-cc.py --help
-```
+## 本地构建优先
 
-- 2026-10-22 本地实测：`=== gate: 96 patches, 0 failures`（base `258d99a`）。
-
-## UEFI 构建（B2 主线，待加 CI）
-
-B2 的 UEFI 来自 `reference/uefi-fuxi` 派生的 `devices/m2381/m2381Pkg`。
-EDK2/CLANGPDB 在 Linux 可构建，等 `m2381Pkg` 落地后再加
-`.github/workflows/uefi.yml`；现在先在本机跑 `uefi-fuxi/Resources/Scripts/
-build_uefi.py`（设备名 `m2381`）。CI 只构建 UEFI FV，不跑 `fastboot`。
-
-## 首次云端运行
-
-- 2026-10-22 推 `m2381` 后，`xnu-16k` 已自动触发（run #1，macOS-14）。
-- run 页面：`https://github.com/RiverKawa271828/ios-m2381-unixnu/actions`
-
-## 推送
-
-- `origin` = `RiverKawa271828/ios-m2381-unixnu`；工作区分支是 `m2381`，
-  `main` 保留为上游镜像。push `m2381` 才会触发云构建。
-- `upstream` 是 UniXNU/UniXNU，**fetch-only**（push URL 写成 `no_push`）。
-
-## 上游 workflow（2026-10-23 rebase 后进入本仓树）
-
-上游的 `.github/workflows/{docs,macos,terminal}.yml` 随 rebase 进入本仓，
-push `m2381` 会把它们一并触发（文档站构建 / macOS 构建 / terminal），对本仓
-是无意义消耗。处理：在 GitHub Actions 页面把这三个 workflow 逐个
-**Disable workflow**（只禁用，不改文件——改文件会让以后每次 rebase 都多一处
-冲突）；本仓自己的 `xnu-16k.yml` 保持启用。
+路线 A 的构建主体（unixnu 构建树 + Mu-Silicium）都在本机/参照树里跑；CI 只
+做回归，不做首发。
