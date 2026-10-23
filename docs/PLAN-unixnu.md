@@ -8,7 +8,9 @@
 - **废弃**：复用 16K ios-sweet 内核 + iPhone X 16.7.16 root 的 B2/B1 路线。
   旧 sweet 路线实机跑不通，不再背旧内核/旧镜像的包袱。
 - **新目标**：m2381 = 上游原生 UniXNU 移植，与 fuxi/sheng 同构——UniXNU 4K
-  内核 + iPad7,1 / iPadOS 17.7.11 `21H461` 的 OS 件 + `unixnu` 构建树全流程。
+  内核 + **iPhone10,3 / iOS 16.7.16 `20H392`** 的 OS 件（用户 2026-10-23
+  拍板：手机镜像、不用 iPadOS；与 negroni 的 userland 同版本、与 nuwa 同
+  身份）+ `unixnu` 构建树全流程。
 - **方法**：母版 = `reference/unixnu-fuxi`（设备仓）+ `reference/uefi-fuxi`
   （UEFI 包），指南 = 上游 `docs/porting/`；m2381 特有的硬件实证（§4）作为
   差异清单叠加，而不是另起炉灶。

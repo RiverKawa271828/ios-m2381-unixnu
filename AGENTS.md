@@ -18,10 +18,11 @@
 ## 0. 一句话
 
 把 m2381 做成**上游原生的 UniXNU 移植**：`unixnu-m2381` 设备仓（board.toml
-驱动 unixnu 构建树，从 iPad7,1 / iPadOS 17.7.11 `21H461` 取内核与 OS 件）+
-`m2381Pkg`（Mu-Silicium UEFI）。boot_b 放 UEFI 固件；payload 载体受本机 ABL
-实证约束（gunzip ≤ ~83.5MB、忽略 boot ramdisk），大概率走 recovery_a 的
-100MiB ESP；userdata 由 IPSW 件重建为 iOS root（抹前必须用户拍板）。
+驱动 unixnu 构建树，从 **iPhone10,3 / iOS 16.7.16 `20H392`** 取内核与 OS 件；
+用户拍板用手机镜像、不用 iPadOS，与 nuwa 同身份）+ `m2381Pkg`（Mu-Silicium
+UEFI）。boot_b 放 UEFI 固件；payload 载体受本机 ABL 实证约束（gunzip
+≤ ~83.5MB、忽略 boot ramdisk），大概率走 recovery_a 的 100MiB ESP；userdata
+由 IPSW 件重建为 iOS root（数据豁免已给，见红线 2）。
 
 ## 1. 为什么这条路成立
 
@@ -55,9 +56,10 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
 
 1. **`devices/m2381/unixnu-m2381`（设备仓）**：从 `reference/unixnu-fuxi`
    派生，结构按上游 `docs/porting/device-repository.md`。
-   - `board.toml`：SoC SM8550；`[ipsw]` 先照抄 fuxi（iPad7,1 / 17.7.11 /
-     21H461；本地无 IPSW 也可远程 range 读）；`[userdata]` first/last_lba
-     **必须从 m2381 实机 GPT 读**，不许抄 fuxi；`[kernel]` defconfig 从
+   - `board.toml`：SoC SM8550；`[ipsw]` = **iPhone10,3 / 16.7.16 / 20H392 /
+     d22ap**（用户拍板不用 iPadOS；nuwa 同身份但其 url/hash 仍是 TODO——
+     我们自己填，sha256 必须对上 `ece1194f…`）；`[userdata]` first/last_lba
+     **已实测**（STATE §2），不许抄 fuxi；`[kernel]` defconfig 从
      `fuxi_defconfig` 派生再改板级差异。
 2. **`devices/m2381/uefi/m2381Pkg`（UEFI）**：从
    `reference/uefi-fuxi/Platforms/Xiaomi/fuxiPkg` 派生，按
