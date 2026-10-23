@@ -128,13 +128,16 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（P1 已完成 2026-10-23，详见 STATE §5/§7）
+## 7. 下一步（P1+P2 已完成 2026-10-23，详见 STATE §5/§7）
 
-1. **P2 m2381Pkg**：uefi-sheng 克隆 + `Platforms/Meizu/m2381Pkg` overlay
-   （骨架 = shengPkg，blob = Device-Binaries `@036ba9f7` mars 集，常量从
-   `reference/uefi-m2381-nura` 搬）→ Linux 本机出 FV（P2 门槛）。
-2. **CI 内核**（推送拍板后）：设备仓独立成库 → dispatch macos.yml
-   （steps=kernel）→ 顺路 derive 20H392 prelink 三值。
+1. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，用户已授权推送窗口）：
+   A 段用户一次性操作（gh auth login + `UNIXNU_UNIQUE_CHIP_ID` secret，
+   设备仓走 orphan 分支 `device-m2381` 免建库）→ B 段自动流程（push →
+   dispatch macos.yml `steps="kernel userdata payload"` → 本机 derive
+   20H392 prelink 三值 → 取件 → ESP payload 打包 → UUID 回填收紧预检 →
+   桌面全量校验）。
+2. **P4 上机**（P3 三件齐 + 用户拍板）：首刷顺序照 `docs/FLASHING.md`；
+   boot_b 现役 = mu-r91、recovery_a = esp-v71（nura artifacts 全套可回滚）。
 3. P3：userdata 重建件 + 两个 UUID 派生（root_match_volume_uuid /
    OWNER_DATA_VOLUME_UUID，20H392 专属）。
 4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd；userdata 重建前
