@@ -81,9 +81,26 @@
   拉取解出（sha 对上 fuxi pin `f18b4df8…`，方法链路自证）；kernelcache
   内指针被 rebase 编码导致 mac_policy_conf 锚定失败，退回函数指纹法。
 - **第 2 轮 CI（run 39984327675，defconfig=m2381_bringup_defconfig，
-  steps=kernel）已 dispatch 排队**。下会话第一步 = `gh run watch`/API 轮询
-  该 run：成功 → 取 kernel.macho artifact 走 B-5（payload ESP）；失败 →
-  读日志迭代（预期残余风险：prelink 绑定核对对 0x13f8 候选的终审）。
+  steps=kernel）**：dispatch 后在队列里卡了 24h 没被接走（GitHub 侧问题，
+  非本仓配置——第 1 轮同标签当时秒起）。2026-10-24 凌晨取消并以相同输入
+  重发 = run 39985010044（device_ref=device-m2381-bringup，
+  defconfig=m2381_bringup_defconfig，steps=kernel，ref=m2381）。
+- **2026-10-24 凌晨发现 macos-26（arm64）hosted runner 容量紧张**：
+  run 39985010044 的 job 15 分钟抢不到 runner，GitHub 判 failure，check-run
+  注释 = "The job was not acquired by Runner of type hosted even after
+  multiple attempts" + "macOS arm64 capacity constraints"（job 从未启动，
+  started_at=null，与真实构建失败可区分）。对策 = `/tmp/m2381-ci-retry.sh`
+  自动 rerun 守护（判据：job started_at=null 且 failure → rerun，上限
+  20 次；job 真跑起来后的 failure 停守守护、读日志迭代）。
+- **bring-up 闭合静态核对（2026-10-24，本地）**：第 1 轮缺的 8 个符号全部
+  来自已关掉的开关（NATIVE_RAM_BLOCK/SHENG_PMGR/VERIFIED_ROOT_PROBE/
+  NATIVE_LEGACY_DISPLAY 及其族）；开着的开关里 NATIVE_ARCH_TIMER/
+  NATIVE_PAN/DT_PANIC_REGION/TRUST_CACHE_RUNTIME/NATIVE_CS_HASH_CACHE
+  均为树内编译旗标（build-xnu-4k-baseline.sh 201-532 行，只进
+  EXTRA_MAKE_ARGS/CFLAGS，无外部 archive），需外部 archive 的开关注好在
+  board.bringup.toml 7 项清单里；没有开着的开关引用无 builder 的
+  `*_ARCHIVE`。若本轮仍链接失败，则说明该核对漏了树内路径，须读日志
+  另查。
 
 ## 风险与回退
 
