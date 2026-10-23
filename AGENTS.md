@@ -128,20 +128,24 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（按顺序）
+## 7. 下一步（P1 已完成 2026-10-23，详见 STATE §5/§7）
 
-1. 通读上游 `docs/porting/`（index / bring-up / device-repository /
-   device-tree / uefi-firmware）+ `docs/devices/fuxi.md`，校准 §2 草案。
-2. 派生 `devices/m2381/unixnu-m2381`：`board.toml` 优先（ipsw / 实机读
-   userdata LBA / kernel defconfig）。
-3. 派生 `devices/m2381/uefi/m2381Pkg`：FD/显示/按键/高段 DRAM + FV 加
-   OEM UFSDxe 一组。
-4. 桌面构建 spike：unixnu 构建树产出 kernel/userdata 件 + UEFI FV + ESP/
-   boot.img，校验哈希，不刷机。
-5. 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd；userdata 重建前
-   单独拍板。
-6. 同步常态化：跟随上游 rebase（`docs/UPSTREAM.md` §2），一次主题一句话
+1. **P2 m2381Pkg**：uefi-sheng 克隆 + `Platforms/Meizu/m2381Pkg` overlay
+   （骨架 = shengPkg，blob = Device-Binaries `@036ba9f7` mars 集，常量从
+   `reference/uefi-m2381-nura` 搬）→ Linux 本机出 FV（P2 门槛）。
+2. **CI 内核**（推送拍板后）：设备仓独立成库 → dispatch macos.yml
+   （steps=kernel）→ 顺路 derive 20H392 prelink 三值。
+3. P3：userdata 重建件 + 两个 UUID 派生（root_match_volume_uuid /
+   OWNER_DATA_VOLUME_UUID，20H392 专属）。
+4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd；userdata 重建前
+   单独拍板；刷写纪律照 `docs/FLASHING.md`。
+5. 同步常态化：跟随上游 rebase（`docs/UPSTREAM.md` §2），一次主题一句话
    记进同步记录。
+
+> **P1 关键定案**（细节见 STATE §1）：P2 基座 = shengPkg 骨架 + mars blob
+> （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗
+> 装不下 192MiB ramdisk 载荷，量化定死）；kernel 步只能 macOS（xcodebuild），
+> Linux 侧全链路已跑通；unique-chip-id = `3645ad55d47e77c1`（软件种子）。
 
 > **禁止**再把 ios-sweet 的 84 补丁树、旧 shim、16K 内核当施工面；需要旧
 > 结论时查 `docs/archive/`（含 `PLAN-unixnu-b2-era.md`、`BOOT-CHAIN-b2.md`、
