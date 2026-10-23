@@ -193,3 +193,32 @@
   下一观测点 = DARWINBOOT 大字诊断（hand-off/green bar）或内核 panic 面。
   若内核启动后在预链接 kext 校验上炸，才是真正的"覆盖面"问题（届时查
   StaticTrustCache 是否覆盖本地 prelink 产物）。
+
+## F. 执行记录（2026-10-24，第 10 轮：绿条里程碑 + 早期内核探针）
+
+- **绿条里程碑（用户照片）**：刷入第 9 轮 payload 后 "Compromised Data" 消失
+  —— DarwinBoot 全链走完（读件/校验/窗口分配/ExitBootServices），
+  **内核入口代码确实执行**（顶部绿条 = entry stub 画出）。entry words
+  `140006F5 D503201F×3` = 入口 `b start_first_cpu` + NOP 填充，符合预期；
+  `SecurityLock/Capsule Interface Locked/MU_CHANGE/DBI dump/App Log Flush`
+  是 OEM DXE 的 ExitBootServices 回调日志，正常。当前堵点推进为**内核早期
+  静默死亡**（绿条后再无绘制）。
+- **早期内核可见性 = 入口探针（nx729j 现成 kit 收编）**：
+  `reference/UniXNU-nx729j/scripts/patch-xnu-entry-probe.py` +
+  `xnu-panic-screen.c` 收编进本树 `scripts/`，唯一适配 = **洞区验收放宽**：
+  本板链接器入口填充是 NOP（`0xD503201F`）而非 fuxi 的全零；实测洞区
+  [entry+0x78, entry+0xB78) 全 NOP，`0xB78` 起是 `b .` 自旋桩表
+  （与 fuxi 的 PANIC_CAVE_END=entry+0xB68 同构），`empty_padding()` 把
+  零/NOP 都算空洞。其余全走 nx729j 的通用 derive（entry PC 读
+  LC_UNIXTHREAD；`_panic`/`_vinfo`/`_start_first_cpu` 从符号表；MMU 使能点
+  唯一指令序列锚定——本板符号齐全，地址实测）。
+- **探针内核产出**：`kernel.probe.macho`（`015e45fb…`）= 本地 prelink 内核
+  副本 + stage 1 蓝条（entry）+ stage 2 品红条（MMU on）+ panic screen
+  （0x9ED 字节 @ entry+0x138；`_panic` 与 `_panic_trap_to_debugger`
+  双漏斗重定向；全 site 校验通过，loud refusal 未触发）。
+- **待刷 payload = `387516f0…`**（96MiB）：探针内核 + trust bundle + ADT，
+  本地 DarwinBoot 前置校验复验全绿。**只刷 recovery_a**，boot_b 不动。
+- **下轮读图指南**：绿条后出现**蓝条** = 入口探针执行（必然）；再出
+  **品红条** = MMU 开启点到达；**大字文本** = panic 串（panic screen 接管）。
+  全无（绿条后死） = stage 2 之前死，下轮上 stage 4 reset-after 探针
+  二分 `_start_first_cpu` 之前的调用点。
