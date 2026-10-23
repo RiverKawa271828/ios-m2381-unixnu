@@ -27,7 +27,7 @@
 
 | 阶段 | 内容 | 门槛 |
 |---|---|---|
-| P0 | 通读 `docs/porting/` 五篇 + `docs/devices/fuxi.md`；校准布局草案 | 笔记落 `docs/porting-notes.md`（待建） |
+| P0 | 通读 `docs/porting/` 五篇 + `docs/devices/fuxi.md`；校准布局草案 | 笔记落 `docs/porting-notes.md`（已建：参照设备清单 + nx729j 方法论） |
 | P1 | 设备仓骨架：`board.toml`（ipsw / 实机 userdata LBA / defconfig） | unixnu 构建树能吃进 m2381 并跑通 kernel 步骤 |
 | P2 | `m2381Pkg`：FD、SimpleFb、按键、高段 DRAM、UFSDxe 集成 | Linux 本机出 FV；Mu 在 FV 里枚举到 UFS 卷 |
 | P3 | 桌面镜像：boot 固件 + payload 件 + userdata 重建件；哈希对拍 | 不刷机完成全部校验 |
