@@ -108,15 +108,22 @@ device_class = "d22ap"
 m2381 动作：payload 加 `serial=3 boot-progress=1 panic_screen` 一组；ADT
 `/chosen` 预留 panic region；硬件侧确认调试 UART 引出。
 
-## 6. 待办（并入 PLAN P0/P1）
+## 6. 待办（并入 PLAN P0/P1/P2）
 
 - [x] 通读上游 `docs/porting/` 五篇（2026-10-23）
 - [x] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，产出 `docs/m2381-bringup.md`
   施工骨架（2026-10-23）
-- [ ] 读 pong 的 userdata 镜像构建器与 negroni README 的 ESP 流程
-- [ ] 收集 m2381 的 stock fastboot 包 / GPT 备份（`[FW]` 类值来源）
-- [ ] 实机测量：`fastboot getvar partition-size:userdata` 等（刷机窗口做，
-  读回纪律照 `docs/FLASHING.md`）
-- [ ] 下载 20H392 后 sha 对拍 `ece1194f…`，放 `research/ipsw/`
+- [x] 下载 20H392 并 sha 对拍 `ece1194f…`，放 `research/ipsw/`（2026-10-23）
+- [x] 设备仓骨架 + make-m2381-adt.py + check-m2381.py（P1，2026-10-23，
+  见 `docs/STATE.md` §5）
+- [x] userdata 几何闭环：sysfs + 实机 GPT 表项 + GPT 头 last_usable 三源
+  吻合（2026-10-23；stock fastboot 包未找到，GPT 直读是更强证据）
+- [x] 20H392 kernelcache Linux 解码 + sha 回填 board.toml pin（`2ec297ba…`）
+- [ ] 读 pong 的 userdata 镜像构建器与 negroni README 的 ESP 流程（P3 前）
+- [ ] P1 收尾项：20H392 prelink 三值（slide/early_security_init/text_fixups）
+  在 CI kernel 步 derive；root_match_volume_uuid / OWNER_DATA_VOLUME_UUID
+  在 P3 userdata 构建时 derive
+- [ ] 实机测量：`fastboot getvar partition-size:userdata` / `current-slot`
+  形式复核（刷机窗口做，读回纪律照 `docs/FLASHING.md`）
 - [ ] P1 验证上游管线对 20H392 kernelcache 的 donor/bindings 支持
 - [ ] 确认 m2381 调试 UART 引出与 USB CDC 可用性
