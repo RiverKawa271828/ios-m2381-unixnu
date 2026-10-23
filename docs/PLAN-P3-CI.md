@@ -157,3 +157,39 @@
   kernelcache 预链接 kext？可能需要 Cryptex1,SystemTrustCache 或 kernelcache
   专属 trust cache）、ADT/种子校验、unixnu.toml 与 payload 布局比对。
   回滚件 = mu-r69 + esp-v71（artifacts/images/），nura userdata 未动。
+
+## E. 执行记录（2026-10-24，第 9 轮："Compromised Data" 定案 = trust cache 格式）
+
+- **本地复现锁定死因**：把 DarwinBoot 的 `Boot()` 五处 `EFI_COMPROMISED_DATA`
+  分支逐行复刻成 Python（/tmp/esp-check/check_payload.py），对首刷 ESP
+  解包件跑：**ADT 全过**（结构/`chosen`→`memory-map`/`darwinboot-memory-size`
+  0x130000000 全合法，parsed_end == TreeSize），死在 `ValidTrustCaches`
+  （DarwinBoot.c:551）——容器头读出 count=0x0201xxxx 垃圾值。
+- **根因**：第 8 轮把 IPSW 的 `087-86698-044.dmg.trustcache` **IM4P 原件**
+  （DER 包装 `IM4P`/`trst`）直接喂给 `--trust-cache`，而 `unixnu build
+  payload` 对该文件是**原样 copyfile**（payload.py:143），DarwinBoot
+  `ValidTrustCaches` 只认**裸多模块容器**（首 u32 = 模块数 + 偏移表 +
+  v2 模块体）。不是覆盖面问题，是格式差一层包装。
+- **现成解法（上游）**：fuxi 链路 = `scripts/build-original-system-trust.py`
+  （IM4P 剥壳 → 裸 v2 模块 → static+system 打包 → 按 loader 规则自检），
+  `make-owner-trust-bundle.py` 注释确认内核侧二分消费同一容器格式。
+- **修复（设备仓）**：
+  - 新增 `scripts/make-m2381-trust-bundle.py`：DER 剥壳两个 20H392 件
+    （Cryptex 件内型是 `trcs`），输入 sha 对板级 pin，模块校验（v2/尺寸
+    算术/升序/类别字节），bundle = StaticTrustCache(2760 条) +
+    Cryptex1,SystemTrustCache(61 条)，loader 规则自检 →
+    `out/m2381/trust/original-trust.bundle`（`eb1475f6…`）。
+  - board.toml + board.bringup.toml：`trust_cache_sha256` 白名单加第三条
+    （bundle sha）。
+  - payload 重建：`0dd57373` → 复验发现**非确定性**，唯一随机源 =
+    make-m2381-adt.py `/chosen/random-seed` 的 `os.urandom(64)`（上游有意
+    设计）。**决定保留 urandom**（上游对齐 + 熵卫生），对拍纪律以磁盘上
+    payload.img 实体为准；**待刷件 = `f33a43c6…`**（96MiB）。
+- **本地复验全绿**：新 payload 解包后 ADT/容器/ValidTrustCaches 全过，
+  DarwinBoot ExitBootServices 之前所有拒绝分支排除；check-m2381
+  4 ok / 0 fail（root_match_volume_uuid WARN = 已知 P3 占位）。
+- **下一步 = 只刷 recovery_a**（boot_b 不动）：`fastboot flash recovery_a
+  payload.img`，刷后读回对拍 `f33a43c6…`；预期 "Compromised Data" 消失，
+  下一观测点 = DARWINBOOT 大字诊断（hand-off/green bar）或内核 panic 面。
+  若内核启动后在预链接 kext 校验上炸，才是真正的"覆盖面"问题（届时查
+  StaticTrustCache 是否覆盖本地 prelink 产物）。
