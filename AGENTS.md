@@ -7,9 +7,10 @@
 > 设备：魅族 20 Classic = **m2381**，SM8550（kalama MTP 参考布局），16GB LPDDR5X，
 > 1080×2400 BOE AMOLED（cmd-mode DSC），UFS 4.0 512GB。
 >
-> **上游（2026-10-22 重定向）**：基座 = `UniXNU/UniXNU`（remote `upstream`，
-> pin `e95b37d`）；设备模板 = `hanzi123-bilp/uefi-fuxi` + `unixnu-fuxi`。
-> 详见 `docs/UPSTREAM.md`；`reference/` 只读，不 push upstream。
+> **上游（2026-10-23 起跟随）**：基座 = `UniXNU/UniXNU`（remote `upstream`，
+> pin `b7b6a6a`；`m2381` 分支 = 上游 main + 工作区提交，同步 =
+> `git rebase upstream/main`）；设备模板 = `hanzi123-bilp/uefi-fuxi` +
+> `unixnu-fuxi`。详见 `docs/UPSTREAM.md`；`reference/` 只读，不 push upstream。
 
 ## 0. 一句话
 
