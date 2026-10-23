@@ -116,3 +116,44 @@
 
 - 不刷机（P4，等 P3 三件齐 + 哈希对拍 + 用户拍板）。
 - 不动 nura 现役分区（boot_b/recovery_a 首刷前再走 FLASHING 纪律）。
+
+## D. 执行记录（2026-10-24 凌晨，第 7/8 轮 + 首刷上机）
+
+- **第 7 轮（run 40034860212，Intel）kernel 步全绿**：连破四墙后 XNU 链接 +
+  prelink 首次通过，产出 kernel.macho `056820a3…`。四墙 = ①设备仓缺
+  `build-arm-driver.py`（fuxi/sheng/nx729j 设备仓都自带，派生时漏抄）→收编
+  （ea13f79）②probe 补丁 site-A 缺编译守卫→同款 `#if XNU_NATIVE_LEGACY_DISPLAY`
+  守卫（ea13f79）③20H392 kext 指针绑 xnu-8796 内核导出
+  `_IORPCMessageFromMach`（xnu-10063 改名 static Reply）→补丁按 8796 原体
+  恢复 extern "C" 导出（f82e851）④instruction_inventory 把 20H392 Libm 的
+  3 个内联数据 run（0x5b8c1b0-0x5b8c510）当指令→`IOS16_LIBM_LITERAL_POOLS`
+  白名单（sha256 锚定）。④的修法走**设备仓自带 kit 目录**（feeds 规则 5
+  优先于基座子模块；kits/NativePrelink 是上游子模块无推送权；
+  make-device-branch.sh 加拷 kits；6763ec5）。白名单修法本地全验证：
+  23 个 kit 单测过 + instruction_inventory 20H392 全过（236906 编码）。
+- **第 8 轮（run 40035863677）+ upload_kernel 输入**：workflow 只传文本日志
+  （prelinked kernel 内嵌 Apple kext，公开仓 artifact=分发，红线 7）。新增
+  `upload_kernel`（默认 false）上传**未链接 noctf 内核**（纯 xnu 源码构建，
+  Apple OSS 可再分发；39b676c）。取回 6.3MB artifact。
+- **本地 prelink（Linux）**：emit_prelink.py 纯 Python，用本地
+  kernelcache.decompressed + CI noctf → out/m2381/kernel/kernel.macho
+  57,147,392B（sha 1c7cf512…；与 r7 不同因内核构建不可复现，均有效）。
+  **P3 的"取件"改为 noctf + 本地 prelink，Apple 件不出本机。**
+- **payload（B-5）**：`unixnu build payload -D out/m2381/device-bringup
+  --unique-chip-id 3645ad55d47e77c1 --trust-cache out/ipsw/20H392/
+  087-86698-044.dmg.trustcache`（sha 63e01c03 命中板级白名单）→
+  M2381ESP 96MiB `5b919cd0…`：kernel.macho + kernel.macho.trustcache +
+  kernel.macho.adt（root_match_volume_uuid 仍 TODO-P3 占位，owner 链关）。
+- **boot.img 勘误**：磁盘上 527d0463 是上会话试包；当前树确定性重建 =
+  `40f2a199`（与 P2 boot.json 逐字节一致，fd 201a2c87），已换上。
+- **首刷（用户授权，boot_b/recovery_a 读回基线✓、免备份）**：单 fastboot
+  会话 flash recovery_a(98304KB)+boot_b(1624KB) 双 OKAY，`fastboot reboot`。
+- **首机观测（里程碑）**：**UniXNU UEFI 菜单上屏**（照片存档）：SimpleFbDxe
+  显示 ✓、ESP 读取 ✓（config \EFI\UniXNU\unixnu.toml 已加载）、菜单/按键 ✓。
+  entry 1 "m2381 first boot (xnu)" 返回 **"Compromised Data"**；drivers
+  0 loaded/0 failed、kits 0、acpi 0。
+- **下会话主攻 = "Compromised Data"**：DarwinBoot 对 payload 的校验返回值。
+  候选：trust cache 形态/覆盖面（OS dmg StaticTrustCache 是否覆盖
+  kernelcache 预链接 kext？可能需要 Cryptex1,SystemTrustCache 或 kernelcache
+  专属 trust cache）、ADT/种子校验、unixnu.toml 与 payload 布局比对。
+  回滚件 = mu-r69 + esp-v71（artifacts/images/），nura userdata 未动。
