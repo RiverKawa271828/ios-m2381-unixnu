@@ -71,10 +71,11 @@ git push --force-with-lease origin m2381
   不进本仓，`devices/m2381/m2381Pkg` 由那棵树构建。
 - **boot manager / 内核侧**：上游树就在本仓 `m2381` 里（`drivers/`、
   `patches/xnu`、`kits/`…），跟随上游 = rebase；要单拿某个主题也可以
-  `git cherry-pick`。B2 只用 `UniXNU.efi` + `DarwinBoot`，不跑
-  `unixnu kernel/userdata`。
-- **设备值**：`reference/unixnu-fuxi` 只借 `board.toml`/`scripts/` 结构；
-  iPad7,1/21H461、192MiB payload、sheng-pmgr、Data seed 都不要带进 B2。
+  `git cherry-pick`。路线 = 原生移植：`unixnu kernel/userdata` 全流程都要跑
+  （board.toml 驱动），不是只取 EFI 件。
+- **设备值**：`reference/unixnu-fuxi` 是 fuxi（小米13，同 SM8550）已验证形态
+  的模板，m2381 设备仓以它为母版；但 `board.toml` 的 userdata LBA、payload
+  载体、板级差异必须按 m2381 实机改，不要盲抄。
 
 ## 3. 已知上游粗糙点（2026-10-22）
 
@@ -89,8 +90,9 @@ git push --force-with-lease origin m2381
   （Novatek NT36532E），不能当 fuxi 已验证的证据；触摸/PMGR 仍要自己接。
 - `unixnu-fuxi` 的 `[payload]` 192MiB、`[ipsw]` iPad7,1、`sheng-*` 内核参数
   是**全量 4K 路线**的模板，B2 不采用。
-- fuxi 的 UEFI FV 没有 UFS DXE（只有 MassStorage app）；B2 的 ESP 路线必须
-  另加 OEM `UFSDxe` + `DiskIo`/`Partition`/`Fat`（见 `BOOT-CHAIN.md` §7.1.1）。
+- fuxi 的 UEFI FV 没有 UFS DXE（只有 MassStorage app）；m2381 走 ESP 载荷
+  同样必须在 FV 里加 OEM `UFSDxe` + `DiskIo`/`Partition`/`Fat`（B2 时期的
+  论证见 `docs/archive/BOOT-CHAIN-b2.md` §7.1.1）。
 
 ## 4. 本工作区的远端
 
@@ -111,6 +113,6 @@ origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git
 
 ## 5. 和旧 sweet 上游的关系
 
-旧 ios-sweet / topaz 上游已退役，只作 `docs/archive/` 与 `legacy/sweet/` 的史料；
-不再 fetch、不再 cherry-pick。B2 的内核是 `legacy/sweet` 里的 16K 产物的**预编译
-Mach-O**，不需要回到旧上游重建。
+旧 ios-sweet / topaz 上游已退役，只作 `docs/archive/` 的史料；不再 fetch、
+不再 cherry-pick。16K 内核与旧 root 随 B2 一并废弃（2026-10-23），路线 A
+的内核/OS 件全部来自上游 unixnu 构建流程。

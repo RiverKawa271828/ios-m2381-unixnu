@@ -58,9 +58,6 @@ artifacts/*
 !artifacts/README.md
 devices/*/out/
 devices/*/esp/out/
-legacy/sweet/images/
-legacy/sweet/shim/out/
-legacy/sweet/xnu/out*/
 
 # Python
 __pycache__/
