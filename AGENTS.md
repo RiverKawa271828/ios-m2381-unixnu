@@ -73,8 +73,9 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
 
 1. 只碰 **boot_b + recovery_a + userdata**；xbl/abl/tz/modem/dtbo/super/
    persist 永不碰。
-2. **抹/重建 userdata = 抹掉 Flyme 用户数据 + 现有 r34 iOS root**，且本地
-   没有完整镜像；动手前必须用户拍板，能拉回先拉回。
+2. **userdata 数据豁免（用户 2026-10-23）**：无须保留设备数据，随时可刷；
+   现 userdata = nura root。每次实际写入仍按 `docs/FLASHING.md`（读回、
+   对拍、可回退优先）。
 3. **fastboot 单通道**：本仓与 nura 侧任何刷写互斥；刷前 `getvar
    current-slot` 必须 = b。
 4. **dd 读回才算证据**；刷写时长不算。每轮刷完读回 sha 对拍。
