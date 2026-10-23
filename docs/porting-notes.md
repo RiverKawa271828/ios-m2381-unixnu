@@ -36,8 +36,10 @@
    `rawprogram0.xml` start_sector 互证）；② `fastboot getvar
    partition-size:userdata`；③ 驱动读实机 GPT（native-ufs-probe）。三源一致
    才填 `[DEVICE]`。**注意 UFS 可能是 4KiB 逻辑块**（nx729j 实测 lba_bytes=4096）。
-3. **IPSW 段照抄 sheng 系**：iPad7,1 / 17.7.11 / 21H461 / j120ap / chip
-   0x8011 / board_id 12——m2381 与它们同目标镜像，这段不需要改。
+3. ~~IPSW 段照抄 sheng 系~~ **已改**：用户拍板用手机镜像（不用 iPadOS）——
+   m2381 的 `[ipsw]` = iPhone10,3 / 16.7.16 / 20H392 / d22ap，见 §4。
+   sheng 系 fetch 组件清单（KernelCache/DeviceTree/StaticTrustCache/
+   Cryptex…）与 hash 对拍方式仍照抄结构。
 4. **安全设计沿用**：`[MEASURE]` 类值未填时构建 preflight 直接失败，而不是写
    错盘。
 5. **playbook 套用**：nx729j 的 `PORTING-NX729J.md` / `GUIDE-从零开始.md` /
@@ -69,5 +71,8 @@ lba_bytes = 4096           # sda logical_block_size = 4096（与 nx729j 同款�
 - [ ] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，抽成 m2381 版骨架
 - [ ] 读 pong 的 userdata 镜像构建器与 negroni README 的 ESP 流程
 - [ ] 收集 m2381 的 stock fastboot 包 / GPT 备份（`[FW]` 类值来源）
-- [ ] 实机测量：`fastboot getvar partition-size:userdata` 等（读回纪律照
-  `docs/FLASHING.md`）
+- [ ] 实机测量：`fastboot getvar partition-size:userdata` 等（刷机窗口做，
+  读回纪律照 `docs/FLASHING.md`）
+- [ ] 下载 20H392 后 sha 对拍 `ece1194f…`，放 `research/ipsw/`
+- [ ] P1 验证上游管线对 20H392 kernelcache 的 donor/bindings 支持
+- [ ] 确认 m2381 调试 UART 引出与 USB CDC 可用性
