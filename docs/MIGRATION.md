@@ -1,5 +1,10 @@
 # 迁移记录（2026-10-22）
 
+> **2026-10-23 后记**：路线重置为原生 UniXNU 移植（B2 废弃）后，本文件所述
+> "搬到 `legacy/sweet/`" 的内容已从 git 移除（只在 git 历史）；r34 回滚 shim
+> 移到 `artifacts/images/shim-boot-m2381.img`。16K 内核/ADT/旧 IPSW 成为
+> 死库存（见 `docs/STATE.md` §3）。
+
 旧工作区 `/home/ri/work/ios-meizu-m2381`（ios-sweet 路线）已废弃。本仓
 `/home/ri/work/ios-m2381-unixnu` 是新工作区。下面是搬了什么、为什么、没搬什么。
 
