@@ -3,6 +3,23 @@
 > 只碰 **boot_b + recovery_a + userdata**。xbl/abl/tz/modem/dtbo/super/persist 永不碰。
 > 任何刷写前先读回、先对拍；刷写时长不算证据，dd/读回 sha 才算。
 
+## 0. 连接方法（2026-10-23 实测）
+
+设备跑 nura OS 时走 **USB 网络（NCM）**，不是 adb：
+
+```bash
+ip -o -4 addr show | grep 172.16.42          # 宿主侧接口（实测 enp104s0f3u1，172.16.42.2）
+N=/home/ri/work/nura-meizu-m2381/tools
+python3 $N/devsh.py 'uname -a; id'           # shell（设备 172.16.42.1:23，root）
+python3 $N/devpull.py <设备路径> <本地路径>    # 拉文件
+python3 $N/devpush.py <本地路径> <设备路径>    # 推文件
+```
+
+- `devsh.py` 用 SO_BINDTODEVICE 绑接口，绕开宿主 TUN 策略路由。
+- **重启进 bootloader 会断开 USB 网会话**；fastboot 操作前先把要读/写的
+  东西整理好，刷完 `fastboot reboot` 回 nura 再继续。
+- 设备侧是 root shell，读分区直接 `sha256sum /dev/disk/by-partlabel/<名>`。
+
 ## 1. 前置检查
 
 ```bash
@@ -75,23 +92,25 @@ boot_b 不动；Mu 会重新扫描 ESP。
 
 ## 5. 红线
 
-1. userdata 抹除/覆盖前必须用户拍板；当前 r34 root 没有本地完整镜像。
-2. 不在 boot_b / recovery_a 之外动手；不碰 super、dtbo、persist、modem。
+1. userdata 数据保全豁免（用户 2026-10-23）：现 userdata = nura root，无须
+   保留；但每次实际写入仍按本文件流程（读回、对拍、可回退优先）。
+2. 不在 boot_b / recovery_a / userdata 之外动手；不碰 super、dtbo、persist、modem。
 3. 每次刷写前 `getvar current-slot` = b；刷后读回 sha。
 4. 不连续盲试；任一门上机失败，先回滚再分析。
 5. iOS IPSW / Apple 件只本地使用。
 
-## 6. 当前设备状态（2026-10-22，未动）
+## 6. 当前设备状态（2026-10-23 devsh 实测；nura OS 在跑）
 
-| 分区 | 记录值 | 备注 |
+| 分区 | 设备 | sha256（整分区读回） |
 |---|---|---|
-| boot_b | r34 shim，sha `339b8480…` | 上机前读回确认 |
-| recovery_a | 未读回 | nura ESP v71 只是模板 |
-| userdata | r34 iPhone X 16.7.16 root，sha `7aaab96f…` | 12GB；无本地完整镜像 |
+| boot_a | sde13 | `5f9f1503…8b11e30`（nura） |
+| **boot_b** | sde43 | `af574775…26a300f`（**现役启动槽**，nura） |
+| **recovery_a** | sde27 | `0a102220…3a38653f`（现役 nura ESP） |
+| recovery_b | sde56 | `20bcd203…e316f43`（nura） |
+| userdata | sda22 | nura root（ext4，`root=/dev/sda22`），≈464GiB |
 
-回滚件（都在 `artifacts/images/`）：
-
-- `artifacts/images/mu-r69-97cdea20.img`（sha `97cdea20…`）
-- `artifacts/images/esp-recovery-v71.img.gz`（sha `6fe7811a…`）
-- `artifacts/images/shim-boot-m2381.img`（sha `339b8480…`；2026-10-23 从
-  已删除的 `legacy/sweet/images/` 移入）
+- 旧记录"boot_b = r34 shim `339b8480…`"**作废**：设备早已被 nura 侧整槽重刷。
+- 回滚件（`artifacts/images/`）都是**历史版本**，不是现役镜像；完全恢复
+  nura 需要 nura 侧重刷（含 userdata）。
+- 几何与 board.toml 实测值见 `docs/STATE.md` §2；userdata 4K LBA：
+  first=2,330,472 / last=123,871,226。

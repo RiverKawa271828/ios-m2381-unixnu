@@ -36,8 +36,7 @@ pin `b7b6a6a`）；本仓 `m2381` 分支 = 上游 main + 工作区提交，跟�
 
 本地资产（不入 git）：
 
-- `artifacts/images/`：回滚件三件（nura Mu / nura ESP 模板 / r34 shim）
+- `artifacts/images/`：回滚件三件（均非设备现役镜像，见 docs/FLASHING.md §6）
 - `artifacts/vendor/`：OEM UEFI DXE blobs（m2381Pkg FV 要用）
-- `artifacts/{kernel,adt}/`：B2 遗留的 16K 内核与旧 ADT（死库存，可删）
-- `reference/`：UniXNU、uefi-fuxi、unixnu-fuxi 等只读克隆
-- `research/`：旧 iPhone X IPSW 与 16K 重建套件（已无用，可删）
+- `reference/`：上游克隆 + 5 个参照设备仓（docs/porting-notes.md）
+- `research/`：ipsw CLI、ADT 样本、iPadOS 17.7.11 IPSW（P1 构建输入）

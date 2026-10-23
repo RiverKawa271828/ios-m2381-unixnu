@@ -31,19 +31,11 @@
 - nura 的 `UfsDeviceInitDxe` 源码在 `../docs/archive/nura-uefi/`，只在 OEM
   UFSDxe 的 fDeviceInit 失败时参考。
 
-## kernel / adt — 死库存（B2 遗留，路线 A 不用；可删）
+## kernel / adt — 已删除（2026-10-23）
 
-| 文件 | 大小 | sha256 |
-|---|---|---|
-| `kernel/kernel.development.m2381` | 17,208,544 B | `012f596fa93fd74b251198a5622df92b2d7558e6250df1459e4a4ebdc055dacb` |
-| `kernel/xnu-kernel.zip` | 59,849,381 B | `a71a44f29b5628e0d08dd05d8e632fdcf7499b319b83457481693c7b387b67dc` |
-| `adt/m2381-sweet-13g.adt` | 12,624 B | `c85b01f025b6b16654c5d75bd1f81f32890606c51b527d8f4b59f7be125f6fe0` |
-| `adt/m2381-old.adt` | 12,620 B | `7c4a6e7c2a512c118a96fcd07f5a5ee31a62e15e3b94f8657b470f3bdd4960a4` |
-
-- 16K ios-sweet 内核与旧 ADT 只作对照/史料；路线 A 的内核/ADT 走上游
-  unixnu 构建流程。
+B2 死库存（16K 内核 Mach-O/zip、旧 ADT）已按用户指令删除；sha 记录见 git
+历史的本文件旧版。路线 A 的内核/ADT 走上游 unixnu 构建流程。
 
 ## 注意
 
-- 没有 userdata 的完整本地镜像；r34 root 只在设备上。
 - 读回/刷写前的备份放 `../backups/`（gitignore）。
