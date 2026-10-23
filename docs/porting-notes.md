@@ -65,7 +65,50 @@ lba_bytes = 4096           # sda logical_block_size = 4096（与 nx729j 同款�
   （刷机窗口做）；m2381 stock fastboot 包（`gpt_main0.bin`/`rawprogram0.xml`）
   作 `[FW]` 侧佐证。
 
-## 4. 待办（并入 PLAN P0/P1）
+## 4. IPSW 选型（2026-10-23 用户拍板：手机镜像，不用 iPadOS）
+
+```toml
+[ipsw]
+url = "https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
+product = "iPhone10,3"
+version = "16.7.16"
+build = "20H392"
+device_class = "d22ap"
+# chip_id/board_id：从 20H392 的 BuildManifest 读（TODO）
+```
+
+- sha256 = `ece1194f7e233e9109c5790a8d23a4564a10a254e15ec5b09978a343265568fb`
+  （6,171,035,648 B，ipsw.me 口径，2026-10-23 查仍在签名）——**与旧 sweet
+  路线用过的 IPSW 是同一个文件**，下载后必须对拍。
+- **版本上限**：iPhone X（A11）没有 iOS 17+ 镜像，16.7.x 是最后一条线；
+  iPhone10,3 当前**唯一在签名的版本就是 16.7.16/20H392**（ipsw.me 只列这一
+  个）——最新即唯一，即天花板。
+- **风险修正（二查）**：上游 `docs/guide/requirements.md` 把 iPhone X
+  iOS 16.7.16 列为**官方第二目标**（与 sheng 默认 iPadOS 17.7.11 并列，
+  URL 与上表一字不差）——20H392 的 kernelcache 预链接是上游主线支持的
+  路径，早先"生态没人做完"的担忧降级。剩余未知只是"iPhone 镜像 + SM8550"
+  的实机运行先例：negroni 已证 16.7.16 userland（但走 sweet shim），
+  pong 已证原生管线吃 16.x 内核代（20G81，iPad donor）。
+- 用户自载 IPSW，放 `research/ipsw/`；构建时 `[ipsw] url` 默认、
+  `--ipsw`/`UNIXNU_IPSW` 可覆盖（requirements.md §Target IPSW）。
+
+## 5. 取证与日志方法（替代旧"nura-min 读 userdata 尾部日志环"）
+
+上游 `docs/guide/debugging.md`（随 rebase 在树里）给了分层取证栈，旧尾环
+方法退役：
+
+| 层 | 手段 | 覆盖阶段 |
+|---|---|---|
+| **串口（首选）** | UEFI/kernel 同走 UART：`UNIXNU:` / `DARWINBOOT:` 行；payload 参数 `serial=3` + `-v debug=0x14e`；主机 `tio -b 115200` | 全程；需硬件 UART（nura cmdline 已用 ttyMSM0@115200，板上有串口） |
+| **屏幕取证** | `boot-progress=1/2` 诊断页（48×120：阶段历史/存储计数/寄存器/last PC）、`panic_screen=true`、三色条（绿=进内核，蓝/洋红=MMU 前）、底部脉冲条 | 无串口时拍照即证据，全程可用 |
+| **DT panic region** | `CONFIG_XNU_DT_PANIC_REGION` + `/chosen embedded-panic-log-size`：panic 文本写 RAM 区，**重启回 nura 后 devsh 直接 dump**，比读 userdata 尾环快几个量级 | kernel panic 后 |
+| USB debug terminal | `scripts/debug_terminal.py`（giulia protocol 2：CDC 日志 + 屏幕回传 + PTY shell） | 需板级实现该协议；后期增强，第一天不依赖 |
+| userland 取证 | user fault probe（EL0 异常寄存器+12 帧栈）、`boot-ui-focus*` UI 栈采样 | launchd 之后 |
+
+m2381 动作：payload 加 `serial=3 boot-progress=1 panic_screen` 一组；ADT
+`/chosen` 预留 panic region；硬件侧确认调试 UART 引出。
+
+## 6. 待办（并入 PLAN P0/P1）
 
 - [ ] 通读上游 `docs/porting/` 五篇
 - [ ] 通读 nx729j 的 PORTING / GUIDE / CHECKLIST，抽成 m2381 版骨架
