@@ -65,15 +65,40 @@
 - `fastboot getvar` 侧的槽位/分区复核未做（需要重启进 bootloader）。
 - 上游 3 个 workflow（docs/macos/terminal）是否已在 GitHub UI 禁用未确认。
 
-## 5. 下一步（P0 已完成 → P1）
+## 5. 下个会话工作安排（P1 开工，2026-10-23 定）
 
-P0 产出 = `docs/m2381-bringup.md`（施工骨架）。P1 开工顺序：
+P0 产出 = `docs/m2381-bringup.md`（施工骨架）。nura 侧**不需要备份**：
+全套镜像在 `/home/ri/work/nura-meizu-m2381/artifacts/`（mu-r62…r91、
+esp-recovery v46+），启动链逆向全集在其 `docs/BOOT-CHAIN-RE.md`。
 
-1. **备份 nura**：devpull boot_b/recovery_a 整分区 → `backups/`（首刷前置）。
-2. 起 `devices/m2381/unixnu-m2381` 骨架（fork fuxi + delta 文件）。
-3. `make-m2381-adt.py` 初版；`unique-chip-id` 读取路径；stock fastboot 包。
-4. Linux 实测 `./unixnu build kernel` 跑通（P1 门槛）。
-5. `m2381Pkg` 派生 + UFS 源码移植（P2）。
+**A. 消化 nura 资产（半天）**
+1. 通读 `nura/docs/BOOT-CHAIN-RE.md`：§3.4 "m2381Pkg 终形态（8 项语义
+   增量）"、§5 ABL 约束（gunzip 窗口/校验项/FD>15MB 死因）、§6.1 魅族
+   fastboot OEM 命令表、§6.3 ramoops `0xa5100000`、§9 资料地图；把
+   `m2381-bringup.md` §2/§6 的 ABL 约束逐条对回源文档复核。
+2. 对拍现役镜像：nura artifacts 的 mu-rN / esp-vN 算 sha，与实测
+   boot_b `af574775…` / recovery_a `0a102220…` 对上版本号；对不上就
+   devpull 补一份（便宜保险，几分钟）。
+3. **P2 基座评估**：现役 boot_b 就是 nura 的 Mu 链（每天在跑）——定位
+   其 m2381Pkg 源码树（§3.4 的载体，看 nura AGENTS/资料地图），优先
+   "nura 已验证包 + UniXNUDxe/DarwinBoot + sheng UFS" 而非从 fuxiPkg
+   重派生。
+4. ramoops `0xa5100000` 评估为 DT panic region 候选（取证，见
+   porting-notes §5）。
+
+**B. 设备仓骨架（半天）**
+5. `devices/m2381/unixnu-m2381`：fork `reference/unixnu-fuxi` → 覆盖
+   delta（board.toml 值源表 = `m2381-bringup.md` §2，实测值已备好）。
+6. `make-m2381-adt.py` 初版（从 nx729j 改：d22ap 身份、1080×2400、
+   DRAM 16GB、chip_id 从 20H392 BuildManifest 读）。
+7. `unique-chip-id` 读取路径（nura root 下探索）。
+
+**C. 构建打通（P1 门槛）**
+8. Linux 上 `./unixnu defconfig + fetch + build kernel`（`--ipsw` 指本地
+   20H392；DarwinBoot 坏 pin 处理照 `docs/UPSTREAM.md` §3）。
+
+并行动作：stock fastboot 包收集（`/home/ri/work/meizu20/` 一带找
+gpt_main0/rawprogram，userdata 几何 `[FW]` 佐证）。
 
 ## 6. 开放问题
 
