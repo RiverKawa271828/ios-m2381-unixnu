@@ -1,0 +1,57 @@
+--- a/iokit/Kernel/IOUserServer.cpp
++++ b/iokit/Kernel/IOUserServer.cpp
+@@ -3627,6 +3627,54 @@
+ 	return (IORPCMessage *)(uintptr_t) desc;
+ }
+ 
++// The iOS 16 restore images prelink kexts whose pointer tables bind directly
++// to the kernel export _IORPCMessageFromMach (xnu-8796). xnu-10063 split the
++// function into the static IORPCMessageFromMachReply above and dropped the
++// kernel-side declaration, so a source kernel built from this tree cannot
++// satisfy those relocations. Restore the xnu-8796 exported definition verbatim
++// (extern "C" so the symbol lands unmangled in the kernel symbol table where
++// kits/NativePrelink resolves the original bindings by name).
++extern "C" {
++IORPCMessage *
++IORPCMessageFromMach(IORPCMessageMach * msg, bool reply)
++{
++	mach_msg_size_t              idx, count;
++	mach_msg_port_descriptor_t * desc;
++	mach_msg_port_descriptor_t * maxDesc;
++	size_t                       size, msgsize;
++	bool                         upgrade;
++
++	msgsize = msg->msgh.msgh_size;
++	count   = msg->msgh_body.msgh_descriptor_count;
++	desc    = &msg->objects[0];
++	maxDesc = (typeof(maxDesc))(((uintptr_t) msg) + msgsize);
++	upgrade = (msg->msgh.msgh_id != (reply ? kIORPCVersionCurrentReply : kIORPCVersionCurrent));
++
++	if (upgrade) {
++		OSReportWithBacktrace("obsolete message");
++		return NULL;
++	}
++
++	for (idx = 0; idx < count; idx++) {
++		if (desc >= maxDesc) {
++			return NULL;
++		}
++		switch (desc->type) {
++		case MACH_MSG_PORT_DESCRIPTOR:
++			size = sizeof(mach_msg_port_descriptor_t);
++			break;
++		case MACH_MSG_OOL_DESCRIPTOR:
++			size = sizeof(mach_msg_ool_descriptor_t);
++			break;
++		default:
++			return NULL;
++		}
++		desc = (typeof(desc))(((uintptr_t) desc) + size);
++	}
++	return (IORPCMessage *)(uintptr_t) desc;
++}
++} /* extern "C" */
++
+ ipc_port_t
+ IOUserServer::copySendRightForObject(OSObject * object, ipc_kobject_type_t type)
+ {
