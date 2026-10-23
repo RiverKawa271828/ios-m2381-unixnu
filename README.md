@@ -3,9 +3,10 @@
 魅族 20 Classic（m2381 / SM8550）的 iOS 启动工作区，改用 **UniXNU / DarwinBoot**
 启动链，保留现有 iPhone X iOS 16.7.16 root 与 m2381 16K ios-sweet 内核。
 
-上游 = [UniXNU/UniXNU](https://github.com/UniXNU/UniXNU)（remote `upstream`，pin
-`e95b37d`）；设备模板 = `hanzi123-bilp/{uefi-fuxi,unixnu-fuxi}`。本仓是 m2381
-下游移植，不向 upstream push；详见 [docs/UPSTREAM.md](docs/UPSTREAM.md)。
+上游 = [UniXNU/UniXNU](https://github.com/UniXNU/UniXNU)（remote `upstream`，
+pin `b7b6a6a`）；本仓 `m2381` 分支 = 上游 main + 工作区提交，跟随上游 =
+`git rebase upstream/main`。设备模板 = `hanzi123-bilp/{uefi-fuxi,unixnu-fuxi}`。
+不向 upstream push；详见 [docs/UPSTREAM.md](docs/UPSTREAM.md)。
 
 - 当前方案：**B2** — boot_b 只放 Mu-Silicium UEFI 固件；recovery_a 做成 100MiB
   FAT32 ESP，放 UniXNU.efi、`unixnu.toml`、`kernel.macho`、ADT；userdata 不动。

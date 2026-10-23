@@ -10,6 +10,11 @@
 - A（UniXNU 4K 内核 + iPadOS 17.7.11 + 新 userdata）只作后续升级；本阶段
   不换 iOS 镜像、不动 userdata。
 - 不做多系统管理；nura 与 iOS 各有各的镜像，需要时整槽重刷。
+- **分支对齐上游（2026-10-23）**：`m2381` 重建为 `upstream/main`（`b7b6a6a`）
+  + 11 个工作区提交；旧孤儿分支备份在本地 `m2381-pre-sync-backup`。动机：
+  上游大更新（NativeAdreno/NativeMetal GPU 驱动、xnu 补丁、payload/存储）
+  直接跟随，不再经 `reference/unixnu` 手工搬运。同步流程见
+  `docs/UPSTREAM.md` §2。
 
 ## 2. 设备现状（本轮**未**动设备）
 

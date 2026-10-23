@@ -1,10 +1,10 @@
-# 上游与参照仓（2026-10-22 重定向）
+# 上游与参照仓（2026-10-23 起跟随上游）
 
 ## 1. 上游是谁
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游（只读）** | https://github.com/UniXNU/UniXNU | `reference/unixnu` + git remote `upstream` | `e95b37d` (2026-10-22) |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `b7b6a6a` (2026-10-23) |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `85332b3` |
@@ -15,10 +15,16 @@
 | fuxi 另一 fork | https://github.com/matejkoo217/UniXNU-fuxi | `reference/UniXNU-fuxi` | `41c2aac` |
 | vermeer 参照 | https://github.com/yyx2025/UniXNU-vermeer | `reference/UniXNU-vermeer` | `9137aba` |
 
-- `reference/` 全部是**只读参照**，不与工作区共用 history；不要在里面改文件。
-- 本工作区是 **m2381 下游移植**，不是 UniXNU 的 fork：不要向 `upstream` push。
-  `upstream` 的 push URL 已设为 `no_push`；`origin` 留空，等用户 fork 后再设。
-- 上游 = 机制/驱动/补丁的来源；设备模板 = 板级值的来源。两者都不整段 merge。
+- **分支模型（2026-10-23 起）**：`m2381` = `upstream/main` + 工作区提交。
+  由旧的无祖先孤儿分支 `git rebase --onto upstream/main --root` 重建（备份：
+  本地分支 `m2381-pre-sync-backup`）。工作区文件（`docs/`、`devices/`、
+  `tools/`、`artifacts/`、`legacy/`、`AGENTS.md`、`README.md`）叠在上游树
+  （`drivers/`、`kits/`、`package/`、`patches/`、`scripts/`、`unixnu`…）之上。
+- `reference/` 其余克隆仍是**只读参照**；`reference/unixnu` 降级为干净构建
+  树/对照，日常同步直接在本仓 rebase，不再经 reference 搬运。
+- 不要向 `upstream` push（push URL = `no_push`）。上游 = 机制/驱动/补丁的
+  来源；设备模板 = 板级值的来源。设备工作落在 `devices/m2381/`，不直接改
+  上游文件（`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
 
 ### 1.1 同步记录
 
@@ -26,26 +32,47 @@
   `uefi-fuxi` = `7b7ec15`，`unixnu-fuxi` = `59a91fb`，`darwinboot` = `85332b3`，
   guacamole = `6269d31`，qemu = `97b75b1`，sheng = `77490e5`，uefi-sheng =
   `0eb4514`；没有新主题要移植。
+- 2026-10-23：`upstream/main` `e95b37d` → `b7b6a6a`（+69 提交）。主题：
+  **GPU**（NativeAdreno/NativeMetal/NativeHidInput pin 多次 bump；非一致渲染
+  目标改系统内存渲染；免硬件 binning；Turnip 任意偏移 bind host-import 图像；
+  two-plane 表面纹理；GPU addon user-client 白名单；shader prime list；自建
+  `/private/var/ngpu`）；**xnu 补丁**（union lookup 只搜下层目录；sandbox
+  grant 覆盖服务属性设置；bindfs force-root/getattr 恢复；DriverKit header
+  列表认证）；**payload**（重启/关机项保留；确认安装项；板级参数传给
+  skip-setup、`--no-auto-dim`；entry probe 定时复位）；**storage**（备份可选；
+  实验性双系统分区）；**scripts**（shader cache 按翻译器构建 key；kernel 参数
+  允许路径；bridge manifest 免构建写出）；**CI**（macOS workflow 重写、日志
+  脱敏）；docs 新增大量社区端口（merlinx/umi/pandora/nuwa/nx729j/cheeseburger/
+  zeta/raphael/fajita/tb128fu/pong 等）。同日把 `m2381` 重建为 `b7b6a6a` +
+  11 个工作区提交（冲突仅 `README.md`/`.gitignore`：前者取工作区版，后者取
+  并集）。对 B2 的直接增量有限（多数是 userland/GPU 侧），但 A 路线和以后
+  上机会吃到，按用户要求保持跟随。
 
 ## 2. 更新流程
 
 ```bash
-# 1) 看上游有没有新东西（只 fetch，不 merge）
-git -C reference/unixnu fetch origin
-git -C reference/unixnu log --oneline e95b37d..origin/main
+# 1) 拉上游、看新增（不自动合并）
+git fetch upstream
+git log --oneline <上一pin>..upstream/main
 
-# 2) 按需看 diff
-git -C reference/unixnu diff --stat e95b37d..origin/main
-git -C reference/unixnu diff e95b37d..origin/main -- drivers/UniXNUPkg patches/xnu
+# 2) 同步：把工作区提交 rebase 到新 tip（线性历史，behind 归零）
+git rebase upstream/main m2381
+#    冲突面应只有 README.md / .gitignore（工作区文件）：
+#    README.md 取工作区版；.gitignore 保持"上游块 + 工作区块"并集；
+#    上游文件一律不改。
 
-# 3) 只把相关改动移植到 devices/m2381/（一次上游主题一个 commit），
-#    更新本文件的 pin 表；不要 git pull/rebase 工作区。
+# 3) rebase 改写历史，推送用（推送窗口 = 用户拍板，红线 8）：
+git push --force-with-lease origin m2381
+
+# 4) 更新本文件 pin 表 + §1.1 同步记录（一次上游主题一句话）。
 ```
 
-- **UEFI**：`reference/uefi-fuxi` 的 `fuxiPkg` 是 `m2381Pkg` 的模板；上游
-  `UniXNUPkg`/`DarwinBoot` 的改动按主题 cherry-pick/手抄。
-- **boot manager**：`reference/unixnu` 的 `UniXNUPkg`、`drivers/`、`patches/xnu`；
-  B2 只用 `UniXNU.efi` + `DarwinBoot`，不跑 `unixnu kernel/userdata`。
+- **UEFI**：`reference/uefi-fuxi` 的 `fuxiPkg` 是 `m2381Pkg` 的模板；Mu 树
+  不进本仓，`devices/m2381/m2381Pkg` 由那棵树构建。
+- **boot manager / 内核侧**：上游树就在本仓 `m2381` 里（`drivers/`、
+  `patches/xnu`、`kits/`…），跟随上游 = rebase；要单拿某个主题也可以
+  `git cherry-pick`。B2 只用 `UniXNU.efi` + `DarwinBoot`，不跑
+  `unixnu kernel/userdata`。
 - **设备值**：`reference/unixnu-fuxi` 只借 `board.toml`/`scripts/` 结构；
   iPad7,1/21H461、192MiB payload、sheng-pmgr、Data seed 都不要带进 B2。
 
@@ -53,8 +80,11 @@ git -C reference/unixnu diff e95b37d..origin/main -- drivers/UniXNUPkg patches/x
 
 - `reference/unixnu` 把 `drivers/DarwinBoot` 的 gitlink 固定在
   `d099354d…`，该 commit 在 `UniXNU/DarwinBoot` 不存在（只有 `85332b3` /
-  `12bc9e2` / `09c60e6`）。`git submodule update --init --recursive` 会失败；
-  用 `85332b3` 或本地 `reference/darwinboot` 代替。
+  `12bc9e2` / `09c60e6`）。2026-10-23 核对：rebase 后本仓树里的
+  `drivers/DarwinBoot` gitlink 仍是它，上游 69 提交里没人修。后果：在本仓
+  `git submodule update --init` 会在 DarwinBoot 处失败——先单独
+  `git update-index --cacheinfo 160000,85332b3,drivers/DarwinBoot`（或指向
+  本地 `reference/darwinboot`）再继续其余子模块。
 - `unixnu-fuxi` 是从 sheng 设备仓改的：README/触摸支持表仍是 sheng 的
   （Novatek NT36532E），不能当 fuxi 已验证的证据；触摸/PMGR 仍要自己接。
 - `unixnu-fuxi` 的 `[payload]` 192MiB、`[ipsw]` iPad7,1、`sheng-*` 内核参数
@@ -67,14 +97,17 @@ git -C reference/unixnu diff e95b37d..origin/main -- drivers/UniXNUPkg patches/x
 ```text
 upstream  https://github.com/UniXNU/UniXNU.git                   (fetch only; push = no_push)
 origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git
-          main  = UniXNU e95b37d 的镜像（保留，不覆盖）
-          m2381 = 本工作区（默认在这里开发）
+          main  = UniXNU e95b37d 的旧镜像（保留不动；要追新可 fast-forward）
+          m2381 = 本工作区 = upstream/main b7b6a6a + 工作区提交
 ```
 
-- 本工作区在 `origin/m2381`；`origin/main` 保持上游镜像，避免把 fork 的上游
-  history 冲掉。需要改默认分支时，在 GitHub Settings → Branches 把默认分支
-  设为 `m2381`（这样 Actions 页面才列出本仓 workflow）。
-- 推送：`git push origin m2381`；不要推 `main`，也不要 `git push upstream`。
+- 本工作区在 `origin/m2381`。它曾是无共同祖先的孤儿分支，GitHub 因此把上游
+  全部提交都算成"落后"（出现过 11 ahead / 181 behind 的大数字）；
+  2026-10-23 重建后 ahead/behind 恢复真实含义：behind = 还没跟上的上游
+  提交数，ahead = 工作区提交数。
+- `origin/main` 仍是 e95b37d 旧镜像；不要把工作区提交推上 `main`。
+- 推送：rebase 后历史改写，`git push --force-with-lease origin m2381`；
+  不要 `git push upstream`。推送窗口 = 用户拍板（红线 8）。
 
 ## 5. 和旧 sweet 上游的关系
 

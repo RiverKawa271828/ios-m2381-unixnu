@@ -46,3 +46,11 @@ build_uefi.py`（设备名 `m2381`）。CI 只构建 UEFI FV，不跑 `fastboot`
 - `origin` = `RiverKawa271828/ios-m2381-unixnu`；工作区分支是 `m2381`，
   `main` 保留为上游镜像。push `m2381` 才会触发云构建。
 - `upstream` 是 UniXNU/UniXNU，**fetch-only**（push URL 写成 `no_push`）。
+
+## 上游 workflow（2026-10-23 rebase 后进入本仓树）
+
+上游的 `.github/workflows/{docs,macos,terminal}.yml` 随 rebase 进入本仓，
+push `m2381` 会把它们一并触发（文档站构建 / macOS 构建 / terminal），对本仓
+是无意义消耗。处理：在 GitHub Actions 页面把这三个 workflow 逐个
+**Disable workflow**（只禁用，不改文件——改文件会让以后每次 rebase 都多一处
+冲突）；本仓自己的 `xnu-16k.yml` 保持启用。
