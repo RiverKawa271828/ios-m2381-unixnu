@@ -297,3 +297,73 @@
      panic 调用点后按 entropy 同款"守卫跳板"模式处理。
 - **本轮回滚/资产**：payload `8d05c74a…`（现刷在 recovery_a，含 entropy
   守卫，仍有效——下一轮无论走哪条路都基于它叠加）。
+
+## I. 执行记录（2026-10-24，第 13 轮：donor 换配 21H16，mix-n-match 墙改由配对修复消除）
+
+- **换配定案（用户拍板）**：IPSW root 换 **iPhone11,2（iPhone XS）/ iOS 17.7
+  `21H16` / d321ap**。第 12 轮定域后复盘根因：内核源码 xnu-10063.141.1
+  （17.6 代）对 20H392（16 代）是全程跨代配对，entropy 墙（r11）与
+  mix-n-match 墙（r12）是同一条根因的两个切面；与其在 16.7 上逐墙开荒
+  （G/H 两条候选路都要动 AppleImage4），不如换同 train 的手机镜像
+  （fuxi/nx729j = 21H461 平板原生配对实证了 21H train 与 xnu-10063 源码
+  同代）。20H392 的差分方案（H-1/2/3）随之降级为备选。
+- **IPSW 核对**：本地件 sha256 `6fd757be…` 与 ipsw.me 记录一致；官方 URL
+  （2024FallFCS/062-79002）活体 range 请求 206 ✓。BuildManifest：d321ap =
+  ApChipID 0x8020（t8020，A12）/ ApBoardID 0x0e；OS =
+  `044-17947-018.dmg`（`9b69f645…`）、Cryptex1,SystemOS =
+  `044-17442-018.dmg`（`3b21f08a…`）、两 trust cache
+  `090c6a97…` / `8e43fc06…`；kernelcache 解压 sha `0fb5cf59…`。
+- **prelink 三值（本机 derive，替代原"等 CI"计划）**：
+  - slide = `-0x1000000` 不变（上游约定，绑定核对裁决）。
+  - **early_security_init = `com.apple.driver.AppleMobileFileIntegrity=
+    0xfffffff008f3bd18`**，方法升级为**三重指纹**：AMFI early-init 函数
+    序言 6 字（`ff0304d1 f85f0ca9 f6570da9 f44f0ea9 fd7b0fa9 fdc30391`）
+    在 21H461/20H392/21H16 三代 cache 中逐字相同，且在各代 AMFI
+    __TEXT_EXEC 内**唯一命中**；在 21H461 命中点 = fuxi 已知值
+    `0xfffffff005ab4ae0`（TEXT_EXEC `0x5aaa000` + 0xaae0）✓、在 20H392
+    命中点 = r11 实机已验证值 `0xfffffff0056fc3f8`（+0x13f8）✓——两代
+    已知值反证方法，第三代命中即取值。21H16 AMFI __TEXT_EXEC =
+    `0xfffffff008f2ea10`，命中点 = +0xd308；该段 initprot=5/maxprot=5
+    满足内核 early-security 调用的段内校验。
+  - text_fixups 留空（P4 用户态阶段再补）。
+- **trust bundle 重生**：`make-m2381-trust-bundle.py` PIN 换 21H16 两件，
+  bundle = **`e9f6c5b9…`**（2868 + 80 entries，StaticTrustCache 在前），两
+  board 回填。
+- **ADT 换 XS 身份**：`make-m2381-adt.py` 用 21H16 内真 d321ap DeviceTree
+  （tools/adt.py 解包）取真值：model iPhone11,2、target D321、product-name
+  "iPhone XS"、**compatible-device-fallback = iPhone10,3**（真 d321ap 值，
+  恰为旧 donor）、idiom phone / scale 3 / subtype 0x984=2436 / P3。生成
+  冒烟通过（11344 B，identity iPhone11,2）。
+- **NativePrelink kit 三处适配（21H16 两个新面：arm64e、t8020 段布局）**：
+  1. **arm64e**：cache cputype 仍 0x100000c 但 subtype = 2（嵌入 kext =
+     0xC0000002，PAC 版本位）；上游显式拒绝 arm64e（`test_refuse_arm64e`）。
+     放宽 `macho()` 门到 subtype 0/2（含 PAC 版本位），拒绝测试改写为新
+     契约（arm64e 收、其余拒）。PAC 风险注记：组件代码逐字节复制，
+     pacibsp/autibsp 自平衡，SM8550（ARMv9）有 FEAT_PAuth；数据指针仍是
+     KASLR 偏移机制（`_PrelinkLinkKASLROffsets` 在 21H16 在场），上机终审。
+  2. **info plist 形状**：21H16 的 `__PRELINK_INFO` 是带 `<?xml`/`<plist>`
+     包裹的缩进 XML（21H461 = 裸 dict、hex integer + IDREF；20H392 = 裸
+     dict 十进制）。`unserialize_xml` 增加单层 `<plist>` 剥壳。
+  3. **源段解析**：t8011 cache 的 kext 段在专用 `__PLK_*`/`__PRELINK_*`
+     段；t8020 cache 把 kext `__TEXT_EXEC`/`__DATA_CONST`/`__DATA` 装进
+     **内核级同名段**。emit 的 `COALESCED` 源段查找从固定段名改为按组件
+     VA 包含关系解析（`__PRELINK_TEXT` 名字查找保留为 fallback）。
+  - **验证**：kit 26 项测试全绿；真实 21H16 cache 干跑 = 31 roots 中 30
+    个模块解析落位、Libm 池表三张逐字节命中、AMFI/containment 全对。
+    IOHIDEventDriver 两代同为无 loadaddr 条目（0x7fffffffffffffff 哨兵/
+    缺键），plan() codeless 路径处理，非新问题。
+- **Libm literal pools 免重 derive**：`LIBM_LITERAL_POOLS` 三张表在
+  20H392/21H461/21H16 逐字节相同（纯数学常数），前缀+sha 校验天然跨代；
+  原注释"20H392 专属"已修正。
+- **entropy 守卫保留**：源码补丁 + 二进制守卫对同代配对无害（注册先行时
+  守卫恒真）；但跳板 VA `0x46D8B3C` 是 20H392 prelinked 镜像专属，21H16
+  出核后**必须重 derive**（脚本已加 [TODO kernel step]；空填充探针
+  failsafe，但不能赌"恰好为零"的区域）。
+- **预检与 pin**：board.toml / board.bringup.toml / check-m2381.py /
+  defconfig 注释全部换 21H16；check-m2381.py 全绿（仅 root UUID 照旧
+  WARN）。20H392 资产（out/ipsw/20H392、device 侧历史记录）保留作回溯。
+- **下一步（第 14 轮）**：设备仓提交随 push 窗口上 GitHub（device-m2381
+  orphan 分支刷新）→ dispatch macos.yml（defconfig=m2381_bringup_defconfig
+  先行）出 21H16 bring-up 内核 → 本机 probe/entropy 守卫流水线换 trampoline
+  重 derive → payload 打包。arm64e donor 的指针语义为上机门新增风险项，
+  CI prelink 报告（bindings/extents）先做桌面审。

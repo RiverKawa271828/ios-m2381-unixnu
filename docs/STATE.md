@@ -1,10 +1,49 @@
-# STATE — 2026-10-23（P1 执行完毕：设备仓就绪 + 构建主机定案）
+# STATE — 2026-10-24（donor 换配 21H16 落地；P1–P3 执行记录见 §0 与 PLAN-P3-CI）
+
+## 0. 2026-10-24 donor 换配（本会话执行）
+
+- **换配定案（用户拍板）**：IPSW root = **iPhone11,2（iPhone XS）/ iOS 17.7
+  `21H16` / d321ap**，替代 20H392。根因 = 内核源码 xnu-10063.141.1（iOS
+  17.6 代）与 20H392（16 代）全程跨代配对，实机的 entropy 墙（r11）与
+  AppleImage4 mix-n-match 墙（r12）皆源于此；21H16 与 fuxi/nx729j 的
+  21H461 同 train 原生配对，仍为手机身份。Apple 已不签 21H16，与本流程
+  无关（不走 Apple 签名 restore）。
+- **IPSW 核对**：sha256 `6fd757be…`（与 ipsw.me 记录一致）；BuildManifest
+  d321ap = ApChipID 0x8020（t8020）/ ApBoardID 0x0e；OS 件
+  `044-17947-018.dmg`（sha `9b69f645…`）、Cryptex 件 `044-17442-018.dmg`
+  （sha `3b21f08a…`）；kernelcache 解压后 sha `0fb5cf59…`。本地件与 URL：
+  `research/ipsw/iPhone11,2,iPhone11,4,iPhone11,6_17.7_21H16_Restore.ipsw`。
+- **prelink 三值**：slide = `-0x1000000`（上游约定不变，绑定核对裁决）；
+  **early_security_init = AMFI `0xfffffff008f3bd18`**，三重指纹法 derive
+  （函数序言 6 字在 21H461/20H392/21H16 同型，且各自 AMFI __TEXT_EXEC 内
+  唯一命中：21H461 命中 = fuxi 已知值 +0xaae0 ✓，20H392 命中 = r11 实机
+  已验证值 +0x13f8 ✓，21H16 = TEXT_EXEC 0xfffffff008f2ea10 + 0xd308）。
+  text_fixups 留空（P4 用户态再补）。
+- **trust caches**：21H16 两件 sha `090c6a97…` / `8e43fc06…`；flat bundle
+  重生 = `e9f6c5b9…`（2868+80 entries，make-m2381-trust-bundle.py PIN 同步）。
+- **ADT**：make-m2381-adt.py 身份换 d321ap 真值（iPhone11,2 / D321 /
+  "iPhone XS" / fallback iPhone10,3（真 d321ap 值）/ subtype 2436 沿用 m2381
+  面板 2400），生成验证通过。
+- **NativePrelink kit 三处适配（21H16 = arm64e + t8020 段布局首次出现）**：
+  ① `macho()` 门放宽到 arm64e（subtype 0/2 + PAC 版本位；原有显式拒绝
+  测试改为新契约）；② `unserialize_xml` 剥 `<plist>` 包裹；③ emit 源段
+  由固定段名改为按组件 VA 包含关系解析（t8020 cache 把 kext 段装进内核级
+  `__TEXT_EXEC`/`__DATA_CONST`/`__DATA`）。26 项 kit 测试全绿 + 真实 21H16
+  cache 干跑（31 roots 中 30 模块全段落位；IOHIDEventDriver 两代同为无
+  loadaddr 条目，plan() codeless 路径处理）。
+- **Libm literal pools 不用重 derive**：三张池表逐字节同在三代 cache
+  （20H392/21H461/21H16），前缀+sha 校验天然跨代。
+- **entropy 守卫**：patch 保留（对同代配对无影响、防御性），但 trampoline
+  VA `0x46D8B3C` 是 20H392 prelinked 镜像专属，21H16 出核后须重 derive
+  （脚本内已加 [TODO kernel step] 标注 + 空填充探针 failsafe）。
+- **预检**：check-m2381.py 身份断言换 iPhone11,2/21H16/d321ap + 0x8020/14，
+  全绿（仅 root_match_volume_uuid 照旧 WARN 待 P3）。
 
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
-  内核 + **iPhone10,3 / iOS 16.7.16 `20H392`** IPSW root（用户拍板：手机
-  镜像、不用 iPadOS）+ `unixnu-m2381` 设备仓 + `m2381Pkg`（Mu-Silicium
+  内核 + IPSW root（**2026-10-24 起为 iPhone11,2 / 21H16**，原 20H392 决策
+  已被换配取代）+ `unixnu-m2381` 设备仓 + `m2381Pkg`（Mu-Silicium
   UEFI）。母版/指南见 `docs/porting-notes.md`。
 - **设备数据豁免（用户 2026-10-23 拍板）**：无须保留设备数据，随时可刷；
   每次实际写入仍按 `docs/FLASHING.md` 流程走。
@@ -139,7 +178,9 @@
   支持外部设备仓 + 本地 IPSW URL 覆盖）；其余全部本机 Linux。
 - **设备仓推送窗口**：CI 前把 `devices/m2381/unixnu-m2381` 推成独立库
   （或用户指定其他形态）——等拍板。
-- **20H392 prelink 值**：slide / early_security_init / text_fixups。
+- ~~20H392 prelink 值~~ **已随 21H16 换配 derive（2026-10-24）**：slide
+  `-0x1000000`、AMFI `0xfffffff008f3bd18`（三重指纹法，见 §0）；text_fixups
+  留待 P4 用户态。21H16 出核后仍欠：entropy 守卫 trampoline 重 derive。
 - **kernel defconfig 板级差异**：目前 = fuxi 全同（SoC 级）；PMIC/按键/
   显示/触摸差异在 P4+ 主题化。
 - **显示/按键**：cmd-mode DSC 最小点灯（SimpleFbDxe 用 ABL 帧缓冲）、
