@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `b7b6a6a` (2026-10-23) |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `c62bf12` (2026-10-25) |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `85332b3` |
@@ -28,6 +28,24 @@
 
 ### 1.1 同步记录
 
+- 2026-10-25：`upstream/main` → `c62bf12`（相对旧 pin `b7b6a6a` +209 提交，
+  **且上游改写过 main 历史**——`b7b6a6a`/`e95b37d` 均不再是现 main 的祖先，
+  等价补丁在新链下有新 SHA）。主题：**PR#100 = kernel 步 Linux 可跑**
+  （`scripts/linux/` 整套工具链：打 `__builtin_xnu_type_*` 补丁的 clang、
+  cctools-port ld64、mig/iig/lzfse；`docs/building.md` Linux host 节；
+  Linux/Mac 内核不逐字节相同但符号/对象/kalloc_type 签名/prelink 绑定等价）
+  ；**macos.yml 重写**（只发脱敏文本日志；新增 `pre_build`/`trust_cache_url`/
+  `data_seed_url`/`skip_setup`/`runner_label`——`macos-15` = Intel lane，
+  解 arm64 容量拥堵）；payload（GPU addon 写入数据卷、signed-text fixups 进
+  DT、确认安装项、重启/关机保留）；storage（实验性双系统分区、备份可选）；
+  大批社区端口文档（polaris/malachite/pandora/pong/myron/umi/merlinx…）；
+  `c62bf12` = Tools 菜单插件系统 + Advanced Logger 插件。
+  **同步方法（上游改写历史后）**：普通 `git rebase upstream/main` 会把旧链
+  上游提交当独立提交重放而全面冲突；正确做法 = 从工作区首提交的父提交
+  （旧 pin）`git rebase --onto upstream/main <旧pin> m2381`，只重放工作区
+  提交。本次 49 个工作区提交零冲突落位（备份分支
+  `m2381-pre-rewritesync`）；rebase 后 check-m2381 4 ok / 0 fail、kit 32
+  测试全绿、工作区文件零丢失（改动面全部来自上游新内容）。
 - 2026-10-22 11:40：`git fetch` 后所有 pin 未变；`upstream/main` = `e95b37d`，
   `uefi-fuxi` = `7b7ec15`，`unixnu-fuxi` = `59a91fb`，`darwinboot` = `85332b3`，
   guacamole = `6269d31`，qemu = `97b75b1`，sheng = `77490e5`，uefi-sheng =
@@ -57,6 +75,10 @@ git log --oneline <上一pin>..upstream/main
 
 # 2) 同步：把工作区提交 rebase 到新 tip（线性历史，behind 归零）
 git rebase upstream/main m2381
+#    ⚠ 上游改写过历史时此路会重放旧链上游提交而全面冲突——改用：
+#    git rebase --onto upstream/main <工作区首提交的父=旧pin> m2381
+#    （只重放工作区提交；工作区首提交 = git log --reverse
+#      --author='m2381 workspace' upstream/main..m2381 | head -1 的父）
 #    冲突面应只有 README.md / .gitignore（工作区文件）：
 #    README.md 取工作区版；.gitignore 保持"上游块 + 工作区块"并集；
 #    上游文件一律不改。
