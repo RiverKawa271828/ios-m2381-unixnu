@@ -55,6 +55,26 @@
   / device-m2381-bringup=d8ba932）；entropy 守卫判定保留（21H16 corecrypto
   14.0 同 21H461 版本，同代配对下无害）。
 
+## 0.2 2026-10-24 续二：donor 定案 21H461（(b) 路先行，预换完成）
+
+- **用户拍板：先试平板。** donor = iPad7,1 / 17.7.11 / 21H461 / j120ap /
+  t8011（fuxi/nx729j 同款 IPSW）；XS/21H16 + fileset-KC 重绑定器降级为
+  后续主题（§0.1 的 blocker 不阻塞本路）。
+- **不依赖本地 IPSW 的预换全部完成**：21H461 件全取（kernelcache 对上
+  fuxi pin；BuildManifest j120ap=0x8011/0xc；DeviceTree.j120ap；两 trust
+  cache `4563bdbf…`/`9742f3d5…`）；board 两文件全量换 pin（AMFI =
+  fuxi 值 `0xfffffff005ab4ae0`，三重指纹在本 cache 独立验证）；**trust
+  bundle 重生 = `7416ca4f…`，逐字节复现 fuxi pin**（provenance 交叉验证）；
+  ADT 换 j120ap 身份（对真 DeviceTree 逐值验证，scale=2/subtype=2732）；
+  text_fixups 换 nx729j 四条 21H461 值；root UUID 与 OWNER UUID 转正
+  （同镜像同 UUID，占位清除）；check-m2381 **4 ok / 0 fail / 0 warn**；
+  kit 对 21H461 cache 干跑全对（KASLR 表在场、30/31 落位、包含解析回落
+  经典段、AMFI 校验过）——本轮 arm64e 适配对经典布局零回归。
+- **entropy**：21H461 路不应用二进制守卫（跳板是 20H392 专属；同 train
+  先例无需）；源码补丁保留。
+- **待本地 IPSW 到货**：全件 sha256 + 两个 dmg 成员哈希 + 两 trust cache
+  对拍 board pin（fuxi 值）→ push 窗口 → dispatch（runbook = PLAN-P3-CI §K）。
+
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
