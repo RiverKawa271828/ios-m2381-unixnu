@@ -222,3 +222,41 @@
   **品红条** = MMU 开启点到达；**大字文本** = panic 串（panic screen 接管）。
   全无（绿条后死） = stage 2 之前死，下轮上 stage 4 reset-after 探针
   二分 `_start_first_cpu` 之前的调用点。
+
+## G. 执行记录（2026-10-24，第 11 轮：panic 定案 = crypto 注册时序代错配）
+
+- **panic screen 首战告捷（用户照片）**：绿条 + 蓝条（入口探针）+
+  **完整 panic 现场**：`Kernel data abort, pc=_SHA512_Init+0x10,
+  lr=_entropy_init+0x20`，ESR 0x96000005（同 EL 数据访问，1 级转换错误），
+  FAR=0x40。符号化 + 反汇编定案：`x8 = *(g_crypto_funcs)` 为 NULL，
+  `ldr x0,[x8,#0x40]`（取 ccsha512_di）炸。
+- **调用链取证（全镜像 BL 扫描 + kext 反汇编）**：entropy_init ←
+  register_and_init_prng ← **Apple corecrypto kext start**
+  （kmod_info.start→_realmain=0x46d5f3c，20H392 件已 prelink 且**确实被
+  启动了**）。16.7 kext 的 start 顺序 = sysctl 注册 → 装 PRNG（0x46d6688
+  调 register_and_init_prng）→ 填 kpis → **0x46d69d0 才调
+  register_crypto_functions**——注册在 PRNG 安装**之后**；kpis 结构
+  prelink 镜像里全零（运行时填充），顺序交换补丁不可行。
+- **根因（代错配）**：xnu-8796（iOS 17 代源码）的 entropy_init 在 PRNG
+  安装时就经 g_crypto_funcs 调 SHA512_Init；iOS 16.7 的 corecrypto kext
+  按 iOS 16 内核的契约"先装 PRNG 后注册"。nx729j/fuxi 用 21H461（iOS 17
+  同代）所以不炸。上游 `source-corecrypto14-bootstrap.patch` 的
+  prelinked 模式剥离（`-UXNU_SOURCE_CORECRYPTO14`）正是为同代配对设计的。
+- **修复（双轨）**：
+  1. **源码补丁** `patches/xnu/native-entropy-deferred-sha512.patch`：
+     entropy_init 的 `SHA512_Init` 加 `g_crypto_funcs != NULL` 守卫
+     （git diff 生成、已验证 clean apply）。对 21H461 配对零影响（注册
+     先行，守卫恒真）；sha512_ctx 唯一消费者 entropy_provide 只在 PRNG
+     真正生成时运行（彼时注册必已完成），零状态只改变首次提取的压缩 IV。
+  2. **本地二进制补丁**（不等 CI 重核）：设备仓
+     `scripts/patch-entropy-sha512-guard.py`——entropy_init 的
+     `bl _SHA512_Init`（+0x1c）重定向到 corecrypto kext __TEXT_EXEC
+     udf 死填充区的守卫跳板（0x46d8b3c，9 条指令：读 g_crypto_funcs，
+     NULL 则跳过，否则 x19=entropy_data 调原函数；分支距 64MiB < 128MiB
+     限制；cbz 跳转已核栈平衡）。流水线 = kernel.macho → probe patch →
+     entropy guard → payload。
+- **待刷 payload = `8d05c74a…`**（96MiB；探针内核 015e45fb + 本补丁，
+ DarwinBoot 前置校验复验全绿）。只刷 recovery_a。
+- **读图预期**：若守卫生效，entropy_init 静默通过，kext start 完成注册，
+  下一个观测点 = 后续启动阶段的新 panic 面（AMFI/mac_policy、
+  trust_cache_init、随机数子系统等都是候选雷区）或 stage bars 前进。
