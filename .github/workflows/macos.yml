@@ -370,7 +370,10 @@ jobs:
             echo "| payload | ${PAYLOAD:-skipped} |"
             echo
             echo "This workflow only checks that the build works. It publishes text logs (7 days) and no images."
-            xcodebuild -version | head -n 1
+            # m2381: no pipe into head here — xcodebuild aborts on the closed
+            # pipe (NSFileHandleOperationException, exit 134) and marks a
+            # successful build failed.
+            xcodebuild -version > /tmp/xcv.txt; sed -n 1p /tmp/xcv.txt
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove proprietary inputs
