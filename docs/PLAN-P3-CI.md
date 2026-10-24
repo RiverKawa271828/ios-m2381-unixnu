@@ -598,7 +598,16 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   获取 = 用户 Apple ID 一次认证（`ipsw auth login` + `ipsw download
   kdk`，或网页手动下载）。**无 KDK → 按 §L 判门 A 死路，转 (b)
   （21H461 备胎，`224686f` 原样待命，零返工）。**
-- rebinder 本体（与命名源正交，可先行）：§O.2 ①归一化 + 链走查
-  （§O.1 语义全验证）+ kmod_info 编码感知（+156 裸指针/+180/+188 链上
-  解码）+ 组件/接口分类（复用现有 plan 骨架）+ 合成 fixture 测试。
-  kernel 目标映射退化为查旁表（KDK 在场时与经典路同构）。
+- **rebinder 本体已实现（2026-10-24 续五，32 项测试全绿）**：
+  `native_prelink.py` 新增 `u64()`（元数据有符号地址归一）与
+  `chain_relocations()`（链走查：fmt=8/页表/0xFFFF 跳页/next×4/条目
+  4 字节对齐——457 条 4-mod-8 实站含 kmod_info +180/+188）；`plan()` 按
+  `original['kind']`（2=经典 KASLR 表 / 12=fileset 链走查）分流，fileset
+  要求 `original_symbols` 旁表（KDK 派生 {va: name}），缺省响亮失败；
+  kmod start/stop 从链解码（零 start/stop 无链条目 → 0），并校验解码
+  落点归属本组件；`emit()` 线程旁表参数、u64 归一元数据地址、fileset
+  kmod 用解码值。合成 fileset fixture（test_fileset.py 6 项：链解码/
+  绑定/kmod 解码/emit 重绑/四条拒绝路径）。**真实 21H16 cache 冒烟：
+  419,323 条全走查（0.2s）与独立清点精确对拍，归属分类通过，精确停在
+  命名门并给出 KDK 指引。** kernel 目标映射 = 查旁表（KDK 在场时与
+  经典路同构）。
