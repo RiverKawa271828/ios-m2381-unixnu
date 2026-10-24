@@ -420,3 +420,48 @@
     守卫流水线 → payload。arm64 供体，预期不撞指针机制墙。
   - (a) 路：先做 kit 的 KC/chained-fixups rebinder（离线 + 26 测试扩绿 +
     真件干跑）→ 再走同一 push/CI 流程。
+
+## K. 第 14 轮定案与准备（2026-10-24 续：用户拍板 (b) 路 = 21H461 iPad donor 先行）
+
+- **拍板**：先试平板。donor = **iPad7,1 / iOS 17.7.11 / 21H461 / j120ap
+  / t8011**——fuxi/nx729j 的同款 IPSW（同 URL），机制全实证；(a) 路
+  （XS/21H16 + fileset-KC 重绑定器）降级为后续主题。
+- **本会话预换完成（不依赖本地 IPSW 下载）**：
+  - 21H461 件全取：kernelcache（sha 对上 fuxi pin `f18b4df8…`）、
+    BuildManifest（j120ap = chip 0x8011 / board 0xc）、DeviceTree.j120ap、
+    两 trust cache（CDN range + CRC 校验；raw IM4P sha `4563bdbf…` /
+    `9742f3d5…`——fuxi board 的 `7416ca4f…` 是 bundle 哈希，我们重生 bundle
+    **逐字节复现了它**，provenance 交叉验证 ✓）。
+  - board.toml / board.bringup.toml：ipsw 块（fuxi URL + 其 dmg 哈希，
+    **到货后须对本地件复验再推送**）、kernelcache pin、AMFI
+    `0xfffffff005ab4ae0`（fuxi 实机值 + 三重指纹在本 cache 独立验证）、
+    trust pins、bundle `7416ca4f…`、root UUID `04769D26-…`（同镜像值，
+    占位清除）、**text_fixups 换 nx729j 四条 21H461 值**（同 IPSW 直接适用）。
+  - make-m2381-adt.py：j120ap 身份（对真 DeviceTree 逐值验证：iPad7,1 /
+    J120 / "iPad Pro (12.9-inch) (2nd generation)" / fallback iPad6,7 /
+    idiom pad / subtype 2732 / **scale 2**）；buttons 节点保持本机形态
+    （无 Home 键，type 2）= fuxi/nx729j 同款。生成冒烟 ✓。
+  - check-m2381.py：身份断言 iPad7,1/21H461/j120ap + 0x8011/12，预检
+    **4 ok / 0 fail / 0 warn**（root UUID 不再 WARN）。
+  - defconfig：OWNER UUID `18AB5557-…` 从占位转正（同镜像 = 同 UUID；
+    fuxi/nx729j defconfig 同值）；bring-up lane 保持零占位（nx729j bringup
+    先例）。
+  - entropy：守卫二进制补丁 **21H461 路不应用**（跳板是 20H392 专属；
+    nx729j/fuxi 同 train 无需守卫）；源码补丁保留无害。
+  - kit 回归：21H461 cache 干跑 = KASLR 表在场 ✓、30/31 模块落位（
+    IOHIDEventDriver codeless 路径）、包含解析正确回落到经典专用段
+    （__PLK_TEXT_EXEC 等）、AMFI 值段内+保护位校验过。26 项 kit 测试绿。
+- **到货后（用户下载完 iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw 放
+  research/ipsw/）**：
+  1. `sha256sum` 全件 + `unzip -p … | sha256sum` 两个 dmg 成员，对拍
+     board.toml `[ipsw.sha256]`（fuxi 值）；
+  2. 解包两 trust cache 对拍 `[payload] trust_cache_sha256` 前两项；
+  3. 全绿 → push 窗口：`git push origin m2381 device-m2381-bringup`（分支
+     需先从最新 commit 重生成：`git branch -D … && make-device-branch.sh …`）；
+  4. dispatch：`gh workflow run macos.yml -R RiverKawa271828/ios-m2381-unixnu`（逐参数照 §B-2，
+     device_ref=device-m2381-bringup，defconfig=m2381_bringup_defconfig，
+     steps=kernel）；
+  5. 预期失败点清零：prelink 指针绑定核对 = 唯一 loud gate；entropy 二进制
+     守卫**跳过**（流水线 = kernel.macho → probe patch → payload，无守卫步）；
+  6. 出核后本机：probe patch → payload 打包（bundle 已就绪 `7416ca4f…`）→
+     桌面校验 → 拍板首刷（刷写纪律照 FLASHING.md）。
