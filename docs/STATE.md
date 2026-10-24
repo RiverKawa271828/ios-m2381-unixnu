@@ -106,7 +106,10 @@
   无 size）天然跳过。
 - **门 A 唯一干净解 = KDK 21H16**（Apple Developer 下载，需 Apple ID
   一次认证）→ 符号旁表喂 rebinder；**无 KDK → 按 §L 转 (b)（21H461
-  备胎零返工）**。rebinder 本体与命名源正交、可先行。
+  备胎零返工）**。
+- **rebinder 本体已实现**（32 项 kit 测试全绿；真实 cache 链走查 419,323
+  条对拍精确；真实 cache 冒烟精确停在命名门）——只欠符号旁表数据源
+  （PLAN-P3-CI §O.4）。
 
 ## 1. 结论/决策
 
