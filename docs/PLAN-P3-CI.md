@@ -488,3 +488,38 @@
     需解码感知，属门 A 范围。
 - **对 §K runbook 的修正**：IPSW 到货后若走 (a) 路则 21H16 对拍照旧；
   dispatch 前先过门 A。(b) 路流程原样保留为备胎执行单。
+
+## M. 门 A 先行战果（2026-10-24 续二：21H16 链格式完全破译，零未解释形态）
+
+- **dyld chained fixups（pointer_format 8）语义钉死**，全部经真实 cache 数据
+  约束验证：
+  - 条目 = `dyld_chained_ptr_64_auth_rebase` 标准位域：
+    `target:32 | diversity:16 | addrDiv:1 | key:2 | next:12 | auth:1`；
+  - **target_va = 镜像基 `0xfffffff007004000`（内核 __TEXT vmaddr）+ target32**
+    （三个独立锚点吻合：kmod_info.start、__DATA_CONST/__DATA 的
+    segment_offset = 段 VA − 镜像基、全量目标落段统计）；
+  - **唯一非标点：next 以 4 字节为单位**（非 dyld 64 位格式的字节单位）——
+    用真链判定（u4 全链 8 对齐走完，bytes 走进字符串垃圾）；这正是
+    pointer_format 8 与上游 KDK 参考件 fmt 7 的差别；
+  - 页表：`page_start[i] = 0xFFFF` = 该页无链；链起点即页内偏移；
+  - **存储值不含签名**，auth 条目只有 key/diversity 选择子（IA=key0 占
+    绝对多数 357,971，key2=2,116；addrDiv=1 占 335,662）——签名在加载时
+    计算，Gate C 对策（运行时再签名 / QARMA 预签名）照旧。
+- **全量清点（21H16 真实 cache，零假设）**：419,323 条链目，plain 59,236 /
+  auth 360,087；目标落段 = __TEXT_EXEC 362,981 / __PRELINK_TEXT 36,111 /
+  __DATA 12,432 / __DATA_CONST 7,799，**100% 在已映射段内、零越界、零
+  runaway**（最长链 2047 跳 = 12 位 next 上限，自洽）。链只存在于
+  __DATA_CONST 与 __DATA（代码段纯 PC 相对，无需重定位）。
+- **对 rebinder 的直接含义**：
+  1. 解码/走查/再编码层 = 纯机械（重绑定 = 改 target32，meta 原样保留）；
+  2. 工作量上限 419k 条，其中落在选定组件段内的才是真负载（roots 选定后
+     再过滤）；
+  3. "kernel 目标"（指向内核自身的指针）映射到原生内核导出 = 与经典路
+     `unique_kernel_binding` 同构；
+  4. kmod_info 读数需解码感知（address@+156 裸、start/stop@+180/188 为
+     编码态，已验证 start 解码落入自家 exec 段）；
+  5. arm64e GOT 的 auth 条目重绑定后需要**再签名**（存储值无签名 → 运行
+     时消费者会用运行时 key 验签）——这是门 C 的实质，两条对策照旧。
+- **门 A 剩余项**：kit 内实现 rebinder（解码/重绑/再编码 + kmod 解码感知 +
+  kernel 目标映射）+ 26 项测试扩绿 + CI 原生内核在手后的全链自洽干跑。
+  格式层风险已清零。
