@@ -24,7 +24,7 @@
   | 1 | UEFI `m2381Pkg`：**shengPkg 骨架派生**（UniXNU 全链在 FV 的唯一同 SoC 模板；fuxiPkg 是半程态不能当母版）+ **Device-Binaries `@036ba9f7` mars blob**（nura 现役链实证的 UFSDxe/时钟/RPMh 胶水；注意 mars ≠ infiniti）+ nura m2381Pkg 常量（MemoryMapLib/m2381.toml/FdtBlob） | 中 |
   | 2 | 设备仓 delta：board.toml / defconfig / make-m2381-adt.py / check-m2381.py / package/unixnu.toml | 小（**P1 已完成**） |
   | 3 | Goodix GT9916 触摸驱动（与 nx729j 同款，但其为 SPI、m2381 为 I2C4@0x5d，传输层要改） | 大（后置，P4+） |
-  | 4 | 内核 CI：设备仓推独立库 → macos.yml（kernel 步 = xcodebuild，只能 macOS）+ 20H392 prelink 三值重derive | 中（等推送拍板） |
+  | 4 | 内核 CI：设备仓推独立库 → macos.yml（kernel 步 = xcodebuild，只能 macOS）；prelink 三值已随 21H16 换配本机 derive（2026-10-24） | 中（等推送拍板） |
 - **m2381 特有红线**：魅族 ABL 无 `CmdBoot` ⇒ **没有 nx729j 那条 "fastboot
   boot 临时启动" 保命通道**。首刷前核对 nura 侧镜像版本：全套在
   `/home/ri/work/nura-meizu-m2381/artifacts/`（mu-r62…r91、esp-recovery
@@ -54,7 +54,7 @@ nx729j 经验：`sheng-` 前缀内核参数（`sheng-pmgr=2`、`sheng-touch=4`�
 | 段 | 值 | 源 |
 |---|---|---|
 | `[board]` | name=m2381, soc=SM8550, kit=m2381 | 定 |
-| `[ipsw]` | iPhone10,3 / 16.7.16 / 20H392 / d22ap；sha `ece1194f…`（本地 `research/ipsw/` 已就位并核对） | 定；chip_id/board_id 从 20H392 BuildManifest 读 [TODO] |
+| `[ipsw]` | iPhone11,2（XS）/ 17.7 / 21H16 / d321ap（2026-10-24 换配，同代配对）；sha `6fd757be…`（本地已核对） | 定；chip_id 0x8020 / board_id 0x0e 已回填 |
 | `[userdata]` | first_lba=2330472, last_lba=123871226, lba_bytes=4096 | [DEVICE] 2026-10-23 devsh 实测 |
 | `[firmware]` | config=m2381；dsc=`Platforms/Meizu/m2381Pkg/m2381.dsc`；fd=…/SILICIUM_UEFI.fd | 定；FD 窗口 0xA7100000+0x300000 [DEVICE] |
 | `[bootimg.image]` | header_version=4（Flyme v4）、base=0、kernel_offset=0x8000、pagesize=4096 | 旧 sweet 实证；append_dtb 按 stock 要求核 [TODO] |
@@ -68,7 +68,7 @@ nx729j 经验：`sheng-` 前缀内核参数（`sheng-pmgr=2`、`sheng-touch=4`�
 **实机 GPT 直读**闭环几何（三源吻合，STATE §2），stock 包留作以后第四源；
 刷机窗口 `fastboot getvar current-slot` + `partition-size:userdata` 形式
 复核仍留。另 [TODO P3] root_match_volume_uuid / OWNER_DATA_VOLUME_UUID、
-[TODO kernel 步] 20H392 slide/early_security_init/text_fixups。
+已 derive（2026-10-24）：slide `-0x1000000`、AMFI early init `0xfffffff008f3bd18`（三重指纹法）；text_fixups 留待 P4。
 
 ## 3. m2381Pkg 要点（P1 修订：shengPkg 骨架 + mars blob）
 
@@ -94,9 +94,9 @@ nx729j 经验：`sheng-` 前缀内核参数（`sheng-pmgr=2`、`sheng-touch=4`�
 # Linux 本机（P1 全部实测通过，到 xcodebuild 缺口为止）：
 ./unixnu defconfig m2381_defconfig -D devices/m2381/unixnu-m2381
 ./unixnu fetch
-./unixnu ipsw fetch --ipsw research/ipsw/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw
+./unixnu ipsw fetch --ipsw research/ipsw/iPhone11,2,iPhone11,4,iPhone11,6_17.7_21H16_Restore.ipsw
 #   Linux 无 /usr/bin/compression_tool：kernelcache 预置
-#   out/ipsw/20H392/kernelcache.decompressed（research/bin/ipsw extract --kernel
+#   out/ipsw/21H16/…/kernelcache.release.…（research/bin/ipsw kernel dec
 #   产出，sha 须 = board.toml pin）即跳过解码。
 
 # kernel 步 = macOS 专用（xcodebuild + iphoneos SDK，本机实测卡点）：
@@ -142,7 +142,7 @@ python3 scripts/check-m2381.py --uefi <同上>   # 预检挡 TODO 值与不一�
 | ABL 85MB 窗 / 无 CmdBoot | 已消解 | 窗口算术定死 ESP 载荷（192MiB ramdisk 必拒载）；刷写纪律替代临时启动 |
 | 触摸 GT9916 I2C 驱动开发 | 大（后置） | nx729j `drivers/NativeGoodixTouch` 规格起步；P4 前 UI 用按键+串口 |
 | 内核构建主机 | 已定案 | kernel 步只能 macOS（xcodebuild，P1 实测）；CI = macos.yml，设备仓推送等拍板 |
-| 20H392 prelink 三值未derive | 中 | slide/early_security_init/text_fixups 仍是 21H461 值；prelink 指针绑定核对会大声失败（failsafe），CI kernel 步顺路derive |
+| arm64e donor（21H16）上机风险 | 中 | NativePrelink 已放宽 subtype 门 + 源段包含解析（kit 26 测试绿 + 真件干跑）；PAC 指针语义与 prelink 报告 = CI/上机门终审 |
 | 面板 cmd-mode DSC 初始化 | 中 | stock FDT 有完整 init 序列，照 `build-native-legacy-display.py` 输入格式转换（nx729j 同款待办） |
 
 ## 7. 立即行动（P1 已完成 2026-10-23；下一步 = STATE §7）
@@ -151,7 +151,7 @@ python3 scripts/check-m2381.py --uefi <同上>   # 预检挡 TODO 值与不一�
    mars、ABL 约束逐条对回源文档并新增 KEP/栅栏/kernel-log 三条）。
 2. ~~`devices/m2381/unixnu-m2381` 骨架~~ **完成**（board.toml/defconfig/
    菜单/check-m2381.py，几何三源对拍）。
-3. ~~`make-m2381-adt.py` 初版~~ **完成**（iPhone 身份 + d22ap 真值）。
+3. ~~`make-m2381-adt.py` 初版~~ **完成**（iPhone 身份 + d321ap 真值，2026-10-24 随换配更新）。
 4. ~~unique-chip-id~~ **已定**（软件种子 `3645ad55d47e77c1`）；stock 包
    改由实机 GPT 直读闭环。
 5. ~~构建环境实测~~ **完成**：Linux 到 xcodebuild 缺口全绿；kernel = CI。
