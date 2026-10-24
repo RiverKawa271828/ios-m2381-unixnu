@@ -707,3 +707,45 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
 - **第 17 轮（进行中）**：重跑 defconfig → 重建（`XNU_SHENG_PMGR=1` 会
   要求 SOURCE_CORECRYPTO14=1，bringup 已满足）→ 链接产物 nm 验证
   `_sheng_pmgr_run` 在场 → probe（--no-reset）→ payload → 刷。
+
+## R. 执行记录（2026-10-25 续二：第 18-20 轮 = UFS 车三连，硬件面毕业）
+
+- **第 18 轮（payload `8c6f1be4`，UFS 车首刷）**：panic 定位到
+  NativeUfs 的 SMMU 规划——ABL 交接 apps_smmu 时**留下了本流映射**
+  （SMR=0x80000060 = VALID + UFS host 流 ID 0x60，S2CR=2），驱动的
+  复用检查只认自家编码（fuxi 注释：他们 ABL 交接无 UFS SMR 条目——
+  板间差异），8 次 context bank 回退全撞同条 → "conflicting UFS stream
+  mapping slot=2"。构建期同轮拆了三墙：①上游 `audit-storage-interface.py`
+  要实机 lldb 快照（gdb-stop.json）→ 改走 **nx729j 静态绑定路**
+  （`build-storage-bindings.py` + `prelink-storage-bindings.json`，同
+  21H461 donor 地址不变）；②cctools nm 不认 `--defined-only`（去旗标，
+  列数过滤本就够）；③NativeUfs 弱引用 `boot_progress_poll` 在本机 ld64
+  报未解析 → no-op 桩归档走 `EXTRA_LD_ARCHIVES`（真 BootProgress 上场
+  再换）。另：**树重组会清证据件** → 设备仓新增
+  `stage-local-candidates.py` 作归档首步（自动落 kernelcache + prelink
+  候选对）。
+- **第 19 轮（payload `dd200d32`）= SMMU 接管**：NativeUfs 收编进设备仓
+  `drivers/`（feeds 规则 5 覆盖，nx729j 同款），SmmuTakeover.h 打补丁：
+  单条精确匹配本流（mask=0）的遗留 SMR 从硬错误改为**接管**（队列已静默、
+  UFS 流无他主，configure 先清写 SMR/S2CR 带读回再全新分配）；真歧义
+  （多匹配/带掩码）仍拒绝（`492caf7`）。结果：smmu panic 消失，推进到
+  root 挂载失败（与 r17 同串——VerifiedRoot 拒绝桩设计上不发布块设备，
+  且 userdata=nura ext4 无 donor Data 卷 UUID，**预期形态**）。
+- **第 20 轮（payload `07518ebe`）= UFS 数据链全通（硬件面毕业）**：
+  arg 换 `native-ufs-probe=10`（读-only GPT/首块检查，屏上打印结果）。
+  实机读数：**`userdata first=238f68 last=7621ffa`**（与 board 实测
+  逐位一致）+ **`ext4magic=ef53 ext4blocks=121540755`**（真实 nura
+  ext4 超级块 ≈463GB 几何）+ manifest status=1（verified-root 未建，
+  预期）。SMMU 接管 → UFSHCI 4.0 → 队列 → DMA 读回 → GPT 全链实证。
+- **到 launchd 的剩余件（全部软件）**：
+  1. **userdata 重建（关键路径）**：`unixnu build userdata` 需 macOS
+     hdiutil；重写后的 macos.yml **只传文本日志**（明注 Apple 件不上传），
+     userdata 镜像无 CI 出口——路径需拍板（CI 加 upload 特例=红线 7
+     豁免 / 借 Mac / 本机 macOS VM）。
+  2. **verified-root 链（Linux 可做，与 1 并行）**：
+     `build-owner-os-policy.py`（纯 Python 签验原始 DMG，产出
+     verification.json；输入 = 本地 IPSW 的 044-76040-038/044-76034-038
+     两 dmg）→ `build-verified-root-probe.py` → defconfig 开
+     VERIFIED_ROOT_PROBE/OWNER 组 + arg 回 `native-ufs-root=1`。
+- **读回欠账**：recovery_a 已六刷未 dd 对拍（fastboot 无 fetch，需回
+  nura 换 boot_b 舞步），列入下个 fastboot 会话。
