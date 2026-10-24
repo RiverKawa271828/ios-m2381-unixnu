@@ -664,3 +664,46 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   mix-n-match 两墙因同代配对消失，看 panic screen 给出下一堵墙或 stage 条
   前进）；②userdata 重建件（21H461）仍走 macOS（CI 或本机无 hdiutil）；
   ③commit 未推送（推送窗口 = 用户拍板）。
+
+## Q. 执行记录（2026-10-25 续：第 15/16 轮 = "No PMGR?" 墙）
+
+- **第 15 轮（payload `4d7d83db`，本会话首刷）读图**：绿条（entry）→ 蓝条
+  （MMU off 入口探针）→ **品红条（MMU on）** → 约 30 秒后 panic screen 大字：
+  **`"AMFI: No PMGR?\n" @ConfigurationSettings.cpp:235`** + TCR/SCTLR/pages/
+  free 尾注。entropy（r11）与 mix-n-match（r12）两墙确认消失（21H461 同代
+  配对生效），堵点推进到 AMFI 初始化。
+- **反汇编定域（全链，无源码——AMFI kext 是 Apple 内部件，OSS xnu 无
+  security/mac/amfi）**：panic 格式串 `"AMFI: No PMGR?\n" @%s:%d`（文件名/
+  行号是参数，0xeb=235）；调用方 = AMFI developer-mode 策略函数
+  （`serviceMatching("ApplePMGRNub")` → `waitForMatchingService(…,
+  0x6fc23ac00 = 30s)` → NULL → panic；找到则经 PMGR AON 寄存器锁存
+  developer-mode 位并打印 "PMGRAON latched"）。**唯一旁路 =
+  `kern.hv_vmm_present`（VM 检测，"AMFI: Booted in a VM"）**。
+  *工具坑：emit_prelink 的大段（__PLK_TEXT_EXEC 等）是 0-section 裸段，
+  按 section 扫 adrp 会整体漏扫，必须按 segment 扫。*
+- **正解（fuxi/nx729j 既有机制）**：板侧 `ShengPlatformPower.cpp`
+  （`sheng_pmgr_run()` 由 sheng-platform-power.patch 挂在 bsd_init
+  bsd_bufferinit 之后）按 boot-arg `sheng-pmgr=2` 代 ApplePMGR 发布原版
+  ApplePMGRNub（AMFI 等的就是它）；电源操作全部 "unimplemented" panic
+  守卫。第 1 轮 CI 缺的 `_sheng_pmgr_run` 符号即此——bring-up lane 当时
+  关掉，本轮开启。全量 defconfig 早已 `CONFIG_XNU_SHENG_PMGR=y`。
+- **接线（commit `f889841`）**：设备仓收编 fuxi 的
+  package/ShengPlatformPower.cpp + scripts/build-sheng-platform-power.py
+  （两参照逐字节一致）；双 board `kit = "sheng"`（fuxi 同款映射——builder
+  硬编码读 `kits/sheng/ShengPlatformPower.cpp`）；bringup archives 加
+  builder、kernel_args 加 `sheng-pmgr=2`；bringup defconfig 旗标转 y。
+  builder 前置审计 `audit-amfi-pmgr-contract.py` 需要一个 prelink
+  candidate（树内 `build/native-prelink/`，`native-owner-ufs-cpu-desktop-*`
+  命名即可命中 glob）+ `tree/.cache/firmware/kernelcache.macho/` 下的
+  原始 cache——本地现产物落位即过；**契约审计 PASS**（t8011 PMGR 幻影
+  MMIO 读恒 0xffffffff、写不落，SM8550 安全）。
+- **第 16 轮首刷（payload `6e5210dc`）同墙复发** → 排查：ESP unixnu.toml
+  args 含 `sheng-pmgr=2` ✓（kernel_args 走菜单配置由 DarwinBoot 递给内核，
+  不进 ADT——ADT 里搜不到是正常形态）；hook 在 bsd_init（相对 AMFI kext
+  start 时序合理）；真凶 = **`out/m2381/.config` 是会话头 `unixnu
+  defconfig` 的旧拷贝（SHENG_PMGR=n）**——改设备仓 defconfig 后未重跑
+  defconfig，归档建了但内核链接没挂（nm 50669 符号零 sheng、kernel.log 零
+  sheng 引用）。教训：**改 defconfig 后必须重跑 `./unixnu defconfig`**。
+- **第 17 轮（进行中）**：重跑 defconfig → 重建（`XNU_SHENG_PMGR=1` 会
+  要求 SOURCE_CORECRYPTO14=1，bringup 已满足）→ 链接产物 nm 验证
+  `_sheng_pmgr_run` 在场 → probe（--no-reset）→ payload → 刷。
