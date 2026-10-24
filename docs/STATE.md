@@ -75,6 +75,14 @@
 - **待本地 IPSW 到货**：全件 sha256 + 两个 dmg 成员哈希 + 两 trust cache
   对拍 board pin（fuxi 值）→ push 窗口 → dispatch（runbook = PLAN-P3-CI §K）。
 
+## 0.3 2026-10-24 续三：最终定序 = 先 iOS，不行转 iPadOS
+
+- **用户拍板**：(a) 路（XS/21H16 + fileset-KC 重绑定器）先行；(b) 路
+  （21H461 iPad，`224686f`）为已提交备胎，转换零返工。
+- **三门判定**（详见 PLAN-P3-CI §L）：A = 离线 rebinder 自洽（利好：
+  21H16 KC 全链接无 bind，只 rebase 偏移）；B = CI prelink 通过；C = 上机
+  PAC 语义（对策：运行时再签名或 QARMA 预签名）。任一门确认死路 → 转 (b)。
+
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
