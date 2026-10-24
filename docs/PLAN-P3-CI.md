@@ -749,3 +749,28 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
      VERIFIED_ROOT_PROBE/OWNER 组 + arg 回 `native-ufs-root=1`。
 - **读回欠账**：recovery_a 已六刷未 dd 对拍（fastboot 无 fetch，需回
   nura 换 boot_b 舞步），列入下个 fastboot 会话。
+
+## S. userdata 路径定案 + 证据链并入 CI（2026-10-25 续三）
+
+- **调研结论（用户问"别人怎么做的"）**：nx729j GUIDE §8.2 = 无 Mac 用户
+  fork + dispatch `steps="kernel userdata"` + **artifact 取回
+  `kernel.macho`/`userdata-root.img`**——生态标准路。上游 workflow 重写
+  （caad2d7）只是删了**上游仓**的上传通道；旧版 `upload_userdata`
+  输入定义原样可恢复。
+- **用户拍板：CI artifact 路（对红线 7 的此用途豁免，私有仓 + 7 天过期）**。
+- **执行**：①macos.yml 恢复 `upload_userdata`（旧定义）+ 新增
+  `upload_verified_root`；②`build-owner-os-policy.py` 实测**需 hdiutil
+  attach + diskutil**（非纯 Linux）→ 证据链折进同一 run 的 `pre_build`
+  （`ci-owner-policy.sh`：IPSW 取件 → keys/dylib → 按 UUID 04769D26 只读
+  挂载 OS 卷 → 真 C 签名 + 全块验证 policy → 跨构建探针归档）；
+  ③设备仓 pmgr builder 补"无候选跳审计"（CI 全新 runner 无 prelink
+  候选，鸡生蛋）；④make-device-branch.sh 补 `drivers/`（NativeUfs 覆盖
+  必须上分支）；⑤首个 run 40130587859 取消（排队 3 分钟无损失），
+  **重发 40131073217**（steps=kernel userdata + xcode=26.3 +
+  双 upload + pre_build），守护 pid 366228。
+- **取件后本机流程**（下会话）：artifact ①userdata.img → 刷 userdata
+  （nura 消亡，豁免已有；FLASHING 纪律照走）+ ②verified-root 证据落
+  device `.cache/firmware/` → defconfig 翻 VERIFIED_ROOT_PROBE=y（去桩）
+  → 本机出 owner 内核 → arg 回 `native-ufs-root=1` → payload → 刷。
+  预期下一堵墙在 APFS 挂载/launchd 前（owner 链的 OWNER_* 旗标组届时
+  按 fuxi 全量版对表逐个开）。
