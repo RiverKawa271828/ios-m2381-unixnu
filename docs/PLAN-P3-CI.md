@@ -465,3 +465,26 @@
      守卫**跳过**（流水线 = kernel.macho → probe patch → payload，无守卫步）；
   6. 出核后本机：probe patch → payload 打包（bundle 已就绪 `7416ca4f…`）→
      桌面校验 → 拍板首刷（刷写纪律照 FLASHING.md）。
+
+## L. 第 14 轮最终定序（2026-10-24：用户拍板"先 iOS，不行转 iPadOS"）
+
+- **定序**：(a) 路（XS/21H16 手机身份 + fileset-KC 重绑定器）升为先行；
+  (b) 路（21H461 iPad，commit `224686f`）保持为**已提交备胎**——转 (b) 只需
+  push 该分支，零返工。
+- **"不行"的门（避免无限下沉）**：
+  - **门 A（离线，可判定）**：rebinder 在真实 21H16 cache + CI 原生内核上
+    产出自洽 prelinked 镜像——全部链条目可解码、无未解释形态、重绑定后
+    自检闭合（目标归属 = 组件/kernel 两类，kernel 目标可映射到原生内核
+    符号表）、kit 测试扩绿。已利好：21H16 顶层 fixups blob `imports_count
+    = 0`——KC 是全链接的，**没有 bind，只有 rebase 偏移**，无需符号解析。
+    若离线阶段撞上解不了的形态 → 转 (b)，成本有界。
+  - **门 B（CI）**：macos.yml kernel 步通过 prelink（指针绑定核对 = loud
+    gate）。
+  - **门 C（上机，唯一不可离线裁决项）**：arm64e PAC 语义。设计对策（两
+    条都备）：① 内核 bootstrap 程编 APIAKey 为已知值 + 运行时对 GOT/
+    函数指针再签名；② prelink 期用 QARMA(key=选定值) 预签名（格式公开、
+    可离线实现）。两策都失效且无第三策 → 转 (b)。
+  - 另注意 emit 的 kmod_info 读数（+156 裸指针 ✓ / +180 start 为编码态）
+    需解码感知，属门 A 范围。
+- **对 §K runbook 的修正**：IPSW 到货后若走 (a) 路则 21H16 对拍照旧；
+  dispatch 前先过门 A。(b) 路流程原样保留为备胎执行单。
