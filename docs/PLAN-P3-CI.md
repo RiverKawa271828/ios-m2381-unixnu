@@ -539,3 +539,66 @@
   prelink 会 KeyError 导致 kernel 步失败、artifact 拿不到。
 - **产物流向**：未链接内核（bring-up 配置）→ 本机 rebinder（21H16 cache）
   → kernel.macho → probe patch（entropy 二进制守卫跳过）→ payload。
+
+## O. 门 A 续战果（2026-10-24 续四：链走查全量验证 + kernel 目标命名墙实测）
+
+### O.1 链走查全量验证（rebinder 语义层收口）
+
+在 §M 格式破译之上，用 roots 闭包对真实 21H16 cache 做了全量链走查
+（419,323 条目）：
+
+- **plain 条目 meta 位零污染**：全部 59,236 条 plain（auth=0）条目的
+  meta 低 19 位（diversity/addrDiv/key）恒为 0 —— rebinder 可对 plain
+  形态做严格断言（非零即大声失败）；
+- **组件归属分类零违规**：roots（31 个）闭包 = 31 选定 + 7 接口；选定
+  组件内链站点 69,386 个，组件→组件目标 67 对 **全部落在选定闭包内**
+  （0 个未声明依赖）；其余站点全部属于 donor kernel 自有数据（不复制，
+  正确跳过）；
+- **kernel 目标去重 = 1,795 个 VA** —— 这就是命名机制的精确工作量。
+
+### O.2 硬发现：21H16 release cache 全面符号剥离（门 A 新墙）
+
+逐层下钻钉死（全部实测）：
+
+1. **元数据地址 = 真实 VA 的有符号十进制**：`_PrelinkExecutableLoadAddr`
+   等以负数十进制存储（如 `-68601184256`），u64 补码即真值
+   （0xfffffff0070d0000），与 LC_FILESET_ENTRY `extoffset` 精确相等。
+   rebinder 消费元数据地址须统一 `& (2^64-1)` 归一。
+2. **全 cache 零符号名**：kernel 组件 LC_SYMTAB `nsyms=0/strsize=1`
+   （所有组件的 symtab 命令都指向同一个桩 0x3430000）；indirect
+   symbol table 全零；LC_DYLD_INFO 字段为垃圾桩（rebase/bind/export
+   偏移皆无意义）；顶层无 LC_SYMTAB、export trie 0/0。对照：21H461
+   经典 cache 有 6,056 个导出符号、20H392 有 5,873 —— 经典路"按名映射
+   kernel 目标"的数据源在 fileset release cache 上**不存在**。
+3. **19 条 sentinel 条目**（load addr = INT64_MAX、无 size，多为 kpi
+   接口与 codeless 占位）——plan 的 size 过滤天然跳过，无需特判。
+4. LC_FILESET_ENTRY（cmd 0x80000035）布局钉死：cmd+cmdsize+
+   `extoffset`(=组件 VA)+`extsize`+`entry_id`(命令内偏移，字符串内联)。
+   组件发现可走元数据 load addr（227 个全在段内）。
+
+### O.3 离线命名路线实测判死
+
+kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线替代源实测：
+
+- **跨 cache 字节匹配（21H461→21H16）结构性死路**：21H461/20H392 均
+  为 arm64 内核（A10X/A11 不用 PAC），21H16 为 arm64e —— 指令流本身
+  不同构，字节级匹配无意义；
+- **panic 字符串交叉引用**（adrp/add 编码跨 arm64/arm64e 不变，21H461
+  侧 6,056 符号可作名字源）：实测 21H16 kernel 19,245 函数中仅 4,830
+  个有字符串引用；对 1,795 个目标函数——**60%（1,081 个）零字符串
+  引用**，歧义 577 个，交集唯一命中仅 **137/1795 = 7.6%**。天花板
+  数量级不足，判死。
+
+### O.4 门 A 剩余 = 单一外部符号源 + 机械实现
+
+- **唯一干净解 = KDK 21H16**（Apple Developer "Kernel Debug Kit 17.7
+  (21H16)"，含 t8020 带符号内核）：从 KDK 内核提取 VA→导出名旁表，
+  喂给 rebinder 作 `unique_kernel_binding` 的 donor 侧符号源；KDK 与
+  release 同 build，VA 应逐一对齐（提取时逐 VA 校验字节前缀）。
+  获取 = 用户 Apple ID 一次认证（`ipsw auth login` + `ipsw download
+  kdk`，或网页手动下载）。**无 KDK → 按 §L 判门 A 死路，转 (b)
+  （21H461 备胎，`224686f` 原样待命，零返工）。**
+- rebinder 本体（与命名源正交，可先行）：§O.2 ①归一化 + 链走查
+  （§O.1 语义全验证）+ kmod_info 编码感知（+156 裸指针/+180/+188 链上
+  解码）+ 组件/接口分类（复用现有 plan 骨架）+ 合成 fixture 测试。
+  kernel 目标映射退化为查旁表（KDK 在场时与经典路同构）。
