@@ -64,6 +64,14 @@ on:
         description: Upload the unlinked (pre-prelink) source kernel; the prelink embeds Apple restore-image kexts and stays local
         type: boolean
         default: false
+      # m2381 2026-10-25: restored from the pre-rewrite workflow (caad2d7 removed it
+      # from upstream). The userdata image is Apple-derived and goes only to this
+      # private fork's artifacts, 7-day retention, for the board maintainer's own
+      # device (red line 7, user-approved for this use).
+      upload_userdata:
+        description: Upload the userdata image (large, private fork use)
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -309,6 +317,16 @@ jobs:
         with:
           name: unixnu-${{ steps.check.outputs.board }}-unlinked-kernel-${{ github.run_attempt }}
           path: out/*/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf
+          if-no-files-found: error
+          retention-days: 7
+
+      # m2381: restored upload from the pre-rewrite workflow; see the input note.
+      - name: Upload userdata
+        if: always() && inputs.upload_userdata && steps.userdata.outcome == 'success'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unixnu-${{ steps.check.outputs.board }}-userdata-${{ github.run_attempt }}
+          path: out/*/userdata/**
           if-no-files-found: error
           retention-days: 7
 
