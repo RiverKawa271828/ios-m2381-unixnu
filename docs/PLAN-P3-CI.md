@@ -480,10 +480,18 @@
     若离线阶段撞上解不了的形态 → 转 (b)，成本有界。
   - **门 B（CI）**：macos.yml kernel 步通过 prelink（指针绑定核对 = loud
     gate）。
-  - **门 C（上机，唯一不可离线裁决项）**：arm64e PAC 语义。设计对策（两
-    条都备）：① 内核 bootstrap 程编 APIAKey 为已知值 + 运行时对 GOT/
-    函数指针再签名；② prelink 期用 QARMA(key=选定值) 预签名（格式公开、
-    可离线实现）。两策都失效且无第三策 → 转 (b)。
+  - **门 C（上机，唯一不可离线裁决项）**：arm64e PAC 语义。**对策排序
+    （2026-10-24 侧聊定，依据 = `docs/PLAN-arm64e-research.md`）**：
+    **首选 = 透传假设**——arm64 内核从不启用 PAuth（SCTLR_EL1
+    EnIA/EnIB/EnDA = 0）时，组件里全部 PAC 指令按 ARM 规范退化为
+    NOP/普通分支（PACIASP→NOP、BRAA/BLRAA→BR/BLR、LDRAA→LDR），而
+    21H16 组件存储值本就是无签名裸地址（fileset KC 设计 = 加载时再签）
+    → **零签名工作**。垫底①'：内核开已知 keys + prelink 路径运行时
+    再签名 hook；垫底②：QARMA 离线预签名。arm64e 原生内核 = 独立专项
+    会话研究对象（把门 C 做难而非做没了，唯一硬收益已被 rebinder 拿
+    到），不作主线。透传两廉价验证：grep 内核/boot shim 的 SCTLR 设置
+    恒 0；REA 抽查组件 GOT 消费点形态。透传假设证伪且①'②失效 → 转
+    (b)（(b) = t8011 纯 arm64 经典 cache，本就无门 C）。
   - 另注意 emit 的 kmod_info 读数（+156 裸指针 ✓ / +180 start 为编码态）
     需解码感知，属门 A 范围。
 - **对 §K runbook 的修正**：IPSW 到货后若走 (a) 路则 21H16 对拍照旧；
