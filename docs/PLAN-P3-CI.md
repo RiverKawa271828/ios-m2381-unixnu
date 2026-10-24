@@ -523,3 +523,19 @@
 - **门 A 剩余项**：kit 内实现 rebinder（解码/重绑/再编码 + kmod 解码感知 +
   kernel 目标映射）+ 26 项测试扩绿 + CI 原生内核在手后的全链自洽干跑。
   格式层风险已清零。
+
+## N. 原生内核先行 dispatch（2026-10-24 续三）
+
+- **关键认知**：CI kernel 步编的是我们自己的源码内核，与 donor 无关（prelink
+  才吃 donor）。因此用 21H461 分支当"建造车"先行 dispatch 拿原生内核，
+  rebinder 开发并行对着真内核做——两线互不阻塞。
+- **执行**：m2381 推至 `d761c9e`；device 分支 force 更新（bringup
+  `99a7051` / full `67fe1e2`，21H461 board，prelink 在 runner 上可过 =
+  upload 前置条件 `steps.kernel.outcome == 'success'` 能满足）；dispatch
+  run **`40057239716`**（bringup lane，steps=kernel，**upload_kernel=true**
+  → 未链接内核 artifact）。runner 容量守护已挂（/tmp/m2381-ci-retry.sh，
+  抢不到 runner 自动 rerun ≤20 次，真失败即停）。
+- **注意**：21H16 board 的 CI 轮在 rebinder 就绪前不要发——runner 上
+  prelink 会 KeyError 导致 kernel 步失败、artifact 拿不到。
+- **产物流向**：未链接内核（bring-up 配置）→ 本机 rebinder（21H16 cache）
+  → kernel.macho → probe patch（entropy 二进制守卫跳过）→ payload。
