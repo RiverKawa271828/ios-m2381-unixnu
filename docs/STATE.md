@@ -83,6 +83,14 @@
   21H16 KC 全链接无 bind，只 rebase 偏移）；B = CI prelink 通过；C = 上机
   PAC 语义（对策：运行时再签名或 QARMA 预签名）。任一门确认死路 → 转 (b)。
 
+## 0.4 2026-10-24 续四：门 A 格式层风险清零
+
+- 21H16 链格式（dyld chained fixups，pointer_format 8）完全破译并经全量
+  验证：419,323 条目零未解释、目标 100% 落已映射段；条目 = 标准
+  auth_rebase 位域 + 镜像基相对 target32，唯一非标 = next 以 4 字节为
+  单位；存储值无签名（Gate C 对策不变）。详见 PLAN-P3-CI §M。
+- 门 A 剩余 = kit 内 rebinder 实现 + 测试扩绿 + 原生内核自洽干跑。
+
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
