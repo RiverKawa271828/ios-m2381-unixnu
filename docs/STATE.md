@@ -111,7 +111,33 @@
   条对拍精确；真实 cache 冒烟精确停在命名门）——只欠符号旁表数据源
   （PLAN-P3-CI §O.4）。
 
+## 0.6 2026-10-24 续六：终局拍板 = 21H461 iPad lane 正式转正（本会话执行）
+
+- **用户拍板：路线定死 (b) iPad lane**，21H16/XS lane 关闭（KDK 21H16
+  公开镜像确认不存在，Apple ID 路线不再等待；fileset-KC 重绑定器保留为
+  后续主题，机制证据链在 PLAN-P3-CI §J/§M）。附带评估了 HackiOS
+  （oosexgang）替代路线并否决：仅 redwood SM7475 + fastboot boot 纯内存
+  模型在 m2381 不可迁移（红线 5），donor = iPhone X/A11 无 PAC 亦非门 C
+  透传实证；mining 项 = GPU Mesa/freedreno 桥 + ath11k/LinuxKPI 参考。
+- **IPSW 到货复验通过**：`research/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw`
+  （6.4G），两个 pin 成员 sha256 与 board.toml/fuxi 值逐字节一致
+  （`044-76034-038.dmg` = b4908cde…、`044-76040-038.dmg` = 3f99b859…）。
+- **check-m2381.py 全绿**（4 ok / 0 fail）：身份 iPad7,1/17.7.11/21H461/
+  0x8011/board 12、userdata 几何、M2381ESP payload、root UUID 全对。
+- **本地清理（用户指示）**：删除 21H16 XS IPSW（7.3G，lane 已关闭，Apple
+  CDN 可随时重下）、`research/ipsw-x/`（旧 iPhone X 残留）、空 `ipsw/out/`；
+  research 占用 14G→7.4G。保留：21H461 IPSW、`research/bin/ipsw` 工具、
+  `Kernel_Debug_Kit_15.8.2_24H230.dmg`（macOS fileset-KC 带符号参考件，
+  重绑定器后续主题唯一在手的签名参照，重下需 Apple ID）。
+- **上游动态（用户问"有没有更新"）**：`upstream/main` 1a01c2a→bd127c0，
+  **m2381 落后 208 commits**。重点：**PR #100 kernel 步可在 Linux 跑**
+  （xcrun shim + clang，上游验证 Linux/macOS 内核符号级等价）——本机
+  即可出核，摆脱 macOS runner 容量依赖；另有新社区移植文档（polaris
+  SM8450、malachite MT6878、pong 等）+ driver catalog/仓库规则。**rebase
+  未做**（留待下会话按 UPSTREAM.md §2 一次主题执行）。
+
 ## 1. 结论/决策
+
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
   内核 + IPSW root（**2026-10-24 起为 iPhone11,2 / 21H16**，原 20H392 决策
@@ -261,14 +287,18 @@
 ## 7. 下一步（按顺序）
 
 0. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，推送授权已给）。
-1. ~~**P2 开工**~~ **完成（2026-10-23）**：FV + boot.img 均在本机产出；
+   21H461 lane 前置已全部就绪（IPSW 到货复验 ✓、check-m2381 4 ok ✓、
+   prelink 三值/UUID 转正 ✓、§K 执行单有效）；donor 终局拍板见 §0.6。
+1. **上游 rebase（下会话第一优先）**：m2381 落后 upstream/main 208 commits
+   （1a01c2a→bd127c0），按 `docs/UPSTREAM.md` §2 执行；重点吃 PR #100
+   **Linux kernel 步**——rebase 后本机直接出核，macos.yml/runner 容量守护
+   策略随之重估。rebase 后重跑 check-m2381 + kit 干跑确认零回归。
+2. ~~**P2 开工**~~ **完成（2026-10-23）**：FV + boot.img 均在本机产出；
    overlay 工作流 = `devices/m2381/uefi/sync.sh` → `unixnu build firmware
    --uefi out/m2381/uefi` → `package-m2381-boot.py`。P2 遗留 = 上机验证
    （P4 才做）。
-2. **CI 内核**（等推送拍板）：设备仓独立成库 → dispatch macos.yml
-   （steps=kernel，defconfig=m2381_defconfig，ipsw_url=本地件需公网可达或
-   用 board.toml url）→ 顺路重derive prelink 三值。
-3. P3：userdata 重建件（macOS/CI 步）+ 两个 UUID 派生 + check-m2381.py
-   放行。
+3. **出核 → P3 三件**：Linux kernel 步（新）或 dispatch CI（steps=kernel
+   userdata payload）→ prelink 三值已在位 → ESP payload 打包（bundle 就绪
+   = `7416ca4f…`）→ 桌面全量校验。
 4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd（四门 + 刷写纪律
    照 `docs/FLASHING.md`；首刷前 `fastboot getvar` 形式复核）。
