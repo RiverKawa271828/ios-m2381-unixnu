@@ -619,3 +619,48 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   419,323 条全走查（0.2s）与独立清点精确对拍，归属分类通过，精确停在
   命名门并给出 KDK 指引。** kernel 目标映射 = 查旁表（KDK 在场时与
   经典路同构）。
+
+## P. 执行记录（2026-10-25：上游同步 + 本机 Linux 出核 + 新 payload 就绪）
+
+- **上游 rebase（209 提交，含历史改写）**：upstream main 被上游改写过——旧
+  pin `b7b6a6a`/`e95b37d` 不再是现 main 的祖先，普通 rebase 会把旧链上游
+  提交当独立提交重放而全面冲突。改用 `git rebase --onto upstream/main
+  b7b6a6a m2381` 只重放 49 个工作区提交：**零冲突落位**（备份分支
+  `m2381-pre-rewritesync`）；rebase 后 check-m2381 4 ok / 0 fail、kit 32
+  测试全绿、工作区文件零丢失。**一个 rebase 伤**：
+  `patches/xnu/offline-component-load-probes.patch`——我们的 legacy-display
+  编译守卫（ea13f79）与上游同款修复 `6c9de1b` 在 rebase 三方合并时叠加成
+  双重 `#if` 包裹且 hunk 头计数未更新 → `git apply` 报 corrupt；恢复为
+  上游 6c9de1b 原版（我们的守卫被 subsume，无语义损失，`1157c66`）。
+- **上游新能力落地（本会话直接受益）**：
+  - **PR#100 = kernel 步 Linux 可跑**：`sudo scripts/linux/setup-toolchain.py`
+    一次装齐（打 `__builtin_xnu_type_*` 补丁的 clang 24 + cctools-port
+    ld64 + mig/iig/lzfse；~1h，Ubuntu 24.04 容器直接过）。**本机出核首次
+    全链打通**：XNU 编译 → emit_prelink（21H461 cache + AMFI
+    `0xfffffff005ab4ae0` + 31 roots，指针绑定核对过）→ `kernel.macho`
+    50,978,816 B（sha `155b2df1…`）。CI/runner 容量依赖就此解除；macos.yml
+    仍可用（新输入 `runner_label` = macos-15 Intel lane、`pre_build`、
+    `trust_cache_url` 等），userdata 步仍需 macOS（hdiutil）。
+  - 卡死的 run 40057239716 已取消、runner 守护进程（/tmp/m2381-ci-retry.sh）
+    已 kill。
+- **probe/panic 流水线（新内核适配）**：`uefi-sheng` 符号链接被此前清理删了
+  （panic screen 的 Font.h include 路径需要），已重建
+  `uefi-sheng → reference/uefi-sheng`。**新内核入口洞区变短**：自旋桩表比
+  r10 内核提前 0x70 字节，stage 3 reset 洞 + panic screen 放不下（差 0x1d）
+  —— r10 配置本就是 stage 1+2+panic（stage 3 是备用探针），改用
+  `--no-reset` 全过。探针内核 = kernel.macho 原地补丁（蓝条/品红条/
+  panic screen 0x9ed @ `0xfffffff0074145c0` + `_panic`/common 漏斗双覆盖），
+  sha `e89dcbc8…`。
+- **payload 重建**：`./unixnu build payload --unique-chip-id 3645ad55d47e77c1
+  --trust-cache out/m2381/trust/original-trust.bundle --kernel
+  out/m2381/kernel/kernel.probe.macho`（bundle = 21H461 版 `7416ca4f…` ✓ 白
+  名单）→ **M2381ESP 96MiB，待刷件 = `4d7d83db…`**。
+- **桌面校验全绿**（/tmp/esp-check/check_payload.py 对新 payload 解包件）：
+  ADT parsed_end == TreeSize（j120ap 身份 + 四条 21H461 text-fixups）、
+  trust bundle 两模块（2478 + 76 entries）、ValidTrustCaches 过、ESP 内
+  kernel = 探针件 `e89dcbc8`。DarwinBoot ExitBootServices 前全部拒绝分支
+  排除。
+- **待办**：①首刷拍板（只刷 recovery_a，boot_b 不动；预期 = entropy/
+  mix-n-match 两墙因同代配对消失，看 panic screen 给出下一堵墙或 stage 条
+  前进）；②userdata 重建件（21H461）仍走 macOS（CI 或本机无 hdiutil）；
+  ③commit 未推送（推送窗口 = 用户拍板）。
