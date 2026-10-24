@@ -1,11 +1,13 @@
 # ios-m2381-unixnu — 魅族 20 Classic（m2381 / SM8550）iOS via UniXNU
 
-> **2026-10-24 donor 换配（用户拍板）**：IPSW root 从 iPhone10,3 / 16.7.16
-> `20H392` 换为 **iPhone11,2（iPhone XS）/ iOS 17.7 `21H16`**——根因 = 内核
-> 源码是 xnu-10063.141.1（iOS 17.6 代），20H392（16 代）全程跨代配对，实机
-> 的 entropy 墙与 AppleImage4 mix-n-match 墙皆源于此；21H16 与 fuxi/nx729j
-> 的 21H461 同 train 原生配对（同内核源码代次），且仍是手机身份（d321ap）。
-> 20H392 资产与实机记录保留作回溯证据。
+> **2026-10-24 donor 换配（用户拍板，两步）**：根因 = 内核源码 xnu-10063.141.1
+> （iOS 17.6 代）与 20H392（16 代）全程跨代配对（entropy 墙 + AppleImage4
+> mix-n-match 墙同根因）。先换 iPhone XS `21H16`（手机身份）后发现其
+> kernelcache 是 **fileset KC/chained fixups、无 KASLR 表**，prelink kit
+> 需开发重绑定器才能吃；遂按拍板**先上 fuxi 同款 `21H461` iPad donor**
+> （iPad7,1 / 17.7.11 / j120ap / t8011，经典 arm64 kernelcache，机制全实证，
+> 同代配对修复照常生效）；XS/fileset-KC 重绑定器为后续主题。20H392 与
+> 21H16 的资产与记录都保留作回溯。
 >
 > **2026-10-23 路线重置（用户拍板）**：B2（复用 16K ios-sweet 内核 + 现有
 > iPhone X 16.7.16 root）废弃——旧 sweet 路线实机跑不通，不再复用旧内核与旧
@@ -25,8 +27,8 @@
 ## 0. 一句话
 
 把 m2381 做成**上游原生的 UniXNU 移植**：`unixnu-m2381` 设备仓（board.toml
-驱动 unixnu 构建树，从 **iPhone11,2 / iOS 17.7 `21H16`** 取内核与 OS 件；
-用户拍板用手机镜像、不用 iPadOS，同代配对见顶部换配说明）+ `m2381Pkg`（Mu-Silicium
+驱动 unixnu 构建树，从 **iPad7,1 / iOS 17.7.11 `21H461`** 取内核与 OS 件；
+fuxi/nx729j 同款 donor（同代配对历程见顶部换配说明））+ `m2381Pkg`（Mu-Silicium
 UEFI）。boot_b 放 UEFI 固件；payload 载体受本机 ABL 实证约束（gunzip
 ≤ ~83.5MB、忽略 boot ramdisk），大概率走 recovery_a 的 100MiB ESP；userdata
 由 IPSW 件重建为 iOS root（数据豁免已给，见红线 2）。
@@ -63,9 +65,9 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
 
 1. **`devices/m2381/unixnu-m2381`（设备仓）**：从 `reference/unixnu-fuxi`
    派生，结构按上游 `docs/porting/device-repository.md`。
-   - `board.toml`：SoC SM8550；`[ipsw]` = **iPhone11,2 / 17.7 / 21H16 /
-     d321ap**（用户拍板不用 iPadOS；2026-10-24 换配定案；sha256 必须对上
-     `6fd757be…`）；`[userdata]` first/last_lba
+   - `board.toml`：SoC SM8550；`[ipsw]` = **iPad7,1 / 17.7.11 / 21H461 /
+     j120ap**（fuxi/nx729j 同款 donor，2026-10-24 拍板；sha256 到货复验后
+     与 fuxi 值对拍）；`[userdata]` first/last_lba
      **已实测**（STATE §2），不许抄 fuxi；`[kernel]` defconfig 从
      `fuxi_defconfig` 派生再改板级差异。
 2. **`devices/m2381/uefi/m2381Pkg`（UEFI）**：从
@@ -140,15 +142,15 @@ devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 1. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，用户已授权推送窗口）：
    A 段用户一次性操作（gh auth login + `UNIXNU_UNIQUE_CHIP_ID` secret，
    设备仓走 orphan 分支 `device-m2381` 免建库）→ B 段自动流程（push →
-   dispatch macos.yml `steps="kernel userdata payload"` → prelink 三值已随
-   21H16 换配本机 derive（AMFI = `0xfffffff008f3bd18`，三重指纹法）→
-   取件 → ESP payload 打包 → UUID 回填收紧预检 → 桌面全量校验）。
-   **21H16 换配后首个 CI kernel 轮 = arm64e donor 首验**（NativePrelink
-   门已放宽、源段按 VA 包含解析；PAC 与指针语义上机终审）。
+   dispatch macos.yml `steps="kernel userdata payload"` → prelink 三值随
+   21H461 换配就位（AMFI = `0xfffffff005ab4ae0` = fuxi 实机值 + 三重指纹
+   独立验证）→ 取件 → ESP payload 打包（bundle 已就绪 = fuxi pin 复现
+   `7416ca4f…`）→ UUID 已转正 → 桌面全量校验）。**entropy 二进制守卫在
+   21H461 路跳过**；XS/fileset-KC 重绑定器为后续主题（PLAN-P3-CI §J）。
 2. **P4 上机**（P3 三件齐 + 用户拍板）：首刷顺序照 `docs/FLASHING.md`；
    boot_b 现役 = mu-r91、recovery_a = esp-v71（nura artifacts 全套可回滚）。
-3. P3：userdata 重建件 + 两个 UUID 派生（root_match_volume_uuid /
-   OWNER_DATA_VOLUME_UUID，21H16 专属）。
+3. P3：userdata 重建件（21H461）；两个 UUID 已随同镜像转正
+   （root_match `04769D26-…` / OWNER `18AB5557-…`，fuxi/nx729j 同值）。
 4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd；userdata 重建前
    单独拍板；刷写纪律照 `docs/FLASHING.md`。
 5. 同步常态化：跟随上游 rebase（`docs/UPSTREAM.md` §2），一次主题一句话
