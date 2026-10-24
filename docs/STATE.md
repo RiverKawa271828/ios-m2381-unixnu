@@ -39,6 +39,22 @@
 - **预检**：check-m2381.py 身份断言换 iPhone11,2/21H16/d321ap + 0x8020/14，
   全绿（仅 root_match_volume_uuid 照旧 WARN 待 P3）。
 
+## 0.1 2026-10-24 续：21H16 指针机制硬 blocker（第 14 轮准备）
+
+- 续会话下钻发现第 13 轮适配不完整：21H16 cache 是 **fileset kernel
+  collection**（MH_FILESET + LC_FILESET_ENTRY×239 + LC_DYLD_CHAINED_FIXUPS），
+  **无 `_PrelinkLinkKASLROffsets` 表**（20H392/21H461 均有），指针为 dyld
+  chained-fixups 编码（16K 页、pointer_format 8、函数指针 auth-rebase
+  形态）。kit `plan()` 依赖该表 → CI kernel 步必 KeyError。**21H16 需先
+  开发 fileset-KC/chained-fixups 重绑定器**（可离线做，非配置活）。
+- 由此产生 donor 决策点：(a) 保留 XS/21H16，先开发重绑定器；(b) 退回
+  fuxi 同款 21H461 iPad donor（机制全实证，但平板身份需用户重新确认）。
+  详见 `docs/PLAN-P3-CI.md` §J。
+- 已完成中性预做：21H461 kernelcache 拉取解压（sha 对上 fuxi pin，无论
+  (a)(b) 都要用）；设备 orphan 分支自 70d68bc 重生成（device-m2381=6256b00
+  / device-m2381-bringup=d8ba932）；entropy 守卫判定保留（21H16 corecrypto
+  14.0 同 21H461 版本，同代配对下无害）。
+
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
