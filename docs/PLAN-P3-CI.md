@@ -367,3 +367,56 @@
   先行）出 21H16 bring-up 内核 → 本机 probe/entropy 守卫流水线换 trampoline
   重 derive → payload 打包。arm64e donor 的指针语义为上机门新增风险项，
   CI prelink 报告（bindings/extents）先做桌面审。
+
+## J. 第 14 轮准备（2026-10-24 续会话：21H16 指针机制硬 blocker 提前暴露）
+
+- **结论先行：21H16 donor 不能直接进 CI kernel 步。** 第 13 轮的 kit 三处
+  适配只解决了"解析"，没解决"重绑定"——本会话逐层下钻发现：
+  1. 21H16 cache = **fileset kernel collection**（MH_FILESET filetype 12，
+     顶层 239 条 `LC_FILESET_ENTRY` + 1 条 `LC_DYLD_CHAINED_FIXUPS`
+     @0x3460000/0x446）；20H392/21H461 是经典 kernelcache（裸 Mach-O）。
+  2. **全镜像无 `_PrelinkLinkKASLROffsets`**（顶层与 246 个 kext dict 均无；
+     20H392 有 38.7 万条、21H461 同机制）。kit 的 `plan()` 第一步就依赖该
+     表 → `KeyError`，CI kernel 步必死在第 13 轮分支上（已验证 plan 的
+     读表逻辑与 20H392 侧行为）。
+  3. 21H16 的指针 = **dyld chained fixups 编码**：内核级段 page_size
+     **16384**、pointer_format **8**（上游 audit-aes-interface.py 的 KDK
+     参考件断言 fmt 7——21H16 用 8，需按 dyld 源核对语义）；函数指针为
+     auth-rebase 形态（kmod_info.start = `(auth 元数据<<32)|目标偏移`，
+     两个数据点支持"目标偏移相对镜像基 `0xfffffff007004000`"，尚需对
+     dyld 源定案）；kext 模块内 `__auth_got/__auth_ptr/__auth_stubs`
+     GOT 间接 + arm64e PAC。
+  4. 数据指针（如 kmod_info.address@+156）仍是裸 64 位指针。
+- **含义**：换 21H16 = 给 NativePrelink 增加"fileset-KC 供体解码 + 链走查
+  重绑定"一整块（解码 auth-rebase 条目、跨组件/跨内核重绑定、arm64e GOT
+  再签名语义——可能需要 QARMA(key=0) 实现或证明可绕过）。这是**可离线
+  开发**的（编码自包含于 cache + dyld 公开源码），但是多小时的开发项，
+  不是配置活。
+- **donor 决策点（用户拍板，第 14 轮第一件事）**：
+  - **(a) 保留 21H16/XS 身份**：实现 fileset-KC/chained-fixups 重绑定器。
+    手机身份（2026-10-24 拍板维持），同代配对的根因修复不变；代价 =
+    新机制开发 + arm64e PAC 风险面。
+  - **(b) 退回 fuxi 同款 21H461 iPad donor**（iPad7,1 / 17.7.11 / j120ap，
+    t8011）：机器件 arm64 + KASLR 表机制 = fuxi/nx729j 全链实证，kit 零
+    新机制，entropy/mix-n-match 根因同样消除（同 train）。代价 = 平板
+    身份（2026-10-23 曾拍板不用 iPadOS——当时语境是 16.7 配对，需重新
+    确认）。
+  - 折中注记：(a) 开发出的机制对所有 A12+ 手机 donor 永久适用；(b) 可先
+    出核验证同代配对消除两堵墙，机制开发并行推进。
+- **本轮已完成的中性预做**：
+  - entropy 守卫：21H16 corecrypto = **14.0**（与已知无需守卫的 21H461
+    同版同 train；4K 块级比对零重合 = 不同 SoC 构建，无法指纹复用）。
+    守卫保留（同代配对下守卫恒真、无害），trampoline 重 derive 推迟到位
+    到真正出核之后。
+  - 设备 orphan 分支从 `70d68bc` 重生成：`device-m2381` = `6256b00`、
+    `device-m2381-bringup` = `d8ba932`。注意 make-device-branch.sh 在
+    目标分支已存在时 `checkout --orphan` 直接 128 退出——重生前先
+    `git branch -D`。
+  - 资产：21H461 kernelcache 已拉取并解压（sha 对上 fuxi pin
+    `f18b4df8…`，out/ipsw/21H461/）——无论 (a)(b) 都要用。
+- **第 14 轮流程（按拍板结果二选一）**：
+  - (b) 路：board 换 21H461 pin（fuxi url/hash 现成）→ push 窗口 →
+    dispatch macos.yml（m2381_bringup_defconfig 先行）→ 出核 → probe/
+    守卫流水线 → payload。arm64 供体，预期不撞指针机制墙。
+  - (a) 路：先做 kit 的 KC/chained-fixups rebinder（离线 + 26 测试扩绿 +
+    真件干跑）→ 再走同一 push/CI 流程。
