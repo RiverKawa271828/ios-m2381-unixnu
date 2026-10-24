@@ -72,6 +72,13 @@ on:
         description: Upload the userdata image (large, private fork use)
         type: boolean
         default: false
+      # m2381 2026-10-25: evidence for the verified-root kernel link. Hashes,
+      # manifests and this port's own compiled archive only — no Apple bytes;
+      # the private owner key stays on the runner.
+      upload_verified_root:
+        description: Upload the verified-root evidence produced by pre_build
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -327,6 +334,21 @@ jobs:
         with:
           name: unixnu-${{ steps.check.outputs.board }}-userdata-${{ github.run_attempt }}
           path: out/*/userdata/**
+          if-no-files-found: error
+          retention-days: 7
+
+      # m2381: verified-root evidence from the pre_build step (checkout-root
+      # paths). The private owner key is excluded on purpose.
+      - name: Upload verified-root evidence
+        if: always() && inputs.upload_verified_root
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: unixnu-${{ steps.check.outputs.board }}-verified-root-${{ github.run_attempt }}
+          path: |
+            build/verified-root-os/**
+            build/verified-root-os-xnu/**
+            build/verified-root-host/verified-root.dylib
+            build/verified-root-host/keys/owner-public.pem
           if-no-files-found: error
           retention-days: 7
 
