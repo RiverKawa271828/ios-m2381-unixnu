@@ -260,3 +260,40 @@
 - **读图预期**：若守卫生效，entropy_init 静默通过，kext start 完成注册，
   下一个观测点 = 后续启动阶段的新 panic 面（AMFI/mac_policy、
   trust_cache_init、随机数子系统等都是候选雷区）或 stage bars 前进。
+
+## H. 执行记录（2026-10-24，第 12 轮：entropy 守卫生效，新墙 = AppleImage4 mix-n-match）
+
+- **守卫确认生效**：entropy_init 不再炸（上一轮的 FAR 0x40 消失），启动推进
+  到 kext start 阶段更深处的下一个 panic：
+  **"failed to get mix-n-match policy: 2"**（panic screen 带格式化参数，
+  后接标准 TCR/SCTLR/pages/free 尾注）。
+- **定域**：panic 串唯一实例在 `com.apple.security.AppleImage4 __TEXT`
+  （0x3e20262）。上下文字符串揭示其所在流程 = img4 AP 实例化：
+  `failed to instantiate ap` → **`failed to get mix-n-match policy`** →
+  `/chosen/manifest-properties`；邻居 = `acquire CSM exports`、
+  `pmap runtime initialization`、`chip: AMNM = 0x%x`、
+  `overriding mix-n-match policy` 等——AppleImage4 在取芯片的
+  allow-mix-n-match 观测值（IMG4_IDENTIFIER_AMNM，img4 runtime.h），来源
+  候选 = CSM/pmap_cs 导出或芯片观测接口。
+- **取证状态**：串的代码引用点尚未定位——AppleImage4 不走常规
+  `bl _panic`（全镜像 4906 个 panic 直调中零命中该区），其导入机制为
+  自有 __DATA_CONST 槽（0x5cabb18→_panic 已找到，但 __TEXT_EXEC 无
+  adrp x16 桩，疑似 double-deref/blr 形态）；`_img4if` 内核接口结构
+  （0x71b4380）已 dump，22 个有效槽位符号化待做。
+- **对照面**：fuxi/sheng（README 实证 home screen + Metal 全通）= xnu-8796
+  + **21H461**（iOS 17.7.11）配对，AppleImage4 在同款内核上能过；我们 =
+  20H392（iOS 16.7.16，用户拍板的手机身份），16.7 的 AppleImage4 策略
+  获取路径与 17.x 不同。nx729j 截至 10-22 只到 UEFI 阶段 A，无内核上机
+  记录可参照。**m2381 在 16.7 配对上属开荒。**
+- **下一步候选（第 13 轮）**：
+  1. 从 Apple CDN 拉 21H461 kernelcache（fuxi pin `f18b4df8…`，方法已
+     实证）→ 剥 17.7 的 AppleImage4 → 差分两版 mix-n-match getter 的
+     数据来源（CSM 导出 vs ADT/manifest-properties vs img4if 槽位），
+     按 entropy 先例给 16.7 版补来源或补内核侧。
+  2. 廉价试探（可与 1 并行）：查 16.7 getter 是否可从 ADT
+     `/chosen/manifest-properties`（我们的 ADT 已有该节点）取 AMNM——
+     补属性即活，则无需动内核。
+  3. 继续本地 xref：破解 AppleImage4 的 double-deref 导入形态，定位
+     panic 调用点后按 entropy 同款"守卫跳板"模式处理。
+- **本轮回滚/资产**：payload `8d05c74a…`（现刷在 recovery_a，含 entropy
+  守卫，仍有效——下一轮无论走哪条路都基于它叠加）。
