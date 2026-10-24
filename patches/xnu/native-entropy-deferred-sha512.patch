@@ -1,0 +1,33 @@
+diff --git a/osfmk/prng/entropy.c b/osfmk/prng/entropy.c
+index d57d48c..f7deb8b 100644
+--- a/osfmk/prng/entropy.c
++++ b/osfmk/prng/entropy.c
+@@ -27,6 +27,7 @@
+  */
+ 
+ #include <libkern/crypto/sha2.h>
++#include <libkern/crypto/crypto_internal.h>
+ #include <libkern/crypto/crypto.h>
+ #include <os/atomic_private.h>
+ #include <kern/assert.h>
+@@ -199,7 +200,19 @@ __startup_func
+ void
+ entropy_init(void)
+ {
+-	SHA512_Init(&entropy_data.sha512_ctx);
++	/* xnu-8796 pairs with corecrypto that registers g_crypto_funcs before
++	 * installing the kernel PRNG. The iOS 16 corecrypto kext (the 20H392
++	 * pairing) does it the other way around: register_and_init_prng runs
++	 * with the dispatch table still NULL, and the eager SHA512_Init
++	 * dispatched through it aborted on first boot. The digest context has
++	 * no consumer until entropy_provide, which only runs after that same
++	 * kext start has completed the registration, so skip the eager init
++	 * while crypto is not up yet; the zero state only means the first
++	 * extraction conditions from a fixed (rather than the standard SHA-512)
++	 * IV, and the samples themselves carry the entropy. */
++	if (g_crypto_funcs != NULL) {
++		SHA512_Init(&entropy_data.sha512_ctx);
++	}
+ 
+ 	lck_grp_init(&entropy_data.lock_group, "entropy-data", LCK_GRP_ATTR_NULL);
+ 	lck_mtx_init(&entropy_data.mutex, &entropy_data.lock_group, LCK_ATTR_NULL);
