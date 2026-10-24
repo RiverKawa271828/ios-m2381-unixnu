@@ -91,6 +91,23 @@
   单位；存储值无签名（Gate C 对策不变）。详见 PLAN-P3-CI §M。
 - 门 A 剩余 = kit 内 rebinder 实现 + 测试扩绿 + 原生内核自洽干跑。
 
+## 0.5 2026-10-24 续五：门 A 新墙 = release cache 全面符号剥离（用户拍板点）
+
+- 链走查语义层收口：419,323 条 plain meta 位零污染；roots 闭包 31+7，
+  选定组件 69,386 站点、组件目标 67 对全在闭包内（0 违规）；kernel 目标
+  去重 = **1,795 VA**（详见 PLAN-P3-CI §O.1）。
+- **新墙**：21H16 release fileset KC 全 cache 零符号名（kernel nsyms=0、
+  组件 symtab 全指向桩、dyld_info 垃圾、trie 空）——经典"按名映射
+  kernel 目标"无 donor 侧数据源。跨代字节匹配死于 arm64/arm64e 结构差；
+  panic 字符串交叉引用天花板实测 **7.6%**（60% 目标函数零字符串引用），
+  判死（§O.2/§O.3）。
+- 元数据事实：`_Prelink*` 地址 = 真实 VA 的有符号十进制（u64 补码即真
+  值，与 LC_FILESET_ENTRY extoff 精确相等）；19 条 sentinel（INT64_MAX
+  无 size）天然跳过。
+- **门 A 唯一干净解 = KDK 21H16**（Apple Developer 下载，需 Apple ID
+  一次认证）→ 符号旁表喂 rebinder；**无 KDK → 按 §L 转 (b)（21H461
+  备胎零返工）**。rebinder 本体与命名源正交、可先行。
+
 ## 1. 结论/决策
 
 - **现方向 = 原生 UniXNU 设备移植**（对齐上游 fuxi/sheng 模式）：UniXNU 4K
