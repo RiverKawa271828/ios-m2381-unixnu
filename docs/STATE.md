@@ -136,6 +136,21 @@
   SM8450、malachite MT6878、pong 等）+ driver catalog/仓库规则。**rebase
   未做**（留待下会话按 UPSTREAM.md §2 一次主题执行）。
 
+## 0.7 2026-10-25 续五：第 22 轮首启读图 → 发布契约死结修复（详见 PLAN-P3-CI §U）
+
+- **实机**：userdata 5.7GiB + recovery_a `c767358c` 刷后首启 = 绿条→蓝条→
+  panic `Failed to mount root device`（IOKitBSDInit iOS 路径 = root 媒体
+  未出现）。**根因 = `ufsBuildRootPlan` 上游契约 count≥2 与 §T 单策略
+  单窗口镜像的代码级死结，与刷写质量无关**；现役 owner 配置 OWNER_* 全关，
+  SystemOS/Data 挂载 panic 未编入，修后 root 挂载成功即直奔 launchd。
+- **修复**：RootPublication.h 放行单 OS 窗口（多窗口契约不变，order[0]
+  越界坑同修）+ 测试扩绿；三份拷贝同步。**新 owner 内核 `220721ca` + 新
+  payload `e1e83910`（100MiB）已本机产出**，桌面校验（ADT/trust/ESP 内
+  kernel sha）全绿，待用户单刷 recovery_a。
+- **读图判别器**：launchd 级画面/exec 类新 panic = userdata 落地 + root
+  挂载 + VerifiedRoot 全链实机闭环；仍同 panic = userdata 未落地（读回
+  欠账坐实，probe=11 取证）。
+
 ## 1. 结论/决策
 
 
