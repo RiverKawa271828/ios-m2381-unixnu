@@ -139,16 +139,20 @@ git push --force-with-lease origin m2381
 
 ```text
 upstream  https://github.com/UniXNU/UniXNU.git                   (fetch only; push = no_push)
-origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git
-          main  = UniXNU e95b37d 的旧镜像（保留不动；要追新可 fast-forward）
-          m2381 = 本工作区 = upstream/main b7b6a6a + 工作区提交
+origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git（GitHub fork of UniXNU/UniXNU，默认分支 = m2381）
+          main  = upstream/main 的纯镜像（2026-10-26 起，16e592a；同步时一并强推对齐）
+          m2381 = 本工作区 = upstream/main 16e592a + 工作区提交
+          device-m2381 = 设备仓 orphan 镜像（CI dispatch 的 device_ref，独立演进）
 ```
 
-- 本工作区在 `origin/m2381`。它曾是无共同祖先的孤儿分支，GitHub 因此把上游
-  全部提交都算成"落后"（出现过 11 ahead / 181 behind 的大数字）；
-  2026-10-23 重建后 ahead/behind 恢复真实含义：behind = 还没跟上的上游
-  提交数，ahead = 工作区提交数。
-- `origin/main` 仍是 e95b37d 旧镜像；不要把工作区提交推上 `main`。
+- 本工作区在 `origin/m2381`。behind = 还没跟上的上游提交数，ahead = 工作区
+  提交数；2026-10-26 对齐后为 ahead 107 / behind 0。
+- `origin/main` 政策（2026-10-26）：**始终 = upstream/main 的纯镜像**。
+  旧政策（保留 b7b6a6a 旧镜像）作废——上游 2026-10-25 改写 main 历史后旧镜像
+  与上游分叉，GitHub 的 Sync fork / PR 页报 "conflicts" 无法快进；强推对齐
+  （`git push origin +upstream/main:main`）后 fork 页面恢复纯 ahead 展示，
+  之后每次同步 m2381 时把 main 一并指到新上游 tip 即可（永远 fast-forward
+  或精确相等，不再有冲突提示）。不要把工作区提交推上 `main`。
 - 推送：rebase 后历史改写，`git push --force-with-lease origin m2381`；
   不要 `git push upstream`。推送窗口 = 用户拍板（红线 8）。
 
