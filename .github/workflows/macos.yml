@@ -23,7 +23,6 @@ on:
           - kernel payload
           - kernel userdata
           - kernel userdata payload
-          - userdata
         default: kernel
       xcode:
         description: Xcode version of the macos-26 image (/Applications/Xcode_<version>.app)
@@ -57,10 +56,6 @@ on:
         description: Mark Setup as done in the Data seed
         type: boolean
         default: false
-      runner_label:
-        description: Hosted runner label (macos-15 = Intel lane when arm64 pools are congested)
-        required: false
-        default: "macos-15-arm64"
       upload_kernel:
         description: Upload the unlinked (pre-prelink) source kernel; the prelink embeds Apple restore-image kexts and stays local
         type: boolean
@@ -103,11 +98,10 @@ jobs:
   build:
     # Pinned: macos-latest moves between images (macos-15 had an Xcode whose clang rejects the warning options the
     # build passes with -Werror). macos-26 is arm64 and carries the Xcode 26 line the build is developed with.
-    # m2381: 2026-10-24 the macos-26 arm64 hosted pool was capacity constrained (jobs failed "not acquired by
-    # Runner of type hosted" or queued 24 h). macos-15-arm64 carries the same Xcode 26 line (26.0-26.3); dispatch
-    # with xcode=26.3. The label is overridable via the runner_label input so an Intel macos-15 lane can be raced
-    # against a congested arm64 queue (Xcode 26.3 exists on both images; the kernel build is an arm64 cross-compile).
-    runs-on: ${{ inputs.runner_label || 'macos-15-arm64' }}
+    # m2381 2026-10-26: the macos-15 lane was tried as a capacity workaround and hit exactly that wall (run
+    # 40220630199: Xcode 26.3 Apple clang 17 rejects -Wno-unnecessary-virtual-specifier under -Werror); the
+    # standing rule is upstream wins — build only on macos-26.
+    runs-on: macos-26
     timeout-minutes: 360
     env:
       DEVELOPER_DIR: /Applications/Xcode_${{ inputs.xcode }}.app/Contents/Developer
