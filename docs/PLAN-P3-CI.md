@@ -845,3 +845,42 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
     墙在用户态第一脚；
   ③ **仍 `Failed to mount root device`** = userdata 未落地/manifest 被拒
     （读回欠账坐实）→ probe=11 只读窗口取证（打印 manifest+每窗 GPT）。
+
+## V. 第 23 轮：官方文档研读 + r22 读图重判读 = 盲启非回退，探针件恢复（2026-10-25 续六）
+
+- **官方新文档（unixnu.com/zh，2026-10-25 发布，用户指路）**：上游生态已转向
+  **格式 2**（board.toml `schema_version = 2`）：SoC 共享仓（`UniXNU-sm8550-common`
+  已存在！）+ OS profile（`profiles/os/ipados-17.7.11-21H461/` = 恰好我们的
+  donor 版本）+ 组件改名（NativeUfs→ShengUfs、NativeHidInput→ShengHidInput、
+  NativeMobileDisplay→GopFramebuffer、NativeAES→SoftwareAES、NativePrelink→
+  XnuPrelink、NativeAdreno→Adreno740…）+ 新命令面（`unixnu ipsw fetch`/`kernel`/
+  `build package`/`firmware`/`payload`/`bootimg`，unixnu.local.toml 存路径）+
+  ADT 改由硬件 DTS+OS profile 在 payload 步生成（make-m2381-adt.py 属旧路）。
+  **sheng = 官方维护的格式 2 参考设备**；ufs 页官方形态 = 双窗口 userdata
+  （OS+SystemOS + root UUID）——我们的单窗口是已知偏离（r21 双策略同锚死结）。
+  debugging 文档给出色条权威语义 + 日志抓取（二维码导出固件日志）。迁移格式 2
+  = 独立主题，不阻塞当前循环。
+- **r22 读图重判读（关键更正）**：色条语义（官方 debugging + 探针脚本双源）：
+  **绿条 = DarwinBoot 画的**（"the green one that DarwinBoot paints"），只证
+  加载器交接；**蓝条 = 入口探针 stage 1**（内核入口已执行、MMU 关）；**品红 =
+  stage 2**（MMU 开前）；**panic 屏幕 = 探针 --panic-screen 补丁**（patch
+  _panic+common 漏斗，按符号表自适配布局）。r22 payload 用了
+  device-bringup/board.toml，其 `panic_screen = false`（bring-up 纪律：探针
+  VA 按内核布局走，脚本 rebase() 现已自适配）→ **r22 = 盲启**：绿条后一切
+  （含 5.7GiB VerifiedRoot 校验全程）不可见。**不是变严重，是变瞎**；r22 内核
+  可能死在任何位置，无法判读。r21 蓝条+panic 屏的确切来源仍开放（CI payload
+  json 显示同样没在 payload 步打探针、stub=空函数、VerifiedRoot 无绘图——待
+  考古，不阻塞）。
+- **恢复可见性（本轮产出）**：按 r10 成熟流程手动打探针——
+  `patch-xnu-entry-probe.py kernel.probe.macho --panic-screen --no-reset`
+  （rebase() 按新内核入口 pc 平移全部补丁点 + 符号表取 _panic/_vinfo，一次
+  通过；panic screen 0x9e5B @ `0xfffffff00a1645c0`，funnel `0x…9fcad14`）→
+  **探针内核 `6666f96d` → payload `e3c5c0fa`（100MiB）**，桌面校验全绿
+  （ESP 内核 sha 对上、ADT 完整、trust 双模块）。构建命令 = kernel.probe.macho
+  先探针后 payload（PATH 需 /opt/unixnu-linux/llvm/bin + linuxbrew bin；
+  UNIXNU_UEFI=仓根 uefi-sheng 符号链接）。
+- **待刷**：recovery_a = `e3c5c0fa`（userdata 不动）。**读图判定表（带探针）**：
+  ①无蓝条（绿条后静默）= 内核入口未执行 → DarwinBoot 侧新问题；②蓝条 = 入口
+  已执行；③品红 = MMU 前到站；④panic 屏幕 = 直接读因；⑤恢复界面/logo =
+  launchd 里程碑。校验 5.7GiB 期间探针轮询是 no-op 桩——蓝条只闪一次（stage 1），
+  之后数分钟静默属预期，勿提前断电。

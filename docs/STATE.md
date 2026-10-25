@@ -151,6 +151,21 @@
   挂载 + VerifiedRoot 全链实机闭环；仍同 panic = userdata 未落地（读回
   欠账坐实，probe=11 取证）。
 
+## 0.8 2026-10-25 续六：r22 盲启更正 + 探针恢复（详见 PLAN-P3-CI §V）
+
+- **r22 第二次读图（payload e1e83910）= 绿条+entry 诊断后静默**。官方新
+  debugging 文档+探针脚本双源实锤：绿条=DarwinBoot 画、蓝条=入口探针
+  stage1、panic 屏=探针补丁——**r22 payload 没打探针（device-bringup
+  board.toml panic_screen=false）→ 盲启，非回退**。
+- **恢复探针**：patch-xnu-entry-probe.py 的 rebase() 自适配新内核布局，
+  一次通过 → 探针内核 `6666f96d` + payload **`e3c5c0fa`**（100MiB），
+  桌面校验全绿，待刷 recovery_a。判定表见 §V：无蓝条=DarwinBoot 侧问题、
+  蓝条=入口已执行、品红=MMU 前、panic 屏=读因、恢复界面=launchd 里程碑；
+  5.7GiB 校验期间静默数分钟属预期。
+- **官方格式 2 文档**（migration/steps/ufs/debugging）：SoC 共享仓
+  sm8550-common + 21H461 OS profile + 组件改名已上线，sheng=格式 2 参考；
+  迁移列为独立主题。
+
 ## 1. 结论/决策
 
 
