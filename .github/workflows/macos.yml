@@ -355,6 +355,7 @@ jobs:
             build/verified-root-os-xnu/**
             build/verified-root-host/verified-root.dylib
             build/verified-root-host/keys/owner-public.pem
+            build/owner-data-fixture/**
           if-no-files-found: error
           retention-days: 7
 
