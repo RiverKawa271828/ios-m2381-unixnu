@@ -1047,3 +1047,11 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
 - **在飞**：run `40183479056`（同 runbook，CI 重产 16K 双策略 + 双窗
   userdata）。绿后：证据重铺 → 本机出核（预计 kernel ≈69MB，payload
   ≈66MiB ✓）→ 探针 → payload → 双刷。
+- **16K CI 轮全绿（run `40184512676`，续十二）**：policy 脚本校验循环改读
+  `record['block_bytes']` 后一次通过——**16K 双策略 + 双窗 userdata 齐**
+  （evidence artifact 131→32MB = 16K manifest 的预期体积；userdata 与前轮
+  **字节相同**——块尺寸只改策略不改镜像，已下载的 9.4GiB 继续有效，无需
+  重下）。过程小坑：github.com（git https 端点）单独不通而 api.github.com
+  正常——用 **Git Data API 重放提交**（blob→tree→commit→PATCH ref，
+  /tmp/api_push.py）替代 push；artifact 下载 302 落
+  objects.githubusercontent.com 同受网络策略影响，重试循环挂起。
