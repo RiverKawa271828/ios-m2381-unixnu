@@ -250,6 +250,42 @@
   反面）；③fixture 生产（prepare-owner-data-fixture 记录需 macOS hdiutil
   → CI pre_build 候选 vs 本地 Linux 化）——**待拍板后开工**。
 
+## 0.13 2026-10-25 续十一：stage 8 开工 = Data 种子三题拍板并执行（用户授权"你来拍板"）
+
+- **三题定案**：①投递通道 = **ESP `Payloads/scratch-data.img`（DBRDISK1
+  打包）+ unixnu.toml `initrd` 行 + DarwinBoot `Request->Ramdisk` 装载 +
+  ADT `/chosen/memory-map` PackedRAMDisk 占位 + NativeRamBlock 稀疏导入**
+  ——全链上游现成设计（packed_ramdisk.py pack / DarwinBoot PackedRamdisk.h
+  / payload.py `--data-ramdisk` 自动写 initrd+拷文件 / board 已预埋
+  `packed_data_ramdisk=true`），零新代码；嵌内核方案废弃（ESP 硬顶）。
+  ②fixture 生产 = **CI pre_build**（hdiutil/diskutil/OS-mount 全在
+  ci-owner-policy.sh 车道；`prepare-owner-data-fixture.py` 新增
+  `--volume-uuid` 用 diskutil changeVolumeUUID 钉死 18AB5557）+ 打包后与
+  verified-root artifact 同车（workflow upload glob += build/owner-data-fixture/**）。
+  ③defconfig 三旗标 = NATIVE_RAM_BLOCK=y + OWNER_DATA_MOUNT=y +
+  DATA_VOLUME_UUID="18AB5557-…"（owner defconfig，devices/ 源同步）。
+- **内核链接新墙 = baseline 的 virtio/RAM 交叉审计**（build-xnu-4k-baseline.sh
+  :697：两 transport 各需 bindings.json 且 bindings 字典相等）。上游写法
+  `build-native-virtio-bindings.py` 需 live-device 的 interface-audit.json
+  （nx729j 注释明示静态车道不可得）→ **新设备脚本
+  `build-storage-transport-record.py`**：以 build/io-storage-family/
+  bindings.json（prelink-storage-bindings.json 静态 pin，18 条原始类绑定）
+  + 实际 .o sha 写两份记录（board archives 各插一行）。
+- **运维坑两记**：①config 变更后首次构建可能在 archive 阶段死于
+  link.filelist 指向被中断构建删除的对象（本轮 = kern_exec.o）——用
+  kern_exec.o.json 里的 compile DB 命令手动补编即可过检，baseline make 随后
+  会按新配置真正重编；②`./unixnu defconfig NAME` 生成 out/.config（kernel
+  构建读 .config 而非 board 的 defconfig 字段），改 defconfig 后必须重跑。
+- **产出与在飞**：内核 **`1abf8c8a`** → 探针件 **`282d793f`**（panic screen
+  rebase 一次过；NativeRamBlock/owner-data 符号在内核 ✓）；payload 待
+  fixture 到货后 `--data-ramdisk build/owner-data-fixture/scratch-data.img`
+  一步出件。双分支已推（m2381=`a3ec270`、device-m2381=`3b82b20`，git 端点
+  恢复、普通 force push 即可）；**dispatch run `40208347346`**（steps=kernel
+  最小合法值，pre_build 产 fixture，upload_verified_root=true，守望
+  /tmp/r30-watch.log）。**待用户：取件 verified-root artifact（内含
+  owner-data-fixture）→ 我出 payload → 只刷 recovery_a**。读图预期：
+  tzinit symlink 成功（timezone 过）→ 下一墙 `ram-data-first-abort`。
+
 ## 1. 结论/决策
 
 
