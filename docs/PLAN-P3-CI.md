@@ -774,3 +774,38 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   → 本机出 owner 内核 → arg 回 `native-ufs-root=1` → payload → 刷。
   预期下一堵墙在 APFS 挂载/launchd 前（owner 链的 OWNER_* 旗标组届时
   按 fuxi 全量版对表逐个开）。
+
+## T. owner 车全线打通 + userdata 镜像到货（2026-10-25 续四：第 21 轮材料齐备）
+
+- **CI userdata 车四轮拔钉全部通过**（run `40142020091` 全绿）：①pre_build
+  子模块缺失（重写后 workflow 不递归 checkout）；②Summary 步 xcodebuild
+  被管道 SIGPIPE 标红成功轮；③pmgr builder 无候选鸡生蛋（CI 首建无
+  prelink 产物）→ 设备仓改**双主机自适应**：无候选路径钉死 donor AON 槽
+  值（7readAonEv/8writeAonEy = 0x…fbc/0x…fc4，从本机候选实测）+ 跳过跨件
+  校验，own-guard 校验双主机全跑；④boot-progress 桩在 macOS 默认拿
+  MacOS SDK 配 iPhone target → 补 `-isysroot iphoneos`。
+- **真 VerifiedRoot 上车（owner 内核 `38b433ee`）**：探针归档三连修
+  （EXPORT_HDRS/libsa 空目录、clang24 的 `-Wno-unsafe-buffer-usage`/
+  `-Wno-shadow-header`）；**双卷 bundle 死结**（SystemOS 策略须同锚签名，
+  CI 生成私钥未保留）→ 改**单策略 bundle**：包装脚本给探针归档追加汇编
+  （`_verified_root_policies` = [OS manifest]，count=1）——根挂载只需 OS
+  卷（04769D26），SystemOS 双卷留待未来同锚重产。ESP 96→100MiB（manifest
+  随内核变大）。
+- **坑两记**：①pmgr builder 的 "All and only audited original base imports"
+  是 **require 失败串**不是 PASS（静默 SystemExit 陷阱）；②builder 重构
+  时 AON 绑定行丢失导致集合不等——UNDEF/BIND 双打印定位。
+- **userdata 镜像验真**（artifact `unixnu-m2381-userdata-1.zip` →
+  artifacts/images/m2381/userdata/）：整镜像 sha `c5977f2d…` ✓；头部
+  `SHNGROOT` 容器，OS 窗口 @1MiB = 6,077,580,800 B，**窗口 sha
+  `e5634d04…` = VerifiedRoot 策略核验的同一份字节**——证据链闭合。
+- **待刷件（用户自刷）**：userdata（5.7GiB，约 10-20min）+
+  recovery_a = **`c767358c`**（owner 内核 + `native-ufs-root=1` + panic
+  screen + 探针），单会话双刷后 reboot。
+- **读图分支**：恢复界面/Apple logo/任何用户态画面 = launchd 级里程碑
+  （无 Data 种子的预期终点）；APFS/挂载类新 panic = 取证循环下一墙；
+  品红后静默 = stage 探针二分。
+- **下会话候选**（按读图结果选）：①用户态画面 → Data 种子（CI pre_build
+  可产，prepare-owner-data-fixture 需 macOS 挂载）→ 显示/触摸 P4 门；
+  ②取证循环；③欠账 recovery_a dd 读回对拍；④空闲主题：arm64e 专项
+  （PLAN-arm64e-research.md）、XS/fileset-KC rebinder（门 A 剩 KDK 源）、
+  上游跟随。
