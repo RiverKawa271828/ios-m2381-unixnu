@@ -35,6 +35,20 @@
 
 ### 1.1 同步记录
 
+- **2026-10-26 续：设备仓 schema v2 迁移落地（消费 16e592a 机制面）**：
+  board 双板迁 v2（soc_source=sm8550 pin `23b2049f`、os_profile、components
+  include、config_fragments/patch_series、device_tree=dts/m2381.dts）；ADT 走
+  v2 公共生成器（make-m2381-adt.py 转参考件）；P3 双遗债清偿 =
+  audit-storage-interface.py→nx729j 静态绑定（build-storage-bindings.py +
+  EXTRA_LD force_load libStorageBindings.a）、NativePrelink/NativeUfs 改名
+  XnuPrelink/ShengUfs（设备 fork 保留并胜出：Libm literal pools + fileset
+  rebinder；SMMU takeover + 单窗口发布 + 16KiB 校验块）；删设备仓 stale
+  build-arm-driver.py（v1 版会盖上游 v2 版）；m2381_defconfig 对齐 sheng 绿灯
+  形态（virtio-mmio-block-verified-bundle 路径 + NATIVE_LEGACY_DISPLAY=n）；
+  ci-owner-policy.sh 加 XnuPrelink fork 换装、make-device-branch.sh 加
+  feeds/dts/patches、check-m2381.py 合并 profile 检查（4 ok）。本机验证 =
+  双板 defconfig/tree、14 组件解析、58 补丁全应用、ADT 生成 13820B、kit 测试
+  绿。详见 STATE §0.14。CI 重发待用户拍板。
 - **2026-10-26（规矩定死：一切以上游为准，用户拍板）**：`upstream/main` →
   `16e592a`（`c62bf12` +42 提交，历史未改写，标准 `git rebase upstream/main`
   重放 104 个工作区提交）。主题：**设备仓 schema v2**（`[board] soc_source`/
