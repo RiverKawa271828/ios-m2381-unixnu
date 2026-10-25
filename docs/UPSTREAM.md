@@ -8,20 +8,27 @@
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `3325e352` |
-| guacamole 先例 | https://github.com/wochgn/UniXNU-guacamole | `reference/UniXNU-guacamole` | `6269d31` |
-| qemu 先例（Data seed 脚本） | https://github.com/xVanTuring/UniXNU-qemu | `reference/UniXNU-qemu` | `97b75b1` |
-| sheng 参照（平板） | https://github.com/UniXNU/UniXNU-sheng | `reference/unixnu-sheng` | `d76556b` |
+| **SM8550 SoC 层（v2）** | https://github.com/UniXNU/UniXNU-sm8550-common | 未克隆（feed pin `23b2049f`，sheng 消费中；m2381 迁 v2 时接） | `23b2049f` |
+| sheng 参照（平板，**schema v2 参考设备**） | https://github.com/UniXNU/UniXNU-sheng | `reference/unixnu-sheng` | `d76556b` |
 | sheng 固件 | https://github.com/UniXNU/uefi-sheng | `reference/uefi-sheng` | `0eb4514` |
-| fuxi 另一 fork | https://github.com/matejkoo217/UniXNU-fuxi | `reference/UniXNU-fuxi` | `41c2aac` |
-| vermeer 参照 | https://github.com/yyx2025/UniXNU-vermeer | `reference/UniXNU-vermeer` | `9137aba` |
+| nx729j 参照（静态绑定先例） | https://github.com/2713385115/UniXNU-nx729j | `reference/UniXNU-nx729j` | 保留 |
+| 本设备 Mu fork（m2381Pkg 落点） | https://github.com/RiverKawa271828/Mu-Silicium | `reference/uefi-m2381-nura` | 保留 |
 
 - **分支模型（2026-10-23 起）**：`m2381` = `upstream/main` + 工作区提交。
   由旧的无祖先孤儿分支 `git rebase --onto upstream/main --root` 重建（备份：
   本地分支 `m2381-pre-sync-backup`）。工作区文件（`docs/`、`devices/`、
   `tools/`、`artifacts/`、`legacy/`、`AGENTS.md`、`README.md`）叠在上游树
   （`drivers/`、`kits/`、`package/`、`patches/`、`scripts/`、`unixnu`…）之上。
-- `reference/` 其余克隆仍是**只读参照**；`reference/unixnu` 降级为干净构建
-  树/对照，日常同步直接在本仓 rebase，不再经 reference 搬运。
+- `reference/` 其余克隆仍是**只读参照**；日常同步直接在本仓 rebase。
+  2026-10-26 清理：删除死 era 克隆 `UniXNU-guacamole`/`UniXNU-qemu`/
+  `UniXNU-negroni`/`UniXNU-vermeer`/`UniXNU-nuwa`/`UniXNU-pong`/`uefi-pong`/
+  `UniXNU-fuxi`（他人移植快照与旧先例，内容已被上游文档/机制吸收）与
+  `reference/unixnu`（旧上游对照树，本仓即上游基座后冗余）；死 donor 暂存
+  `out/ipsw/20H392`、空目录 `out/ipsw/21H16` 一并删除（stage-local-candidates
+  的 sorted glob 只认 `kernelcache.release.*.decompressed`，现役 21H461 不受
+  影响）。保留：uefi-fuxi/unixnu-fuxi（模板）、uefi-sheng（符号链接目标，
+  探针 Font.h + P2 基座）、unixnu-sheng（v2 参考设备）、UniXNU-nx729j（静态
+  绑定先例）、darwinboot、uefi-m2381-nura。
 - 不要向 `upstream` push（push URL = `no_push`）。上游 = 机制/驱动/补丁的
   来源；设备模板 = 板级值的来源。设备工作落在 `devices/m2381/`，不直接改
   上游文件（`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
