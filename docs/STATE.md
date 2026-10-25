@@ -318,6 +318,49 @@
   unixnu.toml）→ 用户只刷 recovery_a；炸=拉 job log 继续修）。②读图：
   tzinit symlink 过（timezone 关卡）→ 下一墙 ram-data-first-abort。
 
+## 0.14 2026-10-26：设备仓 schema v2 迁移（本会话执行，上游 16e592a）
+
+- **迁移内容**（`docs/porting/migration.md` 全步，本机验证到补丁应用）：
+  `board.toml`/`board.bringup.toml` → `schema_version = 2`（`soc_source = sm8550`
+  pin `23b2049f`、`os_profile = ipados-17.7.11-21H461`、`[components].include`、
+  `[kernel] config_fragments/patch_series`、`[device_tree]`）；`[ipsw]`/
+  `[kernel.prelink]`/text_fixups 收编进 OS profile（板只留 trust_cache_sha256
+  三值覆盖）；**ADT 改走 v2 公共生成器**：新 `dts/m2381.dts`（含 sm8550.dtsi
+  的 intc/ufshc/ufsphy 导出 + 16GiB 单连续窗 + ufs/ufsphy enable；GPU 节点保
+  持 disabled 与 v1 一致），`make-m2381-adt.py` 留作参考件；`feeds.toml` 新增
+  sm8550 soc feed；空 `patches/xnu/series`。
+- **audit 清单 → 静态绑定（P3 遗债 #1）**：owner 板 archives 撤
+  `audit-storage-interface.py`（fuxi 活机 gdb-stop.json 依赖，CI 必死），换
+  nx729j 静态路径 `build-storage-bindings.py`（prelink-storage-bindings.json
+  190 slot）+ `XNU_EXTRA_LD_ARCHIVES` force_load `libStorageBindings.a`；
+  bringup 板同构（v1 已如此）。verified-root stub/if-evidenced 双件入 owner
+  清单（有证据→真 bundle，无→refusing stub）。
+- **改名迁移（P3 遗债 #2）**：`kits/NativePrelink`→`kits/XnuPrelink`、
+  `drivers/NativeUfs`→`drivers/ShengUfs`（**均为设备 fork 胜出**：Libm literal
+  pools/fileset rebinder；SMMU takeover/单窗口/16KiB 校验块——目录名对齐后
+  v2 解析器自动让设备版盖过上游 submodule）；删设备仓 stale
+  `scripts/build-arm-driver.py`（v1 旧脚本会盖掉上游 v2 目录驱动版）；
+  `m2381_defconfig` VIRTIO bundle 路径改 `virtio-mmio-block-verified-bundle/
+  libVirtioMmioBlock.a`（对齐 sheng 绿灯配置）；`NATIVE_LEGACY_DISPLAY=n`
+  （display-analysis ABI 审计依赖活机证据，显示走 UEFI GOP offline-legacy-*）。
+- **配套**：`ci-owner-policy.sh` 增加 XnuPrelink fork 换装（同 VerifiedRoot
+  模式，防 submodule 重克隆盖 fork）+ v2 `[ipsw]` 从 profile 读；
+  `make-device-branch.sh` 拷贝清单加 `feeds.toml dts patches`；
+  `check-m2381.py` 升级为合并 arch/OS profile 后检查（4 ok / 0 fail 维持）；
+  包补 boot-progress/adreno-kits 所需 sheng kit 源（BootProgress 系 +
+  ShengGmuVotes.c）+ 拷 `build-boot-progress.py`/`build-adreno740-kits.py`。
+- **本机验证**：`unixnu defconfig m2381_defconfig`/`m2381_bringup_defconfig`
+  双板过（v2 输出布局 `out/m2381/ipados-17.7.11-21H461/<config>/`）；14 组件
+  （Adreno740 依赖链自动入列）；58 补丁全应用（arch 53 + soc 2 + os 1 + 设备
+  fork XnuPrelink 2）；DTS 编译 + `devicetree.generate` 出 ADT 13820 字节
+  （seed/data/trust 映射齐）；树装配三 fork 全胜出；kit 测试（12+fileset）绿。
+- **已知偏差（记录在案）**：v2 ADT cpu compatible = 各核真实 cluster
+  （v1 全写 a715）；arm-io ranges size 0x8000000→(dtsi 导出算得)；ufshc/ufsphy
+  带 reg 导出（v1 ufshc 仅 compatible）——均为 sheng 同 SoC 实证形态。
+- **下一步 = CI 重发**（用户拍板窗口）：make-device-branch.sh 重建
+  device-m2381 后 dispatch macos.yml（steps=kernel userdata payload，
+  pre_build=ci-owner-policy.sh）。未刷机。
+
 ## 1. 结论/决策
 
 
