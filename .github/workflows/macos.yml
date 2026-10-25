@@ -23,6 +23,7 @@ on:
           - kernel payload
           - kernel userdata
           - kernel userdata payload
+          - userdata
         default: kernel
       xcode:
         description: Xcode version of the macos-26 image (/Applications/Xcode_<version>.app)
@@ -237,6 +238,7 @@ jobs:
 
       - name: Build kernel
         id: kernel
+        if: contains(inputs.steps, 'kernel')
         env:
           # prepare-xnu-source.py lists Apple sources through the GitHub API; anonymous calls from hosted runners hit
           # the shared rate limit (HTTP 403).
