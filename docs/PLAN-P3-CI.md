@@ -1055,3 +1055,17 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   正常——用 **Git Data API 重放提交**（blob→tree→commit→PATCH ref，
   /tmp/api_push.py）替代 push；artifact 下载 302 落
   objects.githubusercontent.com 同受网络策略影响，重试循环挂起。
+- **stage 7 载荷出炉（续十三）**：本地 16K 双策略产线
+  （`build-owner-policies-local.py`：从已刷 userdata 镜像的两窗直接产
+  manifest+真 C/RSA 全块校验+同锚签名，**Linux 全本地零 CI 依赖**）→
+  bundle 构建三连坑修清（树 scripts 是**拷贝不自动同步 repo 更新**——
+  device 份 probe 影子覆盖 + repo 份丢 -Wno 三旗 + SystemOS 分支第二处
+  806400 字面量）→ **内核 `9e72b039`（69.5MB，16K manifest 预期命中）**
+  → 探针件 `f7a2819c` → **payload `7a40b90b`（100MiB，content 66MiB
+  ✓ 裕量充足）**，桌面校验全绿，`_verified_root_policy_count` +
+  `_verified_root_systemos_manifest` 在内核符号表 ✓。
+- **待刷（用户）**：userdata（已下载的 9.4GiB 双窗镜像，字节未变）+
+  recovery_a = `7a40b90b`。读图：16K 下 VerifiedRoot 校验仍走全块
+  （4×放大，校验期变长属预期）；owner cache mount 按 8846FE78 找到
+  SystemOS 窗口 → MNT_UNION 叠挂 → dyld 读到 libSystem/缓存 → launchd
+  = stage 7 里程碑。
