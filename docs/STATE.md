@@ -344,44 +344,35 @@
 - **显示/按键**：cmd-mode DSC 最小点灯（SimpleFbDxe 用 ABL 帧缓冲）、
   PMK8550 按键 SID——P2 m2381Pkg 内解决。
 
-## 7. 下一步（按顺序）
+## 7. 下一步（下会话工作单，2026-10-25 刷机中交接）
 
-0. **stage 7 收尾（本会话已执行到等 CI，run `40153881681`，守望
-   `/tmp/r25b-watch.log`；pre_build = `bash "$DEVICE_DIR/scripts/ci-owner-policy.sh"`
-   ——注意 pre_build 必须走 `$DEVICE_DIR` 路径，主仓 checkout 没有该脚本，
-   第一次 dispatch 40153504108 就死在这）**：
-   ① CI 绿后取件：`unixnu-m2381-userdata-*`（双窗 ≈9.4GiB）→
-     `artifacts/images/m2381/userdata/`；`unixnu-m2381-verified-root-*`
-     （os+systemos+os-xnu-bundle）→ 解包后把 `build/verified-root-os/`、
-     `build/verified-root-systemos/` 放进 `out/m2381/device-bringup/.cache/firmware/`
-     （同名字目录，stage-local-candidates 会搬进 build/）；
-   ② 本机 `./unixnu build kernel -D out/m2381/device-bringup -j14`（defconfig
-     已翻：-bundle 归档 + CACHE_MOUNT/CACHE_STARTUP/BOOT_MANIFEST/
-     UNION_SYSTEMOS=y；UNION_MOUNTS 内核选项已确认在选）→ 探针 → payload；
-   ③ 用户单会话双刷 userdata+recovery_a → 读图：恢复界面/logo = stage 7
-     里程碑 → Data 种子（CI pre_build 候选，prepare-owner-data-fixture 需
-     macOS 挂载）→ 显示/触摸 P4 门；union 挂载类新 panic = 取证循环
-     （native_owner_cache_stage + checkpoint 全在）。
-1. **上游 rebase 跟随**（见 §1/UPSTREAM.md §2）；**格式 2 迁移**（官方
-   migration/steps 文档已研读，SM8550-common + 21H461 profile + 组件改名，
-   独立主题，不阻塞设备循环）。
-2. 空闲主题：r21 蓝条来源考古（低优先）、XS/fileset-KC rebinder（门 A 剩
-   KDK 符号源）、arm64e 专项（PLAN-arm64e-research.md）。
-3. 欠账：recovery_a dd 读回对拍（userdata=iOS root 后"回 nura"消亡，改
-   UniXNU 侧自读或豁免）；首轮 CI 40153504108 的 pre_build 失败因路径
-   （已重发，无损失）。
-
-## 0.11 2026-10-25 续十二：16K 验证块 + CI 绿 + stage 7 材料齐（详见 PLAN §Z）
-
-- **16K 手术全落**：VerifiedRoot 设备 fork（VR_BLOCK_BYTES 16384 + manifest
-  工具参数）、RootWindowRead stride（批量语义保真，host ASan 全绿）、probe
-  常量、CI 用设备 fork。CI 十一轮系列终绿 **`40184512676`**：16K 双策略
-  （evidence 32MB）+ 双窗 userdata（**与前轮字节相同——块尺寸只改策略，
-  已下载的 9.4GiB 有效无需重下**）。
-- **过程坑**：policy 脚本校验循环写死 min(4096)（vr_host_block block 0
-  拒绝）；github.com git 端点单独不通 → Git Data API 重放提交（本地 docs
-  提交待网络恢复 rebase 收编，不阻塞刷机链）；artifact 下载 302 落
-  objects.githubusercontent.com 同受限，重试循环拉取中。
-- **待办**：16K 证据落 `.cache/firmware` → 本机出核（预期 ≈69MB）→ 探针
-  → payload → 用户双刷 userdata + recovery_a → 读图（恢复界面/logo =
-  stage 7 里程碑）。
+0. **读图三分支（用户正在双刷：userdata=已下载 9.4GiB 双窗镜像 +
+   recovery_a = `7a40b90b`，内核 `9e72b039`/探针件 `f7a2819c`，16K 验证块）**：
+   ① **恢复界面 / Apple logo / 用户态画面 = stage 7 里程碑** → 下一站
+     **Data 种子**：OWNER_DATA_MOUNT=y（defconfig 的 UUID 18AB5557 已钉）
+     需要 RAM 种子（prepare-owner-data-fixture 需 macOS 挂载 → CI pre_build
+     候选）+ BOOT_MANIFEST 已开；然后显示/触摸 P4 门；
+   ② **SystemOS/union 挂载类新 panic = 取证循环**：panic 屏会说话 +
+     `native_owner_cache_stage` 1-5 检查点 + owner cache checkpoint 全在；
+     已实证 = cache volume UUID 8846FE78 命中、MNT_UNION 叠挂 "/"、
+     native_union 三条件（vnode_mountedhere/rootvnode 互换）待机验证；
+   ③ **"no dyld cache" 仍现** = union 挂上了但 dyld 路径没接通——查
+     CACHE_STARTUP 的 dyld_flags bit3（免点火）与 cryptex 缓存路径；
+   ⚠ **校验期静默比 r21-22 更长**（16K = 4× 读放大）属预期，等 10-20 分钟
+     再判；蓝条只闪一次（stage 1）。
+1. **git 收编（github.com git 端点恢复后）**：`git fetch origin &&
+   git push --force-with-lease origin m2381`（远端 aaaa2174 = API 重放的
+   本地同内容提交，本地链多 5 个提交，强制安全）+ 重新生成 device 分支并
+   强推（先 `git branch -D device-m2381`）。推完删 /tmp/m2381-gh-token。
+2. **运维坑清单（已入册，复发先查）**：改 repo scripts 后必须 cp 到
+   tree/scripts + device-bringup/scripts + devices/scripts 三处（树 scripts
+   是拷贝且 device 层后拷会影子覆盖）；make-device-branch 二跑前
+   `git branch -D device-m2381`；pre_build 路径必须
+   `bash "$DEVICE_DIR/scripts/…"`；github.com git 端点不通时用
+   Git Data API 重放（/tmp/api_push.py，token /tmp/m2381-gh-token）。
+3. **独立主题**（不阻塞设备循环）：格式 2 迁移（官方 migration/steps 已
+   研读：SM8550-common + 21H461 OS profile + 组件改名 NativeUfs→ShengUfs
+   等 + sheng=格式 2 参考；我们的 16K fork/单窗属设备特化）；上游 rebase
+   跟随；XS/fileset-KC rebinder；arm64e 专项；r21 蓝条来源考古。
+4. **欠账**：recovery_a dd 读回对拍（UniXNU 侧自读或豁免）；16K 读放大
+   的性能优化（已验块缓存）= launchd 之后主题。
