@@ -449,6 +449,40 @@
   （mu-r62…r91、esp v46+）。temp/ 三 zip 解压入位后删除。
 - **未刷机**；下一步 = §7.2 本机出闪光 payload → 桌面校验 → 首刷拍板。
 
+## 0.17 2026-10-26 续三：首刷 + UEFI 真机首通 + 冻屏诊断循环（进行中）
+
+- **首刷（用户 fastboot 拍板）**：boot_b = boot.img `40f2a199`（P2 确定性
+  复现）+ recovery_a = payload.img 96MiB（内核 ee3255a8+探针、trustcache
+  `7416ca4f`、Data 种子 `67a1e4f2`、ADT 13820B）。**首轮出件漏
+  --trust-cache 被桌面校验拦下**（v2 不自动带信任缓存，实证配方必须
+  `--trust-cache out/m2381/trust/original-trust.bundle`）；userdata 未刷
+  （fd43ee70 在设备 = CI 件逐字节一致）。fastboot 前置全过（slot=b、
+  96MiB/100MiB）；刷后无 dd 通道（无 shell），本轮证据 = fastboot OKAY +
+  桌面哈希。
+- **读图 = 重大里程碑 + 新墙**：ABL→BootShim→**UEFI 真机首通**（m2381Pkg
+  第一次上硬件）——DXE 跑起来了，kalama 平台驱动（ScmDxeLA_Kailua/Shmb/
+  HALIOMMU/RPMh/Vcs/Clock/ICB…）全在加载，帧缓冲 DEBUG 控制台工作。**但
+  DXE 中段后冻死**：屏面固定不动，无异常打印、无菜单（BDS→UniXNUDxe 未
+  达）。未观察到 5 分钟看门狗复位。屏幕驱动顺序与 FV 清单不一致属 DXE
+  依赖调度，正常；UFSDxe 是 RELEASE blob 永不打印（存在与否不代表执行）。
+- **嫌疑面（驱动清单 diff）**：我们的 DXE 集与 nura 真机可用链（meizu20-
+  mars-port）**只多 DarwinBoot**（DXE.inc 逐行 diff），加 FDF 尾部独有源码
+  驱动（RamManagerDxe/Smbios/IortDtDxe/DtPlatformDxe/UniXNU 栈）——
+  从未在此硬件跑过的就是它们；也可能是 SimpleFb 接管后显示通路断（冻屏≠
+  冻系统）。
+- **诊断轮（已刷，下会话读图）**：八探针版 boot_b = **`a1d51f04`**（fd
+  `daad477f`；DEBUG_ERROR 直写帧缓冲，链接产物含标记已验证）：
+  `M2381>> RamManager ENTRY/EXIT`、`SimpleFb ENTRY`、`IortDt ENTRY`、
+  `DarwinBoot ENTRY/LOADER INSTALLED`、`UniXNUDxe ENTRY`、`UniXNUApp ENTRY`。
+  探针源码：DarwinBoot.c/package/UniXNUPkg×2（工作区文件，已提交）+
+  out/m2381/uefi 内 SiliciumPkg×2/QcomPkg×1（worktree 本地，gitignored，
+  诊断后随 FV 恢复）。**下会话工作单**：读冻屏画面上最后一个 `M2381>>`
+  标记 → 卡点 = 该标记之后的驱动段；六标记全齐仍无菜单 = BDS/菜单层问题
+  （此时转 RELEASE 静默构建对比）。修复路径备选：换用 nura 链同款构建、
+  逐个摘除独有驱动二分。
+- 注意：boot.img 默认输出在设备仓 `build/m2381/boot/`（不是
+  `out/m2381/boot/`，后者是 P2 旧件 40f2a199）。
+
 ## 1. 结论/决策
 
 
