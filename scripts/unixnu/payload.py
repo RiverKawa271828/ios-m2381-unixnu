@@ -158,7 +158,8 @@ def build(ctx, kernel=None):
                 # At the call site, without making the call (and without the delay).
                 probe.append('--reset-before')
         run(['python3', ctx.tree / 'scripts/patch-xnu-entry-probe.py', payloads / 'kernel.macho', *screen, *probe],
-            cwd=ctx.tree, env=dict(os.environ, UNIXNU_UEFI=str(ctx.uefi or '')), log_file=ctx.logs / 'payload-patch.log')
+            cwd=ctx.tree, env=dict(os.environ, UNIXNU_UEFI=str(ctx.uefi or ''), UNIXNU_DEVICE=str(ctx.device)),
+            log_file=ctx.logs / 'payload-patch.log')
         # The probes rewrite instructions inside __text, which the source corecrypto POST hashes.
         if b'_source_corecrypto14_bootstrap\0' in Path(kernel).read_bytes():
             boot_args = ' '.join([line, *spec.get('install', {}).get('confirm_args', [])])

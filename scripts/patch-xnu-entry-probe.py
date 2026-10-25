@@ -182,9 +182,18 @@ def assemble_c(source, va, workdir, symbols):
     # UNIXNU_UEFI is the Mu-Silicium checkout when the unixnu driver runs this script.
     font_dir = Path(os.environ.get('UNIXNU_UEFI') or ROOT / 'uefi-sheng') / 'Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib'
     if not (font_dir / 'Font.h').is_file():
-        raise SystemExit('Panic screen requires Mu-Silicium FrameBufferSerialPortLib/Font.h; '
-                         'set --uefi PATH or [build] uefi in unixnu.local.toml '
-                         '(UNIXNU_UEFI for direct script calls)')
+        # A runner has no uefi checkout: the device repository vendors the same
+        # AOSP Font.h next to BootProgressDisplay.h (package/, kits/sheng in the
+        # assembled tree); stage it into a shim include dir so -I stays uniform.
+        vendored = Path(os.environ.get('UNIXNU_DEVICE', '')) / 'package' / 'Font.h'
+        if vendored.is_file():
+            font_dir = workdir / 'font'
+            font_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy(vendored, font_dir / 'Font.h')
+        else:
+            raise SystemExit('Panic screen requires Mu-Silicium FrameBufferSerialPortLib/Font.h; '
+                             'set --uefi PATH or [build] uefi in unixnu.local.toml '
+                             '(UNIXNU_UEFI for direct script calls)')
     obj, elf, binary = (workdir / name for name in ('panic.o', 'panic.elf', 'panic.bin'))
     definitions = []
     for macro, name, width in (('MAX_MEM', '_max_mem', 8),
