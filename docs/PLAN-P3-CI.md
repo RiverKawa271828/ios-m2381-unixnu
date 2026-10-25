@@ -922,3 +922,55 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
 - **预期**：挂载后 owner 判定 = 只读 ✓ + rootdev 是 NativeUfsBlock 已验签
   OS 窗口 ✓ → owner_authorized=1 → 过墙 → launchd exec（下一步读图：
   恢复界面/logo = 里程碑；新 panic = 取证循环；或 dyld/信任缓存类墙）。
+
+## X. 第 25 轮：launchd exec 里程碑 + stage 7 = Cryptex SystemOS 双卷重启（2026-10-25 续八）
+
+- **实机读图（payload `6e964598`）**：绿条 → 蓝条 → panic **`initproc failed
+  to start -- exit reason namespace 6 subcode 0x1 description: Library not
+  loaded: /usr/lib/libSystem.B.dylib`**（Referenced from <4B525992-…>
+  /sbin/launchd；Reason: no such file, no dyld cache）。**里程碑实锤**：根
+  认证过（owner 判定生效）→ bsd_init 走完 → **`/sbin/launchd` 已 exec，
+  dyld 已运行**——内核侧全链（DarwinBoot→入口→IOKit→NativeUfs→VerifiedRoot
+  逐块校验→APFS 挂载→根认证→launchd exec）实机贯通。
+- **新墙 = iOS 16+ 架构必然**：系统 dylib 与 dyld 共享缓存都在 **Cryptex
+  SystemOS 卷**（donor 044-76034-038.dmg，容器 3,303,014,400B = 806,400
+  块，卷 UUID = kern_exec 默认 `8846FE78-2910-4297-AF97-D59BB6F8FC16`）。
+  单窗口镜像没有它 → dyld 无 libSystem。这正是 §T 的「SystemOS 双卷留待
+  同锚重产」到期。board 注释原文就写着「SystemOS cryptex window is added
+  back at the userland stage (stage 7)」——现在就是 stage 7。
+- **同锚死结解除**：ci-owner-policy.sh 原来在 runner 上临时现生成 RSA
+  3072 密钥（用完即弃）→ OS 策略锚钥丢失。**改为密钥持久化**：
+  `devices/m2381/unixnu-m2381/keys/owner.pem`（提交进设备 orphan 分支，
+  私有仓可接受；后续可迁 GitHub secret），CI 每次用同一把锚。上游
+  `build-verified-root-probe.py --include-systemos` 原生支持双策略同锚
+  bundle（验 OS e5634d04/1,483,785 块 + SystemOS b4908cde/806,400 块 +
+  trusted-key 逐字节相等），产出 `verified-root-os-xnu-bundle` = shipping
+  defconfig 本来就指向的路径。
+- **执行（全部就绪，等 CI 证据）**：
+  ① 新 `build-owner-systemos-policy.py`（OS 脚本姊妹版：systemos-mount、
+    UUID 8846FE78、TotalSize 3,303,014,400、压缩 sha b4908cde）；
+  ② ci-owner-policy.sh 重写：committed-key 优先（无键硬失败）+ 双卷挂载
+    （attach_volume 失败时打印全部 /Volumes UUID 一次性定位）+ OS/双 SystemOS
+    policy + `--include-systemos` bundle；
+  ③ make-device-branch.sh 拷贝 keys/；macos.yml upload_verified_root 扩
+    `verified-root-systemos/**` + `verified-root-os-xnu-bundle/**`；
+  ④ 两份 board.toml windows += `{ name = "SystemOS", component =
+    "Cryptex1,SystemOS" }`（userdata 构建器原生多窗口）；
+  ⑤ owner defconfig：VERIFIED_ROOT_ARCHIVE → `-bundle` 路径 +
+    CACHE_VOLUME_UUID 钉死 8846FE78 + **CACHE_MOUNT/CACHE_STARTUP/
+    BOOT_MANIFEST/UNION_SYSTEMOS = y**（DATA_MOUNT 保持 n——无 Data 种子，
+    stage 7 预期终点 = launchd 活着、/private/var 缺席）。
+- **用户执行单（推送窗口照红线 8）**：
+  ① push m2381 分支（workflow/board/scripts/keys 都要在远端）；
+  ② `make-device-branch.sh` → push `device-m2381` orphan 分支；
+  ③ dispatch macos.yml：`steps="userdata"` + `pre_build=scripts/ci-owner-policy.sh`
+    + `upload_userdata` + `upload_verified_root`（kernel 步不用跑，本地出）；
+  ④ 取件：userdata zip（双窗 ≈9.4GiB）→ artifacts/images/m2381/userdata/；
+    verified-root zip → 设备 .cache/firmware（照 r21 流程）；
+  ⑤ 本机 `./unixnu build kernel -D out/m2381/device-bringup` → 探针 → payload
+    （本轮分支已备好全部配置）；
+  ⑥ 用户单会话双刷：userdata（30-40min）+ recovery_a → reboot。
+- **读图预期**：owner cache mount 把 SystemOS 按 UUID 找到（verified 窗口）
+  → MNT_UNION 叠挂 `/` → dyld 经 union 读到 libSystem + dyld 缓存 →
+  launchd 真正开跑 → **恢复界面/Apple logo = stage 7 里程碑**；若 union
+  挂载/manifest 发布类新 panic = 取证循环（该路径首次上机，panic 屏会说话）。

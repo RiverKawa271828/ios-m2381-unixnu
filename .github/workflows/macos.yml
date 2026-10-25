@@ -338,7 +338,9 @@ jobs:
           retention-days: 7
 
       # m2381: verified-root evidence from the pre_build step (checkout-root
-      # paths). The private owner key is excluded on purpose.
+      # paths). The private owner key is excluded on purpose: it rides in the
+      # device repository (keys/owner.pem), so every run signs under the same
+      # committed anchor.
       - name: Upload verified-root evidence
         if: always() && inputs.upload_verified_root
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -346,6 +348,8 @@ jobs:
           name: unixnu-${{ steps.check.outputs.board }}-verified-root-${{ github.run_attempt }}
           path: |
             build/verified-root-os/**
+            build/verified-root-systemos/**
+            build/verified-root-os-xnu-bundle/**
             build/verified-root-os-xnu/**
             build/verified-root-host/verified-root.dylib
             build/verified-root-host/keys/owner-public.pem
