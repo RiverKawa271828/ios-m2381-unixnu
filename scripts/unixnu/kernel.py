@@ -190,17 +190,19 @@ def build(ctx, modules):
         env['UNIXNU_GENERATED_DIR'] = str(generated)
     env['JOBS'] = str(ctx.jobs)
     record = ctx.tree / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json'
-    if not record.is_file():
+    object = record.with_name('startup.o')
+    if not record.is_file() or not object.is_file():
         # The archive builders and the boot progress layer read compile records of the XNU build, which only an earlier
         # pass leaves behind. A first build from scratch therefore runs one pass without them; XNU_BOOTSTRAP makes it
         # skip the archive checks and link without the archives, so it stops at the link and only the records are
-        # required of it.
+        # required of it. The object is checked alongside the record: the baseline deletes startup.o when the
+        # trust-cache mode flips, and an interrupted pass can leave the record behind without the object.
         log('kernel: bootstrap pass for the compile records')
         subprocess_env = {**env, 'XNU_BOOT_PROGRESS': '0', 'XNU_BOOTSTRAP': '1'}
         try:
             run(['bash', script], cwd=ctx.tree, env=subprocess_env, log_file=ctx.logs / 'kernel-bootstrap.log')
         except Error:
-            if not record.is_file():
+            if not record.is_file() or not object.is_file():
                 raise
     # Revalidate the selected source and regenerate headers on every archive build.
     # A pre-existing directory can belong to a different OS profile/revision.
