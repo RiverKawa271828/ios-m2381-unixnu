@@ -180,6 +180,22 @@
 - **执行**：defconfig 四项翻开关（VIRTIO_BLOCK+ARCHIVE+AUDIT+TRUST）+
   board archives 插 virtio verified-bundle 构建；重出内核中。
 
+## 0.10 2026-10-25 续八：r25 = launchd exec 里程碑，stage 7 双卷车道就绪（详见 PLAN-P3-CI §X）
+
+- **payload `6e964598` 实机**：`initproc failed to start — Library not
+  loaded: /usr/lib/libSystem.B.dylib (no dyld cache)` from /sbin/launchd —
+  **根认证过、launchd 已 exec、dyld 已运行**，内核侧全链实机贯通。
+- **新墙 = Cryptex SystemOS 卷缺席**（dylib+dyld 缓存都在 cryptex；单窗口
+  镜像没有）。同锚死结解除 = 锚钥持久化（设备仓 keys/owner.pem）+
+  `--include-systemos` 双策略 bundle（上游原生支持）。
+- **全部落地**：SystemOS policy 脚本 + ci-owner-policy.sh 双卷版 + 分支/
+  workflow 配套 + 两份 board windows += SystemOS + owner defconfig
+  （-bundle 归档 + CACHE_MOUNT/CACHE_STARTUP/BOOT_MANIFEST/UNION_SYSTEMOS=y，
+  DATA_MOUNT 仍 n）。**待用户：push 两分支 → dispatch steps="userdata"
+  （pre_build 产证据+双窗镜像）→ 取件 → 本机出内核/payload → 双刷
+  （userdata ≈9.4GiB + recovery_a）**。读图：恢复界面/logo = stage 7
+  里程碑。
+
 ## 1. 结论/决策
 
 
