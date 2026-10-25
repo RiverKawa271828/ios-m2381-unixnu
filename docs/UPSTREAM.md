@@ -4,13 +4,13 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `c62bf12` (2026-10-25) |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `16e592a` (2026-10-26) |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
-| DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `85332b3` |
+| DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `3325e352` |
 | guacamole 先例 | https://github.com/wochgn/UniXNU-guacamole | `reference/UniXNU-guacamole` | `6269d31` |
 | qemu 先例（Data seed 脚本） | https://github.com/xVanTuring/UniXNU-qemu | `reference/UniXNU-qemu` | `97b75b1` |
-| sheng 参照（平板） | https://github.com/UniXNU/UniXNU-sheng | `reference/unixnu-sheng` | `77490e5` |
+| sheng 参照（平板） | https://github.com/UniXNU/UniXNU-sheng | `reference/unixnu-sheng` | `d76556b` |
 | sheng 固件 | https://github.com/UniXNU/uefi-sheng | `reference/uefi-sheng` | `0eb4514` |
 | fuxi 另一 fork | https://github.com/matejkoo217/UniXNU-fuxi | `reference/UniXNU-fuxi` | `41c2aac` |
 | vermeer 参照 | https://github.com/yyx2025/UniXNU-vermeer | `reference/UniXNU-vermeer` | `9137aba` |
@@ -28,6 +28,29 @@
 
 ### 1.1 同步记录
 
+- **2026-10-26（规矩定死：一切以上游为准，用户拍板）**：`upstream/main` →
+  `16e592a`（`c62bf12` +42 提交，历史未改写，标准 `git rebase upstream/main`
+  重放 104 个工作区提交）。主题：**设备仓 schema v2**（`[board] soc_source`/
+  `os_profile` 分层 profile：arch→SoC→os→device；`component:` archive 条目 +
+  组件目录/依赖解析，v1 板仍兼容）；**UniXNU-sm8550-common SoC 仓**（sheng
+  已迁 v2 消费它，m2381 同 SoC 直接受益）；**驱动出主树**（drivers/Native*
+  从 UniXNU 主树移入设备仓/组件仓：Adreno740+AdrenoMetal = sheng GPU 加速、
+  Ath12kWifi、NativeGeniSpi 等）；`kits/NativePrelink` → **`kits/XnuPrelink`**
+  改名（build/native-prelink → build/xnu-prelink）；**userdata 可在 Linux
+  构建**（0f85bc2，macos.yml steps 撤独立 userdata 项）；entry-probe 工具收
+  编上游（c1f6966）；VerifiedRoot 子模块 bump（def0266）。**CI 定论**：上游
+  pin `runs-on: macos-26` 的注释点名 macos-15 Xcode clang 会拒绝 -Werror 的
+  警告选项——run 40220630199（Xcode 26.3/Apple clang 17 对
+  `-Wno-unnecessary-virtual-specifier` 报 unknown warning option）正是此墙；
+  m2381 的 runner_label/macos-15 车道已撤（e04c4dd）。audit-storage-interface
+  的 gdb-stop.json 活机依赖上游原样保留 = 作者本机资格化工具，CI 板（上游
+  sheng v1/v2）都不进 archive 清单——m2381 owner board.toml 的 fuxi v1 清单
+  需迁移（未做）。冲突处置：.gitignore 并集；README.md/AGENTS.md 取工作区
+  版；entry-probe 对取上游版（NOP-padding 容忍随之丢弃，若 payload 再需再
+  derive）；DarwinBoot 先取上游 pin 又被重放旧提交盖回，终以 843d46a 定为
+  `3325e352`（loader handoff 诊断）。工作树清掉 12 个上游已移走的 stale
+  驱动/kit 目录（备份分支可取回）。check-m2381 4 ok / 0 fail。
+  备份分支 `m2381-pre-sync-20261026`。
 - 2026-10-25：`upstream/main` → `c62bf12`（相对旧 pin `b7b6a6a` +209 提交，
   **且上游改写过 main 历史**——`b7b6a6a`/`e95b37d` 均不再是现 main 的祖先，
   等价补丁在新链下有新 SHA）。主题：**PR#100 = kernel 步 Linux 可跑**
@@ -101,13 +124,9 @@ git push --force-with-lease origin m2381
 
 ## 3. 已知上游粗糙点（2026-10-22）
 
-- `reference/unixnu` 把 `drivers/DarwinBoot` 的 gitlink 固定在
-  `d099354d…`，该 commit 在 `UniXNU/DarwinBoot` 不存在（只有 `85332b3` /
-  `12bc9e2` / `09c60e6`）。2026-10-23 核对：rebase 后本仓树里的
-  `drivers/DarwinBoot` gitlink 仍是它，上游 69 提交里没人修。后果：在本仓
-  `git submodule update --init` 会在 DarwinBoot 处失败——先单独
-  `git update-index --cacheinfo 160000,85332b3,drivers/DarwinBoot`（或指向
-  本地 `reference/darwinboot`）再继续其余子模块。
+- ~~DarwinBoot gitlink 指向不存在的 commit~~ 已解决（2026-10-26）：上游
+  pin 前移到 `3325e352` 且真实存在，本仓 gitlink 跟随（843d46a）；
+  `git submodule update --init` 不再需要手工 cacheinfo。
 - `unixnu-fuxi` 是从 sheng 设备仓改的：README/触摸支持表仍是 sheng 的
   （Novatek NT36532E），不能当 fuxi 已验证的证据；触摸/PMGR 仍要自己接。
 - `unixnu-fuxi` 的 `[payload]` 192MiB、`[ipsw]` iPad7,1、`sheng-*` 内核参数
