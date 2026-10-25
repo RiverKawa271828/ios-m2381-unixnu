@@ -91,9 +91,9 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
    current-slot` 必须 = b。
 4. **dd 读回才算证据**；刷写时长不算。每轮刷完读回 sha 对拍。
 5. **fastboot boot 是死路**（魅族 ABL 裁 CmdBoot），只能 `flash`。
-6. 回滚件（本地，不入 git，都在 `artifacts/images/`）：
-   `mu-r69-97cdea20.img`（boot_b→nura）、`esp-recovery-v71.img.gz`
-   （recovery_a→nura 模板）、`shim-boot-m2381.img`（boot_b→r34 iOS）。
+6. **回滚件不在本仓**（2026-10-26 用户拍板删除本仓 `artifacts/images/` 旧
+   回滚件与已刷参考件）：回滚链只在 nura 仓
+   `/home/ri/work/nura-meizu-m2381/artifacts/`（mu-r62…r91、esp v46+ 全套）。
 7. Apple IPSW/件只本地使用，不入仓不外发。
 8. 每轮独立可停；commit 不 push，推送/发布窗口 = 用户拍板。
 
