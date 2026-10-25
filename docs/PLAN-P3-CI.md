@@ -974,3 +974,40 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   → MNT_UNION 叠挂 `/` → dyld 经 union 读到 libSystem + dyld 缓存 →
   launchd 真正开跑 → **恢复界面/Apple logo = stage 7 里程碑**；若 union
   挂载/manifest 发布类新 panic = 取证循环（该路径首次上机，panic 屏会说话）。
+
+## Y. 第 26 轮：CI 双策略+双窗 userdata 全绿（40157209876），六轮拔钉实录（2026-10-25 续九）
+
+- **绿 run = 40157209876**（steps=userdata + pre_build
+  `bash "$DEVICE_DIR/scripts/ci-owner-policy.sh"` + Intel macos-15 + xcode
+  26.3 + 双 upload）。artifact：`unixnu-m2381-verified-root-1`（131MB，
+  OS+SystemOS 双策略+样本+dylib+公钥）+ `unixnu-m2381-userdata-1`（6229MB
+  压缩包，双窗 SHNGROOT ≈9.4GiB）。**7 天过期（11-01）**。
+- **六轮拔钉（每轮恰好一个坑，全部已修上分支）**：
+  ①40153504108 pre_build 路径——主仓 checkout 没有该脚本，必须
+    `bash "$DEVICE_DIR/scripts/…"`（r21 写法，从 40132459497 日志挖出；
+    顺带真相：r21 的绿 run 没跑 pre_build，证据来自失败轮的 always 上传）；
+  ②40153881681 SystemOS 脚本 ROOT 落设备 checkout——加 UNIXNU_CHECKOUT
+    覆盖；本轮白拿两个实证：**OS 策略以持久锚钥 PASS** + **cryptex 卷
+    UUID 8846FE78 实机命中**（attach 按 UUID 找到 …SystemCryptex）；
+  ③40154401208 koly 检查——SystemOS 成员是**裸 APFS 容器**非 UDIF；
+  ④40154865183 实体 content-hint 是 GPT 类型 GUID、整盘 hint 空串
+    （诊断 dump 一次定位）；
+  ⑤40155318922 正则版仍拒——**GPT 合成第二个裸盘节点**（disk8 EFI 盘）；
+  ⑥40156282410 前缀筛仍歧义——**macOS 通过两个盘节点呈现同一容器**
+    （disk7/disk8 前 1MiB 完全相同）；终裁决 = 整盘 sha256 == b4908cde
+    （成员恒等判据，顺带隐式钉死尺寸）；
+  ⑦40156709612 SystemOS 策略 **PASS**（证据 84→131MB）但 CI 上建 bundle
+    撞内核配方缺失——**CI 只产策略件，bundle 归档由本地出核时构建**
+    （build-verified-root-if-evidenced --include-systemos，本地有配方）。
+- **流程勘误入册**：workflow steps choice 补 `userdata` 纯选项 + kernel 步
+  补 `if: contains(...)`；upload_verified_root 扩 systemos+bundle glob；
+  make-device-branch.sh 拷 keys/（**坑：二次生成前必须 `git branch -D
+  device-m2381`，否则 --orphan 撞名静默死**）；证据管道升级
+  （stage-local-candidates 搬双策略、if-evidenced 双证据→--include-systemos
+  /单证据回落）。UNION_MOUNTS 内核选项确认在选（config.DEVELOPMENT_ARM64）
+  + 本机预跑 15 归档+内核编译零错误（CACHE 族旗标首编通过）。
+- **下一步（用户下载后）**：①verified-root zip 解包 → build/verified-root-
+  {os,systemos} 放 `out/m2381/device-bringup/.cache/firmware/`；②本机
+  `./unixnu build kernel -D out/m2381/device-bringup -j14` → 探针 → payload
+  → 桌面校验；③用户单会话双刷 userdata+recovery_a → 读图：恢复界面/logo
+  = stage 7 里程碑。
