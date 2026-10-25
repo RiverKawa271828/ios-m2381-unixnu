@@ -416,6 +416,39 @@
   sheng 的等价物靠其本地件+Apple ld，我们不追。
 - **未刷机**。
 
+## 0.16 2026-10-26 续二：CI v2 车道全绿（run 40237299244）+ 取件落地 + 旧件清理
+
+- **run `40235412915` 复盘（失败两步）**：①payload 步 = 探针补丁要 uefi 树的
+  Font.h（UNIXNU_UEFI/本机 uefi-sheng 链接），runner 均无 →
+  `patch-xnu-entry-probe.py` 加设备仓 `package/Font.h` 回退 +
+  payload 驱动传 `UNIXNU_DEVICE`（本地/CI 统一；本地 payload 彩排 EXIT=0：
+  探针+ADT+96MiB payload.img 全出）；②userdata 上传 glob 还是 v1 深度
+  `out/*/userdata/**` → v2 布局改 `out/**/`（unlinked-kernel glob 同修）。
+  修复 = commit `e36372f`（仅 checkout 文件，device 分支不动）。
+- **run `40237299244` = success**：kernel ✓ / userdata ✓ / payload ✓ /
+  userdata 上传 ✓ / verified-root 证据 ✓——**v2 CI 车道全链绿**（commit
+  `e36372f` + device `27a818f`）。
+- **取件落地（temp/ 用户下载三件 → 已入位）**：
+  - userdata 8.74GiB → `out/m2381/ci-artifacts/userdata-root.img`，sha
+    `fd43ee70…` 与 **10-25 已刷 r30 件逐字节一致**——userdata 构建确定性
+    实证，**设备现役 userdata 即正确版本，首刷无需重刷 userdata**（manifest：
+    OS `e5634d04…`@0x100000 / SystemOS `b4908cde…`@0x16a600000）。
+  - verified-root 证据（双卷政策与 r30 在仓份逐字节一致；fixture 跨 run
+    非确定——随机卷标识+时间戳，APSB 钉 18AB5557 由 pre_build post-patch
+    检查把关）→ run 2 份已更新入
+    `devices/…/.cache/firmware/owner-data-fixture/`；完整留档
+    `out/m2381/ci-artifacts/{verified-root-1,verified-root-2?,logs-2}`。
+  - 本机闪光 payload 配方：`UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1
+    ./unixnu build payload -D devices/m2381/unixnu-m2381 --data-ramdisk
+    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`
+    （探针自动打；无需 --kernel，吃本机内核 ee3255a8 状态）。
+- **清理（用户拍板"删旧无用文件、不需要回滚件"）**：`artifacts/images/`
+  全删（旧回滚件三件 + r30 已刷 userdata 参考件——新 CI 件逐字节复现、
+  旧 5G artifact zip），14G 释放；`artifacts/` 只剩 README + vendor
+  （OEM UFSDxe 退路，非回滚件，保留）。回滚链只在 nura 仓 artifacts
+  （mu-r62…r91、esp v46+）。temp/ 三 zip 解压入位后删除。
+- **未刷机**；下一步 = §7.2 本机出闪光 payload → 桌面校验 → 首刷拍板。
+
 ## 1. 结论/决策
 
 
@@ -488,7 +521,7 @@
 | `out/ipsw/20H392/` | kernelcache.decompressed（`2ec297ba…`，已回填 board.toml pin）+ DeviceTree.d22ap.im4p + 两个 trust cache（`63e01c03…` / `9cc478fe…`） |
 | `reference/uefi-m2381-nura/` | nura Mu-Silicium fork（meizu20-mars-port）sparse 克隆：m2381Pkg 源码 + m2381.toml，P2 常量来源 |
 | `/tmp/dev-binaries/` | Device-Binaries 克隆（mars @036ba9f7 验证用；临存） |
-| `artifacts/images/{mu-r69…, esp-v71…, shim-boot…}` | 旧回滚件（**非现役**；现役恢复件在 nura artifacts） |
+| ~~`artifacts/images/{mu-r69…, esp-v71…, shim-boot…}`~~ | **已删除（2026-10-26 用户拍板）**：旧回滚件 + r30 已刷 userdata 参考件（新 CI 件 fd43ee70 逐字节复现，确定性实证）+ 旧 5G artifact zip；回滚链只在 nura 仓 artifacts |
 | `artifacts/vendor/meizu20-uefi-mods/` | 本机 OEM UEFI 模块（P2 备选，mars blob 卡死时用） |
 | `~/.local/bin/compression_tool` | Linux shim（lzfse 封装；本机环境件，不进 git） |
 
@@ -572,12 +605,12 @@
    payload"，pre_build=ci-owner-policy，macos-26/xcode 26.6，
    upload_userdata+upload_verified_root=true）。守望 token /tmp/m2381-gh-token
    （/tmp 被清则 git credential store 重提取）。UEFI 侧未动，FV 不重建。
-2. **CI 绿 → 取件 → P4 门**：取 artifacts（userdata 件 + verified-root
-   证据 = unixnu-m2381-verified-root-N 内含 owner-data-fixture + 日志）→
-   本机链出闪光件：kernel ee3255a8 → `patch-xnu-entry-probe.py` 探针件 →
-   `./unixnu payload`（v2 板）+ `--data-ramdisk …/scratch-data.img` +
-   `package-m2381-boot.py` → 桌面校验 → **首刷 boot_b + recovery_a
-   单独拍板**（FLASHING.md 纪律，刷前读回对拍）。
+2. **~~CI 绿 → 取件~~ ✅（run 40237299244 全绿，取件完成见 §0.16）→
+   P4 门**：本机链出闪光件：`./unixnu build payload --data-ramdisk
+   …/owner-data-fixture/scratch-data.img`（吃内核 ee3255a8 状态，探针自动
+   打）→ `package-m2381-boot.py` 出 boot_b 件 → 桌面校验 → **首刷
+   boot_b + recovery_a 单独拍板**（FLASHING.md 纪律，刷前读回对拍；
+   **userdata 不重刷**——设备现役 fd43ee70 与 CI 件逐字节一致）。
    读图预期（§7.1 分支①②③全部沿用以新内核重验）。
 3. **新内核行为差留眼**：`NATIVE_LEGACY_DISPLAY=n`（本就跑 UEFI GOP
    offline-legacy-*，理论无感，实证为准）；GPU 链与 BootProgress 全量档
