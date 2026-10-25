@@ -13,8 +13,6 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--output', type=Path, default=ROOT / 'build/owner-data-fixture')
-parser.add_argument('--volume-uuid', default=None,
-                    help='Force the scratch volume UUID (diskutil apfs changeVolumeUUID) to match the kernel-pinned OWNER_DATA value')
 args = parser.parse_args()
 fixture = args.output.resolve()
 image = fixture / 'owner-data-32.cdr'
@@ -38,12 +36,8 @@ try:
     volumes = [e for e in attached['system-entities'] if e.get('mount-point') == str(target)]
     if len(volumes) != 1:
         raise SystemExit('Require exactly one newly formatted scratch volume')
-    if args.volume_uuid:
-        subprocess.run(['diskutil', 'apfs', 'changeVolumeUUID', volumes[0]['dev-entry'], args.volume_uuid], check=True)
     info = plistlib.loads(subprocess.check_output(['diskutil', 'info', '-plist', volumes[0]['dev-entry']]))
     volume_uuid = info['VolumeUUID']
-    if args.volume_uuid and volume_uuid.upper() != args.volume_uuid.upper():
-        raise SystemExit(f'Volume UUID change did not stick: {volume_uuid}')
     for current, dirs, files in os.walk(source, followlinks=False):
         dirs[:] = [name for name in dirs if name != 'staged_system_apps']
         dest = target / Path(current).relative_to(source)
