@@ -286,6 +286,38 @@
   owner-data-fixture）→ 我出 payload → 只刷 recovery_a**。读图预期：
   tzinit symlink 成功（timezone 过）→ 下一墙 `ram-data-first-abort`。
 
+### §0.13a CI 车道连环修（2026-10-25 深夜，宿主重启前交接）
+
+- **dispatch 必带 `runner_label=macos-15`**：首dispatch（`40208347346`）漏传
+  落进 arm64 池挂了一夜（r25 教训重犯）；Intel 车道秒接单。
+- **fixture 步四修到绿**（run `40219843577` pre_build 全 PASS）：①
+  `diskutil apfs changeVolumeUUID` 动词不存在 → 改离线字节手术；②校验和
+  **不是经典 Fletcher64**——真算法 = linux-apfs-rw object.c 的
+  Nakassis-complement（u64 不取模累加 + `c1/c2 = 0xFFFFFFFF-((…) mod)`，
+  本地拿 21H461 OS 容器 12 个真 NXSB 逐字节验证 12/12）；③**APSB 的
+  uuid 字段在块内偏移 240**（56 是 NXSB 容器布局；用 SystemOS 卷已知
+  UUID 8846FE78 在 3 块真 APSB 里定位）；④bytearray 切片是拷贝——补丁后
+  必须 `data[base:base+BLOCK] = block` 写回（本地模拟抓到，CI 白烧一轮的
+  教训：先本地模拟再上 CI）；自检不过的伪 APSB 命中跳过不炸。最终：
+  uuid 读/补/重封 3 块 ✓、**DBRDISK1 打包 32MiB→995KB**（ESP 余量无忧）。
+- **kernel 步新墙**（`40219843577`）：CI `./unixnu build kernel` 的
+  submodule pass 试图把 UniXNU/VerifiedRoot 克隆回被设备 fork 顶替的目录
+  → pre_build 顶替后 `git rm --cached kits/VerifiedRoot` 注销 gitlink。
+- **在飞：run `40220630199`**（Intel 车道，m2381=`37457b8` /
+  device-m2381=`7cc3398`）：pre_build（已证绿）+ CI 内核编译（首次走我们的
+  owner 车道，含 verified-root-if-evidenced/--include-systemos bundle）。
+  宿主重启后守望进程已死，下会话直接查 run（token /tmp/m2381-gh-token，
+  若 /tmp 被清则用 git credential store 重新提取）。
+- **下会话工作单**：①查 run 40220630199（绿=给用户下载指引：artifact
+  `unixnu-m2381-verified-root-1` 内含 owner-data-fixture/，放
+  device-bringup/build/ 下 → 本机 `./unixnu build payload -D
+  out/m2381/device-bringup --unique-chip-id 3645ad55d47e77c1 --trust-cache
+  out/m2381/trust/original-trust.bundle --kernel out/m2381/kernel/kernel.probe.macho
+  --data-ramdisk <device>/build/owner-data-fixture/scratch-data.img` →
+  桌面校验（payload.json 含 data_ramdisk_sha256 + initrd 行在 ESP
+  unixnu.toml）→ 用户只刷 recovery_a；炸=拉 job log 继续修）。②读图：
+  tzinit symlink 过（timezone 关卡）→ 下一墙 ram-data-first-abort。
+
 ## 1. 结论/决策
 
 
