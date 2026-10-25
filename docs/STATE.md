@@ -225,6 +225,31 @@
   （待拍板）。ADT `random-seed` = `os.urandom(64)`（make-m2381-adt.py），
   adt_sha 每次构建必变属设计内。
 
+## 0.12 2026-10-25 续十：payload `f726c7fd` 实机 = stage 7 里程碑闭环（设计终点逐字复现）
+
+- **读图**：绿条→蓝条→`tzinit[17] exited -- no exit reason available --
+  (signal 0, exit status 30 )` + 寄存器页（free 掉 ~180k 页 ≈ 用户态真实
+  跑过）。**16K v2 修复实机生效**：双窗发布→APFS 挂载→根认证→launchd
+  exec→dyld 吃到 SystemOS cryptex 缓存（r25 "no dyld cache" 墙清除）→
+  launchd 派生作业至 pid 17。
+- **此画面 = 脚本钉死的 stage 终点，实机逐字复现**：
+  `check-owner-boot-manifest-checkpoints.py` 要求
+  `critical_process_exit == (process='tzinit[17] exited', signal=0,
+  status=30, cs_status='')`（"Preserve the real later timezone failure"）；
+  机理 = tzinit 做 `/var/db/timezone/zoneinfo` symlink 返回 EROFS（/var 在
+  未挂的 Data 卷上）→ exit 30 → `kern_exit.c:1875`
+  `proc_handle_critical_exit` 按 bring-up 纪律 panic（host 有界跑同款
+  钉死）。**userdata+双窗+双策略+挂载+认证+launchd+dyld 全链实机闭环。**
+- **下一站 = Data 种子**（§7 分支①，机制已由
+  `check-native-ram-data-checkpoints.py` 全定义）：RAM Data 卷
+  （32MiB `owner-data-32.cdr`，sha 钉 `d7cd79af…`；发布 UUID =
+  defconfig 已钉的 `18AB5557-…`）→ tzinit symlink 成功（timezone 过）→
+  下一墙 = `ram-data-first-abort`。三个待解工程题：①defconfig 翻
+  OWNER_DATA_MOUNT + RAM block 旗标组；②种子投递通道（嵌内核 = 69.5+32MiB
+  逼近 96MiB ESP 硬顶，候选 = ESP 文件/UEFI 内存通道/ABL 忽略 ramdisk 的
+  反面）；③fixture 生产（prepare-owner-data-fixture 记录需 macOS hdiutil
+  → CI pre_build 候选 vs 本地 Linux 化）——**待拍板后开工**。
+
 ## 1. 结论/决策
 
 
