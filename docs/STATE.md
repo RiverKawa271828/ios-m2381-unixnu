@@ -166,6 +166,20 @@
   sm8550-common + 21H461 OS profile + 组件改名已上线，sheng=格式 2 参考；
   迁移列为独立主题。
 
+## 0.9 2026-10-25 续七：r24 读图 = 挂载贯通，墙到根认证（详见 PLAN-P3-CI §W）
+
+- **payload `e3c5c0fa` 实机**：绿条→蓝条→`rootvp not authenticated after
+  mounting @bsd_init.c:1100`。**单窗口修复实机生效、NativeUfs 发布块设备、
+  APFS root 挂载全部闭环**；蓝条同时证明内核入口无恙（r22 非回退实锤）。
+- **新墙 = owner 根认证**：`autherr && !owner_authorized` → panic；owner
+  判定需 OWNER_ROOT_AUDIT+OWNER_ROOT_TRUST 双开（fuxi/nx729j 终态三件套
+  = NATIVE_VIRTIO_BLOCK=y + 双旗 + verified-bundle 归档）。授权器
+  `native_verified_block_root_authorized` 在 NativeVirtioBlock 归档（现役
+  builder 只需 storage-abi/include，无需 interface-audit.json）；checkpoint
+  在内核补丁内。
+- **执行**：defconfig 四项翻开关（VIRTIO_BLOCK+ARCHIVE+AUDIT+TRUST）+
+  board archives 插 virtio verified-bundle 构建；重出内核中。
+
 ## 1. 结论/决策
 
 

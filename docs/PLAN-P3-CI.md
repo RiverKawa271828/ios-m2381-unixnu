@@ -884,3 +884,41 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   已执行；③品红 = MMU 前到站；④panic 屏幕 = 直接读因；⑤恢复界面/logo =
   launchd 里程碑。校验 5.7GiB 期间探针轮询是 no-op 桩——蓝条只闪一次（stage 1），
   之后数分钟静默属预期，勿提前断电。
+
+## W. 第 24 轮：root 挂载贯通，墙到 bsd_init 根认证 = OWNER_ROOT 双开（2026-10-25 续七）
+
+- **实机读图（payload `e3c5c0fa`）**：绿条 → **蓝条** → panic
+  **`rootvp not authenticated after mounting @bsd_init.c:1100`**（TCR/SCTLR
+  与 r21 同值，pages/free 正常量级）。三重里程碑一次拿下：①蓝条 = 入口探针
+  stage1 = 内核入口已执行（r22 盲启的"死在入口"假说排除，Linux 内核入口
+  没问题）；②root 设备出现 = **单窗口修复实机生效**（NativeUfs 发布了 OS
+  窗口块设备，IOKitBSDInit 的等待退出了）；③APFS 把 root 卷挂起来了
+  （panic 位置在 VFS_ROOT 之后）。
+- **新墙判据（bsd_init.c）**：`autherr && !owner_authorized` → panic。
+  autherr = Apple 侧 FSIOC_KERNEL_ROOTAUTH（SSV 封签校验，donor 卷在
+  本链上返回非 0）；owner_authorized 需要 **`XNU_OWNER_ROOT_AUDIT` +
+  `XNU_OWNER_ROOT_TRUST` 双开**后由 `native_verified_block_root_authorized(
+  rootdev)` 给出（只读 + 挂载设备是已验签窗口 → 1）。这正是 §S 预判的
+  "OWNER_* 旗标组按 fuxi 全量版对表逐个开"的第一项。fuxi/nx729j 终态
+  defconfig = `NATIVE_VIRTIO_BLOCK=y` + `OWNER_ROOT_AUDIT/TRUST=y` +
+  verified-bundle 归档三件套。
+- **授权器链接路（澄清两处旧记录）**：`native_verified_block_root_authorized`
+  定义在 NativeVirtioBlock.cpp（rg `-r` 误用曾显示成 `ln` 别名——假象）；
+  `native_owner_root_checkpoint`/全局在内核补丁
+  offline-owner-root-binding-audit.patch（编进内核本体）。nx729j board 注释
+  的"build-arm-driver.py NativeVirtioBlock 要 audit"不适用于现役脚本：现役
+  build-arm-driver.py 只需要 `storage-abi/include`（静态绑定阶段已产），
+  `--verified-root --verified-root-bundle` 产
+  `build/native-virtio-block-verified-bundle/libNativeVirtioBlock.a`
+  （-DNATIVE_VERIFIED_BLOCK=1 -DNATIVE_VERIFIED_BLOCK_MULTI_POLICY=1，与
+  NativeUfs 同门）。归档在内核链接时吃 libStorageBindings.a（已 force-load）
+  的类分发。virtio 传输在 m2381 无硬件 → personality 不匹配，仅授权器生效。
+- **执行**：owner defconfig（device-bringup + devices 同步）翻四项
+  （NATIVE_VIRTIO_BLOCK=y + 新增 ARCHIVE 行 + OWNER_ROOT_AUDIT=y +
+  OWNER_ROOT_TRUST=y）；device-bringup board.toml archives 插入
+  `"build-arm-driver.py NativeVirtioBlock --verified-root --verified-root-bundle"`
+  （storage-bindings 之后、NativeUfs 之前）；`./unixnu defconfig` 刷新
+  .config → 重出内核。
+- **预期**：挂载后 owner 判定 = 只读 ✓ + rootdev 是 NativeUfsBlock 已验签
+  OS 窗口 ✓ → owner_authorized=1 → 过墙 → launchd exec（下一步读图：
+  恢复界面/logo = 里程碑；新 panic = 取证循环；或 dyld/信任缓存类墙）。
