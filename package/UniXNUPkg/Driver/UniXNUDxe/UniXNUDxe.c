@@ -141,6 +141,8 @@ UniXNUDxeEntry (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
+  DEBUG ((DEBUG_ERROR, "M2381>> UniXNUDxe ENTRY\n"));
+
   EFI_STATUS                Status;
   EFI_DEVICE_PATH_PROTOCOL  *Path;
   VOID                      *Option;
