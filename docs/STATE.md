@@ -370,3 +370,18 @@
 3. 欠账：recovery_a dd 读回对拍（userdata=iOS root 后"回 nura"消亡，改
    UniXNU 侧自读或豁免）；首轮 CI 40153504108 的 pre_build 失败因路径
    （已重发，无损失）。
+
+## 0.11 2026-10-25 续十二：16K 验证块 + CI 绿 + stage 7 材料齐（详见 PLAN §Z）
+
+- **16K 手术全落**：VerifiedRoot 设备 fork（VR_BLOCK_BYTES 16384 + manifest
+  工具参数）、RootWindowRead stride（批量语义保真，host ASan 全绿）、probe
+  常量、CI 用设备 fork。CI 十一轮系列终绿 **`40184512676`**：16K 双策略
+  （evidence 32MB）+ 双窗 userdata（**与前轮字节相同——块尺寸只改策略，
+  已下载的 9.4GiB 有效无需重下**）。
+- **过程坑**：policy 脚本校验循环写死 min(4096)（vr_host_block block 0
+  拒绝）；github.com git 端点单独不通 → Git Data API 重放提交（本地 docs
+  提交待网络恢复 rebase 收编，不阻塞刷机链）；artifact 下载 302 落
+  objects.githubusercontent.com 同受限，重试循环拉取中。
+- **待办**：16K 证据落 `.cache/firmware` → 本机出核（预期 ≈69MB）→ 探针
+  → payload → 用户双刷 userdata + recovery_a → 读图（恢复界面/logo =
+  stage 7 里程碑）。
