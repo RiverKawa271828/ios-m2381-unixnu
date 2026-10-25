@@ -7,6 +7,7 @@
 
 #include <Uefi.h>
 #include <Library/BaseMemoryLib.h>
+#include <Library/DebugLib.h>
 #include <Library/UniXNULib.h>
 #include <Library/UefiBootServicesTableLib.h>
 #include <Protocol/LoadedImage.h>
@@ -24,6 +25,8 @@ UniXNUApplicationEntry (
   IN EFI_SYSTEM_TABLE  *SystemTable
   )
 {
+  DEBUG ((DEBUG_ERROR, "M2381>> UniXNUApp ENTRY\n"));
+
   EFI_LOADED_IMAGE_PROTOCOL  *Loaded;
   UNIXNU_HOST             Host;
   EFI_STATUS                 Status;
