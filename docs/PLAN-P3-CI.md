@@ -1011,3 +1011,39 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   `./unixnu build kernel -D out/m2381/device-bringup -j14` → 探针 → payload
   → 桌面校验；③用户单会话双刷 userdata+recovery_a → 读图：恢复界面/logo
   = stage 7 里程碑。
+
+## Z. 第 27 轮：16 KiB 验证块——双窗 manifest 装不进 100MiB ESP 的唯一解（2026-10-25 续十一）
+
+- **新物理约束（本地出核实测）**：双策略 manifest（OS 47.5MB@4K +
+  SystemOS 25.8MB@4K = 73.3MB，哈希不可压缩）嵌入内核后 kernel.macho =
+  124.4MB，payload 内容 118MiB > **recovery_a 硬顶 100MiB**（payload.py
+  0.95 守卫响亮拒绝；fuxi 同源内核同病，但 fuxi ESP=192MiB——这是 m2381
+  设备约束）。哈希数据 gzip 无效；ESP/分区几何不可动（红线 1）。
+- **选型 = 验证块 4K→16K（两卷统一）**：manifest 总量 73.3→18.3MB
+  （OS 11.3MiB + SystemOS 6.2MiB），内核回落 ≈69MB（66MiB 内容 < 95MiB
+  守卫，裕量 29MiB）；代价 = 读放大 4×（开机多几秒，bring-up 可接受，
+  后期可加已验块缓存优化）。16K=4×4K 对齐，bounce（kDataMax=128KiB）
+  无需扩。**同锚双策略安全模型原样保留**。
+- **手术面（全部可提交）**：
+  ① **VerifiedRoot 设备 fork**（devices/m2381/unixnu-m2381/kits/VerifiedRoot，
+    feeds 规则 5 覆盖上游 submodule——NativeUfs 同款先例）：
+    `VR_BLOCK_BYTES 16384` + manifest 工具 `block_bytes` 参数（头字段
+    本来就有，工具写死 4096 而已）；
+  ② **RootWindowRead.h stride 参数化**：一循环语义保留（批量读 ≤kDataMax
+    整块批、块内逐 verify、切片拷出、短拷贝记账顺序照旧——v1 曾塌缩成
+    单块读被 host 测试当场抓住，v2 恢复批量语义后 ASan/UBSan 全绿）；
+    调用方 NativeUfs.cpp 传 VR_BLOCK_BYTES（非 verified 构建回落 4096）；
+    host 测试全部显式传 4096（原语义零漂移）+ 顺手把
+    `{0ULL,UINT64_MAX}` 修成可移植写法（macOS-only 遗留）；
+  ③ **build-verified-root-probe.py**：expected_count → OS 370,947（尾块
+    1,536B）/ SystemOS 201,600（整除）；采样读取/长度断言随块参数；
+  ④ **ci-owner-policy.sh**：VerifiedRoot 不再 init submodule——用设备
+    branch 携带的 fork 整替（CI 产 16K 策略、dylib 用 16K vr_open）。
+  内核侧 verified_root.c 逻辑零改（常量流动）；NativeVirtioBlock（无硬件
+  不跑读路径，仅为授权器链接）不动。
+- **host 测试证据**：RootPublication（含 lone-OS 单窗）PASS；
+  RootWindowRead ASan/UBSan PASS（几何/边界/尾块/坏 verify/坏读/短拷贝/
+  并发锁全用例）；verified_root.c 16K clang -Werror 干净编译。
+- **在飞**：run `40183479056`（同 runbook，CI 重产 16K 双策略 + 双窗
+  userdata）。绿后：证据重铺 → 本机出核（预计 kernel ≈69MB，payload
+  ≈66MiB ✓）→ 探针 → payload → 双刷。
