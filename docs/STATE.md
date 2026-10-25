@@ -346,19 +346,27 @@
 
 ## 7. 下一步（按顺序）
 
-0. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，推送授权已给）。
-   21H461 lane 前置已全部就绪（IPSW 到货复验 ✓、check-m2381 4 ok ✓、
-   prelink 三值/UUID 转正 ✓、§K 执行单有效）；donor 终局拍板见 §0.6。
-1. **上游 rebase（下会话第一优先）**：m2381 落后 upstream/main 208 commits
-   （1a01c2a→bd127c0），按 `docs/UPSTREAM.md` §2 执行；重点吃 PR #100
-   **Linux kernel 步**——rebase 后本机直接出核，macos.yml/runner 容量守护
-   策略随之重估。rebase 后重跑 check-m2381 + kit 干跑确认零回归。
-2. ~~**P2 开工**~~ **完成（2026-10-23）**：FV + boot.img 均在本机产出；
-   overlay 工作流 = `devices/m2381/uefi/sync.sh` → `unixnu build firmware
-   --uefi out/m2381/uefi` → `package-m2381-boot.py`。P2 遗留 = 上机验证
-   （P4 才做）。
-3. **出核 → P3 三件**：Linux kernel 步（新）或 dispatch CI（steps=kernel
-   userdata payload）→ prelink 三值已在位 → ESP payload 打包（bundle 就绪
-   = `7416ca4f…`）→ 桌面全量校验。
-4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd（四门 + 刷写纪律
-   照 `docs/FLASHING.md`；首刷前 `fastboot getvar` 形式复核）。
+0. **stage 7 收尾（本会话已执行到等 CI，run `40153881681`，守望
+   `/tmp/r25b-watch.log`；pre_build = `bash "$DEVICE_DIR/scripts/ci-owner-policy.sh"`
+   ——注意 pre_build 必须走 `$DEVICE_DIR` 路径，主仓 checkout 没有该脚本，
+   第一次 dispatch 40153504108 就死在这）**：
+   ① CI 绿后取件：`unixnu-m2381-userdata-*`（双窗 ≈9.4GiB）→
+     `artifacts/images/m2381/userdata/`；`unixnu-m2381-verified-root-*`
+     （os+systemos+os-xnu-bundle）→ 解包后把 `build/verified-root-os/`、
+     `build/verified-root-systemos/` 放进 `out/m2381/device-bringup/.cache/firmware/`
+     （同名字目录，stage-local-candidates 会搬进 build/）；
+   ② 本机 `./unixnu build kernel -D out/m2381/device-bringup -j14`（defconfig
+     已翻：-bundle 归档 + CACHE_MOUNT/CACHE_STARTUP/BOOT_MANIFEST/
+     UNION_SYSTEMOS=y；UNION_MOUNTS 内核选项已确认在选）→ 探针 → payload；
+   ③ 用户单会话双刷 userdata+recovery_a → 读图：恢复界面/logo = stage 7
+     里程碑 → Data 种子（CI pre_build 候选，prepare-owner-data-fixture 需
+     macOS 挂载）→ 显示/触摸 P4 门；union 挂载类新 panic = 取证循环
+     （native_owner_cache_stage + checkpoint 全在）。
+1. **上游 rebase 跟随**（见 §1/UPSTREAM.md §2）；**格式 2 迁移**（官方
+   migration/steps 文档已研读，SM8550-common + 21H461 profile + 组件改名，
+   独立主题，不阻塞设备循环）。
+2. 空闲主题：r21 蓝条来源考古（低优先）、XS/fileset-KC rebinder（门 A 剩
+   KDK 符号源）、arm64e 专项（PLAN-arm64e-research.md）。
+3. 欠账：recovery_a dd 读回对拍（userdata=iOS root 后"回 nura"消亡，改
+   UniXNU 侧自读或豁免）；首轮 CI 40153504108 的 pre_build 失败因路径
+   （已重发，无损失）。
