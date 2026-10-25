@@ -509,9 +509,38 @@
 - **显示/按键**：cmd-mode DSC 最小点灯（SimpleFbDxe 用 ABL 帧缓冲）、
   PMK8550 按键 SID——P2 m2381Pkg 内解决。
 
-## 7. 下一步（下会话工作单，2026-10-25 刷机中交接）
+## 7. 下一步（下会话工作单，2026-10-26 v2 迁移后交接；10-25 刷机循环工作单见 §7.1）
 
-0. **读图三分支（用户正在双刷：userdata=已下载 9.4GiB 双窗镜像 +
+0. **本机 Linux 出核彩排（无需授权，先于 CI）**：
+   `./unixnu build kernel -D devices/m2381/unixnu-m2381`（PR#100 工具链已装，
+   155b2df1 先例；21H461 kernelcache staging 在位）。目的 = 消 CI 风险：
+   ①拷自 sheng 的 `build-boot-progress.py` 硬编码
+   `-I ROOT/'uefi-sheng/…/FrameBufferSerialPortLib'`，裸环境该目录不在树内，
+   是否致命本机立刻见分晓；②新静态绑定 archive 链（storage-bindings、VR
+   stub、adreno740-kits、virtio `--verified-root-bundle` 需 .cache/firmware
+   政策）+ 链接 + prelink 全链。挂了按 `out/…/logs/archive-*.log` 修。
+1. **（用户拍板推送窗口）CI 重发**：`scripts/make-device-branch.sh` 重建
+   device-m2381（二跑前 `git branch -D device-m2381`，§7.2 坑）→ push
+   `m2381`（64cd6fe）+ device-m2381 → dispatch macos.yml（defconfig=
+   m2381_defconfig，steps="kernel userdata payload"，pre_build=
+   `bash "$DEVICE_DIR/scripts/ci-owner-policy.sh"`，macos-26）。UEFI 侧未动，
+   FV 不重建。
+2. **CI 绿 → 取件 → P4 门**：artifacts（kernel/payload/userdata）→ ESP
+   payload 打包（v2 板 `./unixnu payload` + package-m2381-boot.py）→ 桌面
+   校验 → 首刷 boot_b + recovery_a（FLASHING.md 纪律，刷前读回对拍，刷机
+   单独拍板）。
+3. **新内核行为差留眼**：`NATIVE_LEGACY_DISPLAY=n`（对比 220721ca 的显示
+   路径差异——本就跑 UEFI GOP offline-legacy-*，理论无感，实证为准）；10-25
+   循环的旧墙 ram-data-first-abort 在新内核上重验。
+4. **运维坑更新**：v2 树装配把 §7.2 的"三处 cp 影子覆盖"坑基本退役——
+   scripts 每条命令重新拷贝、drivers/kits 是符号链接（设备 fork 直连）；
+   仅 `make-device-branch` 需先删旧分支。
+5. **独立主题**（不阻塞）：XS/fileset-KC rebinder（kits/XnuPrelink 内已带
+   test_fileset 与 rebinder 体）；arm64e 专项；LEGACY_DISPLAY 证据阶段。
+
+### 7.1 2026-10-25 刷机中交接（循环节奏由新内核重开后继承）
+
+- **读图三分支（用户正在双刷：userdata=已下载 9.4GiB 双窗镜像 +
    recovery_a = `7a40b90b`，内核 `9e72b039`/探针件 `f7a2819c`，16K 验证块）**：
    ① **恢复界面 / Apple logo / 用户态画面 = stage 7 里程碑** → 下一站
      **Data 种子**：OWNER_DATA_MOUNT=y（defconfig 的 UUID 18AB5557 已钉）
@@ -525,7 +554,8 @@
      CACHE_STARTUP 的 dyld_flags bit3（免点火）与 cryptex 缓存路径；
    ⚠ **校验期静默比 r21-22 更长**（16K = 4× 读放大）属预期，等 10-20 分钟
      再判；蓝条只闪一次（stage 1）。
-1. **git 收编（github.com git 端点恢复后）**：`git fetch origin &&
+1. **git 收编（✅ 已完成：10-26 轮推至 63d2857，origin/main 已删；后续推送
+   走新 §7.1/§7 工作单）**。原计划：`git fetch origin &&
    git push --force-with-lease origin m2381`（远端 aaaa2174 = API 重放的
    本地同内容提交，本地链多 5 个提交，强制安全）+ 重新生成 device 分支并
    强推（先 `git branch -D device-m2381`）。推完删 /tmp/m2381-gh-token。
@@ -536,9 +566,8 @@
    `git branch -D device-m2381`；pre_build 路径必须
    `bash "$DEVICE_DIR/scripts/…"`；github.com git 端点不通时用
    Git Data API 重放（/tmp/api_push.py，token /tmp/m2381-gh-token）。
-3. **独立主题**（不阻塞设备循环）：格式 2 迁移（官方 migration/steps 已
-   研读：SM8550-common + 21H461 OS profile + 组件改名 NativeUfs→ShengUfs
-   等 + sheng=格式 2 参考；我们的 16K fork/单窗属设备特化）；上游 rebase
-   跟随；XS/fileset-KC rebinder；arm64e 专项；r21 蓝条来源考古。
+3. **独立主题**（不阻塞设备循环）：格式 2 迁移（✅ 已于 2026-10-26 完成，
+   见 §0.14）；上游 rebase 跟随（现 pin 16e592a）；XS/fileset-KC rebinder；
+   arm64e 专项；r21 蓝条来源考古。
 4. **欠账**：recovery_a dd 读回对拍（UniXNU 侧自读或豁免）；16K 读放大
    的性能优化（已验块缓存）= launchd 之后主题。
