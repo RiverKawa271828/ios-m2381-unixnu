@@ -809,3 +809,39 @@ kernel 目标命名（donor VA → 符号名 → 原生内核地址）的离线�
   ②取证循环；③欠账 recovery_a dd 读回对拍；④空闲主题：arm64e 专项
   （PLAN-arm64e-research.md）、XS/fileset-KC rebinder（门 A 剩 KDK 源）、
   上游跟随。
+
+## U. 第 22 轮：首启读图 = root 挂载 panic → 定位发布契约死结（2026-10-25 续五）
+
+- **实机读图（用户刷 userdata 5.7GiB + recovery_a `c767358c` 后）**：绿条 →
+  蓝条 → panic `Failed ro mount root device @IOKitBSDInit.cpp:984`（TCR/SCTLR/
+  pages 寄存器页齐全）。绿/蓝条 = `libBootProgressStub.a` 在 VerifiedRoot 逐块
+  校验 5.7GiB OS 窗口时的轮询进度（EXTRA_LD_ARCHIVES 常驻，无需 boot-progress
+  旗标）。
+- **panic 语义（对源码）**：IOKitBSDInit 的 iOS 路径——root 媒体在等待窗内
+  始终未出现，直接 panic（"Still waiting" 文案仅 macOS 路打印）。即
+  NativeUfs `startRoot` 八处软失败点之一退出、零块设备发布。
+- **根因（代码层死结，与刷写质量无关）**：`RootPublication.h
+  ufsBuildRootPlan` 上游契约 `count >= 2` 且必须同时有 `SystemOS`+`OS` 两窗口；
+  而 §T 拍板的单策略镜像只有**一个 OS 窗口**（userdata-root.json：OS @1MiB
+  6,077,580,800B，`e5634d04`）。windows=1 → plan 拒绝 →
+  `rootDiagnosticFailure("root windows require distinct OS and SystemOS")`
+  → 无 IOMedia → 本 panic。**该镜像配该内核必然停在此处。**三份拷贝
+  （根目录 drivers/ = devices/ = out/m2381/device-bringup/）与上游树同源同病。
+- **排除项**：`findRootLayout`/RootLayout 对窗口数无假设（泛型解析）；
+  现役 `.config` = `m2381_owner_defconfig`，**OWNER_* 全关**
+  （CACHE_MOUNT/DATA_MOUNT/UNION_SYSTEMOS 编译期就不存在）——kern_exec 里
+  `offline owner SystemOS mount failed` / `offline scratch Data mount failed`
+  两 panic 在这版内核**未编入**，root 挂载成功即直奔 `exec /sbin/launchd`。
+- **修复**：`ufsBuildRootPlan` 放行 count=1（OS 窗口必需；多窗口时 SystemOS
+  配对契约原样保留），`plan.order[0]=system` 改为 SystemOS 存在才占位（单窗口
+  时原写法会越界）；`ufsPrepareRootWindows` 门槛 `count<1`。测试
+  `tests/RootPublication.cpp` 扩绿：lone-OS 单窗口 plan/prepare/publish 全
+  覆盖（ASan/UBSan PASS）。三份拷贝同步。
+- **读图判别器（下次启动）**：修后内核 + 已刷 userdata——
+  ① **launchd 级画面**（恢复界面/Apple logo/用户态任何帧）= §T 预期的
+    无 Data 种子终点里程碑，userdata 落地 + root 挂载 + VerifiedRoot 全链
+    实机闭环；
+  ② **exec/dyld 类新 panic**（如 launchd 路径缺失）= 同样证明挂载链全通，
+    墙在用户态第一脚；
+  ③ **仍 `Failed to mount root device`** = userdata 未落地/manifest 被拒
+    （读回欠账坐实）→ probe=11 只读窗口取证（打印 manifest+每窗 GPT）。
