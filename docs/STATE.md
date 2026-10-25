@@ -196,6 +196,35 @@
   （userdata ≈9.4GiB + recovery_a）**。读图：恢复界面/logo = stage 7
   里程碑。
 
+## 0.11 2026-10-25 续九：r25b 读图 = 诊断屏点名 VR_BLOCK，墙 = 树内读路径陈旧（§Z v2 未进内核）
+
+- **诊断 payload 实机**（kernel_args += `native-ufs-diagnostics=1`，payload
+  `4422a123`）：双刷后首启 = 绿条→蓝条→**UFS ROOT FAILURE 诊断大字报**：
+  `root window read failed` / `stage=read block integrity` / **`verify=5`
+  （= vr_status `VR_BLOCK`）** / found=2 prepared=2 published=1
+  bytes=`c4e00000`（SystemOS 3,303,014,400）/ manifest=0、GPT 几何逐位对、
+  SMMU 零 FAULT、READ(10) ocs=0——**userdata 落地、双策略加载、发布线程
+  全部健康；死因 = 第一次校验读（reads=0 failures=1，window=1 SystemOS，
+  APFS 探测刚发布媒体）`vr_verify_block` 返回 VR_BLOCK**。
+- **根因 = §Z v2（`ufsReadWindow` stride 参数化）从未编进内核**：
+  device-bringup 是 r22 时代手工 cp 快照，§Z 只改 fork；kits 有刷新机制
+  （CI `ci-owner-policy.sh` 现拉 + feeds 规则 5）而 **drivers 无任何刷新
+  纪律** → 树编进内核 `9e72b039` 的读路径 = 上游 4K 版（按 4096 切块、
+  4K 索引调 verify），16K 策略要求 n=16384 → `n != expected` 必返回
+  VR_BLOCK。r28 的"16K 预期命中"只验了策略字面量，读路径侧漏网。
+- **修复**：fork→bringup→tree 四文件同步（`NativeUfs.cpp`/`RootWindowRead.h`
+  /`tests/RootPathBridge.cpp`/`tests/RootWindowRead.cpp`）；host 测试双绿
+  （RootWindowRead 全项 + RootPublication SystemOS-first/lone-OS 全契约）；
+  重出内核 **`a10a1aea`** → 探针件 **`5c726a60`**（panic screen rebase 一次
+  过）→ **payload `f726c7fd`**（100MiB，diagnostics 保持开）。
+- **读图（下次启动）**：过墙 = launchd 级画面（stage 7 里程碑→Data 种子）；
+  仍大字报 = 下一墙现名（哈希不匹配类 = 数据层取证）；panic 位 =
+  NativeUfs.cpp 读失败漏斗。
+- **陷阱入册**："fork→bringup→tree 三处同步"适用于 **drivers**（r28 只记录
+  了 scripts）；候选硬化 = bringup drivers 改 symlink 或构建前 drift 检查
+  （待拍板）。ADT `random-seed` = `os.urandom(64)`（make-m2381-adt.py），
+  adt_sha 每次构建必变属设计内。
+
 ## 1. 结论/决策
 
 
@@ -364,9 +393,10 @@
    git push --force-with-lease origin m2381`（远端 aaaa2174 = API 重放的
    本地同内容提交，本地链多 5 个提交，强制安全）+ 重新生成 device 分支并
    强推（先 `git branch -D device-m2381`）。推完删 /tmp/m2381-gh-token。
-2. **运维坑清单（已入册，复发先查）**：改 repo scripts 后必须 cp 到
-   tree/scripts + device-bringup/scripts + devices/scripts 三处（树 scripts
-   是拷贝且 device 层后拷会影子覆盖）；make-device-branch 二跑前
+2. **运维坑清单（已入册，复发先查）**：改 repo scripts **或 drivers** 后必须
+   cp 到 tree + device-bringup + devices 三处（树是拷贝且 device 层后拷会
+   影子覆盖；r29 = §Z RootWindowRead v2 漏拷导致 16K 读路径必 VR_BLOCK，
+   见 §0.11）；make-device-branch 二跑前
    `git branch -D device-m2381`；pre_build 路径必须
    `bash "$DEVICE_DIR/scripts/…"`；github.com git 端点不通时用
    Git Data API 重放（/tmp/api_push.py，token /tmp/m2381-gh-token）。
