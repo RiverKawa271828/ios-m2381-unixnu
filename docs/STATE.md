@@ -982,7 +982,40 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   （第 4 步即回装）；r41a 原始证据 = `temp/logwindow.img` +
   `temp/r41a-log.txt`（本地，不入 git）。
 
-## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22】
+## 0.23 2026-10-26 续十：r42（3bafb6b9）实机 = 复位生效仍 ENOSPC；真凶 = staged-apps 灌满 32MiB 种子；修复 = 上游 grow_gib 种子扩容
+
+- **r42 读回（logwindow-r42.img，单次引导 359 轮/716s，写手 state=2 e=0）**：
+  复位确实生效——`D st=3 ld=1`（持久化页被丢弃，vs r41a ld=40），
+  `wr=9069 cm=1017`（新卷被重写）；挂载时 `smfree 7827/8192`（**95.5% 空**，
+  种子出厂不满）。**0.4 秒后** `gettin' low: free 835→579→323` → policy 仍
+  errno 28。真凶 = **`S st=1 dirs=482 files=165 mib=31 fail=39 err=28`**：
+  r39 预埋的 `sheng-staged-apps=1` 首 && 每）次引导把 OS 卷 staged 系统应用
+  拷进 Data（拷了 31MiB 自己 ENOSPC，拷不完→无 marker→下轮重来），32MiB
+  卷被灌满后 policy 的 disabled.plist 写死。r41a 的"满卷"也是它 r40 塞的。
+- **上游复核（用户拍板"按上游修"）**：sheng board.toml:189 同样开着
+  `sheng-staged-apps=1`——上游配套件 = **`scripts/seed-data-grow.py`**
+  （"make a Data seed whose APFS container fills the tablet's storage"）+
+  workflow `grow_gib` 输入（`grow_gib needs data_seed_url`，CI 流：
+  data_seed_url→RUNNER_TEMP/data.dbr→grow→payload）。**我们的错 = 只抄了
+  args 一半，种子从未扩容（r30/stage-8 的 32MiB 用到现在）**。种子几何在
+  镜像里、内核自适应（"refuses a seed whose store window does not fit"），
+  稀疏打包/稀疏 RAM（现 resident 仅 572KiB）→ **扩容不用改内核不用改板**。
+  32MiB 在 APFS lowdisk 阈值下（挂载即告警）也是 r40 异常行为的候选因。
+- **已执行**：m2381 → origin（b5ae508..d4a3d09，CI 出核必须带 r41 BootLog
+  接线）；device-m2381 重建推送（27a818f→5bd5ffa，含 staged-apps/sheng-log，
+  无 reset 残留）。ESP 配置核实：r42 的 reset 在主 xnu 项末尾（board.toml
+  本身干净，下轮 CI 件不带 reset——种子换身份自然回新鲜卷）。
+- **下一步（用户 dispatch）**：沿用上轮 payload dispatch 命令 + **`-f
+  grow_gib=16`**，steps="kernel payload"（userdata 不动），data_seed_url/
+  trust_cache_url 沿用私有件。取件后**只刷 recovery_a**（boot_b/userdata
+  现役即 a1d51f04/fd43ee70 不动）→ 起机预期：Data 新鲜 16GiB → staged-apps
+  拷完写 marker（一次性）→ policy 过 → spawn 爬升 → 日志窗采步速。
+  值选取：16GiB = staged-apps 全树 + daemon 状态千倍余量；upstream --auto
+  （~453GiB 填满分区）留给日常可用阶段再升。
+- 残余观察项：本轮若 queue 仍 ~1 作业/s，步速真因在队列调度（§0.18① 继续），
+  与卷无关；r41b 仪表（UFS TIME verify=40ms read=253ms/2s 轮）已可定量。
+
+## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23】
 
 **会话开始前的用户操作（fastboot，单通道，slot=b，各件先 sha256 对拍）**：
 1. `fastboot flash boot_b mu-r91-350386e0.img`
