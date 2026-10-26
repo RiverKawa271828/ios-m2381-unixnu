@@ -821,12 +821,78 @@
   每 2s 落盘定案。优化杠杆（后续主题，按序）：多槽位排队、相邻页批读
   （bounce 128KiB 已支持 8×16K 批，随机页入吃不到）、已验块缓存复用、
   dyld 缓存驻留后段加速验证。
-- **产出**：内核 **`b2681da3`**（69,754,880B，比 e7442ae1 大 139KB；
-  内核含 [spawn]/[profile]/[page]/xpcproxy exits/swipe2 字面量实证 BootLog
-  在内）→ 探针+panic 屏件 `896d06c2` → **payload `b14525da`**（96MiB；
-  args 与 r40 逐字一致 + sheng-log=1；trust 7416ca4f / Data 种子 67a1e4f2
-  同件）。桌面校验：ESP kernel/种子 sha 逐字节对拍 ✓、ADT 13820B ✓、
-  unixnu.toml 含 sheng-log=1 ✓。
-- **待用户**：首刷 recovery_a = b14525da 拍板（boot_b/userdata 不动）；跑
-  ≥15 分钟（覆盖 509 slot 环不回绕的时长）后关机 → nura-min 读回日志窗
-  → parser 出 pacing 时间线 → 定"慢但通 vs 半挂起"与步速根因。
+- **产出**：内核 **`430344b3`**（比 e7442ae1 大 ~139KB；内核含 [spawn]/
+  [profile]/[page]/xpcproxy exits/swipe2 字面量实证 BootLog 在内；诊断页第 1
+  行末尾新增 `log=<state> r<rounds> e<errors>`——BootLog.o 常驻档案后
+  plain extern 直连写手状态，照片即可证明日志窗在填：0=off 1=等窗
+  2=writing 3=错误停 4=GPT 变更停）→ 探针+panic 屏件 **`bf32d8fa`** →
+  **payload `f264c196`**（96MiB；args 与 r40 逐字一致 + sheng-log=1；trust
+  7416ca4f / Data 种子 67a1e4f2 同件）。桌面校验：ESP kernel/种子 sha 逐字节
+  对拍 ✓、ADT 13820B ✓、unixnu.toml 含 sheng-log=1 ✓。
+  （构建中途曾出 b2681da3/b14525da 无上屏态版本，已被本组取代。）
+- **待用户**：按 §0.20 工作单执行（刷 recovery_a → 跑 ≥15 分钟 → 刷
+  nura 链 + nura-min → dd 读回日志窗）。
+
+## 0.20 2026-10-26 续七：nura-min 读回工作单（r41 件 → 日志窗取证 → 恢复）
+
+**背景**：nura-min = nura 仓的 2GiB 定长 ext4 根镜像，为"iOS 写 userdata
+尾部日志 ↔ Linux 读回"设计（`nura-meizu-m2381/docs/NURA-MIN-ROOTFS.md`，
+本机 serial 381QYGEP222XJ 已验收：48s 起 devsh:23、NCM 172.16.42.1、
+sparse 只写头部 2GiB 物理碰不到尾部）。它替换 userdata 头部（iOS root 的
+OS 窗被覆盖 = 预期代价，红线 2 豁免，读完刷回 8.74GiB 件即可）；尾部 32MiB
+sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
+
+**用户操作序列（本轮刷机窗口）**：
+1. 刷 recovery_a ← **`f264c196`**（96MiB，本机
+   `out/m2381/ipados-17.7.11-21H461/m2381/payload/payload.img`）。
+2. 起 UniXNU **跑 15-18 分钟**（509 slot×2s ≈ 17 分钟全保留；更久则最早的
+   几分钟被环回覆盖，无碍主判读）。期间可拍 1-2 张照片：第 1 行看
+   `spawn=<n> <r>/s log=2 r<n> e0`（log=2 r 增长 = 日志在写）、第 5 行看
+   `stage +<age>s`。到点长电源键关机。
+3. 刷 nura 链三件（nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`，
+   刷前各自 .sha256 对拍；fastboot 前置照 FLASHING.md，slot=b）：
+   `boot_b ← mu-r91-350386e0.img`、`recovery_a ← esp-recovery-v71.img`、
+   `userdata ← meizu-meizu20-nura-min-r91-2G.simg`。
+4. 起 nura-min（USB 出 NCM 网卡，设备侧 172.16.42.1）→ 宿主 nura 仓
+   `tools/devsh.py`（busybox nc :23，自动挑 172.16.42.x 接口）：
+   - 写窗到设备 /tmp：`tools/devsh.py 'dd if=/dev/sda22 bs=512
+     skip=$((972326040-65536)) count=65536 of=/tmp/logwindow.img'`
+     （32MiB = 尾 65536 扇区，分区相对寻址）
+   - 刷写质量读回（顺带清 §7.1 对拍欠账的可行部分）：
+     `tools/devsh.py 'dd if=/dev/sde43 of=/tmp/boot_b.now.img'` 与
+     `dd if=/dev/sde27 of=/tmp/rec_a.now.img` → 对拍 mu-r91/esp-v71 哈希
+   - 推回宿主：一个终端 `tools/devpull.py logwindow.img`（监听 5555），
+     另一个 `tools/devsh.py 'busybox nc 172.16.42.2 5555 <
+     /tmp/logwindow.img'`；boot_b/rec_a 同法。
+5. 恢复现役（读完即可刷回）：`boot_b ← devices/m2381/unixnu-m2381/build/
+   m2381/boot/boot.img`（a1d51f04 现役留底）、`recovery_a ← f264c196`、
+   `userdata ← out/m2381/ci-artifacts/userdata-root.img`（fd43ee70，
+   8.74GiB，本地在）。
+
+**下会话分析单（我）**：
+1. `python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py
+   logwindow.img --page > pacing.txt`；再加 `--spawn`（census：每进程名
+   starts/exits/首启秒）与 `--msg`（内核缓冲）。
+2. **判读决策树**：
+   a. `UFS TIME read=Xms` 行序列：read_ms ÷ verified_blocks（16KiB 块数）
+      = ms/往返。≈5ms → "页入带宽吃满"模型坐实（r40 自洽值 5.4ms）→
+      UFS 读路径优化主题排期（多槽位排队 / 相邻页批读（128KiB bounce 已
+      支持随机页入吃不到）/ 已验块缓存 / dyld 驻留后段加速）。
+   b. spawn 速率序列（相邻 slot 的 spawn 总数差分）：恒 ~1/s = **慢但通**
+      （再跑一轮更久即可等 SpringBoard，或直接做 a 的优化）；平台期
+      （stage +age 几十秒不落）= **半挂起**，stage 行 + census 给出卡死
+      作业名 → 定向 disable 或修因；对照 xpc_fails 段（spawn setup 失败
+      的 label 计数）。
+   c. [profile] 采样排名：read 时间不高时的 CPU 烧点（AMFI/launchd/
+      xpcproxy/其他）→ 转 AMFI 每 exec 成本线；采样密度同时给发热线
+      （③）备料（cpufreq 缺席定频评估）。
+   d. [page] 的 `free=` 序列：4GB 窗内存压力证据（④，speculative 回收）。
+   e. `log=` 行与 header：state 全程 2、e=0 → 写侧健康；state 3/4 →
+      写错误/GPT 异常另查（write_errors>0 时看 read_ms 是否被日志写挤占）。
+3. 收尾：STATE §0.21 读图记录 + 记忆更新；按判读结果开下一主题
+   （UFS 读路径优化 / 定向 disable / 长 boot 验证 SpringBoard）。
+
+**已知残余风险（读图前如实记录）**：写侧证据链 = 编译+链接+字符串+args+
+几何全过，唯一未实证的是运行期写手（writer 线程活着且 hostWrite4k 成功）
+——上屏 `log=2 r<n> e0` 就是它的运行期证据；若照片显示 log=1（等窗）
+说明 hostLogOpen 被拒，读 `native-ufs-root` 的窗口拒绝原因另行排查。
