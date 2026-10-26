@@ -896,3 +896,42 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
 几何全过，唯一未实证的是运行期写手（writer 线程活着且 hostWrite4k 成功）
 ——上屏 `log=2 r<n> e0` 就是它的运行期证据；若照片显示 log=1（等窗）
 说明 hostLogOpen 被拒，读 `native-ufs-root` 的窗口拒绝原因另行排查。
+
+## 0.21 2026-10-26 续八：r41a（b14525da）实机首启读图 = policy panic @kern_exec.c:8043（下会话先读日志再刷机）
+
+- **照片读图（09:44，b14525da 已刷已启）**：内核走到 1s 后死——stage 史六行
+  全部停在第 1 秒（init_program enter → SystemOS mount ×2 → Data mount ×2
+  → `temporary watchdog launch policy enter`），**stage +355s 无更新、
+  spawn=0、procs=1、EXIT 0**；panic 大字 `@kern_exec.c:8043`（消息头——
+  含 errno 的 `sheng watchdog launch policy failed: %d`——被诊断页重绘
+  盖住）；可见 frames 尾部 = `fffffff0088c89b0` + `fffffff0085a5838`。
+- **符号化（本机 unstripped 内核表；kern_exec 段在 r41a/r41b 两构建间不变，
+  符号化有效）**：8043 = `panic("sheng watchdog launch policy failed: %d")`
+  即 BootWatchdogPolicy 的 disabled.plist 写链条返回非零（源码逐步：
+  mkdir→open(O_CREAT|O_TRUNC|O_NOFOLLOW)→分片 write→fchown/fchmod/fsync→
+  fstat 校验→O_EXCL marker）；`fffffff0088c89b0 = bsd_ast+0x328`、
+  `fffffff0085a5838 = thread_bootstrap_return+4`——**正常 initproc 启动链**
+  （bootstrap 线程 → bsd_ast → load_init_program → policy），无异线程失控。
+  policy 在 1s 内快速失败（同秒挂）→ 立即 errno，非超时。
+- **头号假设 = 撕裂的持久化 Data store**：r40 = 中途断电关机（12min 等待后
+  用户关机），sheng-data-persist=2 的 store 被撕；本次 resume（同参数同位置）
+  挂上损坏/只读卷 → policy 写 disabled.plist 立即 EROFS/EIO。旁证：NativeUfs
+  ext 行注释的状态表正好有 "6 = resumed read-only"；照片里 DATA st= 恰被
+  panic 大字盖住；r38→r40 三轮都是"拍照→断电"循环，撕裂迟早发生。**我的
+  r41 delta 与 sheng-log=1 不能完全排除（写手线程与根窗口并发用单槽传输），
+  以日志 errno 定谳。**
+- **关键资产判断：这次 panic 的证据已在设备上**——panic 未停其他核
+  （quiesce=0/halt=0，monitor 画到 359s），BootLog 写手线程大概率每 2s 一轮
+  写了 ~180 轮：`[panic]` 节有完整 panic 文本（含 errno + 24 帧），
+  `[data]` 行有 DATA st=（撕裂判据），msgbuf 有 policy 的 printf 与 APFS/
+  persist 错误行，`[page]` 有 359s 的全页序列。**userdata 尾部在 nura-min
+  读回前不可被任何 fastboot flash userdata 触碰。**
+- **修订后的下会话序列**：①nura-min 读回日志窗（§0.20 步骤不变，先不刷任何
+  UniXNU 件）→ parser 出 [panic]/[data]/[page]；②按 errno 定谳后刷
+  **`3bafb6b9`**（= f264c196 + `sheng-data-reset=1`，清持久化 Data 回新鲜
+  种子；本机 `out/m2381/payload/payload-data-reset-1.img`）→ 若假设成立，
+  policy 一次过、launchd 继续（同时它带全套 r41 仪表与 sheng-log=1，日志
+  连续）；干净 f264c196 留档 `payload-clean-f264c196.img`。③若 errno 指向
+  别处（非 Data 卷），按 errno 修因重出件。
+- **本会话产出补记**：recovery 件 `3bafb6b9`；panic 地址符号化方法入册
+  （llvm-nm + unstripped noctf，跨小构建对 kern_exec 段有效）。
