@@ -935,3 +935,46 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   别处（非 Data 卷），按 errno 修因重出件。
 - **本会话产出补记**：recovery 件 `3bafb6b9`；panic 地址符号化方法入册
   （llvm-nm + unstripped noctf，跨小构建对 kern_exec 段有效）。
+
+## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）
+
+**会话开始前的用户操作（fastboot，单通道，slot=b，各件先 sha256 对拍）**：
+1. `fastboot flash boot_b mu-r91-350386e0.img`
+2. `fastboot flash recovery_a esp-recovery-v71.img`
+3. `fastboot flash userdata meizu-meizu20-nura-min-r91-2G.simg`
+   （三件都在 `/home/ri/work/nura-meizu-m2381/artifacts/`；sparse 只写
+   userdata 头部 2GiB，尾部 32MiB 日志窗原样保留——r41a panic 的证据在里面）
+4. 起 nura-min（~48s 到 devsh；USB NCM 设备侧 172.16.42.1）。
+5. 读日志窗（nura 仓 tools/）：
+   `python3 tools/devsh.py 'dd if=/dev/sda22 bs=512 skip=$((972326040-65536)) count=65536 of=/tmp/logwindow.img'`
+   （分区相对寻址；32MiB 整窗）→ 顺手
+   `tools/devsh.py 'head -c 8 /tmp/logwindow.img'` 应见 `SHLOG001`
+   （= 写手确实写过；未见 = 写侧运行期失败，转查 hostLogOpen 拒因）。
+6. 推回宿主：一个终端 `python3 tools/devpull.py logwindow.img`（监听 5555），
+   另一个 `python3 tools/devsh.py 'busybox nc 172.16.42.2 5555 < /tmp/logwindow.img'`；
+   文件放到本仓 `temp/logwindow.img`。
+7. （可选，刷写质量对拍）`dd if=/dev/sde43 of=/tmp/boot_b.now.img`、
+   `dd if=/dev/sde27 of=/tmp/rec_a.now.img` 同法推回，对拍 mu-r91/esp-v71。
+
+**下会话分析单（我，按序）**：
+1. `python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py
+   temp/logwindow.img --all > temp/r41a-log.txt`（合成窗已验证；--page/
+   --spawn/--msg 可分节）。
+2. 定谳三读：
+   a. `[panic]` 节 = 完整 panic 文本：errno 值 + 24 帧回溯 → 撕裂假设判决；
+   b. `[data]` 行 `DATA st=`：6=resumed read-only / 5=degraded → 假设坐实；
+      2=resumed 正常 → 另找 errno 指向（写手并发/其他）；
+   c. `[page]` 序列 + header：log state=2 轮数 ~180 e=0 → r41 写侧运行期
+      实证（本会话唯一未验环节）；`UFS TIME` 每轮 ms → 读路径基线数据。
+3. 判决后：
+   - 假设成立（预期）：用户刷 **`3bafb6b9`**（f264c196+sheng-data-reset=1，
+     `out/m2381/payload/payload-data-reset-1.img`）到 recovery_a → 起机 →
+     policy 应过 → launchd 继续 → 该轮日志（窗连续）直接开始回答队列步速
+     （§0.18①：spawn 速率 / stage +age / UFS TIME ms/往返）；
+   - errno 另有所指：按 errno 修因重出件（写明在 STATE §0.22）。
+4. 恢复/收尾：boot_b ← `devices/m2381/unixnu-m2381/build/m2381/boot/boot.img`
+   （a1d51f04 留底）；userdata 若下次要重刷 = `out/m2381/ci-artifacts/
+   userdata-root.img`（fd43ee70）；STATE §0.22 记录 + 记忆更新。
+
+**红线提醒**：读回完成前，任何 `fastboot flash userdata` 都会毁证据；
+nura-min simg 是唯一安全件（sparse 头部）。
