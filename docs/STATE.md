@@ -1490,3 +1490,43 @@ nura-min simg 是唯一安全件（sparse 头部）。
   `out/m2381/ci-artifacts/userdata-root.img`（fd43ee70）。刷后各件读回
   对拍（FLASHING 纪律）。预期 = displayConfiguration 断言消失、下层按
   REASON 行定谳。
+
+## 0.33 2026-10-27 续四：r49 二试定谳 = fixup 9 目标未执行（惰性应用判活），三连修 4e69f450
+
+- **r49b 读窗（logwindow-r49b.img，md5 baff2457）**：509 cycle **全部
+  parsed=10**（036e712f 确认上机，路径修正生效）。applied=5 =
+  {BTAudio, 5(62aee70), 6, 7, 8a}——**fixup 9（1911f78）与 8b 都未应用**，
+  REASON 仍 500 条 displayConfiguration（SpringBoard sig6 ×1481，
+  chronod sig5 ×19）。
+- **内核机制定谳（读 patches/xnu/native-text-fixup.patch）**：fixup 挂在
+  `vm_page_validate_cs_mapped_slow`，**惰性应用 = 仅当含目标地址的页被
+  首次签名校验时**才 memcmp+patch（按 vp->v_name 匹配子缓存文件名）。
+  由此：8b 不应用 = 设计内睡守（8a ret 后 binder _init 无人调 → 页不换
+  入）；**fixup 9 不应用 = SBWorkspaceTransitionRequest init 根本没执行**
+  = 它不是本轮抛者（fixup 应用与否本身就是判活 oracle）。
+- **抛者重定位（全区域补扫，修好掩码）**：109 裸串 + 9 CFString 全区域
+  xref，可执行代码引用全部收齐；assert 体指纹（currentHandler → 条件串
+  入 [sp] → handleFailure）筛掉 FBS setDisplayConfiguration 日志路径与
+  SBNonInteractive appendString 调试标签。真断言体三个（r48 只找到
+  workspace 那个）：
+  ① `-[SBSceneHostingDisplayController displayIdentityDidUpdate:
+     configuration:]`（SBSceneHostingDisplayController.m，站点
+     0x1cfac4bd4 = +0x2f0）
+  ② `-[SBSConnectedDisplayInfoFactory _supportedScalesForDisplay
+     Configuration:defaults:error:]`（0x1cff7d108 = +0x210）
+  ③ `-[SBSConnectedDisplayInfoFactory _effectiveSettingsForDisplay
+     Configuration:defaults:]`（0x1cff7d210 = +0x88）
+- **修复 = fixup 10（三连修，r47 双修先例扩展）**：①入口 ret 返 self
+  （updater，0x1cfac48e4 = .25+0x1a308e4，orig `ff8302d1 eb2b036d`）；
+  ②③入口 `mov x0,#0; ret` 返 nil（getter，0x1cff7cef8 = .25+0x1ee8ef8，
+  0x1cff7d188 = .25+0x1ee9188）。fixup 9/8b 保留（惰性语义下的合法睡
+  守，下层若触到会自动生效）。表 13 条（< CS_TEXT_FIXUP_MAX=32）。
+  三条 applied 标记兼作执行 oracle：若断言仍在而标记全无 = 抛者在
+  更深处，再按 oracle 收敛。
+- **产出**：payload **4e69f450**（96MiB，平铺件
+  `out/m2381/payload-r50-4e69f450.img`；kernel/trust/种子不变，ADT 仅变
+  13 条全在件核验）。
+- **r50 刷写卡（三件全刷，current-slot=b）**：boot_b ← a1d51f04 +
+  recovery_a ← **`out/m2381/payload-r50-4e69f450.img`**（刷前 sha256sum
+  须 4e69f450 开头）+ userdata ← fd43ee70。预期：displayConfiguration
+  断言消失；若仍在，先读三条新标记定执行面。
