@@ -1530,3 +1530,37 @@ nura-min simg 是唯一安全件（sparse 头部）。
   recovery_a ← **`out/m2381/payload-r50-4e69f450.img`**（刷前 sha256sum
   须 4e69f450 开头）+ userdata ← fd43ee70。预期：displayConfiguration
   断言消失；若仍在，先读三条新标记定执行面。
+
+## 0.34 2026-10-27 续五：r50 定谳 = oracle 全排除（三新目标也未执行），抛者更深——本轮定位收口，下轮转上游同步+解法调研（用户拍板）
+
+- **r50 读窗（logwindow-r50.img，md5 0cc85146）**：509 cycle 全部
+  `parsed=13`（4e69f450 上机✓）。**applied=5 原班人马**（BTAudio/5/6/7/
+  8a）——三条新 fixup（1a308e4/1ee8ef8/1ee9188）零应用 = 三个候选函数
+  也都不在执行路径。**至此五个 NSParameterAssert(displayConfiguration)
+  站点全部排除**（workspace 转换/scene hosting/SBSConnected×2 + 两个非
+  断言假阳性），REASON 仍 499 条同串，SpringBoard sig6 ×1319，
+  chronod sig5 ×178（继续升温）。
+- **栈线索关闭**：r50 崩 bt 去滑后与 r48 逐帧全同（确定性栈布局）；
+  bt8=0x18644158C 落 .01 数据段（无指令可反汇编）= 陈旧帧实锤；live
+  链仍只有 terminate 机器。原始窗内崩溃日志缓冲只含 reason 行，无
+  Last Exception Backtrace 符号。
+- **定位收口时的开放缝（下轮可续）**：①auth-rebase 编码的 CFString
+  指针扫描（ENC 掩码只认 `VA|0x400_00000000`，认证指针高位不同会漏；
+  修正掩码 `ptr & 0x3FFFFFFFFF` 的重扫被用户叫停）；②.23 区两个裸串
+  引用点（0x1c943f1ec/0x1c94419e8，垃圾符号）未反汇编定性。
+- **下轮工作单（用户拍板 2026-10-27）**：
+  1. **上游同步**：`git fetch upstream` + rebase m2381（照
+     docs/UPSTREAM.md；现 pin 16e592a，查新增——设备仓 schema/驱动/
+     patches 变化），同步记录一句话入档。
+  2. **上游/fork 解法调研**：上游 UniXNU 的 sheng/nx729j/fuxi 板
+     text_fixups 全表（是否比我们抄的多）、它们对 displayless 用户态
+     的处理（=y 车道之外有没有机制解）、其他 fork（HackiOS/ios-topaz/
+     社区 SM8550 移植）同墙解法。
+  3. **备选方案（调研后拍板）**：
+     a. **类杀**：`-[NSAssertionHandler handleFailureInMethod:object:
+        file:lineNumber:description:]`（0x1874494d4，Foundation .03）+
+        `handleFailureInFunction:…` 变体入口 ret——一次灭整个
+        NSParameterAssert 传递类（displayless 必然连环触发的断言类，
+        r43→r50 已花八轮）；下一墙直接变成非断言类崩溃。
+     b. **=y 车道加速**（§0.30 配方已就绪，ABI 头在仓）——根因解。
+     c. 上游/fork 若有现成机制解则直接取。
