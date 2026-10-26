@@ -778,3 +778,55 @@
 - **设备状态**：用户已关机。boot_b 现役 UEFI 不变；recovery_a =
   `d0ed4e45`（七层参数）；userdata = v2 root 不变。commits 至
   dceeb44/r39 已提交未推送。
+
+## 0.19 2026-10-26 续六：队列步速调查① = sheng-log UFS 日志接线 + 步速仪表（r41 件就绪）
+
+- **本轮拍板依据（§0.18①）**：r40 诊断读图只有照片，census/阶段史没落盘。
+  上游机制本就有 UFS 日志窗（`kits/sheng BootLog.c`，boot arg `sheng-log=1`：
+  每 2s 把整页诊断文本 + kernel msgbuf + exec census（每进程名/起止数/首启
+  秒）+ [profile] 采样写入 **userdata 尾部 32MiB**，slot 环 509 个 ≈17 分钟，
+  header 最后写、关机不丢）——但 m2381 从未启用：①args 无该 arg；②BootLog.o
+  根本没编（sheng 在 LEGACY_DISPLAY 档里编，本板 =n 车道）；③读回侧 sheng
+  用 `fastboot boot` Linux reader，本板 ABL 裁 CmdBoot 不通 → **nura-min
+  Linux 镜像 + NCM devsh dd**（用户确认不覆盖尾部）。
+- **接线（一次主题三墙全修，全在本设备仓）**：
+  ① `build-boot-progress.py` 增编 BootLog.o 进 libBootProgress.a（基线
+    force_load 即入内核；必须用 **startup.o.json/osfmk 模板**——BootLog.c
+    含 osfmk 私有头 kern/misc_protos.h，bsd 模板没有；同因移除
+    TelemetryDefs.c 里的 no-op `boot_log_tick` 桩，否则重复符号）。
+  ② TelemetryDefs.c 扩 ~90 个数据零定义 + 11 个 no-op 函数（BootLog.o 的
+    weak 外部在 ld64 956 下必须显式定义；链接预检两轮：`native_lookup_*
+    与 vfs_lookup.o 的 native-lookup-trace 补丁强定义重复 → 摘除；其余
+    批量 grep 内核树零命中）。
+  ③ BootLog.c fork 自带 bug：[swipe2] 行读 `native_swipe_stats[16]` 越界
+    [16] 数组（-Warray-bounds 抓住）→ extern/零定义同步扩 [17]。
+- **步速仪表（BootProgress.c，照片即可判读）**：第 1 行加
+  `spawn=<总 spawn> <上一整秒速率>/s`（census_note 锁外原子计数）；第 5 行
+  stage 加 `+<age>s`（history 每次调用都推入 → age = 距上次 spawn 尝试的
+  秒数——**挂起作业盲区判据**：age 持续增长而 UFS/IRQ 健康 = 有 spawn 卡死，
+  挂起作业永不出 FAIL 行，此为唯一可见处）。
+- **读回流程（下轮实机用）**：nura-min 起 Linux → NCM devsh
+  `dd if=/dev/block/sda22 skip=$((分区扇区-65536)) count=65536`（userdata
+  尾 32MiB）→ devpull → `devices/m2381/unixnu-m2381/scripts/
+  read-m2381-ufs-log.py <img>`（--all 默认按 #slot 轮次排序；--page 只出
+  pacing 时间线；--spawn 只出 census；--msg 出内核缓冲）。布局解析器已用
+  合成窗验证。
+- **机制线（离线已定位的部分）**：UFS 读路径 = 全局 windowLock 全程串行 +
+  **单槽位**（RootCommands.h "Single-slot completion policy...No
+  resubmission"）+ 门铃 2µs MMIO 忙轮询 + 每传输整段 cache 维护；每 4K 页入
+  = 一次 16K 验证块往返。r40 数字自洽：1514MiB/16KiB ≈ 9.7 万次往返，若
+  read_ticks ≈ 全程 510s → **~5.4ms/16K 往返 ≈ 3MB/s 有效带宽**，队列
+  ~1 作业/s ≈ 每作业 2-5MB 独有页 ÷ 3MB/s——"页入带宽吃满"模型成立与否
+  由日志第 46 行 `UFS TIME verify=ms read=ms`（ShengUfs 分立计数器已在）
+  每 2s 落盘定案。优化杠杆（后续主题，按序）：多槽位排队、相邻页批读
+  （bounce 128KiB 已支持 8×16K 批，随机页入吃不到）、已验块缓存复用、
+  dyld 缓存驻留后段加速验证。
+- **产出**：内核 **`b2681da3`**（69,754,880B，比 e7442ae1 大 139KB；
+  内核含 [spawn]/[profile]/[page]/xpcproxy exits/swipe2 字面量实证 BootLog
+  在内）→ 探针+panic 屏件 `896d06c2` → **payload `b14525da`**（96MiB；
+  args 与 r40 逐字一致 + sheng-log=1；trust 7416ca4f / Data 种子 67a1e4f2
+  同件）。桌面校验：ESP kernel/种子 sha 逐字节对拍 ✓、ADT 13820B ✓、
+  unixnu.toml 含 sheng-log=1 ✓。
+- **待用户**：首刷 recovery_a = b14525da 拍板（boot_b/userdata 不动）；跑
+  ≥15 分钟（覆盖 509 slot 环不回绕的时长）后关机 → nura-min 读回日志窗
+  → parser 出 pacing 时间线 → 定"慢但通 vs 半挂起"与步速根因。
