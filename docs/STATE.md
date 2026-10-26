@@ -1465,3 +1465,28 @@ nura-min simg 是唯一安全件（sparse 头部）。
   userdata-root.img，不变）。预期：displayConfiguration 断言消失，
   SpringBoard 推进到下一层（REASON 行定谳）；车道施工（§0.30 配方）在
   读窗定谳后进行。
+
+## 0.32 2026-10-27 续三：r49 首试作废 = 旧载荷被刷（路径歧义），重发卡
+
+- **r49 读窗（logwindow-r49.img，md5 64fb2566）判谳无效**：509 cycle 全部
+  `[text fixup] parsed=9`（495×applied=5 + 会话头 9×0/2×1/3×2 的爬坡）=
+  一个完整的 **821ab7c0（r48 载荷，9 条）** boot 会话（rounds=513/
+  uptime=1028s）；REASON 仍 479 条全 displayConfiguration。**036e712f
+  （10 条，parsed=10）零 cycle 在窗 = 该载荷从未运行**。
+- **根因 = 刷写路径歧义（流程债）**：r49 出件走了 `--out out/m2381` 得到
+  双层路径 `out/m2381/m2381/ipados…/payload/payload.img`，而历史命令里的
+  旧路径 `out/m2381/ipados-17.7.11-21H461/m2381/payload/payload.img` 仍指
+  821ab7c0——刷写用了旧路径。**修正**：新件已复制到无歧义平铺路径
+  `out/m2381/payload-r49-036e712f.img`（sha256 前 8 = 036e712f）；
+  旧路径文件保持 821ab7c0 原样（回滚件不覆盖）。
+- **读回实证（nura-min 侧，读回发生在 nura 链覆盖后，只证明现态不证明
+  刷写时态）**：boot_b=27a08ad1 / recovery_a=2c3c3e4e = nura 链现役件，
+  与三件卡全不同——正常，iOS 分区在 nura-min 读回流程中被覆盖（三件卡
+  规矩的由来）。
+- **r49 重发卡（三件全刷，设备现处 nura-min，current-slot=b）**：
+  boot_b ← `devices/m2381/unixnu-m2381/build/m2381/boot/boot.img`
+  （a1d51f04）+ recovery_a ← **`out/m2381/payload-r49-036e712f.img`**
+  （刷前 `sha256sum` 必须见 036e712f 开头）+ userdata ←
+  `out/m2381/ci-artifacts/userdata-root.img`（fd43ee70）。刷后各件读回
+  对拍（FLASHING 纪律）。预期 = displayConfiguration 断言消失、下层按
+  REASON 行定谳。
