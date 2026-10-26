@@ -1416,3 +1416,52 @@ nura-min simg 是唯一安全件（sparse 头部）。
   REASON 行定谳（预期：背光链消失，SpringBoard 推进到窗口/场景创建或
   render server 交互层）；②同会话开车道施工（配方见上，ABI 头已备）
   → 出 =y 内核 → r49 = 车道轮。
+
+## 0.31 2026-10-27 续二：r48 读回定谳 = workspace 转换请求层（fixup 9 出件 036e712f）
+
+- **r48 读回（logwindow-r48.img，md5 a5027982 宿主/设备一致，SHLOG001 在）**：
+  504 轮 REASON 全同串，写手健康。**fixup 8 生效判据过**：r47 背光链断言
+  （`: display`）从 REASON 消失，msgbuf `text-fixup: dyld_shared_cache_arm64.
+  25+0x19cd2bc (8 bytes) applied` 实证（fixup 6/7 标记同在）。`[text fixup]
+  parsed=9 applied=5`：8b（1fc7930）目标/期望字节离线核对全对但标记未见于
+  窗（环形缓冲可能吞掉第 5 条标记）——开放项，不阻塞。
+- **新墙 = workspace 转换请求层**：REASON `NSInternalInconsistencyException:
+  Invalid parameter not satisfying: displayConfiguration`。SpringBoard
+  崩溃 PC 1d42d2f74（slide +8b48000 → _mach_init_doit+0x400 abort 区），
+  bl-target 验活：terminate 机器全链活（exception_cleanup→failed_throw→
+  __terminate→blr _objc_terminate→blr abort），外段（HomeUI/SpringBoard
+  bt9-11）陈旧帧（bt11-4 直接是 brk）。chronod（18/8@36s）新崩溃循环，
+  sig5 Ef2000001（Swift 陷阱形态，dispatch_client_callout 真帧）——次优先，
+  等主链推进后按 sheng disable-list 处理。
+- **抛出点定位（本轮方法资产：CFString 链式指针解码）**：用户态 cache 的
+  __DATA_CONST 指针是 chained-fixups 编码，`存储值 = VA | 0x400_00000000`
+  （r46 mainScreen description CFString 0x1f01853e8 验证）。定位路径 =
+  REASON 串 → 裸串/CFString 候选 → `bl _objc_msgSend$handleFailure…` 桩
+  （各二进制私有桩，UIKitCore 桩 0x18b8fe800）→ 断言站点的 x6/x7 串回读。
+  **两个扫描器坑**：①ADD 立即数判定掩码必须 `0xFF800000 == 0x91000000`
+  （0x7F800000 丢 bit31 永不匹配——首轮全零引用的根因）；②跨段引用距离
+  超 ±24MB（UIKitCore 文本 0x18a0xxxxx → 数据 0x1f018xxxx），xref 必须
+  全区扫。工具：temp/disasm48.py、temp/blstub48.py、temp/live48.py。
+- **断言点实锤**：`-[SBWorkspaceTransitionRequest
+  _initWithWorkspace:displayConfiguration:]`（SpringBoard 二进制，入口
+  0x1cf9a5f78 = .25+0x1911f78）内两个 NSAssertionHandler 体（
+  SBWorkspaceTransitionRequest.m lines 47/48：cond 串 "workspace"/
+  "displayConfiguration"，格式串 "Invalid parameter not satisfying: %@"）。
+  xref 站点 0x1cf9a6128 = fixup 9 目标；8a 偏移反推 = `_prepareBacklight
+  Services+0x0` 双重验证偏移约定。子类 SBMainWorkspaceTransitionRequest
+  走 super → 入口 ret 生效。
+- **修复 = fixup 9**：`-[SBWorkspaceTransitionRequest
+  _initWithWorkspace:displayConfiguration:]` 入口 `ret`（返 self，空壳
+  request——同 8b 形态；workspace 参数非 nil 已过 line47，nil 的
+  displayConfiguration 来自空 mainConfiguration）。表新增第 10 条：
+  `dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9`。
+- **产出**：payload **036e712f**（96MiB，out/m2381/m2381/ipados-17.7.11-
+  21H461/m2381/payload/——注意本轮 --out 多一层 m2381/，历史件在
+  out/m2381/ipados…；kernel 430344b3/探针 bf32d8fa/trust 7416ca4f/种子
+  d04a0153 全不变，ADT 14204B 仅变，10 条 fixup 全在件核验）。
+- **r49 刷写卡（三件全刷，设备现处 nura-min）**：boot_b = a1d51f04
+  （devices/…/build/m2381/boot/boot.img，不变）+ recovery_a = **036e712f**
+  （上述 payload.img）+ userdata = fd43ee70（out/m2381/ci-artifacts/
+  userdata-root.img，不变）。预期：displayConfiguration 断言消失，
+  SpringBoard 推进到下一层（REASON 行定谳）；车道施工（§0.30 配方）在
+  读窗定谳后进行。
