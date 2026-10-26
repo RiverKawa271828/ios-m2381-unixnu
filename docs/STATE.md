@@ -719,3 +719,20 @@
   usermanagerd/lockdownd/remoted/trustd/remotepairingdeviced）→
   sheng-disable-jobs 扩名单挡；或 Preferences/SpringBoard 里程碑
   （boot-ui-focus3/4 已排）。
+
+## 0.16 2026-10-26 续二：37ff3c16 实机 = BootProgress 页首启 + daemon 崩溃循环 → sheng-lite 对齐
+
+- **实机读图（payload `37ff3c16`）**：watchdogd 墙确破——诊断页首启（蓝带
+  "live XNU - native 4K - no automatic reboot"），8 核全上（c1-c7=step7）、
+  UFS 363716 块零失败、RAMDISK Data 种子活（sparse=1 resident 572KiB）、
+  launchd 持续派生（pid 187→252、exits 298→392/39s）。红带
+  "OBSERVATION LIMIT" = 页面免责声明非故障。**墙 = 崩溃循环**：
+  `assistantd` SIGABRT（ns2 sub6，两代）、`findmydeviced` SIGABRT、
+  `biomed` exit=100，未到 UI 里程碑（focus3 Preferences / focus4
+  SpringBoard 未现）。
+- **对齐**：sheng 生产板在此阶段跑 `sheng-lite=1`（21 个已知崩溃/XPC 等待
+  环作业整批禁用；本板上一轮才首次编入 BootWatchdogPolicy，此机制当时
+  才真正生效）+ `boot-progress=2`（本板注释自计划 stage 7 后 bump）。
+  m2381 同步：disable-jobs 四条 → sheng-lite=1。
+- **产出**：内核不变（e7442ae1/d8d18275）→ **payload `61ef9181`**。
+  读图预期：FAIL 行显著减少；看 focus3/focus4 里程碑；新 crasher 报名即扩。
