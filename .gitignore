@@ -53,6 +53,15 @@ research/
 backups/
 rings/
 
+# sheng UEFI 工作克隆（同 reference/ 性质；根下为符号链接，故不带尾斜杠）
+/uefi-sheng
+
+# 本地会话工作区（符号化脚本 / 日志窗 / 器件快照；方法论沉淀在 docs/STATE.md §4）
+/temp/
+
+# 设备仓本地缓存（firmware/fixture；CI 走 orphan 分支 device-m2381 不受影响）
+/devices/*/*/.cache/
+
 # 本地构建/刷写产物
 artifacts/*
 !artifacts/README.md
