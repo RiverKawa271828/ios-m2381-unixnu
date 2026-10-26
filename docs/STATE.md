@@ -1031,7 +1031,32 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   16GiB → staged-apps 首拷完成（秒级，写 RAM 卷）→ policy 过 →
   `spawn=` 爬升；后续引导 marker 跳过拷贝。
 
-## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23】
+## 0.24 2026-10-26 续十一：r43（764539c9）实机 = **policy 过墙**（kern_exec.c:8043 墙清除）；日志窗读回留下会话
+
+- **用户实机报告**：三件全换回 iOS 链（boot_b a1d51f04 / recovery_a
+  764539c9 / userdata fd43ee70）后，stage 走过
+  `temporary watchdog launch policy ready`——**ENOSPC 链修复实机生效**，
+  launchd 继续跑（r40 以来第一次活过 Data-policy 墙）；跑了 ~11 分钟，
+  用户不拍照，断电后刷回 nura-min，读回留下会话。
+- **时序窗口**：日志环 509 槽 × 2s ≈ 17 分钟回卷；r43 断电在 ~13-16 分钟
+  = 全程落在环内（超 17min 只丢最前几轮，中后段仍可分析）。
+- **下会话读回工作单（nura-min + NCM，<1 分钟）**：
+  1. `cd /home/ri/work/nura-meizu-m2381 && python3 tools/devsh.py
+     'dd if=/dev/sda22 bs=512 skip=$((972326040-65536)) count=65536
+     of=/tmp/logwindow.img'` → `head -c8` 应见 SHLOG001；
+  2. 宿主 `python3 tools/devpull.py temp/logwindow-r43.img`（后台）+
+     `devsh 'busybox nc 172.16.42.2 5555 < /tmp/logwindow.img'`；md5 对拍；
+  3. `python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py
+     temp/logwindow-r43.img --all > temp/r43-log.txt`；
+  4. 分析单：header（rounds/uptime/e/state=2）；`--page` 时间线 = spawn
+     速率、stage +age（挂起作业唯一可见处）、EXIT 计数；`--msg` 找
+     `sheng bring-up watchdogd launch policy: 0` 与 staged-apps 的
+     `S st=2`（拷完+marker）或 `st=3`；UFS TIME ms/轮 = 读路径基线
+     （§0.18① 队列步速定量从这里开始）。
+- **判读预期**：policy: 0 + S 完成后，若 spawn 持续爬 = 队列健康，等
+  SpringBoard；若 ~1 作业/s 依旧 = 队列调度专项（§0.18①）开场。
+
+## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23/§0.24】
 
 **会话开始前的用户操作（fastboot，单通道，slot=b，各件先 sha256 对拍）**：
 1. `fastboot flash boot_b mu-r91-350386e0.img`
