@@ -139,18 +139,25 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r50 后工作单；现状/资产/方法见 `docs/STATE.md`）
+## 7. 下一步（2026-10-27 r51 前整备完成，待拍板 =y；现状/资产/方法见 `docs/STATE.md`）
 
-1. **上游同步**：`git fetch upstream` + rebase m2381（照 `docs/UPSTREAM.md`
-   §2；现 pin `16e592a`，查新增——设备仓 schema / 驱动 / patches 变化），
-   同步记录一句话入档。
-2. **上游/fork 解法调研**：上游 UniXNU 的 sheng/nx729j/fuxi 板 text_fixups
-   全表（是否比我们抄的多）、displayless 用户态处理（=y 车道之外有无机制
-   解）、其他 fork（HackiOS / ios-topaz / 社区 SM8550 移植）同墙解法。
-3. **备选方案（调研后拍板）**：a. 类杀 NSAssertionHandler
-   （handleFailureInMethod 0x1874494d4 入口 ret，灭整个断言传递类）；
-   b. =y 车道加速（配方 = `docs/archive/STATE-history.md` §0.30，ABI 头
-   在仓）；c. 上游/fork 现成机制解直接取。
+1. ~~**上游同步**~~ ✅ 2026-10-27：pin `16e592a` → `f85b5a6`（+22 提交，
+   rebase 零冲突，check 4ok）。要害 = 上游 `688fa88` 修了我们消费的
+   21H461 profile（ADT 补 J120 product-id/J120AP compatible//product/audio，
+   **下轮 payload ADT 必变**）；`71ccc68` ADT 生成器支持 CPU cluster-type。
+2. ~~**上游/fork 解法调研**~~ ✅ 2026-10-27，三答：fixups 无可抄
+   （sheng/nx729j/fuxi 全是同一套 4 条基础集，我们 13 条全网最大）；
+   **displayless 机制解不存在**（凡到 SpringBoard 的板全走
+   `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y` legacy CPU framebuffer 车道）；
+   其他 fork 无新解（HackiOS 不转向维持、ios-topaz 退役、社区 SM8550 =
+   fuxi kernel 阶段 / sheng SpringBoard+触摸全通 = 同 SoC 最先证 =y 全通）。
+3. **拍板项（待用户，建议 b）**：a. 类杀 NSAssertionHandler
+   （0x1874494d4 入口 ret，兜底项：全系统断言静音诊断变盲）；
+   b. **=y 车道（推荐）**：机制根因解 + 真显示输出，备件全齐（组件源码在
+   上游主树 `drivers/GopFramebuffer`、ABI 头在设备仓 package、sheng 构建
+   脚本/探针可 fork、offline-legacy-* args 在板），施工 =
+   `docs/archive/STATE-history.md` §0.30 配方；c. 上游现成机制解——已证
+   不存在。
 4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器；arm64e 专项；GPU/触摸/显示主题化（显示墙破后）。
 
