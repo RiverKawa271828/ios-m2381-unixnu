@@ -1348,3 +1348,71 @@ nura-min simg 是唯一安全件（sparse 头部）。
   （预期 UIScreen bounds/scale 或 CA 显示链）并同步启动车道移植施工
   （清单见上）；④若 SpringBoard 稳住 → UI 阶段开场（OBS bind/
   display 交接/触摸主题）。
+
+## 0.30 2026-10-27 续：r47 读回定谳 = 背光服务链（fixup 8a/8b 出件 821ab7c0）+ 车道准备（ABI 头入仓）
+
+- **r47 读回（logwindow-r47.img，md5 70908c35 宿主/设备一致）**：509 轮/
+  1019s（环满），写手 e0 全程健康。**fixup 7 生效判据过**：mainScreen
+  raise 消失，msgbuf `text-fixup: dyld_shared_cache_arm64.03+0x3255e0c
+  (4 bytes) applied` 实证。唯一 crasher 仍 = SpringBoard（36/18@22s，
+  EXIT 254/nonzero27）。
+- **新墙 = 背光域，且 bt 全链验活（r46 的"陈旧帧"结论修正）**：REASON
+  `NSInternalInconsistencyException: Invalid parameter not satisfying:
+  display`。调用链每跳 bl 目标都对上下文：`-[SpringBoard
+  _prepareBacklightServices]` → `SBBacklightServicesPlatformProvider
+  initWithBacklightEnvironmentSessionProvider:` → （super）
+  `SBBacklightPlatformProvider initWith…` → `+[SBMainDisplayRootWindow
+  ScenePresentationBinder sharedInstance]`（dispatch_once）→ once 块
+  `-_init` → `mainConfiguration`（无显示=空配置）→
+  `initWithDisplayConfiguration:` → 断言 display。**方法定则：r46 判
+  "stale" 是因为该组 LR 落在非调用指令上；r47 同样位置全是真帧——
+  bl-target 校验才是判活器，位置不预示真伪。**
+- **修复 = fixup 8a/8b（一轮双修，r44 先例）**：
+  ① `-[SpringBoard _prepareBacklightServices]`（unslid 0x1cfa612bc，
+     .25+0x19cd2bc，orig `ff4302d1…`）入口 `ret`——整个背光域（provider/
+     startService/watchdog 配置/explanation 块）在 =n 上全是死路；
+  ② `-[SBMainDisplayRootWindowScenePresentationBinder _init]`（unslid
+     0x1d005b930，.25+0x1fc7930）入口 `ret` 返 self—— sharedInstance 的
+     once 单例照常建立（nil ivar），窗口阶段消费者不能再触发同一断言。
+- **产出**：payload **821ab7c0**（96MiB；kernel 430344b3/探针 bf32d8fa/
+  trust/种子全不变；ADT 14136B = 9 条 fixup 全在件）。commit 2ebdf9b。
+- **车道准备（离线腿推进，施工留下会话整单元）**：
+  1. **ABI 头已入仓**：`devices/…/package/OriginalLegacyFramebufferABI.h`
+     （20903B，sha 86b9eba40f82）= sheng 生成器逻辑 + 本机 dry-run 审计
+     产物（358 slots/9 abstract leaves）生成，按 Font.h 先例提交——组件
+     编译不再依赖 staged prelink candidate；donor 换代才需重生成。
+  2. **施工配方（sheng build-native-legacy-display.py 287 行全读完）**：
+     fork 裁剪 = 保留 ①审计+头（头已入仓可跳审计，或
+     candidate 对 staged 时跑全审计）②`build-arm-driver.py
+     NativeLegacyDisplay` + 358 项 vtable 重定位核对（audit methods[]
+     地址逐项对）③bindings 表（vtable/ctor/dtor/gMetaClass 动态取自
+     audit；surface getters/vsync/slot-301 等 VA 在 sheng 脚本硬编码——
+     **同 donor 21H461 对我们直接有效**，脚本自带字节验证是免费保险）
+     ④original-bindings.S→.o（绝对符号，prelink 解析机制 =
+     libStorageBindings.a 同款）⑤late objcopy（去 __mod_init_func +
+     globalize）⑥NativeGOPPresenter 同法 ⑦ar 成
+     `libNativeLegacyDisplay.late.a` + build-report.json（baseline
+     :642 force_load 并核对 archive/source sha——报告结构必须含
+     source_sha256/archive_sha256/generated_abi_sha256/…）。
+     **裁剪掉**：sheng 的 probe 车队（HID/KeyStore/Touch/CpuFreq/
+     GpuPower/BootLog/BootReset——我们的 BootLog 已在 BootProgress 档，
+     其余 =n 不需要）。
+  3. **树内核实**：kits/XnuPrelink/native_prelink.py 在（import 名改
+     XnuPrelink）；kits/sheng/LegacyDisplayProbe.cpp 不在树（sheng clone
+     里也没有该路径，需从上游 UniXNU kits/sheng 取或改用 GOPPresenter
+     注册路径——施工时第一件事核实）；drivers/NativeHidInput 不在树
+     （display-first 无需）。
+  4. **配置**：defconfig 翻 `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`
+     （m2381_defconfig + owner）+ **必须手动重跑 defconfig 命令**；
+     board.toml archives 插 `build-native-legacy-display.py`（顺序无关，
+     链接前即可）；args 不动（offline-legacy-*/sheng-fb-gpu=1 全在，
+     GPU offer 拒绝自动落 CPU 拷贝）。
+  5. **风险**：LegacyDisplayProbe 注册路径待核实（上述 3）；新显示栈
+     上电 BootProgress 页让位/新 crasher（正常）；sheng 脚本的
+     `xcrun`/`brew --prefix llvm` 调用要换本机/CI 等价物（clang 装配树
+     模板法，BootLog.o 先例）。
+- **下会话工作单（r48/r49）**：①r48 刷写卡 = 三件全刷（boot_b=
+  a1d51f04 + recovery_a=**821ab7c0** + userdata=fd43ee70）→ 读窗 →
+  REASON 行定谳（预期：背光链消失，SpringBoard 推进到窗口/场景创建或
+  render server 交互层）；②同会话开车道施工（配方见上，ABI 头已备）
+  → 出 =y 内核 → r49 = 车道轮。
