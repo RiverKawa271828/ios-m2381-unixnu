@@ -139,25 +139,21 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r51 前整备完成，待拍板 =y；现状/资产/方法见 `docs/STATE.md`）
+## 7. 下一步（2026-10-27 r51 完成 =y 施工出件；现状/资产/方法见 `docs/STATE.md`）
 
-1. ~~**上游同步**~~ ✅ 2026-10-27：pin `16e592a` → `f85b5a6`（+22 提交，
-   rebase 零冲突，check 4ok）。要害 = 上游 `688fa88` 修了我们消费的
-   21H461 profile（ADT 补 J120 product-id/J120AP compatible//product/audio，
-   **下轮 payload ADT 必变**）；`71ccc68` ADT 生成器支持 CPU cluster-type。
-2. ~~**上游/fork 解法调研**~~ ✅ 2026-10-27，三答：fixups 无可抄
-   （sheng/nx729j/fuxi 全是同一套 4 条基础集，我们 13 条全网最大）；
-   **displayless 机制解不存在**（凡到 SpringBoard 的板全走
-   `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y` legacy CPU framebuffer 车道）；
-   其他 fork 无新解（HackiOS 不转向维持、ios-topaz 退役、社区 SM8550 =
-   fuxi kernel 阶段 / sheng SpringBoard+触摸全通 = 同 SoC 最先证 =y 全通）。
-3. **拍板项（待用户，建议 b）**：a. 类杀 NSAssertionHandler
-   （0x1874494d4 入口 ret，兜底项：全系统断言静音诊断变盲）；
-   b. **=y 车道（推荐）**：机制根因解 + 真显示输出，备件全齐（组件源码在
-   上游主树 `drivers/GopFramebuffer`、ABI 头在设备仓 package、sheng 构建
-   脚本/探针可 fork、offline-legacy-* args 在板），施工 =
-   `docs/archive/STATE-history.md` §0.30 配方；c. 上游现成机制解——已证
-   不存在。
+1. ~~上游同步 / 调研 / 拍板~~ ✅ r51（05cdd33）：pin `f85b5a6`，调研三答
+   （fixups 无可抄 / displayless 无机制解 / 其他 fork 无新解），拍板 =
+   两段式（`docs/PLAN-display-lane.md`：=y 先立 + 换代跟跑）。
+2. **=y 车道施工 ✅（d1c0645）**：§0.30 配方全落地，内核 `3ab2ace4` +
+   payload **`22f8f0bd`**（平铺 `out/m2381/`），ADT 346c6cde（13 fixups +
+   上游 J120AP/product-id），trust/seed 不变。
+3. **r52 = 发卡三件全刷 + 读窗**：boot_b `a1d51f04`（不变）+
+   recovery_a ← payload-r51-22f8f0bd.img（刷前 sha 门）+ userdata
+   `fd43ee70`（不变）。判据：真显示输出 + displayConfiguration 断言族
+   消失 + fixup oracle。新墙按 REASON 行 + bl-target 验活读窗。
+4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
+   重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
+   （=y 显示破墙后 ADRENO=y 叠加）。
 4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器；arm64e 专项；GPU/触摸/显示主题化（显示墙破后）。
 

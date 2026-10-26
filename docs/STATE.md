@@ -5,14 +5,17 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r50 后，2026-10-27）
+## 1. 一句话现状（r51 后，2026-10-27）
 
 iOS 链已全链上机并稳定复现（UEFI → XNU → launchd → SpringBoard 起跑、
-watchdogd 循环带日志窗），卡在 **SpringBoard displayConfiguration 断言墙**：
-displayless 用户态连环触发 `NSParameterAssert(displayConfiguration)`，
-r43→r50 八轮逐点排除（五个断言站点全部被 fixup-application oracle 排除），
-抛者更深。**2026-10-27 上游同步 + 调研已完成**（§7.1/7.2 结论）：上游无
-displayless 机制解，全网 fixups 无可抄，**建议拍板 = =y 车道**（§7.3）。
+watchdogd 循环带日志窗），displayless 断言墙的机制解已选定并施工完成：
+**=y 显示车道（NativeLegacyDisplay + GOP presenter，CPU presentation）
+本机出件**——内核 `3ab2ace4`、payload **`22f8f0bd`**（平铺
+`out/m2381/payload-r51-22f8f0bd.img`，96MiB，ADT 346c6cde = 13 fixups +
+上游 688fa88 的 J120AP/product-id）。上游同步 f85b5a6 + 调研三答
+（fixups 无可抄/displayless 无机制解/其他 fork 无新解）已入档
+（`05cdd33`）；换代跟跑方案 = `docs/PLAN-display-lane.md`。**下一步 =
+发卡三件全刷 r52 读窗**（§7）。
 
 ## 2. 设备现状（2026-10-27，iOS 链现役）
 
@@ -32,22 +35,28 @@ displayless 机制解，全网 fixups 无可抄，**建议拍板 = =y 车道**�
 
 ## 3. 现役件与资产
 
-- **payload 四元（多轮不变）**：kernel `430344b3` / 探针 `bf32d8fa` /
-  trust `7416ca4f` / 种子 `d04a0153`；ADT 随 fixup 表变（现 13 条，
-  < CS_TEXT_FIXUP_MAX=32）。fixup 表源 = 设备仓 OS profile `text_fixups`。
-- **applied 常驻集**：{BTAudio, 5, 6, 7, 8a}（每轮日志窗 parsed/applied
-  即执行 oracle）。
+- **payload 四元（r51 起）**：kernel `3ab2ace4` / 探针 `474724fd` /
+  trust `7416ca4f` / 种子 `d04a0153`；ADT 346c6cde（13 条 fixups +
+  上游 688fa88 的 J120AP compatible/product-id//product/audio，< 32 上限）。
+  fixup 表源 = 设备仓 OS profile `text_fixups`。
+- **applied 常驻集（=n 时代）**：{BTAudio, 5, 6, 7, 8a}。=y 上电后该
+  oracle 继续有效（惰性判活器不变）；显示族 fixup（5–10）在真显示栈下
+  变睡守，换代时退役。
 - **device repo**：`devices/m2381/unixnu-m2381`（schema v2；os_profile =
   ipados-17.7.11-21H461；orphan 分支 `device-m2381` 供 CI）；**UEFI**：
   `devices/m2381/uefi/m2381Pkg`（shengPkg 骨架 + mars blob @036ba9f7）。
 - **donor**：iPad7,1 / iPadOS 17.7.11 `21H461`（IPSW 本地已核验；20H392
   资产保留回溯）。unique-chip-id `3645ad55d47e77c1`。
-- **=y 车道备件已齐（2026-10-27 复核）**：ABI 头
-  `devices/…/package/OriginalLegacyFramebufferABI.h`（r47 入仓）+
-  sheng 287 行流水线施工配方（STATE-history §0.30，含裁剪清单与风险）+
-  组件源码已在上游主树 `drivers/GopFramebuffer/`（NativeLegacyDisplay/
-  NativeGOPPresenter）+ sheng 侧 `build-native-legacy-display.py` 与
-  `package/LegacyDisplayProbe.cpp` 可 fork（reference/unixnu-sheng）。
+- **=y 车道（r51 施工完成）**：组件源码在主树 `drivers/GopFramebuffer`
+  （组件 include `GopFramebuffer`，pin cf3b429）；设备仓
+  `scripts/build-native-legacy-display.py`（audit → ABI 头漂移门 →
+  358 vtable → 字节门 → bindings → probe/GOPPresenter → late.a，probe
+  车队已裁剪）+ `package/LegacyDisplayProbe.cpp`（fork，五外探针拔除）+
+  `package/LegacyDisplayDPUSubstitute.cpp`（weak dpu 钩子零替身）+
+  `scripts/mobile-graphics-legacy-abi.json`（runtime 钉的 audit 产物，
+  storage 静态 pin 先例）；telemetry 按
+  `XNU_NATIVE_LEGACY_DISPLAY_QUALIFIED` 条件让位；defconfig 双文件 =y。
+  换代成本 = `docs/PLAN-display-lane.md` §2（全脚本化重生成）。
 - **ADT 变更预告（上游 `688fa88`）**：下轮 payload 的 ADT 会因 21H461
   profile 新增 product-id/J120AP compatible//product/audio 而变化——
   属预期正文变更，payload sha 变化不是事故。
@@ -90,45 +99,26 @@ displayless 机制解，全网 fixups 无可抄，**建议拍板 = =y 车道**�
 ## 6. 不能声称的
 
 - 显示墙未破：SpringBoard 未到 home screen；触摸/按键/GPU 均未上主题。
-- =y 车道未施工（配方与备件齐，NativeLegacyDisplay 未编未上机）。
-- 类杀 NSAssertionHandler 仅评估未出件（0x1874494d4 定谳后才可用）。
+- =y 车道已施工**出件**（内核 3ab2ace4/payload 22f8f0bd，全验证门过）
+  但**未上机**——r52 刷写读窗前不声称显示栈实机生效。
+- 类杀 NSAssertionHandler 未出件（兜底项，=y 上机受阻才启用）。
 
-## 7. 下一步（r50 后工作单；§7.1/7.2 已完成 2026-10-27）
+## 7. 下一步（r52 工作单：刷写读窗）
 
-1. **上游同步 ✅（2026-10-27）**：pin `16e592a` → `f85b5a6`（+22 提交），
-   rebase 147 工作区提交零冲突，check-m2381 4 ok、kit 测试绿。要害 =
-   **上游修了我们消费的 21H461 profile**（`688fa88`：ADT 补 J120
-   product-id + J120AP compatible + /product/audio，下轮 payload ADT
-   必变）+ ADT 生成器支持 CPU cluster-type（`71ccc68`）。详见
-   `docs/UPSTREAM.md` §1.1。
-2. **上游/fork 解法调研 ✅（2026-10-27）**，三问三答：
-   - **fixups 有无可抄**：无。sheng/nx729j/fuxi 三板全是同一套 4 条基础集
-     （AWAttentionAwareness + 2×PosterBoard + BTAudioHALPlugin，即我们的
-     前 4 条）；我们 13 条全网最大，9 条全是自研。
-   - **displayless 机制解**：不存在。上游全家族凡推进到 SpringBoard 的板
-     （sheng/fuxi/cas/umi/oneplus13t-Pagani）defconfig 全部
-     `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y` 走 legacy CPU framebuffer 车道；
-     displayless 板（ishtar/kebab）还停在显示之前的阶段，无人让
-     SpringBoard 无显示存活。我们的 fixups 断言歼击是在没有机制解时自创
-     的迂回，r50 已证是打地鼠（抛者逐轮更深层）。
-   - **其他 fork**：HackiOS 维持 10-24 不转向评估（16.5 用户态 + A11
-     donor + 内存驻留模型，不同架构，无可取机制）；ios-topaz（sweet 线）
-     已退役仅作硬件参照；社区 SM8550 = fuxi（kernel 阶段）/sheng（
-     SpringBoard+触摸 = 同 SoC 最先证 =y 车道全通）。
-3. **拍板项（待用户）——建议 b**：
-   - **b. =y 车道（推荐）**：机制根因解，给用户态真 displayConfiguration，
-     断言类整体停触发而非逐个灭口；与上游每块先进板同构；顺带换来真显示
-     输出（BootProgress 之后能眼见 SpringBoard，诊断质变）。备件全齐：
-     组件源码已在上游主树 `drivers/GopFramebuffer`，ABI 头在设备仓
-     package/，sheng 侧 `build-native-legacy-display.py` +
-     `LegacyDisplayProbe.cpp`（注册机制 = 晚期归档，r47 疑虑已解）可
-     fork，offline-legacy-* args 全在 board.toml；施工 = §0.30 配方
-     （defconfig 翻 y + 手动重跑 + 归档脚本 fork 裁剪）。
-   - a. 类杀 NSAssertionHandler（0x1874494d4 + 变体入口 ret）：一次灭全
-     断言传递类，但 = 全系统断言静音——后续任何真致命断言都变成带脏状态
-     的未知行为且零日志，诊断变盲；且不解决无显示的下游墙（窗口/场景层
-     还会以非断言形式再塌）。仅作 =y 车道被硬件事实挡住时的兜底。
-   - c. 上游现成机制解：已证不存在（§7.2）。
+1. **发卡（三件全刷，发卡规矩）**：设备现态 = iOS 链在役（r50 读回后
+   未经 nura 流程）→ 三件：boot_b `a1d51f04`（不变，可复刷）+
+   recovery_a ← **`out/m2381/payload-r51-22f8f0bd.img`**（平铺路径，
+   刷前 sha256 门 = `22f8f0bdab319e81…`）+ userdata `fd43ee70`（不变）。
+2. **读窗判据**：①payload 四元核验（parsed=13 全在）；②**真显示输出**
+   （BootProgress 页让位或显示栈 banner——=y 生效的直观判据）；
+   ③`displayConfiguration` 断言族应消失（REASON 行换成下一墙）；
+   ④fixup oracle：显示族 fixup 若开始 applied = 对应站点真在执行路径。
+   新 REASON 按 REASON 行 + bt 验活（bl-target 判活器）符号化。
+3. **预期新墙域**：窗口/场景创建层、render server 交互、或 IOMFB 用户
+   客户端连接（驱动 newUserClient = 原始类 slot 141 绑定）。
+4. **换代跟跑（上游 arm64e / iOS 27 donor 落地时）**：照
+   `docs/PLAN-display-lane.md` §3 段二执行（audit/ABI 头/bindings 重
+   derive 全脚本化；fileset-KC 情形启用 fork 内 fileset rebinder）。
 
 ## 8. 轮次索引（r43 → r50；详情 = commit message + STATE-history 对应节）
 
@@ -142,3 +132,4 @@ displayless 机制解，全网 fixups 无可抄，**建议拍板 = =y 车道**�
 | r48 | `036e712f` | workspace 转换请求层（fixup 9）；CFString 解码方法 | history §0.31 |
 | r49 | — | 首试作废（旧载荷被刷，路径歧义）；二试：fixup 9 未执行，惰性 oracle 确立，fixup 10 三连修 | history §0.32/0.33 |
 | r50 | `4e69f450` | oracle 全排除（五站点全灭，抛者更深）；定位收口，转上游同步+调研 | history §0.34 |
+| r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙）；待刷 | PLAN-display-lane.md |
