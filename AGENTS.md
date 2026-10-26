@@ -139,25 +139,26 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r51 完成 =y 施工出件；现状/资产/方法见 `docs/STATE.md`）
+## 7. 下一步（2026-10-27 r52 读窗定谳；工作单 = `docs/STATE.md` §7）
 
-1. ~~上游同步 / 调研 / 拍板~~ ✅ r51（05cdd33）：pin `f85b5a6`，调研三答
-   （fixups 无可抄 / displayless 无机制解 / 其他 fork 无新解），拍板 =
-   两段式（`docs/PLAN-display-lane.md`：=y 先立 + 换代跟跑）。
-2. **=y 车道施工 ✅（d1c0645）**：§0.30 配方全落地，内核 `3ab2ace4` +
-   payload **`22f8f0bd`**（平铺 `out/m2381/`），ADT 346c6cde（13 fixups +
-   上游 J120AP/product-id），trust/seed 不变。
-3. **r52 已刷待读窗（交接中）**：三件卡已刷上电（a1d51f04/**22f8f0bd**/
-   fd43ee70）。屏幕实测：诊断页 ~2-3 分钟 → **苹果 logo 上屏**（模糊色块
-   很快转清晰）——=y 车道实机生效，PE handoff + NativeLegacyDisplay 接管
-   实证，BootProgress 让位后观察面只剩屏幕。**新会话工作单 =
-   docs/STATE.md §7**（读窗定谳：applied 集合变化 + REASON 行 + 最终
-   屏幕形态）。
+1. ~~上游同步/调研/拍板~~ ✅ r51（05cdd33）；~~=y 车道施工~~ ✅（d1c0645，
+   内核 `3ab2ace4` + payload `22f8f0bd`）。
+2. **r52 读窗定谳 ✅**：**=y 车道一级实机全过**——PE handoff（诊断页
+   2-3min 让位）+ NativeLegacyDisplay 接管 + 苹果 logo 上屏自稳；日志环
+   证 DISPLAY stage=10 / GOP 全帧映射 / 三次 swap 完成 / IOMFB 真显示
+   配置（1080×2400 ARGB）。**SpringBoard 未破墙**：sig6 崩溃循环 14 次，
+   backboardd 2/0 稳定（logo 冻结 = 最后合成帧）；抛点钉死 =
+   BannerKit `-[BNBannerSourceListener initWithServiceDomain:
+   displayConfiguration:authorizedBundleIDs:]` 断言（r50 深抛者收口，
+   bl-target 验活首个全活用户态链；实参 = `[<类> mainConfiguration]`
+   返 nil）。设备已刷回 nura-min。
+3. **r53 = fixup 11 出件 + 三件全刷**：BannerKit 深层 init 入口 ret
+   （三元组在 STATE §7；kernel 复用只重打 payload），读窗判读
+   applied=6 + 下一墙符号化；机制线并行（mfb 选择子失败簇对照 sheng
+   IOMFB 表 + mainConfiguration 供给者反查）。
 4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
    （=y 显示破墙后 ADRENO=y 叠加）。
-4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
-   重绑定器；arm64e 专项；GPU/触摸/显示主题化（显示墙破后）。
 
 > **P1 关键定案**（细节见 `docs/archive/STATE-history.md` §1）：P2 基座 = shengPkg 骨架 + mars blob
 > （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗
