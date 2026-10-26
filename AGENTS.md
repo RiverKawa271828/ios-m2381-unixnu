@@ -30,8 +30,9 @@
 驱动 unixnu 构建树，从 **iPad7,1 / iOS 17.7.11 `21H461`** 取内核与 OS 件；
 fuxi/nx729j 同款 donor（同代配对历程见顶部换配说明））+ `m2381Pkg`（Mu-Silicium
 UEFI）。boot_b 放 UEFI 固件；payload 载体受本机 ABL 实证约束（gunzip
-≤ ~83.5MB、忽略 boot ramdisk），大概率走 recovery_a 的 100MiB ESP；userdata
-由 IPSW 件重建为 iOS root（数据豁免已给，见红线 2）。
+≤ ~83.5MB、忽略 boot ramdisk），**已实证走 recovery_a 的 100MiB ESP**
+（r26 起每轮现役）；userdata 由 IPSW 件重建为 iOS root（数据豁免已给，
+见红线 2）。
 
 ## 1. 为什么这条路成立
 
@@ -56,8 +57,9 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
              board.toml [userdata] LBA 流程；LBA 必须从 m2381 实机 GPT 读）
 ```
 
-- 若 UFSDxe 集成后 Mu 仍读不到 recovery_a，退路：payload 压进 ABL 83.5MB
-  限内、或上游若有 UFS 直读机制则改走之——读完 porting 文档再定。
+- ~~若 UFSDxe 集成后 Mu 仍读不到 recovery_a，退路：payload 压进 ABL 83.5MB
+  限内、或上游若有 UFS 直读机制则改走之~~ **已实证无恙**：M2381ESP 每轮
+  正常挂载读通，退路未启用。
 - 旧 16K 内核 / iPhone X 16.7.16 root 与本路线**无关**，仅作为回滚终点的
   设备现状存在。
 
@@ -137,24 +139,20 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（P1+P2 已完成 2026-10-23，详见 STATE §5/§7）
+## 7. 下一步（2026-10-27 r50 后工作单；现状/资产/方法见 `docs/STATE.md`）
 
-1. **P3 = `docs/PLAN-P3-CI.md`**（2026-10-23 定，用户已授权推送窗口）：
-   A 段用户一次性操作（gh auth login + `UNIXNU_UNIQUE_CHIP_ID` secret，
-   设备仓走 orphan 分支 `device-m2381` 免建库）→ B 段自动流程（push →
-   dispatch macos.yml `steps="kernel userdata payload"` → prelink 三值随
-   21H461 换配就位（AMFI = `0xfffffff005ab4ae0` = fuxi 实机值 + 三重指纹
-   独立验证）→ 取件 → ESP payload 打包（bundle 已就绪 = fuxi pin 复现
-   `7416ca4f…`）→ UUID 已转正 → 桌面全量校验）。**entropy 二进制守卫在
-   21H461 路跳过**；XS/fileset-KC 重绑定器为后续主题（PLAN-P3-CI §J）。
-2. **P4 上机**（P3 三件齐 + 用户拍板）：首刷顺序照 `docs/FLASHING.md`；
-   boot_b 现役 = mu-r91、recovery_a = esp-v71（nura artifacts 全套可回滚）。
-3. P3：userdata 重建件（21H461）；两个 UUID 已随同镜像转正
-   （root_match `04769D26-…` / OWNER `18AB5557-…`，fuxi/nx729j 同值）。
-4. P4 上机门：UEFI 菜单 → UniXNU → XNU banner → launchd；userdata 重建前
-   单独拍板；刷写纪律照 `docs/FLASHING.md`。
-5. 同步常态化：跟随上游 rebase（`docs/UPSTREAM.md` §2），一次主题一句话
-   记进同步记录。
+1. **上游同步**：`git fetch upstream` + rebase m2381（照 `docs/UPSTREAM.md`
+   §2；现 pin `16e592a`，查新增——设备仓 schema / 驱动 / patches 变化），
+   同步记录一句话入档。
+2. **上游/fork 解法调研**：上游 UniXNU 的 sheng/nx729j/fuxi 板 text_fixups
+   全表（是否比我们抄的多）、displayless 用户态处理（=y 车道之外有无机制
+   解）、其他 fork（HackiOS / ios-topaz / 社区 SM8550 移植）同墙解法。
+3. **备选方案（调研后拍板）**：a. 类杀 NSAssertionHandler
+   （handleFailureInMethod 0x1874494d4 入口 ret，灭整个断言传递类）；
+   b. =y 车道加速（配方 = `docs/archive/STATE-history.md` §0.30，ABI 头
+   在仓）；c. 上游/fork 现成机制解直接取。
+4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
+   重绑定器；arm64e 专项；GPU/触摸/显示主题化（显示墙破后）。
 
 > **P1 关键定案**（细节见 STATE §1）：P2 基座 = shengPkg 骨架 + mars blob
 > （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗

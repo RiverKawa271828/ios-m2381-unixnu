@@ -1,5 +1,11 @@
 # P3 执行计划 — CI 内核 + payload ESP + userdata（2026-10-23 定并当夜执行）
 
+> **✅ 已完成归档（2026-10-27 移入 docs/archive/）**：P3 全链落地并转常态
+> ——CI run `40237299244` 全绿（2026-10-26），kernel/userdata/payload 三件
+> 全部产出、上机、多轮实机验证（userdata fd43ee70 至 r50 仍现役）。
+> CI 现役说明以 `docs/CI.md` 为准；XS/fileset-KC 重绑定器后续主题见 §J。
+> 原文未改写。
+
 > **执行状态（2026-10-23 深夜）**：A 段全部完成（凭据 = 宿主 SSH key + 存储的
 > gho_ token，scopes repo+workflow，全自动化）；B 段 1-3 已执行。进度见 §C。
 
