@@ -736,3 +736,19 @@
   m2381 同步：disable-jobs 四条 → sheng-lite=1。
 - **产出**：内核不变（e7442ae1/d8d18275）→ **payload `61ef9181`**。
   读图预期：FAIL 行显著减少；看 focus3/focus4 里程碑；新 crasher 报名即扩。
+
+## 0.17 2026-10-26 续三：61ef9181 实机 = lite 生效，transparencyd 风暴 → 扩禁用名单
+
+- **实机读图（82s→404s 四张）**：lite 名单生效（findmydeviced/biomed 行消失，
+  仅残留 assistantd SIGABRT）。新墙 = **transparencyd exit=100 无限重生**
+  （pid 219→709，140s→404s 退出 474→1255 ≈ 3 次/秒）——透明度数据仓库在
+  32MiB RAM 种子上不存在，初始化即退；launchd 引导队列被钉死，UI 里程碑
+  不至。顶栏转 "LIVE: DEADLINE EXCEEDED - recording continue"（连续记录
+  模式，设计内）。系统体征全健康：UFS 1526MiB 零失败、8 核 step7、
+  无 panic、lsd（LaunchServices）在跑（p208/p235 采样）。
+- **对齐**：sheng/fuxi 无 transparencyd 先例（上游 grep 零命中）→ 按本板
+  已验证的 disabled.plist 机制扩名单（与 lite 叠加）：
+  `sheng-disable-jobs=com.apple.transparencyd,com.apple.assistantd,com.apple.biomed`。
+- **产出**：内核不变 → **payload `d8792315`**。读图：FAIL 行应骤减；盯
+  focus3/focus4 与面板接管。旁注：MEM totalMiB=4054 = 内核现只见低段
+  ~4GB（高段 13GB 映射 = 独立后续主题，非本墙）。
