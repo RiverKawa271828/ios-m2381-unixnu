@@ -1150,3 +1150,63 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
 
 **红线提醒**：读回完成前，任何 `fastboot flash userdata` 都会毁证据；
 nura-min simg 是唯一安全件（sparse 头部）。
+
+## 0.26 2026-10-26 续十二：r44 读回 + 崩溃簇符号化定谳（§0.25 工单执行）= 修复件 a51aed16
+
+- **r44 读回（logwindow-r44.img，md5 64ee3a1e 宿主/设备一致）**：单引导
+  540 轮/1081s（环满回卷，最前 31 轮被盖），写手 state=2 e0 全程健康；
+  policy/staged-apps 行被 msgbuf 回卷吞掉（161 行窗只留中段），但系统
+  体征全绿：EXIT 278/nonzero45、UFS verify 5129ms+read 25214ms 无停顿、
+  spawn 721@63s、daemon 全在起（lsd protobox、sandbox 拒绝均为良性类）。
+  崩溃簇仍在：SpringBoard 563 次 sig5 + liveactivitiesd 964 次 sig5；
+  **contextstored 只崩 3 次后自愈**（r43 是 341 次）。
+- **符号化方法（本会话新建立，可复用）**：① CRASH 行 `+N` 字段 =
+  `task_shared_region_slide`（BootFaultProbe.c:61，dyld cache slide）——
+  r44 slide=0xafb4000、r43=0x2750000，两轮全部 PC/bt 帧同差 0x8864000 =
+  同断言跨 boot 实锤；去滑 PC 全同（SB/contextstored=0x19F3DF2EC、
+  lived=0x1C18F64F8）。② 21H461 dyld 缓存提取：SystemOS dmg 现成在
+  `.cache/firmware/target-volumes/`（免开 IPSW）→ 7z APFS 直读出 52 子
+  缓存 + linkedit；**`.dyldlinkedit`/`.symbols` 是 ZBM-rsrc（LZBITMAP，
+  decmpfs 算法 14）**——偏移表 LE u32 + `ZBM\t` 块头 + 0xFF=raw 块，用
+  Corellium libzbitmap（/tmp/libzbitmap，自编）+ 自写 /tmp/zbmrsrc.c 全
+  解出（dec-symbols=686MB 本地符号表 1020 万 nlist）。③ 字段语义按上游
+  `scripts/symbolicate-original-user-exception.py`（localSymbolsOffset@
+  0x48、uuid@0x58、imagesText@0x88、sharedRegionStart@0xE0；子缓存表 =
+  stub 内 56B 条目按 `.NN` 后缀扫）+ 镜像表(3354 项)定 image，nlist 二分
+  定符号。工具与解出件留 `temp/cache-extract/`（下轮直接用）。
+- **定谳（file-protection 假设死亡）**：
+  1. SpringBoard+contextstored = **FrontBoardServices
+     `-[FBSDisplayMonitor _initWithBookendObserver:transformer:]`** 的
+     "no displays" assert（`displays.firstObject==nil` 时 `cbz` 跳入第三
+     断言块 brk#0；text+0x47c）。根因 = LEGACY_DISPLAY=n 内核无显示
+     服务 → CA 显示列表空，与文件保护无关（§0.25 的假设被数据否定；
+     sheng 不撞此墙因为它 =y 车道有 IOFramebuffer 族）。
+  2. liveactivitiesd = SessionSyncEngine **IOSKeybag init Swift fatal**
+     （brk#1 与 ESR f2000001 吻合）——无 SEP AppleKeyStore 键可查。
+     sheng 不崩因其 `sheng-aks=1` + KeyStoreProbe.o 在 LEGACY_DISPLAY
+     车道内编译生效；我们的 =n 车道从未编它 → args 里的 sheng-aks=1
+     是死旗标（内核 0 符号、0 字符串实证）。
+- **修复（一轮双修，均为上游先例机制）**：
+  ① OS profile text_fixups 增第 5 条
+     `dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6` = FBS init
+     入口 `ret`（sheng AWAttentionAwareness 同款手法；init 返回 self，
+     监视器变 no-op，显示通知缺失无损于 GOP-only 现状）。内核侧消费者
+     在内核里实证在（text-fixups/text-fixup0 字符串）；payload 校验
+     original 字节后才改页，错 build 自动放空。
+  ② liveactivitiesd 进 `sheng-disable-jobs`（上游 bring-up-isolation
+     先例：disabled job 的 Mach lookup fail-fast 而非 964 次/轮重生）。
+  **aks 组件接线 = 下轮主题**（AppleKeyStoreState 是上游 catalog 组件
+  recipe 现成；KeyStoreProbe.cpp 在 sheng package；缺 = 编译接线 + 
+  probe 调用点——sheng 在 legacy-display late_probe 里调，我们需要独立
+  调用点，如 BootWatchdogPolicy 里）；接通后 liveactivitiesd 可解禁。
+- **产出（payload-only，内核未动）**：**payload `a51aed16`**（96MiB，
+  md5 22f354f8；kernel 430344b3 不变、探针件 bf32d8fa 与 r42/r43 逐字节
+  同；trust 7416ca4f 同件；种子 d04a0153 = grown 16GiB 身份 178b461d
+  同 r43；args 增 liveactivitiesd、ADT 增第 5 条 fixup——均在 payload
+  内实证）。桌面校验全绿。
+- **下轮读图（用户只刷 recovery_a ← a51aed16；跑 17min 断电 → nura-min
+  读回）**：期望 SpringBoard/contextstored 的 FBS 崩溃行消失（SIGTRAP
+  簇只剩 0），EXIT crashsig 大降；看 focus3=Preferences/focus4=
+  SpringBoard 里程碑是否首次到场（UI 阶段开场）。新 crasher 按本法
+  符号化（temp/cache-extract 全套在）。若 FBS ret 后 SpringBoard 死在
+  后续 monitor 方法断言 → 照 CRASH 行符号化迭代。
