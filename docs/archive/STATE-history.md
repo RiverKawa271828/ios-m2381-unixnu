@@ -1572,3 +1572,72 @@ nura-min simg 是唯一安全件（sparse 头部）。
         r43→r50 已花八轮）；下一墙直接变成非断言类崩溃。
      b. **=y 车道加速**（§0.30 配方已就绪，ABI 头在仓）——根因解。
      c. 上游/fork 若有现成机制解则直接取。
+
+## 0.35 2026-10-27 续六：r52 读窗定谳 = =y 车道一级实机全过（PE handoff+真显示配置+swap），SpringBoard 崩溃循环钉死在 BannerKit displayConfiguration 断言（r50 深抛者收口）
+
+- **读窗**：logwindow-r52.img（32MiB SHLOG 窗，sda22 尾部 skip=
+  972260504，设备/宿主 md5 `b63cda4d3ca5742eab3aa9ac39a7db59` 一致）。
+  单次引导 593 轮 / uptime 1189s（≈20 分钟，用户断电时刻；wrap 后窗内
+  最早 t=169s），write_errors=0——payload 元组（22f8f0bd）正确上机。
+- **屏幕时间线与日志对齐**：诊断页 ~2-3min 让位（BootProgress 遥测读
+  真 provider 后让位）→ 苹果 logo 上屏（先模糊后清晰自稳）= OS 侧
+  推帧；[swap timeline] W1 t=85.7s / W2 t=87.8s / W3 t=88.2s 三次全帧
+  swap（offer/done 2.1s/213ms/1.3s）= logo 推帧时代，此后无新 swap =
+  画面冻结在 logo。
+- **=y 显示栈健康清单（一级全过的实证）**：
+  - `DISPLAY stage=10 PM=4 calls=4 callbacks=1 guard=0 owned=1`；
+  - `GOP actual mapping virtual=fffffff1a650b000 physical=b8000000
+    bytes=10368000`（=1080×2400×4 全帧）；
+  - IOMFB Debug Info 字典：width 0x438 / height 0x960 / format
+    0x42475241（'ARGB'）/ layer0 src_stride 0x1100 / Last Swap
+    Completion State=4 —— **=y 栈给用户态的是真显示配置**；
+  - [scanout prepare] calls=6 failures=0；[mfb clients] C0 pid=76
+    calls=30 fails=18（sel6/0x80000000 → e00002d5 ×2，杂
+    e00002bc/e00002c7/e00002f0）C1 pid=86 calls=3 fails=1 —— IOMFB
+    用户客户端通道已通但**选择子半数失败**（机制线头号嫌疑）；
+  - r51 telemetry 换血后 `native_legacy_stage`/NativeGOPFramebuffer
+    nub 记录不在 msgbuf（上述 IOMFB dict/swap 即健康实证）。
+- **SpringBoard 崩溃循环定量**：census `SpringBoard 28/14`（14 次
+  sig6，pid p213/215/221/223/240/248），全程 CRASH 行逐字节全同
+  （PC/LR/bt 不变）→ 循环持续到 1189s 断电；`backboardd 2/0` 稳定
+  （spawn 2 崩 0）→ **logo 冻结 = backboardd 持有最后合成帧**；
+  chronod sig5 ×9（较 r50 ×178 降温）；nonzero=24 = SB14+chronod9+
+  IOMFB_FDR_Loader 1。
+- **fixup oracle**：`parsed=13 applied=5` 原班人马 {BTAudio,5,6,7,8a}
+  ——显示族 8b/9/10 未醒 = 站点未达，SB 死在更浅处（与 r50 收口一致）。
+- **抛点定谳（r50"抛者更深"收口）**：REASON 506 条同串
+  `'Invalid parameter not satisfying: displayConfiguration'`。去滑
+  N=0x7280000，bt 内→外，**bl-target 验活全过（temp/verifychain52.py，
+  r52 版链）**：
+  `-[SBBannerManager init]+0x68` → bl msgSend$initWithAuthorizedBundleIDs:
+  → `-[BNBannerSourceListener initWithAuthorizedBundleIDs:]+0x4c` →
+  bl msgSend$initWithServiceDomain:displayConfiguration:authorizedBundleIDs:
+  → `-[BNBannerSourceListener initWithServiceDomain:displayConfiguration:
+  authorizedBundleIDs:]+0x1e8`（BannerKit，.17 子缓存）→ bl
+  msgSend$handleFailureInMethod:object:file:lineNumber:description:
+  （NSAssertionHandler）→ terminate 机器 → abort。**=y 环境下 bt 用户帧
+  首次全活**（=n 时代 r48-r50 的 bt 用户帧经 bl-target 复核为陈旧/错滑：
+  r48 帧列表 0x1b9f54888 有 0x10000 转录滑差且正确去滑落 HomeUI 垃圾
+  符号——r52 前用户态抛点链从未可靠捕获过）。
+- **实参来源反汇编**：initWithAuthorizedBundleIDs 内 `adrp x8, 
+  0x1e9502000; ldr x20,[x8,#0x290]`（GOT .33 0x1e9502290，类引用）→
+  `msgSend$mainConfiguration` → x3 = displayConfiguration 实参。即
+  **SB 侧显示配置单例 `[<类> mainConfiguration]` 返 nil**。该类引用
+  存储值 0x201f4a63ee0 不合 `VA|0x400_00000000` 约定（新开放缝③，
+  与①同族掩码问题）。
+- **机制线线索（与 fixup 11 并行）**：mfb 选择子失败簇（e00002d5
+  not-ready 类）+ mainConfiguration nil + sheng 同 SoC =y 全通（仅
+  3-4 条基础 fixup 不打显示族）⇒ 我们 =y 栈与 sheng 的差异 = 供给链
+  断点嫌疑：dpu 钩子绑定（weak 替身本机 ld 拒弱）/probe 车队裁剪/
+  IOMFB 选择子实现面（sel6/0x80000000 等）。
+- **r53 工作单**（STATE §7）：fixup 11 =
+  `"dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9"`
+  （深层 init 入口 ret 返 self；期望字节 = sub sp,sp,#0xa0 +
+  stp x26,x25,[sp,#0x50]，已核；变体 = caller 入口 .17,670e634
+  f657bda9f44f01a9）；kernel 3ab2ace4 复用只重打 payload；**发卡 =
+  三件全刷**（设备已回 nura-min：boot_b e74c73da / recovery_a
+  0a102220=FLASHING §6 nura ESP 值 / userdata nura root，devsh 实测）；
+  读窗判读 applied=6 + 下一墙符号化。
+- **用户实测补记**：设备在 ~20 分钟时被用户断电（logo 全程未变），
+  随后用户自行刷回 nura-min——读窗在 nura-min 态完成（照 r41a 例行，
+  SHLOG 窗内容为 iOS 引导所写，nura 引导不覆盖）。
