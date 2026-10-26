@@ -17,7 +17,7 @@
 - **分支模型（2026-10-23 起）**：`m2381` = `upstream/main` + 工作区提交。
   由旧的无祖先孤儿分支 `git rebase --onto upstream/main --root` 重建（备份：
   本地分支 `m2381-pre-sync-backup`）。工作区文件（`docs/`、`devices/`、
-  `tools/`、`artifacts/`、`legacy/`、`AGENTS.md`、`README.md`）叠在上游树
+  `tools/`、`artifacts/`、`AGENTS.md`、`README.md`）叠在上游树
   （`drivers/`、`kits/`、`package/`、`patches/`、`scripts/`、`unixnu`…）之上。
 - `reference/` 其余克隆仍是**只读参照**；日常同步直接在本仓 rebase。
   2026-10-26 清理：删除死 era 克隆 `UniXNU-guacamole`/`UniXNU-qemu`/
@@ -48,7 +48,7 @@
   ci-owner-policy.sh 加 XnuPrelink fork 换装、make-device-branch.sh 加
   feeds/dts/patches、check-m2381.py 合并 profile 检查（4 ok）。本机验证 =
   双板 defconfig/tree、14 组件解析、58 补丁全应用、ADT 生成 13820B、kit 测试
-  绿。详见 STATE §0.14。CI 重发待用户拍板。
+  绿。详见 `docs/archive/STATE-history.md` §0.14。CI 重发待用户拍板。
 - **2026-10-26（规矩定死：一切以上游为准，用户拍板）**：`upstream/main` →
   `16e592a`（`c62bf12` +42 提交，历史未改写，标准 `git rebase upstream/main`
   重放 104 个工作区提交）。主题：**设备仓 schema v2**（`[board] soc_source`/

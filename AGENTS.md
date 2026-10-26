@@ -70,7 +70,7 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
    - `board.toml`：SoC SM8550；`[ipsw]` = **iPad7,1 / 17.7.11 / 21H461 /
      j120ap**（fuxi/nx729j 同款 donor，2026-10-24 拍板；sha256 到货复验后
      与 fuxi 值对拍）；`[userdata]` first/last_lba
-     **已实测**（STATE §2），不许抄 fuxi；`[kernel]` defconfig 从
+     **已实测**（实机 GPT 三源对拍，值在设备仓 `board.toml`），不许抄 fuxi；`[kernel]` defconfig 从
      `fuxi_defconfig` 派生再改板级差异。
 2. **`devices/m2381/uefi/m2381Pkg`（UEFI）**：从
    `reference/uefi-fuxi/Platforms/Xiaomi/fuxiPkg` 派生，按
@@ -131,7 +131,7 @@ docs/FLASHING.md          刷写/读回/回滚纪律
 docs/CI.md                云端构建说明（当前无本仓 workflow）
 docs/HARDWARE-m2381.md    硬件常量与地址
 docs/hardware/            stock FDT/DTS、DTB（只读参考）
-docs/archive/             旧 sweet 笔记、B2 评估与启动链（史料）
+docs/archive/             旧 sweet 笔记、B2 评估与启动链、STATE 轮次史（§0.0–0.34）、完工计划（史料）
 reference/                UniXNU/uefi-fuxi/unixnu-fuxi 等克隆（gitignore）
 research/                 IPSW 等本地大件（gitignore；旧 iPhone X IPSW 已无用）
 tools/                    adt.py / mkadt.py / remotezip.py（留作参考）
@@ -154,7 +154,7 @@ devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器；arm64e 专项；GPU/触摸/显示主题化（显示墙破后）。
 
-> **P1 关键定案**（细节见 STATE §1）：P2 基座 = shengPkg 骨架 + mars blob
+> **P1 关键定案**（细节见 `docs/archive/STATE-history.md` §1）：P2 基座 = shengPkg 骨架 + mars blob
 > （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗
 > 装不下 192MiB ramdisk 载荷，量化定死）；kernel 步只能 macOS（xcodebuild），
 > Linux 侧全链路已跑通；unique-chip-id = `3645ad55d47e77c1`（软件种子）。

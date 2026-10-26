@@ -116,7 +116,8 @@ boot_b 不动；Mu 会重新扫描 ESP。
 | userdata | sda22 | nura root（ext4，`root=/dev/sda22`），≈464GiB |
 
 - 旧记录"boot_b = r34 shim `339b8480…`"**作废**：设备早已被 nura 侧整槽重刷。
-- 回滚件（`artifacts/images/`）都是**历史版本**，不是现役镜像；完全恢复
-  nura 需要 nura 侧重刷（含 userdata）。
-- 几何与 board.toml 实测值见 `docs/STATE.md` §2；userdata 4K LBA：
+- 回滚件**只**在 nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`
+  （本仓 `artifacts/images/` 已于 2026-10-26 删除）；完全恢复 nura 需要
+  nura 侧重刷（含 userdata）。
+- userdata 4K LBA（实机 GPT 三源对拍，权威值在设备仓 `board.toml`）：
   first=2,330,472 / last=123,871,226。
