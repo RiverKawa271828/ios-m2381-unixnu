@@ -689,3 +689,33 @@
    arm64e 专项；r21 蓝条来源考古。
 4. **欠账**：recovery_a dd 读回对拍（UniXNU 侧自读或豁免）；16K 读放大
    的性能优化（已验块缓存）= launchd 之后主题。
+
+## 0.15 2026-10-26 续：watchdogd 墙破局 = XNU_BOOT_PROGRESS 转正（详见 commit）
+
+- **实机读图（kernel `ee3255a8` + payload `8e20dc3e`）**：绿→蓝→品红后内核全链
+  跑通——VM init、root 认证、launchd exec、dyld 吃 cryptex、**RAM Data 种子
+  生效（tzinit 过墙，r25 的 pid17 死点清除）**、daemon 到 pid 173。墙 =
+  `watchdogd[173] exited -- exit reason namespace 2 subcode 0x5`（SIGTRAP =
+  watchdogd 找不到 IOWatchdog 服务的故意自杀；它是 launchd 无条件
+  _PanicOnCrash 任务 → launchd panic 内核 → panic 屏打 frames/pages/free）。
+  同墙 sweet 时代 10-20 轮 18 已撞（archive/NOTES-m2381.md:1326）。
+- **根因 = boot-arg 在、代码不在**：payload args 含
+  `sheng-disable-watchdogd=1`，但内核是 `CONFIG_XNU_BOOT_PROGRESS=n`+stub
+  构建（第 35 轮 ld64 弱外部墙的折衷）→ 上游 kern_exec.c:8039 的
+  `sheng_boot_watchdog_policy` 挂点编译消失 → disabled.plist 从未写出 →
+  flag 死脚。官方解法（fuxi/sheng 生产同款）= flag + BootWatchdogPolicy.c。
+- **修复**：`CONFIG_XNU_BOOT_PROGRESS=y`（base+owner defconfig）+ 真档回归
+  （baseline force_load libBootProgress.a）+ 新
+  `build-boot-progress-telemetry.py`（package/BootProgressTelemetryDefs.c =
+  86 个遥测零值定义，覆盖 legacy-display/touch/Adreno/cpufreq/Wi-Fi 全部
+  悬空弱引用——Apple ld 置零语义的显式化，ld64 956 因此过链）。stub 退役
+  （board.toml 换条目；board.bringup.toml 仍用 stub 走 =n 车道）。
+- **产出**：内核 **`e7442ae1`** → 探针+panic screen 件 `d8d18275` →
+  **payload `37ff3c16`**（96MiB；args 与 8e20dc3e 逐字一致、fixture
+  67a1e4f2、trust 7416ca4f 同件）。链接+prelink 一次过。
+- **读图（下次启动）**：BootProgress 诊断页将首次激活（boot-progress=1）；
+  Data 挂载后应见 `sheng bring-up watchdogd launch policy: 0`；watchdogd
+  不再启动。下一墙候选 = 剩余 _PanicOnCrash 名单（containermanagerd/
+  usermanagerd/lockdownd/remoted/trustd/remotepairingdeviced）→
+  sheng-disable-jobs 扩名单挡；或 Preferences/SpringBoard 里程碑
+  （boot-ui-focus3/4 已排）。
