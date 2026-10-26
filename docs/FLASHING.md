@@ -49,38 +49,44 @@ sha256sum boot_b.before.img recovery_a.before.img
   （本机 254GB 空闲）和用户拍板。
 - 读回件存 `backups/`（不入 git），文件名带日期/分区。
 
-## 3. 刷写（具体镜像待设备仓/UEFI 产出后补）
+## 3. 刷写（iOS 链现役形态，r49/r50 定谳后的卡片格式）
 
-路线 A 的刷写流程等 `devices/m2381/` 出第一版镜像后补全。原则不变：
+每轮刷写 = **三件全刷**（boot_b + recovery_a + userdata），按当轮"刷写卡"执行：
 
-- 先刷可回退的那个槽（当前 = recovery_a，boot_b 保留 r34 shim）；
-- 每槽刷完立即读回 sha 对拍；
-- 刷完不要 `fastboot boot`（死路）；直接 `fastboot reboot` 让 ABL 走 boot_b。
+- **发卡前先确认设备现态**：走过 nura-min 读回流程后 iOS 链已被覆盖，
+  "只刷 recovery_a" 快捷卡只在 iOS 链未被 nura 覆盖时合法（r44 两次踩坑）。
+- payload 只认**平铺路径** `out/m2381/payload-rNN-<sha8>.img`（`--out`
+  双层路径歧义已在 r49 作废，旧路径文件保留作回滚件不覆盖）；
+  卡上必带**刷前 sha256 门**（`sha256sum` 输出须以卡上 sha 前 8 开头）。
+- 现役件（2026-10-27，sha 前 8）：boot_b = `a1d51f04`
+  （devices/m2381/unixnu-m2381/build/m2381/boot/boot.img）+ recovery_a =
+  当轮 payload + userdata = `fd43ee70`
+  （out/m2381/ci-artifacts/userdata-root.img）。现势详见 `docs/STATE.md` §2。
+- 每槽刷完立即读回 sha 对拍；刷完 `fastboot reboot`（`fastboot boot` 死路），
+  让 ABL 走 boot_b。
 
 ## 4. 回滚
+
+> **回滚件唯一所在 = nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`**
+> （mu-r62…r91、esp v46+ 全套）。本仓 `artifacts/images/` 已于 2026-10-26
+> 删除（红线 6），下文旧路径一并作废。
 
 ### 4.1 回 nura（boot_b = Mu，recovery_a = nura ESP）
 
 ```bash
-# boot_b: nura 的 Mu
-fastboot flash boot_b artifacts/images/mu-r69-97cdea20.img
-# recovery_a: 解压 nura ESP v71
-gunzip -c artifacts/images/esp-recovery-v71.img.gz > /tmp/esp-v71.img
+N=/home/ri/work/nura-meizu-m2381/artifacts
+fastboot flash boot_b $N/mu-r91-350386e0.img
+gunzip -c $N/esp-recovery-v71.img.gz > /tmp/esp-v71.img
 fastboot flash recovery_a /tmp/esp-v71.img
 fastboot set_active b
 fastboot reboot
 ```
 
-### 4.2 回 r34 iOS16（boot_b = r34 shim）
+### 4.2 回 r34 iOS16（历史态，已失效）
 
-```bash
-fastboot flash boot_b artifacts/images/shim-boot-m2381.img
-fastboot set_active b
-fastboot reboot
-```
-
-> r34 shim 的 boot_b 现状 sha `339b8480…`；userdata 还是 r34 root 时可直接回。
-> 如果 userdata 已被换掉，r34 shim 也起不来；先确认 userdata 身份。
+> r34 shim 件已随本仓 `artifacts/images/` 删除；且 userdata 已换 iOS root
+> （fd43ee70），r34 shim 起不来的前提已成立。此节仅留档，回 r34 需先重建
+> 其 userdata（无预案 = 视为不可回）。
 
 ### 4.3 只回 recovery_a
 
@@ -99,7 +105,7 @@ boot_b 不动；Mu 会重新扫描 ESP。
 4. 不连续盲试；任一门上机失败，先回滚再分析。
 5. iOS IPSW / Apple 件只本地使用。
 
-## 6. 当前设备状态（2026-10-23 devsh 实测；nura OS 在跑）
+## 6. 设备分区映射（2026-10-23 devsh 实测；映射关系不变，现役件见 docs/STATE.md §2）
 
 | 分区 | 设备 | sha256（整分区读回） |
 |---|---|---|
