@@ -1014,6 +1014,22 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   （~453GiB 填满分区）留给日常可用阶段再升。
 - 残余观察项：本轮若 queue 仍 ~1 作业/s，步速真因在队列调度（§0.18① 继续），
   与卷无关；r41b 仪表（UFS TIME verify=40ms read=253ms/2s 轮）已可定量。
+- **执行补记（会话内闭环）**：发现 payload 件按红线 7 永不上传 → `grow_gib`
+  路线取不回种子，改为 **pre_build 内 grow**（ci-owner-policy.sh 打包后调
+  上游 `seed-data-grow.py --gib 16`，grown 种子随 verified-root 件回家，
+  `build/owner-data-fixture/**` 本在 upload 清单）；m2381=3fd2e56、
+  device-m2381=f7a2dd2 已推。run **40316416973**（steps="",13m57s 全绿）
+  产 grown 种子：logical **16.00GiB**、卷 UUID 18AB5557 保持、身份
+  178b461d（换 = 首启新鲜卷）、pack 1,032,320B；取件
+  `out/m2381/ci-artifacts/verified-root-grow/owner-data-fixture/`。
+  本机组 payload（配方 + `--trust-cache`，内核 430344b3、无 --skip-setup
+  与上轮 parity）：**`payload-seed16g-764539c9.img`**（96MiB，
+  ESP 内种子 md5 与 grown 件一致、kernel bf32d8fa 与 r42 件逐字节同、
+  args 尾 `sheng-log=1 sheng-staged-apps=1` 无 reset）；设备仓 .cache
+  种子已换 grown 现役。**用户卡：只刷 recovery_a ← payload-seed16g-764539c9**
+  （boot_b a1d51f04 / userdata fd43ee70 不动）；起机预期：Data 新鲜
+  16GiB → staged-apps 首拷完成（秒级，写 RAM 卷）→ policy 过 →
+  `spawn=` 爬升；后续引导 marker 跳过拷贝。
 
 ## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23】
 
