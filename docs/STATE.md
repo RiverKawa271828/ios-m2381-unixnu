@@ -1287,3 +1287,64 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - **打卡资产**：回滚链不变（boot_b←a1d51f04、userdata←fd43ee70，
   recovery_a 各轮件可重刷）；temp/cache-extract ~4.5G 保留至显示主题
   收口（符号化唯一数据源）。
+
+## 0.29 2026-10-27：r46 读回定谳 = mainScreen nil 异常（fixup 7 出件 c3a24827）+ legacy-display 车道评估（审计离线 dry-run PASS）
+
+- **r46 读回（logwindow-r46.img，md5 a8623502 宿主/设备一致）**：512 轮/
+  1026s（环回 ~3 轮），写手 state=2 e0 全程健康。**fixup 6 生效判据过**：
+  startupInterfaceOrientation 断言从 CRASH 行消失（msgbuf 内核侧实证
+  `text-fixup: dyld_shared_cache_arm64.25+0x19c1ed0 (8 bytes) applied`）。
+  **唯一残余 crasher = SpringBoard**（36 起/18 退@22s，~18 次/17min；
+  contextstored/liveactivitiesd/FBS 全零）；EXIT 247/nonzero26。
+- **定谳 = 新异常类（SIGABRT 非 brk）**：CRASH PC 1cf936f74（slide
+  +41ac000，unslid 0x1CB78AF74）+ REASON 行 probe 堆扫描全文——
+  `NSInternalInconsistencyException: returning nil screen from mainScreen
+  is not allowed!`。符号化链（本次新增 bl 目标验证法）：bt0-bt6 真帧 =
+  abort ← abort_message ← demangling_terminate_handler ← objc_terminate ←
+  std::__terminate ← libc++abi outlined（0x1dd542b60，bl
+  std::__terminate 实证）；bt7-bt11 = 陈旧帧（LR 落在函数尾非调用点），
+  但证明 SpringBoard 崩前在跑 **CA::OGL::SW 软件渲染器 + CoreGraphics
+  重采样**（init 已过、渲染中，~1min 生命周期）。**显示墙到 UI 层**：
+  LEGACY_DISPLAY=n 无显示服务 → 屏幕列表空 → UIKit 17 mainScreen 主动抛。
+- **修复 = fixup 7**：`+[UIScreen mainScreen]`（unslid 0x18a001d40，
+  subcache .03 文件偏移 0x3255e0c）入口后 `cbz x21` 进 raise helper
+  （0x2de 行）——改 `b +8`（0x14000008）直达干净返回，mainScreen 返回
+  nil；下游 ObjC nil 消息矩形归零。注意 NOP 会落进第二处 raise
+  （0x2df 行），必须用分支跳过整个 raise 区。
+- **产出**：payload **c3a24827**（96MiB；kernel 430344b3/探针 bf32d8fa/
+  trust 7416ca4f/种子 d04a0153 全不变，仅 ADT 增第 7 条 = 13996B，
+  payload 内实证 7 条全在）。commit 08d1cb8（未推送）。
+- **legacy-display 车道评估（离线腿，两腿战略第一条落地）**：
+  1. **审计门实证排除**：`audit-mobile-graphics-legacy.py` 离线分支在
+     本机 dry-run **PASS**——candidate 对 = 当前 kernel.macho+kernel.json
+     别名硬链（计划 candidate_sha256=430344b3/native=8923ccdc 双对上，
+     IOMobileGraphicsFamily 原始 sha=2e044ee6 命中审计 pin）+
+     abi.json 桩（钉 RUNTIME_SHA `3044c2be…`）→ 全量产物生成（358
+     slots/9 abstract leaves [211,213,245,246,306,307,337,338,345]/
+     vptr 表）。留档 temp/mobile-graphics-legacy-abi.dryrun.json。
+     check-native-legacy-display.py 的 5 份 HVF 观测件是资格记录非
+     构建门（树内零调用点）。
+  2. **sheng 定谳**：`LEGACY_DISPLAY=y + ADRENO=y + MOBILE_DISPLAY=n`
+     ——真显示栈 = NativeLegacyDisplay + GOP presenter，板级 provider
+     没用上；GPU 拷贝失败/拒绝自动落 CPU 拷贝回退（组件内建），我们
+     ADRENO=n 可直接走 CPU 路径。HID/touch（NativeHidInput/GT9916）后置。
+  3. **移植清单（半个会话级）**：①设备仓 scripts/ 移植
+     build-native-legacy-display.py（sheng 版生成
+     OriginalLegacyFramebufferABI.h + 编 NativeLegacyDisplay；改
+     kits/NativePrelink→XnuPrelink 新名）；②board.toml archives 增审计
+     +build 两步（candidate 别名硬链同 storage 审计法）；
+     ③defconfig 翻 `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`（args 里
+     offline-legacy-*/offline-hid-* 全组早已在）；④CI 车道同步
+     （device-m2381）；⑤内核重出 → payload → 刷。
+- **方法补充（r47 起生效）**：SIGABRT 类崩溃先读 REASON 行
+  （boot_progress_exit_reason 堆扫描，日志已带全文）再决定要不要符号化
+  ——PC 停在 abort 链上，符号化只能给机制给不了抛点；bt 上段按
+  "LR-4 必须是调用指令"验活（temp/verifychain46.py / disasm46.py 可复用）。
+- **下会话工作单（r47）**：①用户三件全刷（boot_b=a1d51f04 +
+  recovery_a=c3a24827 + userdata=fd43ee70）→ 跑 17min 断电 → nura-min
+  读窗；②判读：mainScreen raise 应消失——SpringBoard 或死在下一层
+  （新 REASON 行当场定谳，§0.29 方法补充）或推进到窗口/渲染里程碑
+  （census/EXIT/stage 看焦点行）；③若又一层显示类异常 → 继续剥
+  （预期 UIScreen bounds/scale 或 CA 显示链）并同步启动车道移植施工
+  （清单见上）；④若 SpringBoard 稳住 → UI 阶段开场（OBS bind/
+  display 交接/触摸主题）。
