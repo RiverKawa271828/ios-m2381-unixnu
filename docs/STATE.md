@@ -1210,3 +1210,45 @@ nura-min simg 是唯一安全件（sparse 头部）。
   SpringBoard 里程碑是否首次到场（UI 阶段开场）。新 crasher 按本法
   符号化（temp/cache-extract 全套在）。若 FBS ret 后 SpringBoard 死在
   后续 monitor 方法断言 → 照 CRASH 行符号化迭代。
+
+## 0.27 2026-10-26 续十三：r45 读回 = FBS/Keybag 修复实机生效；SpringBoard 推进到第二层显示断言；出件 d3c11770
+
+- **轮次波折**：r45 首次刷写卡只给了 recovery_a（当时设备还在 nura-min 配置，
+  boot_b=mu-r91/userdata=nura-min）→ nura UEFI "failed to find an operating
+  system"；补三件全刷（a1d51f04/a51aed16/fd43ee70，§0.22 卡）后 r45 成跑。
+  **教训入册：读窗后设备必在 nura-min 配置，iOS 轮的刷写卡必须含 boot_b+
+  userdata 回装三件套。**
+- **r45 读回（logwindow-r45.img md5 d3983394）**：534 轮/1069s 写手 e0。
+  **两项 r44 修复行为学验证 ✓**：liveactivitiesd 从崩溃名单消失（禁用生效），
+  contextstored 消失（FBS fixup 生效——r43 它崩 341 次、r44 崩 3 次自愈、
+  r45 零次）。EXIT 272/nonzero26/crashsig18；spawn 12/s 突发；backupd
+  t+26s。**SpringBoard 1527 行 CRASH（同 PC 重复展示）但真实退出计数
+  ~18 次 crashsig**（CRASH 行是"最近 3 次"滚动窗，≠ 退出数）。
+- **新断言（同一堵无显示墙的更深一层）**：PC 去滑 = 0x18F68234C（slide
+  1aa50000）。调用链：`start(dyld) → SpringBoard main →
+  UIApplicationMainPreparations → UIApplicationInitializeForBackgroundTasks →
+  -[SpringBoard init] → -[UISystemShellApplication init] →
+  -[SpringBoard startupInterfaceOrientation] → BackBoardServices "failure in
+  %{public}@ (%{public}@:%i) : %{public}@" 宏 → brk#0`。失败函数 =
+  **BKSDisplayServicesGetRenderOverlayForDisplay 返回 NULL**（消息串里点名，
+  subcache .05 实读）。
+- **修复**：OS profile text_fixups 增第 6 条
+  `dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6`
+  = `-[SpringBoard startupInterfaceOrientation]`（unslid 0x1cfa55ed0）入口
+  `mov w0,#1; ret` 返回 UIInterfaceOrientationPortrait（2732 面板原生
+  竖屏；sheng AW 同款入口常量返回手法）。
+- **战略评估（显示墙经济学，记录在案）**：sheng 全程仅 3 条 text_fixups
+  到 home screen，因其 =y 车道有真显示栈——我们 =n 车道面对的是这一类
+  assert（每个 BKS/CA 查询点都可能炸）。**LEGACY_DISPLAY 车道移植 =
+  真解**，且 §0.15 的"活机证据墙"经本轮复核**已有上游离线回退**
+  （audit-mobile-graphics-legacy.py 的 else 分支：接受产物 abi.json 内
+  钉住的 RUNTIME_SHA；sheng CI 正在跑这条车道）。成本 = sheng 车道的
+  HID/touch 板级件（Novatek/GeniSpi，我们是 GT9916 I2C）需要替换或裁剪。
+  列为显示主题（P4 后），本轮继续迭代字节修复。
+- **产出**：payload **d3c11770**（96MiB；kernel/probe/trust/seed 与 a51aed16
+  全同，仅 ADT 增第 6 条 fixup；payload 内三条实证）。commit 随本轮。
+- **下轮读图**：用户**三件全刷**（boot_b=a1d51f04 +
+  recovery_a=d3c11770 + userdata=fd43ee70）→ 跑 17min 断电 → nura-min
+  读窗。期望：startupInterfaceOrientation 断言消失；若 SpringBoard 死于
+  下一层显示查询（UIScreen main bounds/CA display link 等）→ 新 PC 照
+  本法当场符号化；若过 init → 看 focus3/focus4 与画面里程碑。
