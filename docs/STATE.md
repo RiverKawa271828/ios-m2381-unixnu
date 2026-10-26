@@ -1086,6 +1086,28 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   p107/p86/p76 = 内核侧线程（签名验证/VM），PF 集中 p107。
 
 
+## 0.25 2026-10-26 终：下会话工作单 = SpringBoard 崩溃簇符号化（用户跑满 17min 后断电）
+
+- **用户侧**：跑满 17 分钟后断电（环满留痕）。下会话开始时用户操作：
+  `fastboot flash boot_b <nura>/mu-r91-350386e0.img` +
+  `fastboot flash userdata <nura>/meizu-meizu20-nura-min-r91-2G.simg` →
+  起 nura-min → NCM 通后叫我。
+- **我侧读回**（<1 分钟，流程同 §0.24）：dd 尾 32MiB → devpull
+  `temp/logwindow-r44.img` → parser `--all`。核对：policy:0、
+  staged-apps marker（S st=2 拷完/3 已拷过）、崩溃簇轮次与周期。
+- **符号化（主任务）**：崩点 PC `1a1b2f2ec`（SpringBoard+contextstored
+  共用）与 `1c40464f8`（liveactivitiesd）、bt 帧 191d06cc0/191cd80e4。
+  输入 = donor 21H461 dyld_shared_cache：
+  `7z x research/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+  044-76034-038.dmg`（3.3GB，Cryptex1,SystemOS；7z 支持 APFS 只读）→
+  取 `dyld_shared_cache_arm64*` → 以未幻地址定 slide（cache 系地址
+  0x191d…/0x1a1b…/0x1a98…）→ 符号化断言 → 按 sheng text_fixups
+  先例开方（候选：Data 卷无 file protection 的同根假设——
+  contextstored/liveactivitiesd 都是受保护文件写者）。
+- **修好后**：重出件只重 recovery_a（种子/板卡不动），观察
+  SpringBoard 稳定住 → home screen / Settings（sheng README 同款
+  里程碑）→ UI 阶段开场（OBS bind、display 交接、触摸）。
+
 ## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23/§0.24】
 
 **会话开始前的用户操作（fastboot，单通道，slot=b，各件先 sha256 对拍）**：
