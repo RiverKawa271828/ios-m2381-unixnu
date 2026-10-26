@@ -1055,6 +1055,21 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
      （§0.18① 队列步速定量从这里开始）。
 - **判读预期**：policy: 0 + S 完成后，若 spawn 持续爬 = 队列健康，等
   SpringBoard；若 ~1 作业/s 依旧 = 队列调度专项（§0.18①）开场。
+- **读回定谳（当会话补完，logwindow-r43.img md5 ddb3df16）**：r43 单引导
+  324 轮/648s（环未回卷；槽 324-446 = r42/r41a 残留，parser 按轮号排序
+  需注意混层）。**队列首次活**：spawn 0→**995**（11min）、常驻
+  **procs=181**、速率 2-4/s 带 36/s 突发（r40 的 ~1/s × 4 以上）、断电
+  瞬间队列头 = `target pid=272 backupd exec process signature accepted`
+  （age 16s = 仍在推进）；EXIT 325（nonzero 56 + crashsig 49，残余崩溃
+  但**不堵队列**）。staged-apps：`S dirs=735 files=348 mib=38 fail=0
+  err=0` 健康拷贝中（断电时未完，marker 未写，下轮引导续拷后写）；
+  `D pages=4194304`（**16GiB 店面实装**）wr=10188 cm=348 er=0；
+  RAMDISK capacityMiB=**16384** residentKiB=**1008**（稀疏兑现）；
+  UFS TIME 累计 verify 6.3s/read 35.4s/1908MiB 无停顿；MEM free 588MB。
+  下轮**免刷**：直接起机跑 30-40min，每 ~5min 拍照（Data 持久化，
+  staged-apps 下轮补完写 marker）——观测 SpringBoard 是否到场与队列
+  余量；若到场则开始 UI 阶段（OBS bind/display 交接）。
+
 
 ## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23/§0.24】
 
