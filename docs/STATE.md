@@ -1252,3 +1252,38 @@ nura-min simg 是唯一安全件（sparse 头部）。
   读窗。期望：startupInterfaceOrientation 断言消失；若 SpringBoard 死于
   下一层显示查询（UIScreen main bounds/CA display link 等）→ 新 PC 照
   本法当场符号化；若过 init → 看 focus3/focus4 与画面里程碑。
+
+## 0.28 2026-10-27 下会话工作单：r46 读窗 → 符号化 → 第 7 条 fixup（或转显示主题评估）
+
+- **现状（本会话收口）**：r46 已跑（payload d3c11770 = 6 条 text_fixups +
+  4 项 disable 名单），GUI 未起；用户已刷回 nura-min（读窗时设备未连
+  NCM，r46 证据仍在 userdata 尾部 32MiB，nura-min sparse 不触碰）。
+- **会话开始（用户侧）**：起 nura-min（NCM 172.16.42.1 通）→ 叫我。
+- **我侧（按序，全套方法与工具就绪）**：
+  1. 读窗三步（<1 分钟，§0.24 流程）：devsh dd 尾 32MiB → devpull
+     `temp/logwindow-r46.img` → md5 对拍 → parser `--all`。
+  2. 定谳顺序：① CRASH 行名单——startupInterfaceOrientation 的断言
+     （PC 去滑 0x18C55E24C 附近、bt 含 UISystemShellApplication init）应
+     **消失**（fixup 6 生效判据）；② 新 PC 照 [[方法]] 当场符号化
+     （slide = CRASH 行 `+N`；temp/cache-extract 的 stub/dec-symbols/
+     libzbitmap 工具全在）；③ 若无 CRASH 行而系统仍无 UI → 查 [page]
+     的 stage/spawn/EXIT 与 msgbuf（kernel panic / launchd 停摆另判）。
+  3. 修复候选（r46 死点为准确认；本会话已预扫 UISystemShellApplication
+     init 在 orientation 后的调用序）：`setInterfaceOrientation:(1,0,0)`
+     → `defaultCenter` → **`getFBInterfaceOrientationServiceClass` +
+     FBOrientationService sharedInstance**（FBS 族下一个候选断言点）→
+     其后 UIKit 窗口/UIScreen 链。修法沿第 6 条同款：入口常量返回。
+  4. 出件 = payload-only（kernel/probe/trust/seed 不动），桌面校验
+     （新 fixup 在 payload 内、旧 6 条在）→ **三件全刷卡**（boot_b=
+     a1d51f04 + recovery_a=<新件> + userdata=fd43ee70；教训 §0.27）。
+- **并行评估点（拍板项，若 r46 仍是显示类断言）**：显示类断言已逐轮
+  各剥一层（FBSDisplayMonitor init → startupInterfaceOrientation →
+  预期 FBOrientationService → UIScreen…），继续逐条打的预期 = 还要
+  2-4 轮；**LEGACY_DISPLAY 车道移植** = 类解（sheng CI 在跑同车道；
+  审计离线回退已证实 = §0.27；成本 = 车道脚本移植 + HID/touch 板级件
+  替换为 m2381 GT9916 或先裁剪至纯 display）——下会话若又一轮显示类
+  断言，建议两条腿：先发 fixup 让实机继续往前走（信息增量），同会话
+  开始车道移植评估（离线工作不占刷写轮）。
+- **打卡资产**：回滚链不变（boot_b←a1d51f04、userdata←fd43ee70，
+  recovery_a 各轮件可重刷）；temp/cache-extract ~4.5G 保留至显示主题
+  收口（符号化唯一数据源）。
