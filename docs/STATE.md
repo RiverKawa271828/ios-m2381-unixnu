@@ -752,3 +752,29 @@
 - **产出**：内核不变 → **payload `d8792315`**。读图：FAIL 行应骤减；盯
   focus3/focus4 与面板接管。旁注：MEM totalMiB=4054 = 内核现只见低段
   ~4GB（高段 13GB 映射 = 独立后续主题，非本墙）。
+
+## 0.18 2026-10-26 续五：d0ed4e45 实机读图 + 用户关机收尾（下会话主查队列步速）
+
+- **实机（526s 单张）**：transparencyd/assistantd/biomed 行全部消失 ✓，
+  风暴确认停止：EXIT 591（上轮同期 404s 已 1255）、CPU 转入 park/idle、
+  中断率 26k→8k/s。残留循环 = `callservicesd`/`nsurlsessiond`/`analyticsd`
+  三只（全 status=100 exit=1 秒退 = 无基带/无网络受害者，fail-fast，
+  不堵队列）。stage target = analyticsd p370，无 Preferences/SpringBoard。
+- **用户观察与决定**：12+ 分钟无 UI 迹象、发热明显、主动关机。
+  "能起来不会这么慢"的质疑成立待查：队列步速 ≈1 作业/秒（pid 370@526s），
+  iOS 引导队列 ~500 项 → 按此步速 SpringBoard 需 15-30 分钟——需要证据
+  判断这是"慢但通"还是"有半挂起作业在拖"。
+- **下会话调查单（优先级序）**：
+  ① 队列步速根因：每作业 ~1s 开销来自哪——AMFI 每 exec 签名校验成本 /
+  UFS 页入流（verified=1514MiB 全是校验读即页入）/ xpcproxy 链 / 某类作业
+  的 30s XPC 超时周期；对照上游 sheng/fuxi 到 SpringBoard 的实耗时间定
+  "慢但通"还是"异常"；
+  ② 挂起作业盲区：挂起不退出 → 永不出 FAIL 行；判据 = stage 行 pid/名字
+  是否冻结（已教用户，未取得读数）；
+  ③ 发热：cpufreq 组件未派生（sheng-cpufreq=3 无实现）疑定频最高档，
+  DVFS 主题评估；
+  ④ MEM totalMiB=4054（高段 13GB 未映射）与页入竞争（speculative
+  ~1.2GB）。
+- **设备状态**：用户已关机。boot_b 现役 UEFI 不变；recovery_a =
+  `d0ed4e45`（七层参数）；userdata = v2 root 不变。commits 至
+  dceeb44/r39 已提交未推送。
