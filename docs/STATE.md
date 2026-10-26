@@ -5,26 +5,35 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r52 已刷，2026-10-27）
+## 1. 一句话现状（r52 定谳，2026-10-27）
 
-iOS 链全链上机；**=y 显示车道已实机生效**——r52 刷 payload `22f8f0bd`
-后：诊断页约 2-3 分钟让位 → **苹果 logo 上屏**（先模糊色块、很快清晰，
-呈现链路自稳）。这是 PE handoff（探针读到 GOP）+ NativeLegacyDisplay
-接管控制台 + OS 侧推帧的实证，=y 车道第一级（驱动推画面）通过；
-BootProgress 页让位后 stage 队列行不可见，唯一观察面 = 屏幕。
-**待办 = 读窗定谳**：最终屏幕形态（锁屏/黑屏/logo 冻结/respring 闪循环
-+ 周期）+ 日志环（parsed=13、applied 集合——显示族 fixup 8a/8b/9/10
-醒来 = 站点真在路径、REASON 行）。上游同步 f85b5a6 + 两段式方案见
-`docs/PLAN-display-lane.md`。
+**=y 车道一级（驱动/控制台/OS 推帧）实机全过**：payload `22f8f0bd`
+单次引导 593 轮 / 1189s（诊断页 ~2-3min 让位 → 苹果 logo 上屏自稳，
+PE handoff + NativeLegacyDisplay 接管实证）；日志环：`DISPLAY stage=10`、
+GOP FB 映射 `0xb8000000` 全帧 10,368,000B（=1080×2400×4）、三次全帧
+swap 完成（t≈86-88s）、IOMFB Debug Info 给出**真显示配置**（ARGB
+layer0、swap completion state=4）——=y 显示栈健康。**但 SpringBoard
+未破墙**：sig6 崩溃循环 14 次（census 28/14），backboardd 2/0 稳定
+（屏上 logo 冻结 = 最后合成帧）；REASON 506 条同串
+displayConfiguration——**抛者首次钉死且 bl-target 验活**：
+`-[BNBannerSourceListener initWithServiceDomain:displayConfiguration:
+authorizedBundleIDs:]+0x1e8`（BannerKit），链 = SBBannerManager init →
+initWithAuthorizedBundleIDs → 该 init → NSAssertionHandler，实参 =
+`[<类> mainConfiguration]` 返 nil。r50"抛者更深"悬案收口。applied=5
+原班人马（8b/9/10 未醒 = 站点未达，SB 死在更浅处）。设备已刷回
+nura-min，下轮**三件全刷**。
 
-## 2. 设备现状（2026-10-27，iOS 链现役）
+## 2. 设备现状（2026-10-27 r52 读窗后 = **nura-min**）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
-| boot_b | 本仓 UEFI（m2381Pkg FV boot.img） | `a1d51f04` | 现役（r52 卡三件之一） |
-| recovery_a | ESP payload（**=y 车道首件**） | `22f8f0bd` | **r52 已刷已上电** |
-| userdata | CI 重建 iOS root | `fd43ee70` | 现役 |
+| boot_b | nura UEFI | `e74c73da` | **设备现态 = nura-min**（用户 r52 读窗前刷回） |
+| recovery_a | nura ESP | `0a102220` | 同上（与 FLASHING §6 nura 值对拍一致） |
+| userdata | nura root | — | 同上（devsh 7.3.0 在跑，172.16.42.1 可达） |
 
+- **下轮发卡 = 三件全刷**（iOS 链已被 nura 覆盖，r44/r49 规矩）。
+- r52 iOS 链三件（a1d51f04 / **22f8f0bd** / fd43ee70）已走完读窗定谳
+  使命；boot_b `a1d51f04` 与 userdata `fd43ee70` 仍是现役件可复用。
 - 刷写/读回/回滚纪律：`docs/FLASHING.md`。回滚件**只**在 nura 仓
   `/home/ri/work/nura-meizu-m2381/artifacts/`（红线 6；本仓 artifacts/images
   已于 2026-10-26 删除）。
@@ -82,15 +91,32 @@ BootProgress 页让位后 stage 队列行不可见，唯一观察面 = 屏幕。
    `bl _objc_msgSend$handleFailure…` 桩（各二进制私有）→ 断言站点
    x6/x7 串回读。
 6. **defconfig 铁律**：改 defconfig 后必须手动重跑 defconfig 命令。
+7. **bt 用户帧可信度分代（r52 定谳）**：=n 时代 bt 用户帧多为陈旧帧
+   （r50 实锤，live 链只有 terminate 机器）；=y 环境 r52 的 bt 用户帧
+   首次全活（bl-target 三帧全过）。**无论哪代，bl-target 验活必做**；
+   去滑先核 N 值（r48 帧列表曾有 0x10000 转录滑差 → 符号落 HomeUI
+   垃圾 = 红旗）。
 
 ## 5. 开放问题
 
-- **主墙**：displayConfiguration 抛者仍在更深处（五站点全排除后收敛）。
-  三条备选路径与判据见 §7。
+- **主墙（r52 钉死）**：SpringBoard 崩溃循环 = BannerKit
+  `-[BNBannerSourceListener initWithServiceDomain:displayConfiguration:
+  authorizedBundleIDs:]+0x1e8` 断言 displayConfiguration 空；实参 =
+  `[<类 @GOT .33 0x1e9502290> mainConfiguration]` 返 nil。两条路：
+  ①**fixup 11**（该 init 入口 ret 返 self，8b 同配方，三元组已备 =
+  `dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9`，
+  备选 caller 入口 `.17,670e634`）——继续 oracle 推进；②**机制线**（真解）：
+  mainConfiguration 供给者为何 nil——嫌疑 = IOMFB 用户客户端选择子
+  半数失败（mfb C0 pid=76（疑似 backboardd）calls=30 fails=18，
+  sel6/0x80000000 → e00002d5 ×2，杂 e00002bc/c7）+ sheng 同 SoC =y
+  全通对照（我们 =y 栈与其差异 = dpu 钩子绑定 / probe 车队裁剪 /
+  IOMFB 选择子实现面）。
 - **开放缝（定位收口遗留）**：①auth-rebase 编码 CFString 指针重扫（修正
   掩码 `ptr & 0x3FFFFFFFFF`，重扫被用户叫停中）；②.23 区两裸串引用点
-  （0x1c943f1ec / 0x1c94419e8，垃圾符号）未反汇编定性。
-- **chronod sig5 崩溃循环**（Swift 陷阱形态，r50 ×178 升温）——次优先，
+  （0x1c943f1ec / 0x1c94419e8，垃圾符号）未反汇编定性；③（r52 新）GOT
+  类引用 0x1e9502290 存储值 `0x201f4a63ee0` 不合 `VA|0x400_00000000`
+  约定，auth-rebase 掩码待定（与①同族）。
+- **chronod sig5 崩溃循环**（r52 实测 ×9，较 r50 ×178 降温）——次优先，
   主链推进后按 sheng disable-list 处理。
 - **独立主题（不阻塞）**：XS/fileset-KC 重绑定器（fileset KC 无 KASLR 表，
   prelink kit 需重绑定器）；arm64e 专项（透传已验证，FPAC/PACM/自举面/
@@ -98,45 +124,42 @@ BootProgress 页让位后 stage 队列行不可见，唯一观察面 = 屏幕。
 
 ## 6. 不能声称的
 
-- 显示墙未破：SpringBoard 未到 home screen；触摸/按键/GPU 均未上主题。
-- =y 车道已施工**出件**（内核 3ab2ace4/payload 22f8f0bd，全验证门过）
-  但**未上机**——r52 刷写读窗前不声称显示栈实机生效。
-- 类杀 NSAssertionHandler 未出件（兜底项，=y 上机受阻才启用）。
+- 显示墙未破：SpringBoard 未到 home screen（BannerKit 崩溃循环中）；
+  keybag 未考（SB 未到锁屏）；触摸/按键/GPU 未上主题。
+- =y 车道**一级已实机实证**（PE handoff + 控制台接管 + 推帧自稳 + 真
+  显示配置到达 IOMFB 客户端层），但**用户态显示配置供给链仍断**
+  （BannerKit mainConfiguration nil）——"=y 修复 displayless 用户态墙"
+  不能声称，r52 REASON 同串即证。
+- 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
+  优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r52 读窗定谳工作单——交接状态 2026-10-27）
+## 7. 下一步（r53 工作单——r52 定谳后 2026-10-27）
 
-> **本节 = 新会话开工单。** r52 已按三件卡刷写并上电（boot_b
-> `a1d51f04` / recovery_a `22f8f0bd` / userdata `fd43ee70`），屏幕时间线
-> （用户实测）：诊断页约 2-3 分钟 → 苹果 logo（先模糊色块、很快清晰，
-> 自稳）→ 用户在 ~17 分钟时点询问，按引导队列 ETA（~500 项、~1 项/秒、
-> SB 后段）指示等待至 ~20 分钟再判。
+1. **r53 出件 = fixup 11**：`profiles/os/ipados-17.7.11-21H461/profile.toml`
+   `text_fixups` 追加
+   `"dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9"`
+   （BannerKit `-[BNBannerSourceListener initWithServiceDomain:
+   displayConfiguration:authorizedBundleIDs:]` 入口 ret 返 self，8b 同
+   配方；期望字节 = `sub sp,sp,#0xa0; stp x26,x25,[sp,#0x50]` 已核）。
+   ADT/payload sha 变 = 预期正文变更。变体（深层 ret 后下游再崩时）：
+   caller `initWithAuthorizedBundleIDs:` 入口 `.17,670e634`（期望
+   `f657bda9f44f01a9`）。kernel 不变（3ab2ace4 复用），只重打 payload。
+2. **发卡 = 三件全刷**（设备在 nura-min 态）：boot_b←`a1d51f04` +
+   recovery_a←新 payload（平铺 `out/m2381/payload-r53-<sha8>.img`）+
+   userdata←`fd43ee70`；刷前 sha256 门 + 每槽读回对拍 + `getvar
+   current-slot` = b。
+3. **读窗定谳（照 r47-r52 例行）**：`parsed=14 applied=6`（fixup 11
+   醒来 = BannerKit 站点在路径）；REASON 变化 = 下一墙符号化（照 §4
+   方法 2/7）；若 SB 活 = 锁屏形态判读（keybag 首考）/respring 周期；
+   swap timeline 与 IOMFB dict 继续对照（显示栈回归检查）。
+4. **机制线（并行，不阻塞 r53）**：①解开放缝③（GOT 类引用解码）或
+   全区扫 `msgSend$mainConfiguration` 桩反查实现类，定位
+   mainConfiguration 供给者；②对照 sheng 的 IOMFB 用户客户端选择子
+   实现面，查 mfb sel6/0x80000000 e00002d5 未实现项（=y 栈补全方向）。
+5. **独立主题（不阻塞）**：chronod sig5（次优先）；XS/fileset-KC 重绑定
+   器；arm64e 专项；GPU/触摸主题化（显示墙破后）。
 
-1. **要用户补一句话**：最终屏幕形态——锁屏/时钟（=y 大捷形态，keybag
-   首考）、黑屏、logo 冻结、还是 respring 闪循环（记周期秒数）。
-2. **读窗（照 r47-r50 例行，FLASHING §6 devsh 172.16.42.1:23 →
-   logwindow-r52.img，md5 宿主/设备对拍）**：
-   - `parsed=13` 全在核验（payload 元组没刷错）；
-   - **applied 集合**：=n 时代常驻 {BTAudio, 5, 6, 7, 8a}；本轮显示族
-     fixup（8b/9/10 三条 + 可能 8a 重算）开始 applied = 对应站点真在
-     =y 路径上执行——本身就是定位数据；
-   - **REASON 行**：displayConfiguration 断言族应消失；新 REASON 按
-     REASON 行 + bt bl-target 验活符号化（memory
-     `dyld-cache-symbolication` + temp/symbolicate46.py）；
-   - 显示栈自身健康度：`native_legacy_stage` 计数（BootProgress 遥测
-     现在读真 provider）、`text-fixup` applied 行、有无
-     NativeGOPFramebuffer nub/start 记录。
-3. **判读分支**：锁屏 = 下一主题（触摸/解锁链）；respring 循环 = 新墙
-   （符号化 + 对照 fixup 醒来集合）；黑屏但日志环显示 SB 活着 = 渲染
-   服务器层问题（GOPPresenter swap/IOSurface）；探针 stage 停 2 =
-   PE handoff 回退（读 panic framebuffer 通道对照）。
-4. **定谳后**：STATE §8 添 r52 行 + history 补节 + commit（规矩 =
-   每轮完整活在 commit message）。
-5. **换代跟跑（上游 arm64e / iOS 27 donor 落地时，不随 r52）**：照
-   `docs/PLAN-display-lane.md` §3 段二执行（audit/ABI 头/bindings 重
-   derive 全脚本化；显示族 fixups 退役；fileset-KC 情形启用 fork 内
-   fileset rebinder）。
-
-## 8. 轮次索引（r43 → r50；详情 = commit message + STATE-history 对应节）
+## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
 
 | 轮 | payload | 定谳 | 详情 |
 |---|---|---|---|
@@ -148,4 +171,5 @@ BootProgress 页让位后 stage 队列行不可见，唯一观察面 = 屏幕。
 | r48 | `036e712f` | workspace 转换请求层（fixup 9）；CFString 解码方法 | history §0.31 |
 | r49 | — | 首试作废（旧载荷被刷，路径歧义）；二试：fixup 9 未执行，惰性 oracle 确立，fixup 10 三连修 | history §0.32/0.33 |
 | r50 | `4e69f450` | oracle 全排除（五站点全灭，抛者更深）；定位收口，转上游同步+调研 | history §0.34 |
-| r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙）；待刷 | PLAN-display-lane.md |
+| r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙） | PLAN-display-lane.md |
+| r52 | `22f8f0bd` | **=y 一级实机全过**（PE handoff+真显示配置+swap+屏幕自稳）；SB 崩溃循环定谳 = BannerKit displayConfiguration 断言（深抛者钉死+验活）；设备回 nura-min | history §0.35 |
