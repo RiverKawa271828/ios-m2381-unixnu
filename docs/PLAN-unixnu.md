@@ -11,6 +11,9 @@
   内核 + **iPhone10,3 / iOS 16.7.16 `20H392`** 的 OS 件（用户 2026-10-23
   拍板：手机镜像、不用 iPadOS；与 negroni 的 userland 同版本、与 nuwa 同
   身份）+ `unixnu` 构建树全流程。
+  **【已被 2026-10-24 换配取代】** donor = **iPad7,1 / iPadOS 17.7.11
+  `21H461`**（同代配对修正，fuxi/nx729j 同款；见 AGENTS.md 顶部说明），
+  20H392 资产保留回溯。
 - **方法**：母版 = `reference/unixnu-fuxi`（设备仓）+ `reference/uefi-fuxi`
   （UEFI 包），指南 = 上游 `docs/porting/`；m2381 特有的硬件实证（§4）作为
   差异清单叠加，而不是另起炉灶。
@@ -36,20 +39,25 @@
 | P4 | 上机：只刷 boot_b + recovery_a（userdata 最后） | 四道门逐个过；任一失败即回滚 |
 | P5 | 常态：跟随上游 rebase；触摸/显示/GPU 等主题化推进 | upstream behind 归零常态化 |
 
+> **状态（2026-10-27）**：P0–P4 全部完成（launchd r25 起、SpringBoard 起跑
+> 至 r50），现处 P5 常态轮。当前主墙 = SpringBoard displayConfiguration
+> 断言（`docs/STATE.md` §1/§7）。
+
 ## 4. 从旧阶段带来的实证约束（B2 遗产，沿用前需在新流程下复验）
 
 1. **ABL**：v4；gunzip 到 `0x80080000`、解压上限 ~83.5MB；**忽略 boot.img
    ramdisk**；只校验 image_size / appended DTB；无 CmdBoot（`fastboot boot`
-   死路）。⇒ fuxi 的 192MiB 内嵌 payload 形态在 m2381 大概率不可用，payload
-   优先走 recovery_a ESP（前提 = UFSDxe 集成）；读完 porting 文档定案。
+   死路）。⇒ fuxi 的 192MiB 内嵌 payload 形态在 m2381 不可用，payload 走
+   recovery_a ESP（**已实证：M2381ESP，r26 起每轮现役**）。
 2. **内存/窗口**：FD `0xA7100000+0x300000`；内核窗 `0xA8000000+0x10000000`；
    Display `0xB8000000+0x2B00000`；bootloader log `0xA7605000+0x8000`；高段
    DRAM `0x8c0000000` 起 13GB 连续（fuxi UEFI 默认只加 4GB 以下，必须改）。
 3. **UFS**：控制器 `0x1d84000`；`uefi-fuxi` FV 不带 UFS DXE，OEM
    `UFSDxe/DiskIo/Partition/Fat` blobs 在 `artifacts/vendor/`（assert 变体
    备用）。
-4. **分区**：boot_b 96MiB / recovery_a 100MiB / userdata 12GB；回滚件齐
-   （`artifacts/images/`）。
+4. **分区**：boot_b 96MiB / recovery_a 100MiB / userdata 12GB；回滚件已
+   移出本仓（2026-10-26 删 `artifacts/images/`），回滚链只在 nura 仓
+   artifacts（红线 6）。
 5. **板级**：显示 cmd-mode DSC、Goodix GT9916 触摸、PMK8550 按键——详见
    `AGENTS.md` §5 与 `docs/HARDWARE-m2381.md`。
 
