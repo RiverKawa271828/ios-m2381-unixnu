@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `16e592a` (2026-10-26) |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `f85b5a6` (2026-10-27) |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `3325e352` |
@@ -35,6 +35,25 @@
 
 ### 1.1 同步记录
 
+- **2026-10-27：`upstream/main` `16e592a` → `f85b5a6`（+22 提交，标准
+  rebase 重放 147 个工作区提交零冲突；check-m2381 4 ok、XnuPrelink kit
+  测试绿）。主题多为文档/设备记录（catalog 自动化 + 大批社区记录）；
+  功能面三件对我们直接有效：**① `688fa88` 修我们消费的 21H461 profile
+  本身**——ADT 补 J120 product-id（0x80ac7ae0）+ root compatible 置
+  J120AP + /product/audio 节点（修 "Unknown product ID (0)" 音频路由类
+  问题，产品类型可查还可能解开其他按产品类型分叉的 daemon），下轮
+  payload ADT 会变（与 fixup 表无关的正文变更）；**② `71ccc68` ADT 生成
+  器支持 DTS CPU 节点 `unixnu,cluster-type` E/P**（SM8550 有 E/P 集群，
+  可后续给 dts/m2381.dts 补标注）；**③ `bc08de6` GPU/display/SMMU 组件
+  bump**（ADRENO=n 不消费）。研究结论（工作单第 2 项）：sheng/nx729j/
+  fuxi 三板 text_fixups 都只有同一套 4 条基础集（AWAttentionAwareness +
+  2×PosterBoard + BTAudioHALPlugin），我们 13 条是全网最大表、无可抄；
+  上游无 displayless 机制解——所有推进到 SpringBoard 的板（sheng/fuxi/
+  cas/umi/oneplus13t-Pagani）都走 `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y`
+  legacy CPU framebuffer 车道，displayless 板（ishtar/kebab）尚在显示
+  之前阶段；=y 车道件全部就位（组件源码已在上游主树 drivers/GopFramebuffer，
+  sheng 侧 build-native-legacy-display.py + LegacyDisplayProbe.cpp 可
+  fork，注册机制 = 晚期归档 libNativeLegacyDisplay.late.a）。
 - **2026-10-26 续：设备仓 schema v2 迁移落地（消费 16e592a 机制面）**：
   board 双板迁 v2（soc_source=sm8550 pin `23b2049f`、os_profile、components
   include、config_fragments/patch_series、device_tree=dts/m2381.dts）；ADT 走
@@ -161,13 +180,13 @@ git push --force-with-lease origin m2381
 ```text
 upstream  https://github.com/UniXNU/UniXNU.git                   (fetch only; push = no_push)
 origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git（GitHub fork of UniXNU/UniXNU，默认分支 = m2381）
-          m2381 = 本工作区 = upstream/main 16e592a + 工作区提交
+          m2381 = 本工作区 = upstream/main f85b5a6 + 工作区提交
           device-m2381 = 设备仓 orphan 镜像（CI dispatch 的 device_ref，独立演进）
           （origin 上没有 main——2026-10-26 删除，见下）
 ```
 
 - 本工作区在 `origin/m2381`。behind = 还没跟上的上游提交数，ahead = 工作区
-  提交数；2026-10-26 对齐后为 ahead 107 / behind 0。
+  提交数；2026-10-27 对齐后为 ahead 147 / behind 0（2026-10-26 曾为 107）。
 - `origin/main` 已删除（2026-10-26）。历史：旧 b7b6a6a 镜像在上游改写 main
   历史后与上游分叉，GitHub 的 Sync fork / PR 页报 "conflicts"；先强推对齐为
   纯镜像，随后整个删除（fork 默认分支 = m2381，删 main 零影响；docs.yml 的
