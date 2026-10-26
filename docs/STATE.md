@@ -11,9 +11,8 @@ iOS 链已全链上机并稳定复现（UEFI → XNU → launchd → SpringBoard
 watchdogd 循环带日志窗），卡在 **SpringBoard displayConfiguration 断言墙**：
 displayless 用户态连环触发 `NSParameterAssert(displayConfiguration)`，
 r43→r50 八轮逐点排除（五个断言站点全部被 fixup-application oracle 排除），
-抛者更深。**下轮（用户拍板 2026-10-27）= 上游同步 + 上游/fork 解法调研**，
-再在「类杀 NSAssertionHandler / =y 车道加速 / 上游机制解」间拍板——
-工作单见 §7。
+抛者更深。**2026-10-27 上游同步 + 调研已完成**（§7.1/7.2 结论）：上游无
+displayless 机制解，全网 fixups 无可抄，**建议拍板 = =y 车道**（§7.3）。
 
 ## 2. 设备现状（2026-10-27，iOS 链现役）
 
@@ -43,9 +42,15 @@ r43→r50 八轮逐点排除（五个断言站点全部被 fixup-application ora
   `devices/m2381/uefi/m2381Pkg`（shengPkg 骨架 + mars blob @036ba9f7）。
 - **donor**：iPad7,1 / iPadOS 17.7.11 `21H461`（IPSW 本地已核验；20H392
   资产保留回溯）。unique-chip-id `3645ad55d47e77c1`。
-- **=y 车道备件已齐**：ABI 头
+- **=y 车道备件已齐（2026-10-27 复核）**：ABI 头
   `devices/…/package/OriginalLegacyFramebufferABI.h`（r47 入仓）+
-  sheng 287 行流水线施工配方（STATE-history §0.30，含裁剪清单与风险）。
+  sheng 287 行流水线施工配方（STATE-history §0.30，含裁剪清单与风险）+
+  组件源码已在上游主树 `drivers/GopFramebuffer/`（NativeLegacyDisplay/
+  NativeGOPPresenter）+ sheng 侧 `build-native-legacy-display.py` 与
+  `package/LegacyDisplayProbe.cpp` 可 fork（reference/unixnu-sheng）。
+- **ADT 变更预告（上游 `688fa88`）**：下轮 payload 的 ADT 会因 21H461
+  profile 新增 product-id/J120AP compatible//product/audio 而变化——
+  属预期正文变更，payload sha 变化不是事故。
 - **诊断工具链（不入 git）**：`temp/` = symbolicate46.py / disasm48.py /
   blstub48.py / live48.py / cache-extract / logwindow-rNN.img 序列。
 
@@ -88,23 +93,42 @@ r43→r50 八轮逐点排除（五个断言站点全部被 fixup-application ora
 - =y 车道未施工（配方与备件齐，NativeLegacyDisplay 未编未上机）。
 - 类杀 NSAssertionHandler 仅评估未出件（0x1874494d4 定谳后才可用）。
 
-## 7. 下一步（r50 后工作单，用户拍板 2026-10-27）
+## 7. 下一步（r50 后工作单；§7.1/7.2 已完成 2026-10-27）
 
-1. **上游同步**：`git fetch upstream` + rebase m2381（照 `docs/UPSTREAM.md`；
-   现 pin `16e592a`，查新增——设备仓 schema / 驱动 / patches 变化），
-   同步记录一句话入档。
-2. **上游/fork 解法调研**：上游 UniXNU 的 sheng/nx729j/fuxi 板
-   text_fixups 全表（是否比我们抄的多）、它们对 displayless 用户态的
-   处理（=y 车道之外有没有机制解）、其他 fork（HackiOS / ios-topaz /
-   社区 SM8550 移植）同墙解法。
-3. **备选方案（调研后拍板）**：
-   a. **类杀**：`-[NSAssertionHandler handleFailureInMethod:object:file:
-      lineNumber:description:]`（0x1874494d4，Foundation .03）+
-      `handleFailureInFunction:…` 变体入口 ret——一次灭整个
-      NSParameterAssert 传递类（displayless 必然连环触发的断言类，
-      r43→r50 已花八轮）；下一墙直接变成非断言类崩溃。
-   b. **=y 车道加速**（配方 = STATE-history §0.30，ABI 头在仓）——根因解。
-   c. 上游/fork 若有现成机制解则直接取。
+1. **上游同步 ✅（2026-10-27）**：pin `16e592a` → `f85b5a6`（+22 提交），
+   rebase 147 工作区提交零冲突，check-m2381 4 ok、kit 测试绿。要害 =
+   **上游修了我们消费的 21H461 profile**（`688fa88`：ADT 补 J120
+   product-id + J120AP compatible + /product/audio，下轮 payload ADT
+   必变）+ ADT 生成器支持 CPU cluster-type（`71ccc68`）。详见
+   `docs/UPSTREAM.md` §1.1。
+2. **上游/fork 解法调研 ✅（2026-10-27）**，三问三答：
+   - **fixups 有无可抄**：无。sheng/nx729j/fuxi 三板全是同一套 4 条基础集
+     （AWAttentionAwareness + 2×PosterBoard + BTAudioHALPlugin，即我们的
+     前 4 条）；我们 13 条全网最大，9 条全是自研。
+   - **displayless 机制解**：不存在。上游全家族凡推进到 SpringBoard 的板
+     （sheng/fuxi/cas/umi/oneplus13t-Pagani）defconfig 全部
+     `CONFIG_XNU_NATIVE_LEGACY_DISPLAY=y` 走 legacy CPU framebuffer 车道；
+     displayless 板（ishtar/kebab）还停在显示之前的阶段，无人让
+     SpringBoard 无显示存活。我们的 fixups 断言歼击是在没有机制解时自创
+     的迂回，r50 已证是打地鼠（抛者逐轮更深层）。
+   - **其他 fork**：HackiOS 维持 10-24 不转向评估（16.5 用户态 + A11
+     donor + 内存驻留模型，不同架构，无可取机制）；ios-topaz（sweet 线）
+     已退役仅作硬件参照；社区 SM8550 = fuxi（kernel 阶段）/sheng（
+     SpringBoard+触摸 = 同 SoC 最先证 =y 车道全通）。
+3. **拍板项（待用户）——建议 b**：
+   - **b. =y 车道（推荐）**：机制根因解，给用户态真 displayConfiguration，
+     断言类整体停触发而非逐个灭口；与上游每块先进板同构；顺带换来真显示
+     输出（BootProgress 之后能眼见 SpringBoard，诊断质变）。备件全齐：
+     组件源码已在上游主树 `drivers/GopFramebuffer`，ABI 头在设备仓
+     package/，sheng 侧 `build-native-legacy-display.py` +
+     `LegacyDisplayProbe.cpp`（注册机制 = 晚期归档，r47 疑虑已解）可
+     fork，offline-legacy-* args 全在 board.toml；施工 = §0.30 配方
+     （defconfig 翻 y + 手动重跑 + 归档脚本 fork 裁剪）。
+   - a. 类杀 NSAssertionHandler（0x1874494d4 + 变体入口 ret）：一次灭全
+     断言传递类，但 = 全系统断言静音——后续任何真致命断言都变成带脏状态
+     的未知行为且零日志，诊断变盲；且不解决无显示的下游墙（窗口/场景层
+     还会以非断言形式再塌）。仅作 =y 车道被硬件事实挡住时的兜底。
+   - c. 上游现成机制解：已证不存在（§7.2）。
 
 ## 8. 轮次索引（r43 → r50；详情 = commit message + STATE-history 对应节）
 
