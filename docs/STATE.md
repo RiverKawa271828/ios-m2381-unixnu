@@ -1069,6 +1069,21 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
   下轮**免刷**：直接起机跑 30-40min，每 ~5min 拍照（Data 持久化，
   staged-apps 下轮补完写 marker）——观测 SpringBoard 是否到场与队列
   余量；若到场则开始 UI 阶段（OBS bind/display 交接）。
+- **"慢"的真身 = SpringBoard 崩溃循环（同读窗 deeper look）**：
+  `[spawn]` census `SpringBoard 34/17@31`——**SpringBoard t≈31s 就首次
+  exec**，然后 sig5（SIGTRAP，故意 abort）崩 267 次，同簇
+  contextstored（341 次）、liveactivitiesd（289 次）；SpringBoard 与
+  contextstored **同 PC `1a1b2f2ec`**（共享框架同一断言），liveactivitiesd
+  同回溯帧（191d06cc0/191cd80e4）。每轮 崩→重拉→exec 过签名→
+  `xpcproxy 457/231` 拖 XPC 群重启 → CPU 97% 满（idle 全程 2-3s/650s）
+  = "11 分钟到 backupd"的表象，**到 UI 真实耗时 31 秒级**。
+  修复方向：donor 21H461 dyld_shared_cache 符号化 `1a1b2f2ec` 定位断言
+  → 按 sheng text_fixups 先例修（同病先例：PosterBoard 因 Data 卷无
+  file protection 建不出 store → 补字典放行；AWAttentionAwareness init
+  死锁 → 放行返回）。我们的 text_fixups 已含 PosterBoard 修复，此簇是
+  另一点；contextstored/liveactivitiesd 都是受保护文件写者 + 我们
+  Data 卷无 data protection = 同根头号假设。profile 顶格吃 CPU 的
+  p107/p86/p76 = 内核侧线程（签名验证/VM），PF 集中 p107。
 
 
 ## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22/§0.23/§0.24】
