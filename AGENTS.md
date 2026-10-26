@@ -147,10 +147,12 @@ devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 2. **=y 车道施工 ✅（d1c0645）**：§0.30 配方全落地，内核 `3ab2ace4` +
    payload **`22f8f0bd`**（平铺 `out/m2381/`），ADT 346c6cde（13 fixups +
    上游 J120AP/product-id），trust/seed 不变。
-3. **r52 = 发卡三件全刷 + 读窗**：boot_b `a1d51f04`（不变）+
-   recovery_a ← payload-r51-22f8f0bd.img（刷前 sha 门）+ userdata
-   `fd43ee70`（不变）。判据：真显示输出 + displayConfiguration 断言族
-   消失 + fixup oracle。新墙按 REASON 行 + bl-target 验活读窗。
+3. **r52 已刷待读窗（交接中）**：三件卡已刷上电（a1d51f04/**22f8f0bd**/
+   fd43ee70）。屏幕实测：诊断页 ~2-3 分钟 → **苹果 logo 上屏**（模糊色块
+   很快转清晰）——=y 车道实机生效，PE handoff + NativeLegacyDisplay 接管
+   实证，BootProgress 让位后观察面只剩屏幕。**新会话工作单 =
+   docs/STATE.md §7**（读窗定谳：applied 集合变化 + REASON 行 + 最终
+   屏幕形态）。
 4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
    （=y 显示破墙后 ADRENO=y 叠加）。
