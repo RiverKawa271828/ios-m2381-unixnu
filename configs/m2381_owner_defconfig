@@ -1,0 +1,128 @@
+# Kernel configuration of the m2381 owner lane: bring-up plus the real
+# VerifiedRoot root verifier. Build locally only — the probe archive needs
+# the macOS-produced OS policy (ci-owner-policy.sh on the runner, downloaded
+# and staged in the device .cache/firmware by hand).
+# Kernel configuration of the m2381 bring-up image.
+# CONFIG_XNU_<NAME> becomes XNU_<NAME> for the kernel build.
+#
+# This is the FIRST-CONSOLE stage, not the shipping configuration — the same
+# staging nx729j used. The fuxi defconfig this repository was forked from is
+# the qualified end state: almost every switch in it links an archive that an
+# earlier evidence stage has to produce first (a native prelink candidate, the
+# original block-storage class dispatch, a fully verified original system
+# image). None of that evidence exists for m2381 yet, and `unixnu build
+# kernel` does not create it:
+#
+#   build-native-virtio-bindings.py   needs build/storage-abi/interface-audit.json
+#   build-native-legacy-display.py    needs build/native-prelink/*-candidate.macho
+#                                     and build/display-analysis/*-legacy-abi.json
+#   build-sheng-platform-power.py     needs build/native-prelink/*-candidate.macho
+#   build-native-adreno-accelerator.py needs build/native-prelink/*-candidate.macho
+#   libVerifiedRootProbe.a            needs build/verified-root-os/verification.json,
+#                                     i.e. a full C-signature and block verification
+#                                     pass over the original restore image
+#
+# The switches below are closed under the same rules the nx729j bring-up
+# recorded (ARMCPU needs SOURCE_CORECRYPTO14, NATIVE_ARCH_TIMER needs ARMCPU,
+# NATIVE_AES needs CRYPTO_BOOTSTRAP=prelinked and SOURCE_CORECRYPTO14), and
+# every switch that is on has an archive a builder can make from the base
+# repository alone. UFS is NOT here even though it is SoC level, because
+# scripts/build-arm-driver.py unconditionally passes -DNATIVE_VERIFIED_BLOCK=1
+# for NativeUfs, which drags in VerifiedRoot and IOStorageFamily's class
+# dispatch. Storage comes back once that evidence stage exists; first light
+# does not need a root device.
+
+CONFIG_XNU_BUILD_ARCHIVES=y
+CONFIG_XNU_SOURCE_CORECRYPTO14=y
+CONFIG_XNU_SOURCE_PTHREAD=y
+CONFIG_XNU_ARM_DT_PLATFORM=y
+CONFIG_XNU_ARMCPU=y
+CONFIG_XNU_NATIVE_AES=y
+CONFIG_XNU_NATIVE_ARCH_TIMER=y
+CONFIG_XNU_NATIVE_PAN=y
+CONFIG_XNU_DT_PANIC_REGION=y
+CONFIG_XNU_TRUST_CACHE_RUNTIME=y
+CONFIG_XNU_NATIVE_CS_HASH_CACHE=y
+
+CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
+CONFIG_XNU_EXTRA_LD_ARCHIVES="-Wl,-force_load,{tree}/build/io-storage-family/libStorageBindings.a -Wl,-force_load,{tree}/build/boot-progress-telemetry/libBootProgressTelemetry.a"
+
+# Off for this pass. Each line names what it would require:
+#
+#   NATIVE_LEGACY_DISPLAY  build/native-legacy-display/libNativeLegacyDisplay.late.a,
+#                          qualified against an exact original
+#                          IOMobileFramebufferLegacy candidate
+#   NATIVE_MOBILE_DISPLAY  the SM8550 display provider, same evidence
+#   NATIVE_ADRENO          the A740 kit, qualified against a prelink candidate
+#   NATIVE_VIRTIO_BLOCK    no virtio transport on this board; linked as the
+#                          verified-block root authorizer (fuxi/nx729j pattern),
+#                          its class dispatch binding is libStorageBindings.a
+#   NATIVE_UFS             build/native-ufs/libNativeUfs.a. The builder hardcodes
+#                          -DNATIVE_VERIFIED_BLOCK=1, so the object needs
+#                          vr_open/vr_verify_block/vr_xnu_crypto/verified_root_*
+#                          (VerifiedRoot) and IOBlockStorageDevice's vtable
+#                          (IOStorageFamily) even with VERIFIED_ROOT_PROBE=n
+#   NATIVE_RAM_BLOCK       NATIVE_AES plus the same storage audit
+#   NATIVE_VIRTIO_CONSOLE  no virtio transport on this board
+#   SHENG_PMGR             build/sheng-platform-power/libShengPlatformPower.a,
+#                          qualified against a prelink candidate
+#   SOURCE_MOCKFS          a QEMU test fixture, not a device component
+#   VERIFIED_ROOT_PROBE    libVerifiedRootProbe.a, i.e. the original-image
+#                          verification evidence
+#   OWNER_*                the original-userland mount chain; it needs
+#                          VERIFIED_ROOT_PROBE and NATIVE_VIRTIO_BLOCK
+#   BOOT_PROGRESS          needs NATIVE_VIRTIO_BLOCK and OWNER_ROOT_AUDIT
+# NATIVE_LEGACY_DISPLAY stays n until its qualification topic lands; the
+# BootProgress telemetry zeros cover the display-side surfaces meanwhile.
+CONFIG_XNU_NATIVE_LEGACY_DISPLAY=n
+CONFIG_XNU_NATIVE_MOBILE_DISPLAY=n
+CONFIG_XNU_NATIVE_ADRENO=n
+CONFIG_XNU_NATIVE_VIRTIO_BLOCK=y
+CONFIG_XNU_NATIVE_UFS=y
+# Round 30: the RAM-backed Data volume imports the DarwinBoot scratch-data
+# handoff (/chosen/memory-map PackedRAMDisk) and publishes the scratch volume;
+# builds like the other storage drivers from storage-abi/include.
+CONFIG_XNU_NATIVE_RAM_BLOCK=y
+CONFIG_XNU_NATIVE_VIRTIO_CONSOLE=n
+CONFIG_XNU_NATIVE_OFFLINE_GPU=n
+CONFIG_XNU_SHENG_PMGR=y
+CONFIG_XNU_SOURCE_MOCKFS=n
+CONFIG_XNU_ARMVIRT_PLATFORM=n
+CONFIG_XNU_ZONE_PGZ_ALIGNMENT_PROBE=n
+# owner lane: needs the macOS-produced policy staged in .cache/firmware.
+# Round 25: the two-volume bundle (OS + SystemOS, one committed anchor) —
+# ci-owner-policy.sh builds verified-root-os-xnu-bundle via
+# build-verified-root-probe.py --include-systemos.
+CONFIG_XNU_VERIFIED_ROOT_PROBE=y
+CONFIG_XNU_VERIFIED_ROOT_ARCHIVE="{tree}/build/verified-root-os-xnu-bundle/libVerifiedRootProbe.a"
+# The verified-block root authorizer (native_verified_block_root_authorized in
+# bsd_init's root authentication); single-policy bundle mode matches the
+# single-window OS image. Round 23: root mounted, bsd_init.c:1100
+# "rootvp not authenticated" — the owner decision must answer the check.
+CONFIG_XNU_NATIVE_VIRTIO_BLOCK_ARCHIVE="{tree}/build/native-virtio-block-verified-bundle/libNativeVirtioBlock.a"
+CONFIG_XNU_OWNER_ROOT_AUDIT=y
+CONFIG_XNU_OWNER_ROOT_TRUST=y
+# Round 25 (stage 7): launchd exec'd, dyld died on "Library not loaded:
+# /usr/lib/libSystem.B.dylib (no dyld cache)" — the cryptex SystemOS volume
+# is the second window and the owner cache mount unions it over "/". The
+# cache volume UUID is the donor cryptex volume (fuxi's kern_exec default,
+# pinned here because ci-owner-policy.sh signs exactly this volume).
+# Round 30 (stage 8): tzinit exits 30 on the /var/db/timezone/zoneinfo
+# symlink (EROFS — no Data volume); the RAM-backed Data seed arrives via the
+# ESP scratch-data.img handoff (DarwinBoot PackedRAMDisk → NativeRamBlock),
+# so the Data mount turns on against the seeded scratch volume.
+CONFIG_XNU_OWNER_CACHE_VOLUME_UUID="8846FE78-2910-4297-AF97-D59BB6F8FC16"
+CONFIG_XNU_OWNER_CACHE_MOUNT=y
+CONFIG_XNU_OWNER_CACHE_STARTUP=y
+CONFIG_XNU_OWNER_BOOT_MANIFEST=y
+CONFIG_XNU_OWNER_UNION_SYSTEMOS=y
+CONFIG_XNU_OWNER_DATA_MOUNT=y
+# Same rationale as m2381_defconfig: the kern_exec hook needs
+# XNU_BOOT_PROGRESS=1 so BootWatchdogPolicy stops the watchdogd panic, and
+# the telemetry zeros from build-boot-progress-telemetry.py satisfy this
+# ld64's unresolved-weak-reference error.
+CONFIG_XNU_BOOT_PROGRESS=y
+
+# The Data volume UUID the OWNER_DATA_MOUNT path matches; ci-owner-policy.sh
+# forces the same UUID into the generated Data seed (diskutil changeVolumeUUID).
+CONFIG_XNU_OWNER_DATA_VOLUME_UUID="18AB5557-DC2D-469B-8758-855E60F5B0DF"
