@@ -1,11 +1,18 @@
 # m2381 施工骨架（P0 产出，2026-10-23；P1 会话修订同日）
 
+> **历史定位（2026-10-27 复核标注）**：本文 = P0/P1 时代的施工骨架记录，
+> 阶段表（§5）与取证手段引用仍有效；但文中**所有 donor 相关税值已被取代
+> 两次**（20H392 → 21H16 → 现役 **iPad7,1 / 21H461**）：§2 `[ipsw]` 行、
+> §4 的 `ipsw fetch` 路径、AMFI 值（现役 = `0xfffffff005ab4ae0`）均以
+> 设备仓 `board.toml` / `docs/STATE.md` 为准，勿按本文执行。平台级结论
+> （shengPkg 骨架 + mars blob、ESP 载荷窗口算术、无 CmdBoot）全部成立。
+
 > 输入：上游 `docs/porting/` 五篇 + `docs/devices/fuxi.md` + nx729j 三份
 > playbook（`reference/UniXNU-nx729j/`）。本文只记 m2381 的结论与差异，通用
 > 流程不重复，出处见上。
 >
 > **P1 修订（2026-10-23 晚）**：① P2 基座改为 shengPkg 骨架 + mars blob
-> （§0/§3，评估记录见 STATE §1/§5-A3）；② 内核步只能在 macOS（xcodebuild
+> （§0/§3，评估记录见 `docs/archive/STATE-history.md` §1/§5）；② 内核步只能在 macOS（xcodebuild
 > + iphoneos SDK，本机实测），Linux 侧到该缺口为止全链路已跑通；③ payload
 > 走 ESP 的依据从"忽略 ramdisk"升级为窗口算术（~85MB 装不下 192MiB ramdisk
 > 载荷，RdLoad 负值必拒载）。
@@ -64,8 +71,9 @@ nx729j 经验：`sheng-` 前缀内核参数（`sheng-pmgr=2`、`sheng-touch=4`�
 | `[[bootimg.dtb_node]]` | 预计**不需要**追加 splash_region：stock FDT 已有 cont_splash_region 0xb8000000+0x2b00000（与 nx729j 同款判断）；以预检 vs DTB 比对为准 | [DTB] 待核 |
 
 [TODO]（P1 更新）：`unique-chip-id` **已定**（软件种子 `3645ad55d47e77c1`，
-设备无可暴露硬件序列号，STATE §1）；stock fastboot 包本地未找到，改用
-**实机 GPT 直读**闭环几何（三源吻合，STATE §2），stock 包留作以后第四源；
+设备无可暴露硬件序列号，history §1）；stock fastboot 包本地未找到，改用
+**实机 GPT 直读**闭环几何（三源吻合，值在设备仓 `board.toml`），stock 包
+留作以后第四源；
 刷机窗口 `fastboot getvar current-slot` + `partition-size:userdata` 形式
 复核仍留。另 [TODO P3] root_match_volume_uuid / OWNER_DATA_VOLUME_UUID、
 已 derive（2026-10-24）：slide `-0x1000000`、AMFI early init `0xfffffff008f3bd18`（三重指纹法）；text_fixups 留待 P4。
@@ -145,7 +153,7 @@ python3 scripts/check-m2381.py --uefi <同上>   # 预检挡 TODO 值与不一�
 | arm64e donor（21H16）上机风险 | 中 | NativePrelink 已放宽 subtype 门 + 源段包含解析（kit 26 测试绿 + 真件干跑）；PAC 指针语义与 prelink 报告 = CI/上机门终审 |
 | 面板 cmd-mode DSC 初始化 | 中 | stock FDT 有完整 init 序列，照 `build-native-legacy-display.py` 输入格式转换（nx729j 同款待办） |
 
-## 7. 立即行动（P1 已完成 2026-10-23；下一步 = STATE §7）
+## 7. 立即行动（P1 已完成 2026-10-23；下一步 = `docs/STATE.md` §7 工作单）
 
 1. ~~消化 nura 资产~~ **完成**（现役镜像对拍 ✓、P2 基座评估 → shengPkg+
    mars、ABL 约束逐条对回源文档并新增 KEP/栅栏/kernel-log 三条）。

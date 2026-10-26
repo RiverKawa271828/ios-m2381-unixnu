@@ -1,20 +1,19 @@
 # 云端构建（GitHub Actions）
 
-## 现状（2026-10-23）
+## 现役（2026-10-27）
 
-- 本仓自己的 workflow：**无**。旧 16K 内核构建 `xnu-16k.yml` 随 B2 废弃删除
-  （文件内容可在 git 历史查：删除前的 `.github/workflows/xnu-16k.yml`）。
-- 上游的 `docs.yml` / `macos.yml` / `terminal.yml` 随 rebase 进入本仓树，push
-  会触发它们——在 GitHub Actions 页面逐个 **Disable**（只禁用、不改文件，
-  避免以后每次 rebase 都多一处冲突）。
-
-## 未来 CI（待设备落地后加）
-
-- `uefi.yml`：Linux 构建 m2381Pkg FV（EDK2 CLANGPDB），等
-  `devices/m2381/uefi/m2381Pkg` 落地后加。
-- 设备仓构建：`unixnu` 构建树吃 `unixnu-m2381` 的流水，先本机跑通再考虑。
+- **`macos.yml` = 内核/userdata/payload 正式车道**（上游带来，
+  workflow_dispatch）：`steps="kernel userdata payload"`，`device_ref` =
+  设备仓 orphan 分支 `device-m2381`（`pre_build` = ci-owner-policy，换装
+  fork 驱动/kit、补 staging）；全绿先例 run `40237299244`（2026-10-26），
+  取件流程与产物契约见 `docs/archive/PLAN-P3-CI.md`。
+- kernel 步只能 macOS（xcodebuild + iphoneos SDK）；Linux 侧全链路本机
+  已跑通（上游 PR#100 工具链，见 docs/UPSTREAM.md §1.1 同步记录）。
+- `docs.yml` / `terminal.yml` / `porting-record.yml`：上游文档/工具
+  workflow，未用；在 Actions 页**禁用**（只禁用不改文件，避免每次 rebase
+  多一处冲突）。
 
 ## 本地构建优先
 
-路线 A 的构建主体（unixnu 构建树 + Mu-Silicium）都在本机/参照树里跑；CI 只
-做回归，不做首发。
+日常出件在本机 Linux：defconfig / fetch / tree / payload / bootimg 全链路
+（`out/m2381/`，出件纪律见 docs/FLASHING.md §3）；CI 出正式件与回归。
