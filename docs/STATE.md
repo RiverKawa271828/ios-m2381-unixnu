@@ -936,7 +936,53 @@ sheng-log 窗与 Data store（尾 1GiB reserve 内）原样保留。
 - **本会话产出补记**：recovery 件 `3bafb6b9`；panic 地址符号化方法入册
   （llvm-nm + unstripped noctf，跨小构建对 kern_exec 段有效）。
 
-## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）
+## 0.22 2026-10-26 续九：日志窗读回定谳 = ENOSPC（Data 卷满），撕裂假设死亡；刷 3bafb6b9 复位变体
+
+- **读回（nura-min + NCM，全程 <1 分钟）**：32MiB 窗 dd 回 `temp/logwindow.img`
+  （md5 e01d352a 设备/宿主一致，`SHLOG001` 头在）；顺带 dd boot_b/recovery_a
+  对拍 = mu-r91 首 1.1MiB、esp-v71 全 100MiB **逐字节一致**（nura 链刷写质量
+  过）。解析件 `temp/r41a-log.txt`（41k 行）+ `temp/r41a-msg.txt`。
+- **三读定谳**：
+  1. `[panic]` errno = **28 = ENOSPC**（非 EROFS/30）——撕裂假设死亡；
+  2. `[data]` `D st=2` = resumed **正常**，`wr=12 cm=5 er=0`——持久化机制
+     零错误，把 r40 的满卷状态完好带回；`S st=1 dirs=0 files=0 fail=1 err=28`
+     （staged-apps 首个 mkdir 就 ENOSPC，什么都没写成）；
+  3. 写手运行期实证：state=2、write_errors=0、长引导 447 轮覆盖 ~894s
+     （≈15min）+ 最后一次引导 25 轮 48s（用户重启复测第二轮，其 25 槽覆盖
+     环头——槽位 25/26 边界 IRQ 31932→31415 倒退/free +4 = 两引导接缝，
+     头部 rounds=25 只是末次引导收尾，写手全程健康）。
+- **死因链（msgbuf 铁证）**：`disk1s1 OwnerData` = **32MiB** APFS 卷
+  （8192×4K，正对 D 行 pages=8192 的 RamBlock 窗口）；挂载即
+  `smfree 209/8192`（**95.54% 满**）+ lowdisk notification；policy 的
+  disabled.plist `O_TRUNC` 收缩事务被拒（`fs_tx_enter: ENOSPC num_blocks 127
+  free_blocks 209 threshold_blocks 100` → `cannot enter tx size 3 to shrink
+  ino 506 to 0; 28`）→ panic。r40 的 12 分钟 daemon 运行填满了 32MiB 卷，
+  断电持久化把满卷带回，r41a 两次引导都在第一笔写上死。
+- **修复（工作单第 3 步，假设"成立"分支）**：**`sheng-data-reset=1`** =
+  RamBlock 丢弃持久化页不应用（`drivers/RamBlock/NativeRamBlock.cpp`
+  `discardRequested()`，当前内核实证在）→ Data 回新鲜种子 → policy 应过。
+  **为什么必须用内核内复位而不是重刷 userdata**：D-store 在分区尾
+  （绝对 4K LBA `0x75dfff9` ≈ 471GiB 处），12GB userdata 件只写分区头部，
+  **重刷 userdata 不清 D-store**。
+- **用户刷写卡（单通道，slot=b，先 getvar 对拍）**：
+  1. `fastboot getvar current-slot` 必须 = b
+  2. `fastboot flash boot_b devices/m2381/unixnu-m2381/build/m2381/boot/boot.img`
+     （a1d51f04；nura 链把 boot_b 换成了 mu-r91，iOS UEFI 需回装）
+  3. `fastboot flash recovery_a out/m2381/payload/payload-data-reset-1.img`
+     （3bafb6b9；已验证参数行含 `sheng-data-reset=1`）
+  4. `fastboot flash userdata out/m2381/ci-artifacts/userdata-root.img`
+     （fd43ee70；现 userdata = nura-min Linux root，必须换回 iOS root）
+  起机后 ~2-3min 拍照：期望 stage 走过 `temporary watchdog launch policy
+  ready`、spawn= 开始爬、页首行 `log=2 r<N> e0`。
+- **遗留结构项（观测窗口受限）**：32MiB Data 卷会被再次填满（r40 用了
+  ~12min），且 32MiB 本身在 APFS lowdisk 阈值之下（挂载即告警，daemon 从
+  第一秒就看到 lowdisk）——队列步速观测是限时窗口；扩容 = OwnerData
+  fixture 卷 + RamBlock pages=8192 双侧改，列为 r41 观测后的下一个主题。
+- 回滚件不变：boot_b←a1d51f04（本卡第 2 步即回装）、userdata←fd43ee70
+  （第 4 步即回装）；r41a 原始证据 = `temp/logwindow.img` +
+  `temp/r41a-log.txt`（本地，不入 git）。
+
+## 7.2 下会话工作单（2026-10-26 定；r41a panic 取证 → 修复 → 步速观测恢复）【已执行，判决见 §0.22】
 
 **会话开始前的用户操作（fastboot，单通道，slot=b，各件先 sha256 对拍）**：
 1. `fastboot flash boot_b mu-r91-350386e0.img`
