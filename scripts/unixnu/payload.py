@@ -180,12 +180,13 @@ def build(ctx, kernel=None):
     forensic = spec.get('forensic')
     if forensic:
         fdir = ctx.device / (forensic if isinstance(forensic, str) else '.cache/forensic')
-        for name in ('forensic-kernel.efi', 'forensic-initrd.img'):
+        for name in ('forensic-kernel.efi', 'forensic-initrd.img', 'forensic.dtb'):
             if not (fdir / name).is_file():
                 raise Error(f'forensic reader file missing: {fdir / name} '
                             '(build it with devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py)')
         shutil.copyfile(fdir / 'forensic-kernel.efi', payloads / 'forensic-kernel.efi')
         shutil.copyfile(fdir / 'forensic-initrd.img', payloads / 'forensic-initrd.img')
+        shutil.copyfile(fdir / 'forensic.dtb', payloads / 'forensic.dtb')
     if ctx.schema_version == 2:
         from .devicetree import compile_hardware, generate
         dtb = compile_hardware(ctx)
@@ -239,8 +240,12 @@ def build(ctx, kernel=None):
     if spec.get('tools'):
         config += ('[[entry]]\nid = "tools"\ntitle = "Tools"\ntype = "action"\naction = "tools"\n')
     if spec.get('forensic'):
+        # dtb: without it the Linux EFI stub falls back to the firmware's FDT
+        # config table (meaningless to a qcom kernel — instant exit, back to
+        # the menu); the board DTB that matches the reader kernel goes with it.
         config += ('[[entry]]\nid = "forensic"\ntitle = "m2381 forensic log reader"\ntype = "linux"\n'
                    'path = "Payloads/forensic-kernel.efi"\ninitrd = "Payloads/forensic-initrd.img"\n'
+                   'dtb = "Payloads/forensic.dtb"\n'
                    'args = "earlycon=efifb console=tty1 loglevel=4 consoleblank=0 quiet"\n')
     (stage / 'EFI/UniXNU/unixnu.toml').write_text(config)
     for path in [stage, *stage.rglob('*')]:
