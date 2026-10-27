@@ -134,6 +134,6 @@
 |---|---|---|
 | boot_b | 96MiB（100,663,296B） | BootShim + UEFI FV（约 3MB） |
 | recovery_a | 100MiB | 100MiB FAT32 ESP（UniXNU.efi + kernel + ADT + toml） |
-| userdata | 12GB | 现有 r34 iOS16 root，不动 |
+| userdata | 12GB | CI 重建 iOS root（fd43ee70）；尾部 32MiB = SHLOG 取证窗（只读，FLASHING §7） |
 
 > `fastboot getvar current-slot` 必须 = b；`fastboot boot` 在本机是死路。

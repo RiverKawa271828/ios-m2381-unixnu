@@ -5,7 +5,7 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r55d 实测定谳 + r55e 待刷，2026-10-27）
+## 1. 一句话现状（r55e 现役 + 取证读窗通道立通，2026-10-27）
 
 **=y 显示车道**：r53 fixup 11 生效（applied 6），SB 推进 BLSHBacklightHost
 brk 新墙；r54/r55 系 = fixup 12 + forensic reader（iOS 判读被 reader
@@ -23,15 +23,16 @@ brk 新墙；r54/r55 系 = fixup 12 + forensic reader（iOS 判读被 reader
 无 /init → `VFS: Unable to mount root fs on unknown-block(0,0)` → USB
 永不出现；根因 = build-forensic-reader.py 手写 cpio **12 字段错位**
 （newc 契约 13 字段，fuxi 母版即 13）——LoadFile2 投递链实拍证明是通
-的；⑤**r55e（b060b512，只换 initrd = 402fb431）已出件待刷**。下会话
-= STATE §7.2 reader 第一测（判定以 lsusb 1d6b:0104 为准，黑屏不阻塞）。
+的；⑤**r55e（b060b512，只换 initrd = 402fb431）已刷 + 读回对拍 + 通道
+首验全绿**（lsusb 1d6b:0104 / magic=SHLOG001 / 32MiB 窗在位；reader 内
+dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 2. 设备现状（2026-10-27 r54 后 = **iOS 链现役**，未刷回 nura）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | r55d（fixup 12 + forensic reader + 保命 cmdline） | `087f9ca3` | **现役已上电**（r55e 刷写后即被替代） |
+| recovery_a | r55e（fixup 12 + forensic reader + 保命 cmdline，initrd 修复版） | `b060b512` | **现役**（已刷 + 读回对拍 + 通道首验 ✓） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
@@ -200,7 +201,7 @@ unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
 6. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
-## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
+## 8. 轮次索引（r43 → r55e；详情 = commit message + STATE-history 对应节）
 
 | 轮 | payload | 定谳 | 详情 |
 |---|---|---|---|
@@ -215,4 +216,7 @@ unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
 | r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙） | PLAN-display-lane.md |
 | r52 | `22f8f0bd` | **=y 一级实机全过**（PE handoff+真显示配置+swap+屏幕自稳）；SB 崩溃循环定谳 = BannerKit displayConfiguration 断言（深抛者钉死+验活）；设备回 nura-min | history §0.35 |
 | r53 | `04f4d803` | **fixup 11 生效**（applied 5→6，BannerKit ret）；SB 推进到 BLSHBacklightHost brk 新墙（sig5）；W1 swap 异常→撕裂 logo 新观察 | history §0.36 |
-| r55 | `fb2c5dd1` | r54（fixup 12，BLSHBacklightHost 入口返 nil，裸件 1ef5eb63）+ **forensic 内置取证 reader**（type=linux entry，FLASHING §7）；读窗循环脱 nura-min；待刷 | history §0.37 |
+| r54 | `1ef5eb63`（裸件） | fixup 12（BLSHBacklightHost 入口返 nil）；判读被 reader 调试顺延 | history §0.37 |
+| r55a–c | `fb2c5dd1`→`69538b41` | reader 三连翻车定谳：LFN 毁（短名覆盖 toml）→ entry 缺 dtb 秒退 → ENABLE_SECUREBOOT=1 拒签（boot_b 换 `289614ba`）；payload.py 插桩转正 | history §0.37 |
+| r55d | `087f9ca3` | 保命 cmdline 定谳：内核每必起（企鹅/UFS 全枚举），死因 = **initramfs cpio 手写 12 字段错位**（damaged header 实拍）→ root panic → 无 USB 同根因；LoadFile2 投递链实证是通的 | history §0.38/0.39 |
+| r55e | `b060b512` | **取证 reader 通道立通**（1d6b:0104 + magic=SHLOG001 + 32MiB 窗在位）；reader 内读回对拍闭环；iOS 判读待控制变量跑 | history §0.39/0.40 |
