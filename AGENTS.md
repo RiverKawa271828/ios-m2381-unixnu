@@ -139,33 +139,47 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r62 已刷未判**：2026-10-28 刷写实录 + 用户报未起；下会话 reader 三连 → 判读；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r62 已判读定谳（2026-10-28）**：体系三件实锤生效、旧墙
+链全灭、垃圾族升级为垃圾控制流；r63 = UIKit 侧候选；工作单 =
+`docs/STATE.md` §7）
 
-1. **调研定谳（2026-10-28，上游设备目录 f85b5a6→0fc0fc1）**：①
+1. **r62 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
+   （recovery_a = **sde27**，前 96MiB sha == `0854ea5e…db1a`；坑 =
+   勿按 sda 大 LUN 猜节点，FLASHING §6 实测表为准；ACM 推大文本会
+   丢字节，比对走设备端 sha）。窗 rounds=291/509 uptime=605s 无回
+   卷。**体系三件生效**：①AKS 替身活了（opens 3→18 / calls 6→49，
+   selector 0:18/7:15/14:1/17:15）；②vsync 生效（hz=120 start=1
+   refresh=1 + IOMFBDisplayRefresh）；③client=0 生效（探针客户端消
+   失；剩余 C0 = **IOMFB_FDR_Loader pid=75** 真实消费者——r52
+   "C0=自设探针"的修正再修正：**C0 本来就是 IOMFB**）。applied=67
+   （23 parsed）未跌破 14 = 环境未愈合；旧墙链全灭（nil/unspecified/
+   XB/displayIdentity 全零 + sig6=0，r57–r60 五墙封死确认）；**换墙
+   = SB sig11 ×520 垃圾控制流**（unslid PC `0x1822F5FAC` = cstring
+   区野跳，字符串当指令执行后 FAR=0xf1；fp 链全废）——0xf00/0xf1 族
+   从"有效码+垃圾操作数"升级为"垃圾 PC"。SB 整程 respawn 循环未过
+   wallpaper/封面层；procs=200/spawn=1003；SWAP 有真活动（accepted=1
+   COPY 10.3MB）。
+2. **r63 = UIKit 侧体系候选轮**（预案三分支第一支触发）：①**全指定
+   TC 构造**（首选）——r60 教训 = bgTC 占位 TC 故意全 unspecified
+   （scale=0.0），是 unspecified 墙与垃圾族共同上游；构造真字段齐全
+   的 fallback TC（scale=3.0 / m2381 面板 1080×2400@120Hz 指定）替换
+   fixup14 的 bl 目标；②**UIKit 缓存全局审计**（病根直击）——对
+   r62 死点邻域 __DATA 单例槽枚举文件值 rebase 目标批量定性，找初始
+   值依赖显示环境的全局槽批；③NSAssertionHandler log-only 类杀降级
+   （断言墙已全灭无对象可杀）；④C0=IOMFB_FDR_Loader sel6 失败簇 =
+   displayless 的果非因，不阻塞 r63，垃圾族治愈后若仍卡 keybag/锁屏
+   回头查 IOMFBDisplayRefresh 发布链。
+3. **调研定谳存档（2026-10-28，上游设备目录 f85b5a6→0fc0fc1）**：①
    text_fixups 全清单——sheng=4 条基线、fuxi=0 条，**没有过墙板携带
    显示族 fixup**（我们 23 条 = 4 基线 + 19 条 displayless kill 族）；
    ②过墙板模板（asteroids 桌面 / oneplus13t 无 GPU 锁屏 / pong 主屏 /
    negroni SB+touch）= **AKS 替身 + sheng-vsync + client 关闭**；
-   asteroids T20-T29 实证"无 AKS 替身 SB 永远跑不完 boot"；r52 的
-   "mfb C0 sel6 失败"嫌疑 = 自设探针客户端（已关），权重大降。
-2. **r62 已刷（2026-10-28，fastboot 实录 OKAY）**：KeyStoreProbe.cpp
-   （sheng 原版）+ AppleKeyStoreState 组件编进 display archive
-   （`b6daee99` 七成员）+ `sheng-vsync=120` + `offline-mobile-
-   graphics-client=0`；23 条 fixups 全保留（惰性 oracle：环境愈合 →
-   applied 跌破 14 = 定量信号）。kernel `542300ca` / 探针后
-   `158adedb` / ADT `b5b4a172`。**现役 recovery_a = `0854ea5e`（读回
-   对拍待补）；用户报未起（细节待窗）。**
-3. **下会话第一 act = reader 三连**：fastboot（电源+音量减）→
-   `fastboot reboot` → 菜选 forensic reader → ①dd recovery_a 前 96MiB
-   sha == `0854ea5e…db1a` ②fetchchunk 拉窗（先看 header rounds，跑
-   时长未记录可能回卷，按 r53 分段纪律）③判读六项（AKS 行 / vsync /
-   C0 消失 / applied 跌破 14？/ 旧墙复活面 / SEGV 垃圾族）。nura-min
-   只作 reader 失败回退（届时只刷 recovery_a=nura ESP，boot_b 不动，
-   三件全刷规矩恢复生效）。
-4. **r63 备选（按判读分支）**：SEGV 垃圾族仍在 → 全指定 TC 构造 /
-   UIKit 缓存全局审计 / NSAssertionHandler log-only 类杀（勘址已毕
-   0x1874494d4/0x187449618，砍 raise 留 NSLog 日志信号）；AKS 零行 →
-   查组件链接面（nm 查 native_aks_* 符号）。
+   asteroids T20-T29 实证"无 AKS 替身 SB 永远跑不完 boot"。③UniXNU
+   系全用 iPad donor（30 个 format-2 全 = ipados-17.7.11-21H461）；
+   iPhone 用户态实证在 Bergamota/ios-sweet 系（Poco F1 → 未修改
+   iPhone XR iOS 18.7.8 22H352 用户态到 SpringBoard/主屏，markakash
+   正在 SM8550 小米 13 Ultra 上起步同路线，kernel = xnu-11215）——
+   换 iOS 用户态 = 换基座独立大主题，非 r6x 修复项。
 5. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
