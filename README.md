@@ -5,17 +5,17 @@
 `devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
 （Mu-Silicium UEFI）。
 
-## 进度（2026-10-27，r57 判读 = displayIdentity 破墙 / r58 已出件）
+## 进度（2026-10-27，r58 判读 = XB 断言墙破 + SB 进应用装载 / r59 已出件）
 
-**全链真机在跑**：UEFI → XNU → launchd → 178 进程用户态（configd /
+**全链真机在跑**：UEFI → XNU → launchd → 175 进程用户态（configd /
 sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
-（W1–W3 三连，1080×2400 @ GOP 0xb8000000，r57 起 t≈85s 即上屏），
-**SpringBoard 已在面板画 boot progress 菊花**（实拍）。
-当前在 **SpringBoard fixups 快速迭代**：新墙 = XBApplicationController
-'invalid mainDisplay configuration' 断言（r57 定谳 ×560 同死点；fixup
-10a/10b = r58 `d27c4f36` 已出件待刷）。
+（1080×2400 @ GOP 0xb8000000，t≈86s 即上屏），**SpringBoard 已画
+boot progress 菊花并开始装载应用库**（SBApplicationController init 链
+实跑）。当前在 **SpringBoard fixups 快速迭代**：新墙 = UIScreen
+mainScreen 一族 SIGSEGV（r58 定谳 ×588 同死点；fixup 13a/13b 双入口
+返 nil = r59 `a9144765` 已出件待刷）。
 
-- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r58，每轮
+- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r59，每轮
   payload sha + 定谳一句话）；全量判定档案在
   [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
   §0.24–0.41 与各轮 commit message。
@@ -69,7 +69,7 @@ main + 工作区提交，跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREA
 - `artifacts/vendor/`：OEM UEFI DXE blobs（m2381Pkg FV 备选）
 - `reference/`：上游/模板克隆（清单与 pin 见 docs/UPSTREAM.md §1）
 - `research/`：21H461 IPSW、KDK 15.8.2、ipsw CLI
-- `out/m2381/`：现役件（平铺 payload，现役 r58 `d27c4f36`；kernel
+- `out/m2381/`：现役件（平铺 payload，现役 r59 `a9144765`；kernel
   三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
   reader-*-log.bin）
 - `temp/`：符号化/取证工具与各轮日志窗（方法 =
