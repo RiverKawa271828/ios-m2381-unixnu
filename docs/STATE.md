@@ -141,9 +141,11 @@ rebootbl 回 fastboot），**读窗循环脱离 nura-min、不再刷 8.7GB userd
 
 ## 7. 下一步（r55 实测工作单——2026-10-27 交接，设备 = iOS 链现役）
 
-1. **r55 只刷 recovery_a**（现态 iOS 链未被 nura 覆盖，快捷卡合法，
-   见 §2）：`fastboot flash recovery_a out/m2381/payload-r55-fb2c5dd1.img`
-   （刷前 sha 门 fb2c5dd1）→ `fastboot reboot`。
+1. ~~r55 刷写~~ ✅ 本会话已刷（2026-10-27）：设备 fastboot 态
+   （用户提前进好），current-slot=b ✅、刷前 sha 门 fb2c5dd1 ✅、
+   `flash recovery_a` OKAY（2.6s/0.03s）、分区尺寸 0x6400000 一致、
+   `fastboot reboot` 已离开 fastboot（ABL 接管）。读回验证 = reader
+   本身就是通道（见 2②）；boot_b/userdata 未动。
 2. **r55 双判读**：①iOS 引导照常（default=xnu，3 秒超时自动进）——
    fixup 12 判读 = `parsed=15 applied=7` + BLSHBacklightHost 换墙符号
    化 + W1 swap 复现性；等待 ~10-20 分钟后断电（SB 循环照旧记时间）。
