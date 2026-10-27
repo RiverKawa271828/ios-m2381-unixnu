@@ -5,8 +5,10 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r64 = 缓存全局审计轮已出件 `54b70ad7` 待刷，
-静态定谳毒在运行时写路径 + UIKitCacheProbe 内核探针随件，2026-10-28）
+## 1. 一句话现状（r64 = 缓存全局审计轮**已刷已判**（`54b70ad7`，
+2026-10-28：读回对拍 ✓；**毒在 SB 首扫前就位（首轮见 21003 非零 +
+44 小值槽，t≈20s）**；探针线程首轮后停摆（X5 索引 slide 双加越界，
+源码已修），t 序列丢失 → r65 = 探针修复版 + 扫描面扩大）
 
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
@@ -300,39 +302,48 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r64 已出件 `54b70ad7` 待刷（2026-10-28）**：缓存全局
-审计轮 = 静态定谳"毒在运行时写路径" + UIKitCacheProbe 动态探针随件；
-刷后判读 = UKC 行 t 序列，见 §1 r64 出件）
+## 7. 下一步（**r64 已判读（2026-10-28，reader 三连全过）**：读回对拍
+sde27 == `54b70ad7…97ec` ✓；**毒在 SB 首扫前已就位（首轮扫描即见
+n21003 非零 + 44 小值槽，t≈20s）**；探针线程首轮后停摆（X5 索引
+slide 双加越界读，t 序列丢失，源码已修）→ **r65 = 探针修复版 +
+扫描面扩大**）
 
-1. **刷写卡（r64 = 只刷 recovery_a，设备自 r63 刷后状态未变）**：
-   fastboot（电源+音量减）→ `getvar current-slot` 必须 = b →
-   sha 门 `54b70ad79a78…815e97ec` → `flash recovery_a
-   payload-r64-54b70ad7.img` → reboot → 跑 8–15 分硬断电（17 分钟
-   回卷红线）。
-2. **r64 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
-   `54b70ad7…`，节点 = **sde27** 勿猜 sda → fetchchunk 拉窗）→
-   **UKC 行四件（本判读主菜，ext 行 X4-X7 逐 2s 一槽的 t 序列）**：
-   ①X5 的 M/B 两槽值何时从 0 变非 0、变出的值是合法指针（0x1xxxxxxx
-   量级）还是小整数垃圾（0xf00/0xf1 族）——**首次变垃圾的 tick 与
-   槽址（X6 首垃圾事件 + X7 最近变更事件）**；②X4 的 n/g 计数走势
-   （g>0 从哪个 tick 起）；③首垃圾槽址对照静态清单定性（bgTC 槽 /
-   mainScreen 槽 / ObjC 类结构 / once 域）；④垃圾值跨 tick 是否稳定
-   ——判"数据常量写入"vs"确定性页内偏移"vs"级联扩散"。
-   回归六项照旧：applied（r63=69）/ AKS 行（r63 opens=123 calls=1121）
-   / vsync 120 / C0 形态 / 旧墙复活面 / SB sig11 族计数与死点。
-3. **判读后分支**：若 UKC 行在 SB 首崩（t≈66s 族）前就出现垃圾 →
-   毒源在更早进程/更早阶段（改 `uikit-cache-proc=` 逐进程扫，或提
-   轮询密度）；若垃圾与 SB 崩溃同时出现 → once 域/构造路径为病灶，
-   r65 = 对首垃圾槽的写路径做 fixup 级手术（log-only 化或改道）；
-   若 UKC 行全程零垃圾但 SB 照崩 → 毒在 __DATA_DIRTY 之外（扩窗到
-   __DATA/其他库，或转向堆/栈侧）。
-4. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 失败簇是
-   displayless 的果不是因；不阻塞 r64，垃圾族治愈后若仍卡 keybag/
+1. **r64 判读定谳（2026-10-28，详见 rounds.md r64 judgment 行）**：
+   ①UKC 主菜部分损失——探针首轮成功扫描（X4 冻结 `k1 st0
+   +15850000 n21003 g44`，slide = 真 SB slide）就见 21003 非零槽 +
+   **44 个 <0x1000000 小值槽**，同槽 AKS 才 opens=2（SB 生命起点）；
+   但线程在 put(4) 后死于 put(5) 的越界读（源码 bug：`(SLOT+slide−
+   UK_DIRTY_BASE)/8` 把 slide 双加 → 越界 ~345MB；编译件四格式串都在
+   = 源码即编译码），X5-X7 永空，k 冻 1，**槽级 t 序列没拿到**。修复
+   已入 package/UIKitCacheProbe.c（双份同步）：索引去 slide + 范围
+   钳制。②applied 69→21（parsed 25）——大幅回落但未破 14 愈合线，
+   大概率跟随 respawn 负载减半（spawn 419 vs r63 968）。③垃圾族未
+   愈：SB sig11 ×268/576s，死点仍是 r61/r63 同点（unslid PC
+   0x1800F5FAC objc_retain 快路径，FAR=0xf1）；老 sig6 墙零出现。
+   ④AKS alive（终态 opens=91/calls=763）、vsync 120 ✓。⑤窗尾混
+   r63 尾 13 槽（AKS 123/1121 = r63 终态，确定性 respawn 行为巧合，
+   非 stale 刷写）。⑥procs=91/spawn=419；DISPLAY stage=10 与 r61/r63
+   同；SB 未过 wallpaper。
+2. **r65 工作单 = 探针修复版 + 扫描面扩大（补回 t 序列主菜）**：
+   ①重编 UIKitCacheProbe（修复已入源码）——预期 X5=M/B 槽值、
+   X6=首垃圾事件（tick+槽址+值）、X7=最近变更，k 逐 tick 递增。
+   ②**扫描面扩大**：毒在 SB 首扫前就位 → 写毒者更早。两案：
+   (a) `uikit-cache-proc=` 逐进程点名扫（先扫 backboardd 等
+   UIKit 常驻进程）；(b) 扫描所有映射 UIKitCore 的任务（proc_iterate
+   全表 + 逐 task 试读 UK_DIRTY_BASE+task_slide，2s 一轮可行），
+   首个出垃圾的进程+槽址+值 = 写毒宿主。推荐 (b)，一枪定性。
+   ③判读分支照 §7 旧 3 条：首垃圾进程非 SB → 毒源进程级传播链；
+   SB 加载极早期（dyld/objc initialize）→ once 域/构造手术；全程
+   零小值 → 扩窗 __DATA/其他库。④垃圾判据升级备选：GARBAGE_LIMIT
+   0x1000000 会把锁/计数器等合法小值计入 g44——修复版 X6 有槽址+
+   值，可对照静态清单（temp/audit64-slots.py）把 44 个槽逐一定性。
+3. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 失败簇是
+   displayless 的果不是因；不阻塞，垃圾族治愈后若仍卡 keybag/
    锁屏，回头查 IOMFBDisplayRefresh 发布链。
-5. **出件/刷写/判读纪律不变**：payload 配方三 flag + ESP 四样 +
+4. **出件/刷写/判读纪律不变**：payload 配方三 flag + ESP 四样 +
    fastboot sha 门 + reader 读回对拍（**recovery_a = sde27**，勿猜
    sda）+ fetchchunk + 17 分钟回卷红线。
-6. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
+5. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
    自动重置，方案在案）；XS/fileset-KC 重绑定器；arm64e 专项；
    GPU/触摸主题化（过墙板实证无 GPU 也能到锁屏，GPU 降为体验项）。
 
