@@ -53,6 +53,25 @@ client=0+vsync=120 / trustcache 在 / ADT PackedRAMDisk 在）。
 Sending+Writing recovery_a 98304KB OKAY / reboot）；**读回对拍 ✓ +
 判读已毕（2026-10-28，见下）**。
 
+**r63 判读定谳（2026-10-28）**：读回对拍 ✓（sde27 ==
+`04eb0533…d5691`）；窗 rounds=312/509 uptime=640s 无回卷；
+**fixup16a/16b 真执行**（applied 67→69，=+2 新站点各一）；AKS 爆发
+（opens 123 / calls 1121，r62 的 18/49 → 23 倍，t=22s 起）；vsync
+120 ✓；C0=IOMFB_FDR_Loader 换形（12 calls，失败选择子族
+e00002bc/c7/f0）；SWAP 泵大（calls=8222 / COPY 8221 / 10.3MB
+retired）；procs=194/spawn=968；**换墙 = SB sig11 ×554 同族未愈，
+死点漂回 r61 有效码点**（unslid PC `0x1800F5FAC` objc initialize 快
+路径 x0=0xf1；bt1 去滑 = 0x18A00DC50 = fixup14 getter 站点）——链
+路钉死 = **bgTC 缓存槽 0x1f48ce5e0 被写进 0xf1 垃圾**，病根在缓存全
+局槽的写路径（构造/once 域），在 TC 内容下游之前——全指定 TC 到位
+了但毒在更上游。**r64 = 缓存全局审计转正（线 2）**：①静态——枚举
+UIKit 单例槽（bgTC 0x1f48ce5e0 / mainScreen 槽 / 0xf00/0xf1 同族槽）
+文件值 + rebase/chained-fixup 目标定性；②动态——内核探针行
+（page snapshot ext slot 加 bgTC/mainScreen 槽值 dump，t 序列看
+0xf1 何时被谁写入；内核步本机 Linux 可出）；③0xf1/0xf00 特征 = 小
+整数带 F 高半字节 = "指针减错基"残留嫌疑（每次 boot slide 不同
+d20000/1a20c000/1c084000，跨 boot 残留一致的 0xf00/0xf1 需要解释）。
+
 **r62 判读定谳（2026-10-28）**：读回对拍闭环——recovery_a =
 **sde27**（FLASHING §6 实测表；先误探 sda10/11 为错节点，非异常），
 前 96MiB sha == `0854ea5e…db1a` ✓。窗 rounds=291/509 uptime=605s
@@ -253,8 +272,9 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r62 已判读定谳（2026-10-28）**：体系三件生效、垃圾族
-换墙升级为垃圾控制流；r63 = UIKit 侧候选，见 §1 定谳）
+## 7. 下一步（**r63 已刷已判（2026-10-28）**：fixup16 真执行但垃圾
+族未愈——死点漂回 r61 有效码点，病根钉死在缓存全局槽写路径；r64 =
+缓存全局审计（线 2 转正），见 §1 r63 定谳）
 
 **r63 = UIKit 侧体系候选轮**（§7 预案三分支第一支触发：AKS 行在 +
 SEGV 垃圾族在）。两个候选按序施工，r62 件（`0854ea5e`）仍现役待换：
@@ -319,3 +339,4 @@ SEGV 垃圾族在）。两个候选按序施工，r62 件（`0854ea5e`）仍现�
 | r60 | `edabbafd` | **traitCollection nil 断言墙破**（applied=14 + 'returned nil' 零出现）；换墙 = 同函数块 A scale≤0 报 "unspecified values" ×758（bg TC 故意全 unspecified，scale=0）；读回对拍即时闭环 | 本会话判读 |
 | r61 | `169f160c` | fixup 15a/15b 生效（applied=70 + 'unspecified' 断言零出现，nil/scale 块全死）；**换墙 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径 FAR=0xf1，与 r58 0xf00 同族——UIKit 缓存全局垃圾族定性）；**用户拍板：停逐发 fixup，下会话转体系路线（上游/fork 调研优先）** | 本会话判读 |
 | r62 | `0854ea5e` | **调研定谳 + 体系方案落地 + 判读定谳**：四过墙板模板（AKS 替身/vsync/client=0）三差距全补；已刷（10-28 fastboot 实录 OKAY）+ 读回对拍 ✓（sde27）+ 判读（10-28）：**体系三件实锤生效**（AKS opens 3→18 calls 6→49 / vsync hz=120 start+refresh / 探针客户端消失，C0=IOMFB_FDR_Loader 实为真实消费者——r52 嫌疑修正再修正）；applied=67 未跌破 14=环境未愈合；旧墙链全灭（r57–r60 五墙封死确认）；**换墙 = SB sig11 ×520 垃圾控制流**（unslid PC 0x1822F5FAC=cstring 区野跳，0xf00/0xf1 族升级）；r63 = UIKit 侧候选（全指定 TC / 缓存全局审计） | 出件+刷写 10-28，判读 10-28 |
+| r63 | `04eb0533` | **全指定 fallback TC + 判读定谳**：RE 定谳 bgTC 病理链（懒缓存 getter → _defaultTraitCollection → mainScreen + 栈块 setScale/setGamut）；fixup16a（cbz→nop）+ fixup16b（bl $scale→fmov d0,#2.0），25 条；**已刷已验已判（10-28，sde27 对拍 ✓）**：fixup16 真执行（applied 69）+ AKS 爆发（opens 123/calls 1121）+ SWAP 泵大（8222 calls）；**垃圾族未愈——死点漂回 r61 有效码点（0x1800F5FAC，x0=0xf1），链钉死 = bgTC 缓存槽被写 0xf1，病根在槽写路径**；r64 = 缓存全局审计转正 | 出件+刷写+判读 10-28 |
