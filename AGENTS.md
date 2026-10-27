@@ -139,34 +139,32 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r55e 判读 + r56 出件，下会话刷 r56 续迭代；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r56 废轮判读 + r57 已出件已刷，下会话取证判读；工作单 = `docs/STATE.md` §7）
 
-1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
-   ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
-   （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）；
-   ~~r55e 首轮 iOS 判读~~ ✅（applied=7 + W1–W3 真 swap + 换墙
-   displayIdentity 断言，见 §0.41）。
-2. **取证 reader 通道已立通（r55e = b060b512 现役，2026-10-27 闭环）**：
-   刷写读回对拍 ✓、lsusb 1d6b:0104、magic=SHLOG001、32MiB 窗在位。
-   宿主 = udev 规则 99-m2381-reader.rules +
-   `devices/m2381/unixnu-m2381/scripts/acm-reader.py`（probe/cmd/
-   **fetchchunk**——单流 fetch 在 ~13MiB 必断 r56 实测两连，拉窗直接
-   用 fetchchunk，配 read-m2381-ufs-log.py）；全流程 = FLASHING §7。
-   r55d 根因存档 = initrd cpio 手写 12 字段错位。
-3. **下会话 = 刷 r56 + 快速迭代修 iOS**：只刷 recovery_a ←
-   **payload-r56-db3a7392**（16 条 fixups；fixup 9 =
-   SBSystemGestureManager _initWithDisplayIdentity: 入口 ret 破
-   displayIdentity 墙——根因 = FBDisplayManager.mainIdentity=nil，
-   SBMainDisplay 同名 init 是陷阱勿修）→ 菜单 xnu 跑 **8–15 分钟**
-   （~17 分钟回卷红线，勿超）屏幕稳定 + 2–3 分钟 → 长按硬断电 →
-   重上电选 reader → `fetchchunk` → parser `--all` 判读 `applied=8`
-   + displayIdentity 墙是否破 → 下一发 fixups（ADT/args 变才重刷
-   recovery_a）。rebootbl 实测只重启不落 ABL fastboot；人工 =
-   电源+音量减（无人值守才需要 nura 侧完整方法）。
+1. ~~r55e 首轮判读~~ ✅（applied=7 + W1–W3 真 swap + 换墙
+   displayIdentity 断言，见 §0.41）；~~r56~~ ❌ **废轮**——出件漏
+   `--data-ramdisk`/`--trust-cache` 两 flag → ESP 无 Data seed/initrd
+   行/trustcache → Data mount ENOENT panic（kern_exec.c:8196，t≈1s），
+   554s panic-hold 诊断页，applied=0，fixup 9 未测到。
+2. **出件配方红线（r56 教训入法）**：payload 命令必须带全
+   `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
+   devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
+   ADT 的 PackedRAMDisk 映射只有带 --data-ramdisk 才生成（手术注入
+   救不了 ADT）；forensic reader 已由 payload.py 集成
+   （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
+   在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk。
+3. **下会话 = r57 取证判读**（r57 `1e7ea60b` 已刷 2026-10-27，测试跑
+   8–15 分钟 + 硬断电）：菜单选 reader → **先读回对拍 recovery_a ==
+   1e7ea60b**（补欠本轮刷后对拍）→ `fetchchunk` → parser `--all` 判读
+   `applied=8`（fixup 9 = SBSystemGestureManager
+   _initWithDisplayIdentity: 入口 ret 生效）+ displayIdentity 墙是否破
+   （根因 = FBDisplayManager.mainIdentity=nil，SBMainDisplay 同名 init
+   是陷阱勿修只修父类）→ 下一发 fixups（ADT/args 变才重刷）。
+   rebootbl 实测只重启不落 ABL fastboot；人工 = 电源+音量减。
 4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
-   header 计数契约（slots_written 截断）；判读前先看 header rounds。
-   nura-min 只作 reader 失败回退（届时只刷 recovery_a=nura ESP 即可，
-   boot_b 不动）。
+   header 计数契约（slots_written 截断）；判读前先看 header rounds；
+   `fetchchunk` 勿用单流 fetch（~13MiB 必断）。nura-min 只作 reader
+   失败回退（届时只刷 recovery_a=nura ESP 即可，boot_b 不动）。
 5. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
    全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
    页 / bring-up 检查点表）。
