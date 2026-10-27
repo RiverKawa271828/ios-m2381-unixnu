@@ -139,30 +139,34 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r55e 待刷；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r55e 闭环、下会话 iOS 快速迭代；工作单 = `docs/STATE.md` §7）
 
 1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
    ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
    （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）。
-2. **r55e 待刷（r55d 已定谳；设备现态 = iOS 链，未刷回 nura）**：
-   r55d 实测 = **内核每必起**（企鹅/UFS 全枚举），死因实拍 =
-   `Initramfs unpacking failed: damaged header` → root panic → USB
-   永不出现；根因 = forensic initrd 的 cpio 手写 12 字段错位（newc
-   契约 13，LoadFile2 投递链实证是通的）。**r55e = b060b512**（只换
-   initrd = 402fb431，kernel/toml/dtb 原样）已出件；先
-   `fastboot --set-active=b`（重置 ABL 预算）**只刷 recovery_a**
-   （iOS 链未被 nura 覆盖；三件全刷规矩只在被 nura 覆盖后触发）。
-   判读 = 宿主 lsusb 出 **1d6b:0104**（黑屏也照测）→ ttyACM 拉
-   /run/log.bin → 通道通后补 iOS 判读（applied=7 +
-   BLSHBacklightHost 换墙）。
-3. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
+2. **取证 reader 通道已立通（r55e = b060b512 现役，2026-10-27 闭环）**：
+   刷写读回对拍 ✓（reader shell 里 dd recovery_a 前 96MiB sha == 镜像
+   sha，§2 纪律闭环）、lsusb 1d6b:0104、init 报 magic=SHLOG001、32MiB
+   窗在位。宿主 = udev 规则 99-m2381-reader.rules（串口权限持久化）+
+   `devices/m2381/unixnu-m2381/scripts/acm-reader.py`（probe/cmd/
+   fetch，配 read-m2381-ufs-log.py）；全流程 = FLASHING §7。r55d 根因
+   存档 = initrd cpio 手写 12 字段错位（newc 契约 13 字段含 check、
+   namesize 含 NUL；LoadFile2 投递链实拍证明是通的）。
+3. **下会话 = 快速迭代修 iOS**：控制变量跑 = 菜单 xnu **8–15 分钟**
+   （BootLog 每 2s 一槽，slot_count≈509 → ~17 分钟回卷会覆盖最早的
+   applied/fixup 证据，勿超）屏幕稳定 + 2–3 分钟 → 长按硬断电 →
+   acm-reader.py fetch → read-m2381-ufs-log.py --all 判读 `applied=7`
+   + BLSHBacklightHost 换墙 + W1 swap → 下一发 fixups（ADT/args 变才
+   重刷 recovery_a）。rebootbl 实测只重启不落 ABL fastboot；人工 =
+   电源+音量减（无人值守才需要 nura 侧完整方法）。
+4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds。
-   读窗走 forensic reader（USB ACM）；nura-min 只作 reader 失败回退
-   （届时只刷 recovery_a=nura ESP 即可，boot_b 不动）。
-4. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
+   nura-min 只作 reader 失败回退（届时只刷 recovery_a=nura ESP 即可，
+   boot_b 不动）。
+5. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
    全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
    页 / bring-up 检查点表）。
-5. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
+6. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
    （=y 显示破墙后 ADRENO=y 叠加）。
 

@@ -122,20 +122,24 @@ boot_b 不动；Mu 会重新扫描 ESP。
 - userdata 4K LBA（实机 GPT 三源对拍，权威值在设备仓 `board.toml`）：
   first=2,330,472 / last=123,871,226。
 
-## 7. 取证 reader 循环（r55 起，无需 nura-min）
+## 7. 取证 reader 循环（**r55e 实测立通**，无需 nura-min）
 
 > payload 内置 `type = "linux"` entry（forensic）：UniXNU 菜单选
 > "m2381 forensic log reader" → LoadImage 一个 Linux EFI-stub 内核 PE +
 > LoadFile2 initrd → 只读 dd 出 userdata 尾部 32MiB SHLOG 窗 → USB CDC
-> ACM serial shell → 宿主拉回 → `/bin/rebootbl` 回 fastboot。
+> ACM serial shell → 宿主拉回。
 > **全程只读 UFS、不挂载任何文件系统、不刷任何分区。**
+> r55e 首验实录（2026-10-27）：lsusb 出 `1d6b:0104` → init 报
+> `userdata=sda22 … magic=SHLOG001` → 32MiB 窗拉回；同 shell 里
+> `dd if=/dev/sde27 bs=1M count=96 | sha256sum` = 刷写读回对拍
+> （recovery_a 前 96MiB sha == payload 镜像 sha，§2 纪律闭环）。
 
 ### 构件（devices/m2381/unixnu-m2381/forensic/）
 
 | 件 | 出处 | sha 前 8 |
 |---|---|---|
 | forensic-kernel.efi | nura ESP v71 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，**m2381 实机验证过**：UART/USB/UFS/configfs 全通） | `4aad92b3` |
-| forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `babe82cc` |
+| forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `402fb431`（r55e；**cpio 必须 13 字段**——newc 头 110 字节含尾部 check、namesize 含 NUL，12 字段版本内核拒包 "damaged header"，即 r55d 根因） |
 
 ### 构建（每次 payload 重打后）
 
@@ -146,33 +150,51 @@ python3 devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py \
     --busybox temp/forensic-esp/busybox \
     --rebootbl temp/forensic-esp/rebootbl \
     --out-dir temp/forensic-esp
-# 2) 注入 BUILT payload（./unixnu payload 之后）
+# 2) 注入 BUILT payload（./unixnu payload 之后；已是现役也可直接对
+#    payload-rNN-<sha8>.img 手术——r55e 即此路径，toml 逐字节不动）
 python3 devices/m2381/unixnu-m2381/scripts/add-forensic-entry.py \
     out/m2381/ipados-17.7.11-21H461/m2381/payload/payload.img
 # 3) 平铺出件照旧（payload-rNN-<sha8>.img）
 ```
 
-### 读窗循环（iOS 引导断电后）
+### 宿主一次性准备（串口权限持久化，用户已装 2026-10-27）
 
-1. 进 fastboot（电源+音量减，或 iOS 侧 `sheng-autoreset` 到点自落）；
+```bash
+echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="1d6b", ATTRS{idProduct}=="0104", MODE="0666"' \
+  | sudo tee /etc/udev/rules.d/99-m2381-reader.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+```
+
+### 读窗循环（iOS 引导断电后；工具 = devices/m2381/unixnu-m2381/scripts/acm-reader.py）
+
+1. 进 fastboot（电源+音量减；iOS 侧 `sheng-autoreset` 到点自落）；
 2. `fastboot reboot`（或直接 ABL 默认）→ UniXNU 菜单 → 选
    **"m2381 forensic log reader"**（xnu 仍是 default，3 秒超时不动它）；
-3. reader 起来后 USB 枚举 ACM 串口（`/dev/ttyACM*`，id 1d6b:0104）；
-   拉窗（任选其一）：
+3. 宿主确认通道并拉窗（判定只看宿主，屏幕黑不阻塞）：
    ```bash
-   # a) 串口 shell 里手动（sz 无则用 base64）：
-   stty -F /dev/ttyACM0 115200 && cat /dev/ttyACM0 &
-   #  b) reader 的 /run/log.bin 已就绪，直接 shell:
-   #     echo ready: shell on USB serial 后按回车进交互
+   lsusb | grep 1d6b:0104                      # 通道立起判据
+   python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py probe
+   #   → m2381 forensic log reader 7.3.0 / usb: acm on a600000.usb
+   #   → userdata=sda22 sectors=… log=33554432 bytes magic=SHLOG001
+   python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py \
+       fetch out/m2381/reader-<轮次>-log.bin    # 设备端 sha + base64 流拉 + 宿主对拍
+   python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py \
+       out/m2381/reader-<轮次>-log.bin --all    # parser 已守 header 计数契约
    ```
-4. 宿主收 log.bin → `read-m2381-ufs-log.py log.bin --all`（parser 已守
-   header 计数契约，残留段自动截断）；
-5. `/bin/rebootbl` → 回 fastboot → 下一轮。
+   `cmd 'CMDS' [timeout]` = 任意只读 shell（如读回对拍：先
+   `grep PARTNAME=recovery_a /sys/class/block/*/uevent` 找设备名再
+   `dd … | sha256sum`）。
+4. iOS 引导时长标准（BootLog.c：**每 2s 写一个 8KiB 槽**，slot_count
+   ≈509 → 约 **17 分钟写满回卷**，回卷后最早的槽（fixups/applied 证据
+   所在）被覆盖）：**跑 8–15 分钟、屏幕形态稳定后再加 2–3 分钟、长按
+   硬断电**；不要超过 ~17 分钟。
+5. 退出：reader shell 里 `/bin/rebootbl` 会重启但**不落 ABL fastboot**
+   （我们链上实测；只回菜单/ABL 默认）——无人值守自动循环才需要 nura
+   侧完整进 fastboot 方法，常规人工 = 电源+音量减。
+6. 通道失效回退 = nura-min 老路（§6），通道常青。
 
 ### 红线不变
 
 - 只读 userdata 尾部；不写不挂载；fastboot 单通道照旧。
 - kernel PE 是 nura 的 pmOS 内核：**只用于取证 reader，不是 iOS 链的
   一部分**；iOS 引导永远走菜单 default（xnu entry）。
-- 若 reader 起不来（内核/DTB 意外），回退 = nura-min 老路（§6），
-  通道常青。
