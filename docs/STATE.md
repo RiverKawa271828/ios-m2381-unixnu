@@ -5,7 +5,35 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r62 已刷 + 用户报未起，判读待下会话 reader 窗，2026-10-28）
+## 1. 一句话现状（r64 = 缓存全局审计轮已出件 `54b70ad7` 待刷，
+静态定谳毒在运行时写路径 + UIKitCacheProbe 内核探针随件，2026-10-28）
+
+**r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
+slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
+位；值 = 低 48 位 = 绝对未滑 VA；value_add=0），UIKitCore
+**__DATA_DIRTY**（0x1f489fef0+0x39958）全链枚举 5410 槽定性（objc
+类/METACLASS/RO 结构 + UIUpdateSequence 哨兵）；**四个病灶槽
+（bgTC 0x1f48ce5e0 / 锁 0x1f48ce340 / __UIMainScreenTraitCollectionLock
+0x1f48cf938 / mainScreen 单例槽 0x1f48d5550 = __MergedGlobals+0x20）
+文件态全 0** = 懒缓存 nil 静置态，毒在运行时写路径（r63 定谳复核；
+r58 崩溃点指令级复验：+0x2c = `ldr x8,[x19,#0xe0]`，x19 =
+[UIScreen mainScreen] 槽值 0xf00 → FAR 0xfe0；r63 PC 0x1800F5FAC =
+objc_retain 快路径 `ldr x8,[x0]`，x0 = bgTC 槽值 0xf1 → FAR 0xf1；
+r62 野跳点 = CoreServicesInternal cstring 零填充 = 垃圾 IMP 落点）。
+**工作假说 = ObjC 元数据/once 域损坏级联**（同时解释野 PC 与小整数
+值；0xf00/0xf1 跨 slide 不变 → 偏向数据常量或确定性页内偏移，排除
+"指针减错基"）。动态腿 = **UIKitCacheProbe.c**（startup.o record 编
+译私有 task/vm_map ABI，BootFaultProbe 先例）编入
+libNativeLegacyDisplay.late.a；2s 轮询 SpringBoard
+task_shared_region_slide，vm_map_read_user 全窗扫描 __DATA_DIRTY，
+发布 ext 行 4-7（X4 tick/状态/slide/非零/垃圾计数，X5
+mainScreen+bgTC 槽值，X6 首垃圾事件，X7 最近变更事件）；门控
+`uikit-cache-probe=1`（+`uikit-cache-proc=` 改目标进程）；
+`boot-ui-focus3=Preferences` 移除（cmdline 1002B > 1000 上限）。
+25 条 fixups ADT 验证（24 dyld + BTAudioHALPlugin；16a/16b 字节级
+精确）；内核重链 `e86478ad`；ESP 四样全过；**payload r64 =
+`54b70ad7`**（96MiB，平铺 `out/m2381/payload-r64-54b70ad7.img`）。
+判读工作单见 §7。
 
 **调研定谳（2026-10-28，上游 f85b5a6→0fc0fc1 + 四个过墙板对照）**：①
 **text_fixups 全清单**：sheng = 4 条基线（AWAttention 死锁 + 2×PRSPoster
@@ -130,7 +158,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r62**（23 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `0854ea5e` | **现役已刷已验已判（2026-10-28）**；读回对拍 ✓（reader 内 sde27 前 96MiB == 镜像）；判读 = §1 r62 定谳（体系三件生效 / 垃圾族换墙） |
+| recovery_a | **r63**（25 条 fixups 含 fixup16 全指定 TC + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `04eb0533` | **现役已刷已验已判（2026-10-28）**；读回对拍 ✓（reader 内 sde27 前 96MiB == 镜像）；判读 = §1 r63 定谳（fixup16 真执行 / 垃圾族未愈）；**r64 `54b70ad7` 已出件待刷** |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -161,14 +189,14 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 3. 现役件与资产
 
-- **payload 四元（r62 起）**：kernel `542300ca` / 探针后 `158adedb` /
-  trust `7416ca4f` / 种子 `d04a0153`；ADT `b5b4a172`
-  （**23 条 fixups 不变**；sha 变 = random-seed 每次生成即换——r58 条
-  二进制对比定谳，属预期）。fixup 表源 = 设备仓 OS profile
-  `text_fixups`。**r62 新增 = display archive 携带 KeyStoreProbe.o +
-  AppleKeyStoreState 组件（NativeKeyStoreEvents.late.o）**（archive
-  `b6daee99`，七成员），board.toml `sheng-vsync=120` +
-  `offline-mobile-graphics-client=0`。
+- **payload 四元（r64 起）**：kernel 重链 `e86478ad`（r63 系 =
+  `542300ca`/探针后 `158adedb`）/ trust `7416ca4f` / 种子 `d04a0153`；
+  ADT fixup 表 = **25 条**（24 dyld + BTAudioHALPlugin 基线；
+  16a/16b 字节级在位）。fixup 表源 = 设备仓 OS profile
+  `text_fixups`。**r64 新增 = display archive 携带
+  UIKitCacheProbe.o**（八成员；startup.o record 编译私有
+  task/vm_map ABI），board.toml +`uikit-cache-probe=1`
+  -`boot-ui-focus3`（cmdline 1000B 上限）。
 - **applied 常驻集（=n 时代）**：{BTAudio, 5, 6, 7, 8a}。=y 上电后该
   oracle 继续有效（惰性判活器不变）；显示族 fixup（5–10）在真显示栈下
   变睡守，换代时退役。
@@ -272,44 +300,39 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r63 已刷已判（2026-10-28）**：fixup16 真执行但垃圾
-族未愈——死点漂回 r61 有效码点，病根钉死在缓存全局槽写路径；r64 =
-缓存全局审计（线 2 转正），见 §1 r63 定谳）
+## 7. 下一步（**r64 已出件 `54b70ad7` 待刷（2026-10-28）**：缓存全局
+审计轮 = 静态定谳"毒在运行时写路径" + UIKitCacheProbe 动态探针随件；
+刷后判读 = UKC 行 t 序列，见 §1 r64 出件）
 
-**r63 = UIKit 侧体系候选轮**（§7 预案三分支第一支触发：AKS 行在 +
-SEGV 垃圾族在）。两个候选按序施工，r62 件（`0854ea5e`）仍现役待换：
-
-1. **全指定 TC 构造**（首选）——**r63 已出件 `04eb0533` 待刷
-   （2026-10-28 本机 Linux 全链，ESP 四样过 + fixup16 在 ADT
-   text-fixups）**：RE 定谳 bgTC 病理链 =
-   `+[UITraitCollection _backgroundThreadFallbackTraitCollection]`
-   （0x189ffcb68 懒缓存，锁 0x1f48ce340/槽 0x1f48ce5e0）→
-   `+[UITraitCollection _defaultTraitCollection]`（0x18aa851b0）→
-   `_objc_msgSend$mainScreen` + 栈块 invoke 0x18aa85268（只做
-   setDisplayScale:[screen scale]（cbz 门控）+ setDisplayGamut:
-   [screen gamut]）——displayless 下 mainScreen=nil → 全 unspecified
-   占位（与 r60 判读吻合）。**fixup16a**（.03,3cd9288，
-   cbz→nop 保留 ldr）+ **fixup16b**（.03,3cd9290，
-   `bl $scale`→`fmov d0,#2.0`，donor iPad7,1 原生 2x 最小行为差，
-   >0 过 r60 块 A/C scale 门）；25 条全量。
-2. **UIKit 缓存全局审计**（病根直击）：0xf00/0xf1/垃圾 PC 三轮同族
-   病根 = UIKit 缓存单例全局槽（mainScreen 槽 r58 / bgTC 缓存槽
-   r61 / 野跳 r62）在无显示环境成批变垃圾。审计方法 = 对 r62 死点
-   邻域（0x1822F5FAC 所在 cstring 区背后的 __DATA 单例槽）枚举文件
-   值 rebase 目标批量定性，找"哪批全局槽的初始值依赖显示环境"。
-3. **NSAssertionHandler log-only 类杀降级为备选**：r62 实证断言墙
-   全灭（sig6=0），勘址件 0x1874494d4/0x187449618 无对象可杀，仅当
-   r63 施工中新断言墙复活再启用。
-4. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 e00002d5 失败
-   簇是 IOMFB 自身的 mobile graphics 调用失败（displayless 的果，
-   不是因）；不阻塞 r63，但若垃圾族治愈后仍卡 keybag/锁屏，回头查
-   IOMFBDisplayRefresh 发布链。
+1. **刷写卡（r64 = 只刷 recovery_a，设备自 r63 刷后状态未变）**：
+   fastboot（电源+音量减）→ `getvar current-slot` 必须 = b →
+   sha 门 `54b70ad79a78…815e97ec` → `flash recovery_a
+   payload-r64-54b70ad7.img` → reboot → 跑 8–15 分硬断电（17 分钟
+   回卷红线）。
+2. **r64 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
+   `54b70ad7…`，节点 = **sde27** 勿猜 sda → fetchchunk 拉窗）→
+   **UKC 行四件（本判读主菜，ext 行 X4-X7 逐 2s 一槽的 t 序列）**：
+   ①X5 的 M/B 两槽值何时从 0 变非 0、变出的值是合法指针（0x1xxxxxxx
+   量级）还是小整数垃圾（0xf00/0xf1 族）——**首次变垃圾的 tick 与
+   槽址（X6 首垃圾事件 + X7 最近变更事件）**；②X4 的 n/g 计数走势
+   （g>0 从哪个 tick 起）；③首垃圾槽址对照静态清单定性（bgTC 槽 /
+   mainScreen 槽 / ObjC 类结构 / once 域）；④垃圾值跨 tick 是否稳定
+   ——判"数据常量写入"vs"确定性页内偏移"vs"级联扩散"。
+   回归六项照旧：applied（r63=69）/ AKS 行（r63 opens=123 calls=1121）
+   / vsync 120 / C0 形态 / 旧墙复活面 / SB sig11 族计数与死点。
+3. **判读后分支**：若 UKC 行在 SB 首崩（t≈66s 族）前就出现垃圾 →
+   毒源在更早进程/更早阶段（改 `uikit-cache-proc=` 逐进程扫，或提
+   轮询密度）；若垃圾与 SB 崩溃同时出现 → once 域/构造路径为病灶，
+   r65 = 对首垃圾槽的写路径做 fixup 级手术（log-only 化或改道）；
+   若 UKC 行全程零垃圾但 SB 照崩 → 毒在 __DATA_DIRTY 之外（扩窗到
+   __DATA/其他库，或转向堆/栈侧）。
+4. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 失败簇是
+   displayless 的果不是因；不阻塞 r64，垃圾族治愈后若仍卡 keybag/
+   锁屏，回头查 IOMFBDisplayRefresh 发布链。
 5. **出件/刷写/判读纪律不变**：payload 配方三 flag + ESP 四样 +
    fastboot sha 门 + reader 读回对拍（**recovery_a = sde27**，勿猜
    sda）+ fetchchunk + 17 分钟回卷红线。
-4. **拉窗/出件纪律不变**：17 分钟回卷红线 / fetchchunk / 出件配方
-   三 flag + ESP 四样；**r62 出件实录已验**（§1）。
-5. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
+6. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
    自动重置，方案在案）；XS/fileset-KC 重绑定器；arm64e 专项；
    GPU/触摸主题化（过墙板实证无 GPU 也能到锁屏，GPU 降为体验项）。
 
