@@ -139,17 +139,22 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r55 组件完成；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r55e 待刷；工作单 = `docs/STATE.md` §7）
 
 1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
    ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
    （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）。
-2. **r55 待刷（用户实测；设备现态 = iOS 链 r54，未刷回 nura）**：
-   payload `fb2c5dd1` = r54 fixup 12（BLSHBacklightHost 入口返 nil，
-   裸件 1ef5eb63）+ **forensic 内置换证 reader**（菜单 "m2381 forensic
-   log reader"，type=linux，FLASHING §7）。**只刷 recovery_a**（iOS
-   链未被 nura 覆盖；三件全刷规矩只在被 nura 覆盖后触发）。判读 =
-   applied=7 + BLSHBacklightHost 换墙 + reader 首验。
+2. **r55e 待刷（r55d 已定谳；设备现态 = iOS 链，未刷回 nura）**：
+   r55d 实测 = **内核每必起**（企鹅/UFS 全枚举），死因实拍 =
+   `Initramfs unpacking failed: damaged header` → root panic → USB
+   永不出现；根因 = forensic initrd 的 cpio 手写 12 字段错位（newc
+   契约 13，LoadFile2 投递链实证是通的）。**r55e = b060b512**（只换
+   initrd = 402fb431，kernel/toml/dtb 原样）已出件；先
+   `fastboot --set-active=b`（重置 ABL 预算）**只刷 recovery_a**
+   （iOS 链未被 nura 覆盖；三件全刷规矩只在被 nura 覆盖后触发）。
+   判读 = 宿主 lsusb 出 **1d6b:0104**（黑屏也照测）→ ttyACM 拉
+   /run/log.bin → 通道通后补 iOS 判读（applied=7 +
+   BLSHBacklightHost 换墙）。
 3. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds。
    读窗走 forensic reader（USB ACM）；nura-min 只作 reader 失败回退
