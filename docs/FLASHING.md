@@ -72,9 +72,10 @@ sha256sum boot_b.before.img recovery_a.before.img
   卡上必带**刷前 sha256 门**（`sha256sum` 输出须以卡上 sha 前 8 开头）。
 - 刷前 `fastboot --set-active=b` 重置 ABL 重试预算（同槽连败耗尽会自动
   落 fastboot；getvar current-slot 必须 = b）。
-- 现役件（2026-10-27 r55e 后，sha 前 8）：boot_b = `289614ba`
-  （无 SB 版，ENABLE_SECUREBOOT=0）+ recovery_a = r55e `b060b512`
-  （当轮 payload）+ userdata = `fd43ee70`
+- 现役件（2026-10-27 r57 后，sha 前 8）：boot_b = `289614ba`
+  （无SB 版，ENABLE_SECUREBOOT=0）+ recovery_a = r57 `1e7ea60b`
+  （当轮 payload；读回对拍顺延下会话 reader 内首步补）+ userdata =
+  `fd43ee70`
   （out/m2381/ci-artifacts/userdata-root.img）。现势详见 `docs/STATE.md` §2。
 - 每槽刷完立即读回 sha 对拍（§2；iOS 链态走 reader）；刷完
   `fastboot reboot`（`fastboot boot` 死路），让 ABL 走 boot_b。
@@ -155,20 +156,20 @@ boot_b 不动；Mu 会重新扫描 ESP。
 | forensic-kernel.efi | nura ESP v71 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，**m2381 实机验证过**：UART/USB/UFS/configfs 全通） | `4aad92b3` |
 | forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `402fb431`（r55e；**cpio 必须 13 字段**——newc 头 110 字节含尾部 check、namesize 含 NUL，12 字段版本内核拒包 "damaged header"，即 r55d 根因） |
 
-### 构建（每次 payload 重打后）
+### 出件（payload 命令，2026-10-27 r56 废轮教训入法）
 
 ```bash
-# 1) 构件（内核不变时只需一次；rebootbl.c 改了才重编）
-python3 devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py \
-    --kernel temp/forensic-vmlinuz-efi \
-    --busybox temp/forensic-esp/busybox \
-    --rebootbl temp/forensic-esp/rebootbl \
-    --out-dir temp/forensic-esp
-# 2) 注入 BUILT payload（./unixnu payload 之后；已是现役也可直接对
-#    payload-rNN-<sha8>.img 手术——r55e 即此路径，toml 逐字节不动）
-python3 devices/m2381/unixnu-m2381/scripts/add-forensic-entry.py \
-    out/m2381/ipados-17.7.11-21H461/m2381/payload/payload.img
-# 3) 平铺出件照旧（payload-rNN-<sha8>.img）
+# 三 flag 缺一不可：缺 --data-ramdisk = ADT 无 PackedRAMDisk 映射
+# （手术救不了）→ Data mount ENOENT panic；缺 --trust-cache = ESP 无
+# 信任缓存 sidecar。forensic reader 已由 payload.py 集成（board.toml
+# [payload] forensic=true），add-forensic-entry.py 仅存手术用。
+UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload \
+    -D devices/m2381/unixnu-m2381 \
+    --trust-cache out/m2381/trust/original-trust.bundle \
+    --data-ramdisk devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img
+# 刷卡前对 ESP 验四样：scratch-data.img 在 / toml 有 initrd 行 /
+# trustcache 在 / ADT 有 PackedRAMDisk（r56 = 四缺三翻车实录）
+# 平铺出件照旧（payload-rNN-<sha8>.img）
 ```
 
 ### 宿主一次性准备（串口权限持久化，用户已装 2026-10-27）
