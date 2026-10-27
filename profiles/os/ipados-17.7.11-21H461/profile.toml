@@ -102,7 +102,16 @@
 # stack). Entry returns at once (returns self, hollow listener — same shape
 # as 8b). Same wall, BannerKit layer; the applied marker doubles as the
 # execution oracle for the next wall.
-"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9"]
+# 2026-10-27 addition 8 (r53/r54): the r53 boot confirmed fixup 11 applied
+# (parsed=14 applied=6 at boot end) and SpringBoard moved past BannerKit to
+# applicationDidFinishLaunching: +[SBBacklightController
+# _sharedInstanceCreateIfNeeded:] -> -[SBBacklightController init] ->
+# -initWithContextProvider: -> +[BLSHBacklightHost sharedBacklightHost]+0xbc
+# (BacklightServicesHost, subcache .35) hits a brk assert (sig5, PC=LR at the
+# trap). Entry returns nil (mov x0,#0; ret — ObjC nil messaging zeroes the
+# host consumers downstream, same shape as the r49 entries). Same
+# displayless wall, backlight-host layer.
+"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9", "dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6"]
 "trust_cache_sha256" = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7", "8900d6a93d7a59ce1a872a5c081e559f4240a218f97e12d44d22dda46644d68f"]
 
 
