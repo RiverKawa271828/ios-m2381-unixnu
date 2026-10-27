@@ -173,6 +173,19 @@ def build(ctx, kernel=None):
         shutil.copyfile(policies, payloads / 'kernel.macho.vroot')
     if data:
         shutil.copyfile(data, payloads / 'scratch-data.img')
+    # The forensic log reader (board [payload] forensic): a type="linux" entry
+    # boots a Linux EFI-stub kernel + initramfs from the payload volume; it
+    # reads the SHLOG window back over USB ACM without another OS. Files are
+    # board inputs under the device repository (not in Git).
+    forensic = spec.get('forensic')
+    if forensic:
+        fdir = ctx.device / (forensic if isinstance(forensic, str) else '.cache/forensic')
+        for name in ('forensic-kernel.efi', 'forensic-initrd.img'):
+            if not (fdir / name).is_file():
+                raise Error(f'forensic reader file missing: {fdir / name} '
+                            '(build it with devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py)')
+        shutil.copyfile(fdir / 'forensic-kernel.efi', payloads / 'forensic-kernel.efi')
+        shutil.copyfile(fdir / 'forensic-initrd.img', payloads / 'forensic-initrd.img')
     if ctx.schema_version == 2:
         from .devicetree import compile_hardware, generate
         dtb = compile_hardware(ctx)
@@ -225,6 +238,10 @@ def build(ctx, kernel=None):
                '[[entry]]\nid = "shutdown"\ntitle = "Power off"\ntype = "action"\naction = "shutdown"\n')
     if spec.get('tools'):
         config += ('[[entry]]\nid = "tools"\ntitle = "Tools"\ntype = "action"\naction = "tools"\n')
+    if spec.get('forensic'):
+        config += ('[[entry]]\nid = "forensic"\ntitle = "m2381 forensic log reader"\ntype = "linux"\n'
+                   'path = "Payloads/forensic-kernel.efi"\ninitrd = "Payloads/forensic-initrd.img"\n'
+                   'args = "earlycon=efifb console=tty1 loglevel=4 consoleblank=0 quiet"\n')
     (stage / 'EFI/UniXNU/unixnu.toml').write_text(config)
     for path in [stage, *stage.rglob('*')]:
         os.utime(path, (EPOCH, EPOCH))
