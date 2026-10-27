@@ -5,7 +5,7 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r62 出件 = 调研定谳 + 体系方案落地，待刷，2026-10-28）
+## 1. 一句话现状（r62 已刷 + 用户报未起，判读待下会话 reader 窗，2026-10-28）
 
 **调研定谳（2026-10-28，上游 f85b5a6→0fc0fc1 + 四个过墙板对照）**：①
 **text_fixups 全清单**：sheng = 4 条基线（AWAttention 死锁 + 2×PRSPoster
@@ -49,6 +49,9 @@ seed `d04a0153`；ADT `b5b4a172`（23 条不变；sha 变 = random-seed 每次
 r62 = `0854ea5e`**（96MiB，平铺 `out/m2381/payload-r62-0854ea5e.img`）
 ——ESP 四样全过（scratch-data.img 在 / toml initrd 行在且 args 含
 client=0+vsync=120 / trustcache 在 / ADT PackedRAMDisk 在）。
+**2026-10-28 已刷**（fastboot 实录：set_active b / sha 门 /
+Sending+Writing recovery_a 98304KB OKAY / reboot），用户报**未起**，
+读回对拍与判读待下会话（§7）。
 
 **r61 判读存档（2026-10-27）**：窗 rounds=374/509 uptime=772s 无回
 卷；applied=70（23 parsed；计数首超 parsed = fixup 页被反复重校验）；
@@ -86,13 +89,17 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r61**（23 条 fixups + Data seed + trustcache + forensic reader） | `169f160c` | **现役在跑**（读回对拍 ✓）；**下一发 = r62 `0854ea5e`** |
+| recovery_a | **r62**（23 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `0854ea5e` | **现役已刷（2026-10-28）**；读回对拍**待补**（下会话 reader 首 act）；用户报**未起**（细节待窗） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
-- **设备现态 = iOS 链（r54 起），未刷回 nura**（用户确认 2026-10-27；
-  NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
-- **下一发刷写 = r62 `0854ea5e`（只刷 recovery_a）**；设备现态
-  = iOS 链未被 nura 覆盖 → 快捷卡合法。r61 轮次已闭环。
+- **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷（fastboot 实录：
+  set_active b OKAY → Sending/Writing recovery_a 98304KB OKAY → reboot）。
+- **下会话第一 act = reader 通道三连**：进 fastboot（电源+音量减）→
+  `fastboot reboot` → 菜单选 "m2381 forensic log reader" → ①acm-reader
+  `cmd` dd recovery_a 前 96MiB sha **== `0854ea5e…db1a`**（刷后对拍补欠）
+  → ②`fetchchunk` 拉窗 → ③按 §7 判读六项。**窗纪律**：先看 header
+  rounds/slots_written（r62 跑时长未记录；若 >17 分钟已回卷，按 r53
+  分段判读纪律切段）。
 - **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
   fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
   重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
@@ -218,51 +225,49 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   机制线环境闭合优先（AKS 替身 + vsync + client=0，四过墙板模板），
   断言类杀只备于 SEGV 垃圾族持续的情形；双方法勘址保留
   （0x1874494d4 / 0x187449618，砍 raise 留 REASON 日志形状已定）。
-- ~~r62 出件~~ **已出件待刷**（`0854ea5e`，§1/§7）；AKS 替身实机效果
-  / vsync 生效 / 显示族 fixup 转睡三项都未实证，不能声称"体系方案
-  生效"。
+- ~~r62 出件~~ **已出件已刷**（`0854ea5e`，§1/§2/§7）；AKS 替身实机
+  效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
+  窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r62 体系轮**：刷 recovery_a → 一跑一读 → 判读；2026-10-28 出件）
+## 7. 下一步（**r62 已刷未判**：下会话 reader 三连 → 判读；2026-10-28 刷写实录见 §2）
 
-**调研与出件定谳见 §1**。r62 = 机制线环境闭合（AKS 替身 + vsync +
-client 关闭，四过墙板模板），23 条 fixups 全保留作安全网 + 惰性
-oracle。
+**r62 = 机制线环境闭合轮**（AKS 替身 + vsync + client=0，四过墙板
+模板），23 条 fixups 全保留作惰性 oracle。**已刷（2026-10-28，fastboot
+实录 OKAY）+ reboot；用户报未起（细节待窗）**。
 
-1. **刷卡（只刷 recovery_a，快捷卡合法）**：
-   ```bash
-   fastboot getvar current-slot        # 必须 = b（不在则 set_active b）
-   sha256sum out/m2381/payload-r62-0854ea5e.img   # 刷前门：0854ea5e 开头
-   fastboot flash recovery_a out/m2381/payload-r62-0854ea5e.img
-   # 刷完 reader 内 dd recovery_a 前 96MiB sha == 0854ea5e 全串（§2 对拍）
-   fastboot reboot
-   ```
-2. **跑 8-15 分钟 + 硬断电（勿超 17 分钟回卷红线）→ fetchchunk 拉窗**。
-3. **判读清单（按序）**：
+1. **下会话第一 act = reader 三连**（顺序固定）：
+   ①进 fastboot（电源+音量减）→ `fastboot reboot` → 菜单选
+   **"m2381 forensic log reader"**；②`acm-reader.py cmd` dd recovery_a
+   前 96MiB sha **== `0854ea5e…db1a`**（刷后对拍）；③`fetchchunk`
+   拉窗（单流 fetch 勿用）。**先看 header rounds/slots_written**：
+   r62 跑时长用户未记录，若超 17 分钟已回卷按 r53 分段纪律切段。
+2. **判读六项（按序，STATE §1 体系押注的验证面）**：
    ①**AKS 行**（诊断页 ext slot 0/1 = "AKS opens=N calls=M" +
-   selector:count 表——KeyStoreProbe 发布即真）；②**vsync 生效**
-   （`[vsync]` 事件行 + IOMFB dict 的 IOMFBDisplayRefresh；sheng-vsync
-   未生效 = mfb 客户端无 vsync 注册者）；③**client=0 生效**
-   （`[mfb clients]` 只剩真实消费者，C0 探针客户端消失——r52 的
-   sel6 失败簇应消失）；④**applied 计数**：23 parsed 不变下
-   applied **跌破 14**（显示族站点 r57-r61 墙不再被执行）= 环境
-   愈合的定量信号；applied 仍 ≥14 = 显示配置链依旧断（r63 转 deeper
-   机制线）；⑤SB 墙面：'returned nil traitCollection' /
-   'unspecified values' / XB 断言族若复现 = 旧墙复活（fixup 页未醒，
-   正常，按站点分析）；SIGSEGV 垃圾族（0xf00/0xf1 病）若仍在 =
-   r63 转 UIKit 侧体系候选（全指定 TC / 缓存全局审计 / log-only
-   断言杀）；⑥procs/spawn 与 SB 推进深度（wallpaper 封面层 →
-   poster/锁屏？）。
-4. **拉窗纪律不变**：header rounds/slots_written 先看；fetchchunk 勿
-   单流 fetch；判定只看宿主。
-5. **出件配方红线不变（r56 教训）**：payload 命令带全三 flag
-   （UNIQUE_CHIP_ID + --trust-cache + --data-ramdisk），ESP 验四样
-   （seed / toml initrd 行 / trustcache / ADT PackedRAMDisk）——r62
-   出件已照办全过。
-6. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
-   自动重置，方案在案：UEFI 侧改 boot_b GPT entry 属性位+CRC + XNU
-   BootLog GPT check 豁免）；XS/fileset-KC 重绑定器；arm64e 专项；
-   GPU/触摸主题化（=y 后 ADRENO=y 叠加；过墙板实证无 GPU 也能到
-   锁屏，GPU 降为体验项）。
+   selector:count 表——KeyStoreProbe 发布即真；零 opens = 组件没跑
+   （查 offline-key-events/sheng-aks 是否到位、ephemeral-storage 位）；
+   ②**vsync 生效**（`[vsync]` 事件行 + IOMFB dict 的
+   IOMFBDisplayRefresh；sheng-vsync=120 应见 event 4 started + 5
+   refresh）；③**client=0 生效**（`[mfb clients]` 只剩真实消费者，
+   C0 探针客户端消失——r52 的 sel6 失败簇应消失）；
+   ④**applied 计数**：23 parsed 下 applied **跌破 14**（显示族站点
+   不再执行）= 环境愈合定量信号；仍 ≥14 = 显示配置链依旧断；
+   ⑤**崩溃/卡点面**：旧墙复活（nil traitCollection / unspecified /
+   XB 断言 / mainScreen SIGSEGV 0xf00 族）按站点符号化；新 crash 簇
+   按标准链（REASON 行→CFString→xref）；崩溃消失但卡住 → 看
+   [profile] PS/PP 采样找挂点；⑥**procs/spawn 与 SB 推进深度**
+   （wallpaper 封面层 → poster/锁屏？AKS 生效应推进过 keybag）。
+3. **r63 预案（按判读分支）**：AKS 行在但 SEGV 垃圾族（0xf00/0xf1）
+   仍在 → UIKit 侧体系候选（全指定 TC 构造 / UIKit 缓存全局审计 /
+   NSAssertionHandler log-only 类杀，勘址已毕 0x1874494d4/0x187449618，
+   砍 raise 留 REASON 日志）；AKS 行零 + applied 仍高 → 查组件链接
+   面（late archive 成员真在内核？nm 查 native_aks_* 符号）；AKS
+   行在 + SB 推进过 wallpaper → 继续机制线收尾（liveactivitiesd 重
+   启评估等）。
+4. **拉窗/出件纪律不变**：17 分钟回卷红线 / fetchchunk / 出件配方
+   三 flag + ESP 四样；**r62 出件实录已验**（§1）。
+5. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
+   自动重置，方案在案）；XS/fileset-KC 重绑定器；arm64e 专项；
+   GPU/触摸主题化（过墙板实证无 GPU 也能到锁屏，GPU 降为体验项）。
 
 ## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节；r62 起 = 体系路线）
 
@@ -289,4 +294,4 @@ oracle。
 | r59 | `a9144765` | **UIScreen SIGSEGV 墙实锤封死**（applied=13 + sig11=0）；换墙 = traitCollection nil 断言 ×573（`__UIGetCurrentFallbackTraitCollection` line 117；REASON 串→CFString→xref 钉死抛点；SBWallpaperController/封面层链验活全过）；读回对拍即时闭环 | 本会话判读 |
 | r60 | `edabbafd` | **traitCollection nil 断言墙破**（applied=14 + 'returned nil' 零出现）；换墙 = 同函数块 A scale≤0 报 "unspecified values" ×758（bg TC 故意全 unspecified，scale=0）；读回对拍即时闭环 | 本会话判读 |
 | r61 | `169f160c` | fixup 15a/15b 生效（applied=70 + 'unspecified' 断言零出现，nil/scale 块全死）；**换墙 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径 FAR=0xf1，与 r58 0xf00 同族——UIKit 缓存全局垃圾族定性）；**用户拍板：停逐发 fixup，下会话转体系路线（上游/fork 调研优先）** | 本会话判读 |
-| r62 | `0854ea5e` | **调研定谳 + 体系方案落地**：四过墙板模板（AKS 替身/vsync/client=0，无 GPU 也到锁屏）→ 三差距全补（KeyStoreProbe+AppleKeyStoreState 入 display archive、sheng-vsync=120、client 1→0），23 条 fixups 保留作惰性 oracle；kernel `542300ca`/探针后 `158adedb`/ADT `b5b4a172`（random-seed 变=预期）；ESP 四样过；**待刷** | 本会话出件 |
+| r62 | `0854ea5e` | **调研定谳 + 体系方案落地**：四过墙板模板（AKS 替身/vsync/client=0，无 GPU 也到锁屏）→ 三差距全补（KeyStoreProbe+AppleKeyStoreState 入 display archive、sheng-vsync=120、client 1→0），23 条 fixups 保留作惰性 oracle；kernel `542300ca`/探针后 `158adedb`/ADT `b5b4a172`（random-seed 变=预期）；ESP 四样过；**已刷（2026-10-28 fastboot 实录 OKAY）+ 用户报未起，判读待下会话** | 出件+刷写 2026-10-28 |

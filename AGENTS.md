@@ -139,7 +139,7 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r62 体系轮待刷**：2026-10-28 调研定谳 + 体系方案出件 `0854ea5e`；判读工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r62 已刷未判**：2026-10-28 刷写实录 + 用户报未起；下会话 reader 三连 → 判读；工作单 = `docs/STATE.md` §7）
 
 1. **调研定谳（2026-10-28，上游设备目录 f85b5a6→0fc0fc1）**：①
    text_fixups 全清单——sheng=4 条基线、fuxi=0 条，**没有过墙板携带
@@ -148,17 +148,25 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    negroni SB+touch）= **AKS 替身 + sheng-vsync + client 关闭**；
    asteroids T20-T29 实证"无 AKS 替身 SB 永远跑不完 boot"；r52 的
    "mfb C0 sel6 失败"嫌疑 = 自设探针客户端（已关），权重大降。
-2. **r62 出件（体系轮，待刷）**：KeyStoreProbe.cpp（sheng 原版）+
-   AppleKeyStoreState 组件编进 display archive（`b6daee99` 七成员）+
-   `sheng-vsync=120` + `offline-mobile-graphics-client=0`；23 条
-   fixups 全保留（惰性 oracle：环境愈合 → applied 跌破 14 = 定量
-   信号）。kernel `542300ca` / 探针后 `158adedb` / ADT `b5b4a172`
-   （random-seed 每次变 = 预期）。**下一发 = 只刷 recovery_a
-   `payload-r62-0854ea5e.img`**（iOS 链未被 nura 覆盖，快捷卡合法）。
-3. **r63 备选（若 SEGV 垃圾族仍在）**：全指定 TC 构造 / UIKit 缓存
-   全局垃圾族审计 / NSAssertionHandler log-only 类杀（勘址已毕
-   0x1874494d4/0x187449618，砍 raise 留 NSLog 日志信号）。
-4. **出件配方红线（r56 教训入法）**：payload 命令必须带全
+2. **r62 已刷（2026-10-28，fastboot 实录 OKAY）**：KeyStoreProbe.cpp
+   （sheng 原版）+ AppleKeyStoreState 组件编进 display archive
+   （`b6daee99` 七成员）+ `sheng-vsync=120` + `offline-mobile-
+   graphics-client=0`；23 条 fixups 全保留（惰性 oracle：环境愈合 →
+   applied 跌破 14 = 定量信号）。kernel `542300ca` / 探针后
+   `158adedb` / ADT `b5b4a172`。**现役 recovery_a = `0854ea5e`（读回
+   对拍待补）；用户报未起（细节待窗）。**
+3. **下会话第一 act = reader 三连**：fastboot（电源+音量减）→
+   `fastboot reboot` → 菜选 forensic reader → ①dd recovery_a 前 96MiB
+   sha == `0854ea5e…db1a` ②fetchchunk 拉窗（先看 header rounds，跑
+   时长未记录可能回卷，按 r53 分段纪律）③判读六项（AKS 行 / vsync /
+   C0 消失 / applied 跌破 14？/ 旧墙复活面 / SEGV 垃圾族）。nura-min
+   只作 reader 失败回退（届时只刷 recovery_a=nura ESP，boot_b 不动，
+   三件全刷规矩恢复生效）。
+4. **r63 备选（按判读分支）**：SEGV 垃圾族仍在 → 全指定 TC 构造 /
+   UIKit 缓存全局审计 / NSAssertionHandler log-only 类杀（勘址已毕
+   0x1874494d4/0x187449618，砍 raise 留 NSLog 日志信号）；AKS 零行 →
+   查组件链接面（nm 查 native_aks_* 符号）。
+5. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
    ADT 的 PackedRAMDisk 映射只有带 --data-ramdisk 才生成（手术注入
@@ -166,10 +174,6 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
    在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk
    （r62 出件已照办全过）。
-5. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
-   header 计数契约（slots_written 截断）；判读前先看 header rounds；
-   `fetchchunk` 勿用单流 fetch（~13MiB 必断）。nura-min 只作 reader
-   失败回退（届时只刷 recovery_a=nura ESP 即可，boot_b 不动）。
 5. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
    全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
    页 / bring-up 检查点表）。
