@@ -1829,3 +1829,35 @@ nura-min simg 是唯一安全件（sparse 头部）。
   087f9ca3 已刷 recovery_a（slot=b OKAY 已 reboot）。
 - 下会话 = STATE §7.1 第一测 r55d：成功则 reader 通道立通（宿主
   ttyACM 拉窗 + rebootbl 回 fastboot）；仍挂则日志留屏（拍死亡行）。
+
+### 0.39（同日）：r55d 实测定谳 = initramfs cpio 手写 12 字段错位；r55e = b060b512（只换 initrd）
+
+- r55d 现场三照（用户 5 次实测）：①20.6s root 挂载 panic 留屏
+  （8 核企鹅 + UFS 全量枚举 sde53-78 + bdev fs 表 ext3/2/4 squashfs
+  vfat msdos f2fs）；②7.3s `[7.26] Trying to unpack initramfs →
+  [7.34] Initramfs unpacking failed: damaged header → Freeing initrd
+  memory: 1260K`；③ABL 连败预算耗尽自动落 fastboot 一次。用户澄清：
+  **内核每必起**（保命 cmdline 生效），几次中途黑屏 = 显示域抖动，
+  最终全败。
+- 定谳链：LoadFile2 initrd **投递链实拍证明是通的**（内核收到
+  1260K 并尝试解包；DTB/cmdline 同证全通）→ 死在 **cpio 内容**：
+  build-forensic-reader.py 手写 newc 头只写 12 字段（fuxi 母版
+  build-linux-log-boot.py = 13 字段含尾部 check；且 namesize 少算
+  NUL）→ 头 110 字节契约被破坏 → 每个文件名错位 → "damaged header"
+  → 无 /init → `VFS: Unable to mount root fs on unknown-block(0,0)`
+  → USB gadget 永不出现。**同根因一次性解释 panic 与无 USB 两象**。
+- 修复 = cpio() 对齐 fuxi 13 字段/小写 hex/namesize 含 NUL；initrd
+  重建 **402fb431**（1,293,314B），内核等价 13 字段解析（11 条目走通
+  到 TRAILER）+ GNU cpio -it + 解包内容 sha 对拍源件（init/busybox/
+  rebootbl 全符）三重验证全绿；手术注入（add-forensic-entry.py 重写
+  文件、toml 原样 diff 相等）出 **r55e = b060b512**。设备仓
+  .cache/forensic 同步换新 initrd（full rebuild 一致性）。
+- 行为入档：①ABL 重试预算 = 同槽连败数次耗尽自动落 fastboot，恢复
+  = `fastboot --set-active=b`（nura FLASHING §3），自动重置仍是 r56
+  BootSlotReset DXE 主题；②显示域抖动（3/5 黑屏，fw_devlink=off 下
+  probe 顺序非确定，DSI/面板序列偶发失手候选）不阻塞通道——reader
+  通道 = 只读 userdata 尾 32MiB + USB CDC ACM，判定以 lsusb 1d6b:0104
+  为准，屏幕黑照测。
+- 下会话 = STATE §7.2 刷 r55e（只刷 recovery_a；先 set_active b 重置
+  预算）→ reader 第一测 → 通道通即补 §7.3 iOS 判读（applied=7 +
+  BLSHBacklightHost 换墙）。
