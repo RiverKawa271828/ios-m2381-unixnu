@@ -168,16 +168,20 @@ unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
    内核拒包 "damaged header" → 无 /init → root panic → USB gadget
    永不出现。修复已三重验证（内核等价 13 字段解析 / GNU cpio /
    内容 sha 对拍源件全绿）。
-2. **r55e 已出件（b060b512；只换 forensic-initrd.img = 402fb431，
-   kernel 4aad92b3 / dtb / toml 原样）——第一测**：
-   `fastboot --set-active=b`（预算重置，防半路落 fastboot）→ 只刷
-   recovery_a → 菜单选 reader → **判定以宿主 `lsusb` 出 1d6b:0104 为
-   准**（屏幕黑也照测）→ ttyACM shell → /run/log.bin（userdata 尾部
-   32MiB SHLOG 窗 dd）→ 宿主 `read-m2381-ufs-log.py log.bin --all` →
-   `/bin/rebootbl` 回 fastboot。通道通 = §7.3 iOS 判读立即补做。
-3. **iOS 判读（顺延，通道通后立即做）**：正常引导 iOS（菜单
-   default=xnu 3 秒超时）→ 等 10-20 分钟断电 → reader 读窗 →
-   判读 `parsed=15 applied=7` + BLSHBacklightHost 换墙 + W1 swap。
+2. **r55e 已刷 + 通道立通（2026-10-27 实测闭环）**：`set_active b`
+   （retry-count 7）→ 只刷 recovery_a ← payload-r55e-**b060b512** →
+   reader 首验全绿：`lsusb` 1d6b:0104、init 报 `userdata=sda22 …
+   magic=SHLOG001`、32MiB 窗在位；同 shell `dd /dev/sde27 前 96MiB |
+   sha256sum` == 镜像 sha（**刷写读回对拍 §2 纪律闭环**）。宿主侧 =
+   udev 规则 99-m2381-reader.rules 已装（串口权限持久化）；
+   工具 = `devices/m2381/unixnu-m2381/scripts/acm-reader.py`
+   （probe/cmd/fetch，FLASHING §7）。
+3. **下会话 = 快速迭代修 iOS（工作单）**：控制变量 iOS 跑 = 菜单
+   default xnu → **8–15 分钟**（BootLog 每 2s 一槽、~509 槽 ≈ 17 分钟
+   回卷丢早期 applied 证据，勿超）屏幕形态稳定 + 2–3 分钟 → 长按硬断
+   电 → reader 拉窗（acm-reader.py fetch）→ `read-m2381-ufs-log.py
+   --all` 判读 `applied=7` + BLSHBacklightHost 换墙 + W1 swap → 下一
+   发 fixups。每轮循环 ≈ 刷 recovery_a（若 ADT/args 变）+ 一跑一读。
 4. **显示域抖动（次优先，不阻塞）**：fw_devlink=off 下 probe 顺序非
    确定，DSI/面板序列偶发失手 → fbcon 丢显示（3/5 黑屏的候选解释）。
    若 r55e 通道通后需要屏显判读再议（panel/DSI probe 依赖整序）。

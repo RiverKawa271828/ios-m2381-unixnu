@@ -1861,3 +1861,31 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - 下会话 = STATE §7.2 刷 r55e（只刷 recovery_a；先 set_active b 重置
   预算）→ reader 第一测 → 通道通即补 §7.3 iOS 判读（applied=7 +
   BLSHBacklightHost 换墙）。
+
+### 0.40（同日）：r55e 刷写闭环 + 取证 reader 通道首验立通（通道转正）
+
+- 刷写（本会话代刷）：`fastboot --set-active=b`（retry-count 7，预算
+  重置）→ `flash recovery_a` ← payload-r55e-**b060b512** OKAY →
+  reboot；现态 iOS 链只刷 recovery_a 卡合法（userdata/boot_b 未动）。
+- **通道首验全绿**：菜单选 reader → 宿主 `lsusb` 出 **1d6b:0104** →
+  acm-reader probe：`m2381 forensic log reader 7.3.0 / usb: acm on
+  a600000.usb / userdata=sda22 sectors=972326040 log=33554432 bytes
+  **magic=SHLOG001**`（32MiB SHLOG 窗在位；nura 内核分区名 = sdaNN，
+  init 的 PARTNAME grep 自适配）。
+- **刷写读回对拍在 reader 内闭环**（§2 纪律首次无 adb 达成）：
+  `grep PARTNAME=recovery_a` → /dev/sde27 → `dd bs=1M count=96 |
+  sha256sum` = **b060b512…** == 镜像 sha 逐字节相等。
+- 宿主侧持久化（用户装）：udev 规则 `99-m2381-reader.rules`
+  （1d6b:0104 tty MODE=0666）；工具转正 = `devices/m2381/unixnu-m2381/
+  scripts/acm-reader.py`（probe / cmd / fetch，fetch = 设备端 sha256 +
+  base64 流拉 + 宿主对拍）。FLASHING §7 全面改写（构建/注入手术路径/
+  宿主准备/读窗循环/iOS 时长标准/rebootbl 行为）。
+- **iOS 引导时长标准入档**（BootLog.c 机制）：**每 2s 写一个 8KiB 槽**，
+  slot_count≈509 → **~17 分钟写满回卷**，回卷覆盖最早的槽（fixups/
+  applied 证据所在）→ 标准 = 跑 **8–15 分钟**、屏幕形态稳定 + 2–3
+  分钟、长按硬断电；勿超 17 分钟。历史 "10-20 分钟" 上限即回卷边界。
+- rebootbl 行为实测：**只重启、不落 ABL fastboot**（我们链；nura 侧
+  完整进 fastboot 方法不搬，无人值守才需要；人工 = 电源+音量减）。
+- 下会话 = STATE §7.3：控制变量 iOS 跑（8–15 分钟）→ acm-reader
+  fetch → parser 判读 `applied=7` + BLSHBacklightHost 换墙 + W1 swap
+  → 进入 fixups 快速迭代。
