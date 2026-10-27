@@ -5,9 +5,10 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r65 = **探针 v2 全进程扫已出件 `d3d4e649` 待刷**，
-2026-10-28：r64 判读定谳毒在 SB 首扫前就位，v2 全任务扫 UIKitCore
-__DATA_DIRTY，首个病灶槽出垃圾的进程点名写毒宿主）
+## 1. 一句话现状（r66 = **探针 v2.1 已出件 `cec04b36` 待刷**，2026-10-28：
+r65a（d3d4e649）被探针锁序 bug 废轮（task_lock 内调
+get_task_map_reference → 递归拿锁 panic），v2.1 去显式 task_lock，
+判读主菜不变 = X5 首病灶事件点名写毒宿主）
 
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
@@ -301,23 +302,24 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r65 已出件 `d3d4e649` 待刷（2026-10-28）**：UIKitCacheProbe
-v2 = 全进程扫——毒在 SB 首扫前就位（r64 定谳），写毒宿主由"首个病灶
-槽出垃圾的进程"点名；刷后判读主菜 = X5 首病灶事件，见 §1 r64 判读）
+## 7. 下一步（**r66 已出件 `cec04b36` 待刷（2026-10-28）**：UIKitCacheProbe
+v2.1 = r65 全进程扫 + 锁序修复。r65a（d3d4e649）被探针自身 panic 废轮
+——`task_lock` 内调 `get_task_map_reference`（其内部自己拿 task_lock，
+bsd_kern.c:386 实证）→ 同线程递归拿锁 → `lock_mtx.c:175` panic；
+修复 = 去显式 task_lock，slide 无锁读。判读主菜不变 = X5 首病灶事件）
 
-1. **刷写卡（r65 = 只刷 recovery_a，设备自 r64 刷后状态未变）**：
+1. **刷写卡（r66 = 只刷 recovery_a，设备自 r65 刷后状态未变）**：
    fastboot（电源+音量减）→ `getvar current-slot` 必须 = b →
-   sha 门 `d3d4e649e0a1…5bd24e` → `flash recovery_a
-   payload-r65-d3d4e649.img` → reboot → 跑 8–15 分硬断电（17 分钟
+   sha 门 `cec04b3638e7…253404a` → `flash recovery_a
+   payload-r66-cec04b36.img` → reboot → 跑 8–15 分硬断电（17 分钟
    回卷红线）。
-2. **r65 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
-   `d3d4e649…`，节点 = **sde27** → fetchchunk 拉窗，按 CRASH 行
-   slide 分段切出 r65 会话）→ **X5 首病灶事件（主菜）**：
+2. **r66 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
+   `cec04b36…`，节点 = **sde27** → fetchchunk 拉窗，按 CRASH 行
+   slide 分段切出 r66 会话）→ **X5 首病灶事件（主菜）**：
    `D <进程名> k<轮次> B<bgTC值> M<mainScreen值>`——谁、第几轮
-   （×2s）、值多大；辅菜 X4 聚合走势（p/n/g/f：多少进程有 UIKit
-   脏数据 / 非零 / 小值 / 读失败）、X7 `G` 首个任意槽小值事件
-   （槽址对照 temp/audit64-slots.py 定性）、X6 `L` 最近病灶事件。
-   回归六项照旧：applied（r64=21/25 parsed）/ AKS / vsync 120 /
+   （×2s）、值多大；辅菜 X4 聚合走势（p/n/g/f）、X7 `G` 首个任意槽
+   小值事件（槽址对照 temp/audit64-slots.py 定性）、X6 `L` 最近病灶
+   事件。回归六项照旧：applied（r64=21/25 parsed）/ AKS / vsync 120 /
    旧墙复活面 / SB sig11 族死点 / procs-spawn。
 3. **判读后分支**：首病灶进程非 SB → 进程级传播链（谁先谁后，
    uikit-cache-proc= 点名跟进）；SB 自身且 k 极小（dyld 阶段）→
