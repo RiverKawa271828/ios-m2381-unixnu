@@ -259,13 +259,19 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 **r63 = UIKit 侧体系候选轮**（§7 预案三分支第一支触发：AKS 行在 +
 SEGV 垃圾族在）。两个候选按序施工，r62 件（`0854ea5e`）仍现役待换：
 
-1. **全指定 TC 构造**（首选）：r60 教训 = `_backgroundThreadFallback
-   TraitCollection` 是故意全 unspecified 的占位 TC（scale=0.0），是
-   unspecified 墙和垃圾族的共同上游之一。构造一个真字段齐全的
-   fallback TC（displayScale=3.0 / 用户接口风格 / 色域等按 m2381 面
-   板 1080×2400 @120Hz 指定），替换 fixup14 的占位返真——即 fixup14
-   的 bl 目标从 bgTC 换成新构造器，或在 KeyStoreProbe 同款组件内预
-   构造全局真 TC 供 getter 返回。
+1. **全指定 TC 构造**（首选）——**r63 已出件 `04eb0533` 待刷
+   （2026-10-28 本机 Linux 全链，ESP 四样过 + fixup16 在 ADT
+   text-fixups）**：RE 定谳 bgTC 病理链 =
+   `+[UITraitCollection _backgroundThreadFallbackTraitCollection]`
+   （0x189ffcb68 懒缓存，锁 0x1f48ce340/槽 0x1f48ce5e0）→
+   `+[UITraitCollection _defaultTraitCollection]`（0x18aa851b0）→
+   `_objc_msgSend$mainScreen` + 栈块 invoke 0x18aa85268（只做
+   setDisplayScale:[screen scale]（cbz 门控）+ setDisplayGamut:
+   [screen gamut]）——displayless 下 mainScreen=nil → 全 unspecified
+   占位（与 r60 判读吻合）。**fixup16a**（.03,3cd9288，
+   cbz→nop 保留 ldr）+ **fixup16b**（.03,3cd9290，
+   `bl $scale`→`fmov d0,#2.0`，donor iPad7,1 原生 2x 最小行为差，
+   >0 过 r60 块 A/C scale 门）；25 条全量。
 2. **UIKit 缓存全局审计**（病根直击）：0xf00/0xf1/垃圾 PC 三轮同族
    病根 = UIKit 缓存单例全局槽（mainScreen 槽 r58 / bgTC 缓存槽
    r61 / 野跳 r62）在无显示环境成批变垃圾。审计方法 = 对 r62 死点
