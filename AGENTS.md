@@ -139,12 +139,31 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r64 已出件 `54b70ad7` 待刷（2026-10-28）**：缓存全局
-审计轮——静态定谳 = 病灶槽文件态全 0、毒在运行时写路径（r63 定谳
-复核指令级成立），动态 = UIKitCacheProbe 内核探针随件；工作单 =
-`docs/STATE.md` §7）
+## 7. 下一步（**r64 已刷已判（`54b70ad7`，2026-10-28）**：读回对拍
+sde27 ✓；**毒在 SB 首扫前已就位（探针首轮扫描即见 21003 非零 +
+44 小值槽，t≈20s）**；探针线程首轮后停摆（X5 索引 slide 双加越界
+读，t 序列丢失，源码已修）→ **r65 = 探针修复版 + 扫描面扩大，
+工作单 = `docs/STATE.md` §7**）
 
-1. **r64 = 缓存全局审计轮（两腿齐下，已出件）**：①静态——21H461
+1. **r64 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
+   （sde27 前 96MiB sha == `54b70ad7…97ec`）。r64 会话 = 288 槽
+   ≈576s（slide +15850000，AKS opens 2→92 单调无回卷；窗尾混 r63
+   尾 13 槽 = AKS 终值 123/1121 巧合，非 stale）。**UKC 主菜部分
+   损失**：首轮成功扫描（X4 冻结 `k1 st0 +15850000 n21003 g44`）就
+   见 __DATA_DIRTY 21003 非零 + **44 个小值槽**（<0x1000000），同槽
+   AKS 才 opens=2 = SB 生命起点——**毒在 SB 首次 UIKit 工作前全部
+   就位，写毒者更早（SB 自身 dyld/objc-initialize 极早期，或其他
+   UIKit 进程）**；但线程在 put(4) 后死于 put(5) 的越界读（bug =
+   `(SLOT+slide−UK_DIRTY_BASE)/8` slide 双加 → 越界 ~345MB；编译件
+   四格式串都在 = 源码即编译码），X5-X7 永空，k 冻 1，槽级 t 序列
+   没拿到。**修复已入 package/UIKitCacheProbe.c（双份同步）：索引去
+   slide + 范围钳制**。applied 69→21（parsed 25，未破 14 愈合线，
+   跟随 respawn 负载减半 spawn 419 vs 968）；垃圾族未愈：SB sig11
+   ×268/576s 死点仍 r61/r63 同点（unslid 0x1800F5FAC，FAR=0xf1）；
+   AKS alive（终态 opens=91/calls=763）；vsync 120 ✓；老 sig6 墙
+   零出现；procs=91/spawn=419；DISPLAY stage=10 同前；SB 未过
+   wallpaper。
+2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
    字节单位；值 = 低 48 位绝对未滑 VA）；UIKitCore **__DATA_DIRTY**
    （0x1f489fef0+0x39958）全链枚举 5410 槽定性；**四病灶槽（bgTC
@@ -158,10 +177,8 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    （vm_map_read_user + task_shared_region_slide），发布 ext 行
    X4-X7（计数/slide/首垃圾事件/最近变更）；门控
    `uikit-cache-probe=1`；boot-ui-focus3 移除（cmdline 1000B 上限）。
-   25 条 fixups 验证在位；ESP 四样过；**payload =
-   `out/m2381/payload-r64-54b70ad7.img`（96MiB）**。刷写卡 = 只刷
-   recovery_a（sha 门 54b70ad7…）；判读主菜 = UKC 行 t 序列（首垃圾
-   tick/槽址/值形态），工作单 §7.2-7.3。
+   25 条 fixups 验证在位；ESP 四样过；payload =
+   `out/m2381/payload-r64-54b70ad7.img`（96MiB）。
 2. **r62 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
    （recovery_a = **sde27**，前 96MiB sha == `0854ea5e…db1a`；坑 =
    勿按 sda 大 LUN 猜节点，FLASHING §6 实测表为准；ACM 推大文本会
