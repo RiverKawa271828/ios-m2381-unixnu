@@ -1641,3 +1641,43 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - **用户实测补记**：设备在 ~20 分钟时被用户断电（logo 全程未变），
   随后用户自行刷回 nura-min——读窗在 nura-min 态完成（照 r41a 例行，
   SHLOG 窗内容为 iOS 引导所写，nura 引导不覆盖）。
+
+## 0.36 2026-10-27 续七：r53 读窗定谳 = fixup 11 实机生效（applied 5→6），SpringBoard 推进到 BLSHBacklightHost brk 新墙；r54 = fixup 12（payload 1ef5eb63）
+
+- **读窗**：logwindow-r53.img md5 `b8dd3dc9aa0a8e4f1d49196837931612` 宿主/
+  设备一致。单引导 341 轮 / 684s（≈11.4 分钟 = 用户断电时刻）。**判读坑
+  （环形窗残留）**：窗口 509 slots，r53 只写 slot 0-340（t=0-684s），
+  slot 341-508 = **r52 残留**（t=682-1017s）——不分会段会把 r52 尾部
+  数据当 r53 读（首读即中招：把 r52 尾部当"显示栈退化/Current Display
+  空/swap offer=-1"，分段后翻案）。
+- **fixup oracle（修正后）**：早期快照（t≈0-2s）`parsed=14 applied=0`
+  = 惰性应用未触发（正常）；**尾部快照（t≈680s）`parsed=14
+  applied=6`** = fixup 11（BannerKit 入口 ret）醒来且生效，原班五条
+  依旧。payload 04f4d803 元组正确上机（kernel 3ab2ace4/probe
+  474724fd/trust 7416ca4f/seed d04a0153 全对）。
+- **SpringBoard 推进（双簇）**：①早期 sig6 = BannerKit 断言（CRASH 行
+  与 r52 逐字节全同，连 slide 0x7280000 都同）= fixup 应用**前**的
+  循环，FAIL 行持久；②fixup 11 应用后 SB 走过 BannerKit，**新墙 =
+  sig5 brk：+[BLSHBacklightHost sharedBacklightHost]+0xbc**（bt 12 帧
+  符号化全活：applicationDidFinishLaunching+0x5d4 → +[SBBacklightController
+  _sharedInstanceCreateIfNeeded:] dispatch_once → init →
+  -initWithContextProvider:+0x9c → BLSHBacklightHost sharedBacklightHost
+  brk，PC=LR=+0xbc，BacklightServicesHost .35 子缓存）——SB 从 init
+  早期推进到 applicationDidFinishLaunching 的 backlight-host 层。
+- **显示栈（修正后）**：尾部快照 owned=1、GOP 全帧映射、UFS verify
+  5379ms/1620MiB 正常、SWAP calls=3 accepted=1 COPY 3 次全帧——健康。
+  **新观察：W1 首交换异常（offer=-1ms/done=-1ms，r52 同位置
+  offer=2109ms 正常）** → 用户照片的撕裂 logo（横条缺失块）= 首帧
+  内容不完整上屏后冻结——swap 管道首帧竞争，非致命（后续 swap 正常），
+  记录待观察。
+- **chronod sig5**：census 36/17（较 r52 ×9 加凶），照旧次优先。
+- **r54 施工（用户自刷）**：fixup 12 =
+  `"dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6"`
+  （+[BLSHBacklightHost sharedBacklightHost] 入口 mov x0,#0; ret 返 nil
+  ——nil-messaging 下游安全，表内 1ee8ef8 同配方；页内偏移 0xb64 合规；
+  变体备选 = SBBacklightController initWithContextProvider 入口）。
+  text_fixups 14→15 条；kernel/探针/trust/种子不变，ADT d57a5879，
+  payload **1ef5eb63** 平铺 `out/m2381/payload-r54-1ef5eb63.img`。
+- **r54 读窗判读点**：`parsed=15 applied=7`（fixup 12 醒来 = host 站点
+  在路径）+ REASON 换墙符号化 + W1 swap 是否复现 offer=-1（撕裂帧
+  复现性）。
