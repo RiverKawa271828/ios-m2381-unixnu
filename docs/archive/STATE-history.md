@@ -1779,3 +1779,22 @@ nura-min simg 是唯一安全件（sparse 头部）。
   fd43ee70。回滚件只在 nura 仓。
 - **下会话 = STATE §7 工作单**：黑屏定位（宿主 USB 观察 → cmdline/
   UART → 兜底 ESP 形态）+ iOS 判读顺延补做（applied=7）+ autoreset。
+
+### 0.38 补二（同日）：黑屏现象两次纠正 + 捕获手段三选 + ramoops 闭环发现
+
+- 用户实测纠正两次：①"内核滚几行就黑"（= 内核确实开始执行，非
+  stub 阶段黑屏）；②"日志一下子就消失，拍不到"（early 输出生命周期
+  极短——stub 行/early console 被 fbcon 切换清掉或死太快）。
+- **捕获手段**：①慢动作录像 240fps（零成本）；②**ramoops 闭环
+  （首选）**：reader DTB（nura apk 同源）自带
+  `ramoops@a8000000`（reg 0x200000，console-size 0x7d800，fdtdump
+  实证）——内核死前 console 在保留内存，**刷回 nura 读
+  /sys/fs/pstore/console-ramoops 即得死亡现场**；③UART（ttyMSM0，
+  nura cmdline 有 qcom_geni_serial，引脚待查 nura 仓）。
+- ABL 重试计数自动重置需求（用户）入 STATE §7.3：机制 = GPT entry
+  属性位（nura FLASHING §3 实证：set_active b 重置预算/qbootctl 起
+  机 mark successful；misc 与直刷链无关）；方案 = m2381Pkg 加
+  BootSlotReset DXE（起机清 boot_b tries/successful=1 + 重算
+  CRC32 写 primary/backup）+ **BootLog GPT check 豁免 boot_b 属性位**
+  （否则写手停 state=4 日志窗停更）；红线 = 只动属性位+CRC，不动
+  分区数据区，misc 不碰。
