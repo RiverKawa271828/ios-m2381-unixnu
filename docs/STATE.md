@@ -11,7 +11,8 @@
 brk 新墙；r54/r55c = fixup 12 + forensic reader（待判读，iOS 判读被
 reader 调试占用）。
 
-**forensic reader 调试三连**（本会话，commits 9c53eee→cbdd5f0→b692151）：
+**forensic reader 调试四连**（本会话，9c53eee→cbdd5f0→b692151→r55d）：
+
 ①fb2c5dd1 LFN 破坏（短名覆盖 toml）→ 机制正道 payload.py 插桩
 （[payload] forensic=true）；②秒退根因一 = entry 无 dtb → 补
 `dtb = "Payloads/forensic.dtb"`（nura sm8550-meizu-20.dtb）；③秒退根因二
@@ -147,7 +148,12 @@ reader 调试占用）。
 fastboot；宿主已确认）。r55c+289614ba（无 SB）上电，无闪回 = LoadImage/
 StartImage 都过了，内核被跳进但 early 死。
 
-1. **黑屏定位（优先）**——候选假设按成本排：
+1. **r55d 已刷（087f9ca3，nura 保命 cmdline 版）——第一测**：
+   菜单选 reader。成功 = 滚字走通到 `magic=SHLOG001 / ready shell` →
+   宿主 ttyACM 拉窗 → rebootbl 回 fastboot，reader 通道立通；仍挂 =
+   `keep_bootcon loglevel=7` 下日志会**留在屏上**，240fps 慢动作或
+   直接拍死亡行（第一阶段内容 = 定位直接证据）。
+2. **黑屏定位（r55d 仍挂时）**——候选假设按成本排：
    a. **（用户实测纠正）内核滚了几行再黑，且一下子消失拍不到** =
      内核开始执行、early 输出可见后死在 very early（USB 零枚举）。
      "滚几行"大概率 = EFI stub 输出（Booting/DTB/Exiting boot
@@ -180,11 +186,11 @@ StartImage 都过了，内核被跳进但 early 死。
      BOOTAA64.EFI 同件 + 我们的 initramfs 挂 ESP 上，由 nura Mu 引导
      的原样路径）——但 recovery_a 被占用，需与 payload 互斥（每轮
      读完刷回 payload，多一次 96MiB 刷写 ≈ 秒级）。
-2. **iOS 判读（被 reader 调试顺延，不丢）**：正常引导 iOS（菜单
+3. **iOS 判读（被 reader 调试顺延，不丢）**：正常引导 iOS（菜单
    default=xnu 3 秒超时）→ 等 10-20 分钟断电 → 现在读窗通道 = reader
    （若通）或临时回 nura-min（recovery_a 刷 nura ESP，boot_b 不动）。
    判读 `parsed=15 applied=7` + BLSHBacklightHost 换墙 + W1 swap。
-3. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
+4. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
    机制实证（nura FLASHING §3）= 计数在 **boot_b 的 GPT entry 属性位**
    （Android A/B：bits 52-55 tries_remaining / bit 56 successful），
    `fastboot set_active b` 重置预算，nura 用 qbootctl 起机 mark
