@@ -144,15 +144,16 @@ devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
    ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
    （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）。
-2. **r55 待刷（用户实测）**：payload `fb2c5dd1` = r54 fixup 12
-   （BLSHBacklightHost 入口返 nil，裸件 1ef5eb63）+ **forensic 内置
-   取证 reader**（菜单 "m2381 forensic log reader"，type=linux，
-   FLASHING §7）——读窗循环脱 nura-min，不再刷 8.7GB userdata。
-   三件全刷（boot_b a1d51f04 / recovery_a fb2c5dd1 / userdata
-   fd43ee70）。判读 = applied=7 + BLSHBacklightHost 换墙 + reader 首验。
+2. **r55 待刷（用户实测；设备现态 = iOS 链 r54，未刷回 nura）**：
+   payload `fb2c5dd1` = r54 fixup 12（BLSHBacklightHost 入口返 nil，
+   裸件 1ef5eb63）+ **forensic 内置换证 reader**（菜单 "m2381 forensic
+   log reader"，type=linux，FLASHING §7）。**只刷 recovery_a**（iOS
+   链未被 nura 覆盖；三件全刷规矩只在被 nura 覆盖后触发）。判读 =
+   applied=7 + BLSHBacklightHost 换墙 + reader 首验。
 3. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds。
-   下一轮起读窗走 forensic reader（USB ACM），nura-min 只作回退。
+   读窗走 forensic reader（USB ACM）；nura-min 只作 reader 失败回退
+   （届时只刷 recovery_a=nura ESP 即可，boot_b 不动）。
 4. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
    全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
    页 / bring-up 检查点表）。

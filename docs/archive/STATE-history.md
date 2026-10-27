@@ -1726,3 +1726,16 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - **r55 读窗判读点**：①iOS 侧 `parsed=15 applied=7`（fixup 12 醒 =
   host 站点在路径）+ BLSHBacklightHost 换墙符号化 + W1 swap 复现性；
   ②reader 首验（USB ACM 枚举 / dd 魔数 / parser 无截断提示错误）。
+
+### 0.37 补正（同日）：设备现态勘误 = iOS 链现役（r54 未刷回 nura）
+
+- 交接时误记"设备在 nura-min，下轮三件全刷"——用户纠正：r54 刷完
+  断电后**没有刷回 nura**，设备现态 = iOS 链（boot_b a1d51f04 /
+  recovery_a 1ef5eb63 已上电 12 分钟 / userdata fd43ee70 全未被动；
+  NCM 无 172.16.42.x 接口佐证非 nura）。
+- **r55 刷写修正 = 只刷 recovery_a**（`fb2c5dd1`）；"三件全刷"规矩
+  只在 iOS 链被 nura 覆盖后触发（r44/r49 教训的正确边界）。
+- **forensic reader 的额外红利**：iOS 链现役时连 nura-min 回退都不用
+  刷——reader 在 payload 里，从菜单进；reader 起不来才需要刷 nura
+  ESP（只 recovery_a，boot_b 不动）。
+- STATE §2/§7 + AGENTS §7 已同步修正。
