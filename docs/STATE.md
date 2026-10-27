@@ -5,28 +5,33 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r55c+289614ba 上机，reader 黑屏待查，2026-10-27）
+## 1. 一句话现状（r55d 实测定谳 + r55e 待刷，2026-10-27）
 
 **=y 显示车道**：r53 fixup 11 生效（applied 6），SB 推进 BLSHBacklightHost
-brk 新墙；r54/r55c = fixup 12 + forensic reader（待判读，iOS 判读被
-reader 调试占用）。
+brk 新墙；r54/r55 系 = fixup 12 + forensic reader（iOS 判读被 reader
+调试占用，通道通后立即补）。
 
-**forensic reader 调试四连**（本会话，9c53eee→cbdd5f0→b692151→r55d）：
+**forensic reader 调试五连**（本会话，9c53eee→cbdd5f0→b692151→r55d→r55e）：
 
 ①fb2c5dd1 LFN 破坏（短名覆盖 toml）→ 机制正道 payload.py 插桩
 （[payload] forensic=true）；②秒退根因一 = entry 无 dtb → 补
 `dtb = "Payloads/forensic.dtb"`（nura sm8550-meizu-20.dtb）；③秒退根因二
 = ENABLE_SECUREBOOT=1（sheng 拍来）LoadImage 拒签 → 1→0，**boot_b
-换件 = 289614ba**（替代 a1d51f04）。r55c（69538b41）+289614ba 实机：
-**无闪回（LoadImage 过了）但黑屏无内核滚字，USB 零枚举 = 内核 early
-挂死**（gadget 都没到）。下会话 = 黑屏定位（工作单 §7）。
+换件 = 289614ba**（替代 a1d51f04）；④r55d（087f9ca3 保命 cmdline）
+实测定谳 = **内核每必起**（8 核企鹅/UFS 全量枚举，keep_bootcon 留屏
+成立），死因实拍 = `Initramfs unpacking failed: damaged header` →
+无 /init → `VFS: Unable to mount root fs on unknown-block(0,0)` → USB
+永不出现；根因 = build-forensic-reader.py 手写 cpio **12 字段错位**
+（newc 契约 13 字段，fuxi 母版即 13）——LoadFile2 投递链实拍证明是通
+的；⑤**r55e（b060b512，只换 initrd = 402fb431）已出件待刷**。下会话
+= STATE §7.2 reader 第一测（判定以 lsusb 1d6b:0104 为准，黑屏不阻塞）。
 
 ## 2. 设备现状（2026-10-27 r54 后 = **iOS 链现役**，未刷回 nura）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | r55c（fixup 12 + forensic reader + dtb） | `69538b41` | **现役已上电**（菜单选 reader 黑屏中） |
+| recovery_a | r55d（fixup 12 + forensic reader + 保命 cmdline） | `087f9ca3` | **现役已上电**（r55e 刷写后即被替代） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
@@ -35,10 +40,14 @@ reader 调试占用）。
   "三件全刷"规矩只在 iOS 链被 nura 覆盖时触发——现态合法快捷卡）：
   ```bash
   fastboot getvar current-slot      # 必须 = b
-  sha256sum out/m2381/payload-r55-fb2c5dd1.img   # 前 8 = fb2c5dd1
-  fastboot flash recovery_a out/m2381/payload-r55-fb2c5dd1.img
+  sha256sum out/m2381/payload-r55e-b060b512.img  # 前 8 = b060b512
+  fastboot flash recovery_a out/m2381/payload-r55e-b060b512.img
   fastboot reboot
   ```
+- **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
+  fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
+  重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
+  主题。
 - 读窗从此走 **forensic reader**（菜单选 "m2381 forensic log reader"，
   FLASHING §7）——**iOS 链现役时连 nura-min 回退都不用刷**，reader 在
   payload 里；nura-min 只在 reader 本身起不来时才需要（届时三件全刷
@@ -142,55 +151,37 @@ reader 调试占用）。
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（reader 黑屏定位工作单——2026-10-27 交接）
+## 7. 下一步（r55e reader 第一测工作单——2026-10-27 交接）
 
-**现场态**：设备黑屏挂在 reader 内核 early（USB 零枚举、无 NCM、无
-fastboot；宿主已确认）。r55c+289614ba（无 SB）上电，无闪回 = LoadImage/
-StartImage 都过了，内核被跳进但 early 死。
+**r55d 实测定谳（用户 5 次实测 + 现场三照）**：内核**每必起**（保命
+cmdline 生效；2 次全程滚字到 panic 留屏，3 次中途黑屏 = 显示域抖动，
+不阻塞通道——reader 只读 userdata 尾 + USB，判定与屏幕无关）。死亡行
+实拍 = `[7.26] Trying to unpack initramfs → [7.34] Initramfs unpacking
+failed: damaged header → Freeing initrd memory: 1260K`，继续走到 20.6s
+`Kernel panic - not syncing: VFS: Unable to mount root fs on
+unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
+齐 = DTB/cmdline/LoadFile2 initrd 投递全通）。另实证 ABL 连败预算
+耗尽自动落 fastboot 一次。
 
-1. **r55d 已刷（087f9ca3，nura 保命 cmdline 版）——第一测**：
-   菜单选 reader。成功 = 滚字走通到 `magic=SHLOG001 / ready shell` →
-   宿主 ttyACM 拉窗 → rebootbl 回 fastboot，reader 通道立通；仍挂 =
-   `keep_bootcon loglevel=7` 下日志会**留在屏上**，240fps 慢动作或
-   直接拍死亡行（第一阶段内容 = 定位直接证据）。
-2. **黑屏定位（r55d 仍挂时）**——候选假设按成本排：
-   a. **（用户实测纠正）内核滚了几行再黑，且一下子消失拍不到** =
-     内核开始执行、early 输出可见后死在 very early（USB 零枚举）。
-     "滚几行"大概率 = EFI stub 输出（Booting/DTB/Exiting boot
-     services）或 early console；随后黑 = fbcon 未接管/内核死。
-     **捕获手段三选（拍不到就用后两个）**：
-     ①手机**慢动作录像 240fps** 拍黑屏前几帧（零成本，第一试）；
-     ②**ramoops 闭环（首选）**：reader 的 DTB（nura sm8550-meizu-20）
-     **自带 ramoops@a8000000**（console-size 0x7d800 保留内存）——
-     内核 console/pstore 写入后即使挂死，**重启刷回 nura 读
-     /sys/fs/pstore/console-ramoops** 即得死亡现场（要求 nura 的
-     stock/vendor_boot DTB 同节点——同源 apk，大概率在；若 nura 侧
-     pstore 空则需确认 no-map 保留区未被 ABL 覆写）；
-     ③UART（ttyMSM0，cmdline nura 形态有 qcom_geni_serial.con_enabled
-     ——物理接引脚查 nura 仓/HARDWARE）。
-   b. 候选假设（按录像内容定）：ExitBootServices 后 early 挂——
-     UEFI 内存 map 与内核期望冲突（我们高段 GCD 0x8c0000000 vs
-     nura Mu map）；DTB 与内核版本错位（内核=v71/r91 ESP 件 vs
-     DTB=apk rc6-r91，核对同 build）；EL2/内存属性差异；内核对
-     fb/simpledrm 的 cmd-mode 面板处理（fbcon 初始化挂）。
-   c. **console 补强**：cmdline 换 nura 形态 `console=ttyMSM0,
-     115200n8 earlycon keep_bootcon`（m2381 UART 引脚查
-     docs/HARDWARE，nura FLASHING 可能记录了 UART 接法）。
-   d. **兜底形态**：不走 UniXNU 菜单 LoadImage，改 nura 原生路径
-     （取证专用 ESP：nura BOOTAA64.EFI 同件由 nura Mu 引导；但
-     nura Mu = boot_b 换回 nura 固件——与 iOS 链互斥，每轮换刷）；
-     或第一信号改 **USB serial gadget 只回显**（init 最早 say 后
-     立即起 gadget，不等 dd——定位死点前后）。
-   c. **换载体形态（兜底）**：reader 不走 UniXNU 菜单 LoadImage，改
-     nura 原生形态——recovery_a 只刷一个**取证专用 ESP**（nura
-     BOOTAA64.EFI 同件 + 我们的 initramfs 挂 ESP 上，由 nura Mu 引导
-     的原样路径）——但 recovery_a 被占用，需与 payload 互斥（每轮
-     读完刷回 payload，多一次 96MiB 刷写 ≈ 秒级）。
-3. **iOS 判读（被 reader 调试顺延，不丢）**：正常引导 iOS（菜单
-   default=xnu 3 秒超时）→ 等 10-20 分钟断电 → 现在读窗通道 = reader
-   （若通）或临时回 nura-min（recovery_a 刷 nura ESP，boot_b 不动）。
+1. **根因（已修，builder 对齐 fuxi 13 字段）**：build-forensic-reader.py
+   手写 newc 只写 12 字段（缺 check + namesize 少 NUL）→ 文件名错位 →
+   内核拒包 "damaged header" → 无 /init → root panic → USB gadget
+   永不出现。修复已三重验证（内核等价 13 字段解析 / GNU cpio /
+   内容 sha 对拍源件全绿）。
+2. **r55e 已出件（b060b512；只换 forensic-initrd.img = 402fb431，
+   kernel 4aad92b3 / dtb / toml 原样）——第一测**：
+   `fastboot --set-active=b`（预算重置，防半路落 fastboot）→ 只刷
+   recovery_a → 菜单选 reader → **判定以宿主 `lsusb` 出 1d6b:0104 为
+   准**（屏幕黑也照测）→ ttyACM shell → /run/log.bin（userdata 尾部
+   32MiB SHLOG 窗 dd）→ 宿主 `read-m2381-ufs-log.py log.bin --all` →
+   `/bin/rebootbl` 回 fastboot。通道通 = §7.3 iOS 判读立即补做。
+3. **iOS 判读（顺延，通道通后立即做）**：正常引导 iOS（菜单
+   default=xnu 3 秒超时）→ 等 10-20 分钟断电 → reader 读窗 →
    判读 `parsed=15 applied=7` + BLSHBacklightHost 换墙 + W1 swap。
-4. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
+4. **显示域抖动（次优先，不阻塞）**：fw_devlink=off 下 probe 顺序非
+   确定，DSI/面板序列偶发失手 → fbcon 丢显示（3/5 黑屏的候选解释）。
+   若 r55e 通道通后需要屏显判读再议（panel/DSI probe 依赖整序）。
+5. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
    机制实证（nura FLASHING §3）= 计数在 **boot_b 的 GPT entry 属性位**
    （Android A/B：bits 52-55 tries_remaining / bit 56 successful），
    `fastboot set_active b` 重置预算，nura 用 qbootctl 起机 mark
@@ -202,7 +193,7 @@ StartImage 都过了，内核被跳进但 early 死。
    r49/r50 的 gpt 0->0 机制）；红线注记 = 只动属性位 + CRC（nura
    qbootctl 先例，不动分区数据区）；手动恢复 = `fastboot set_active b
    && fastboot reboot`（用户验证过）。与 sheng-autoreset 并列 r56。
-5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
+6. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
 ## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
