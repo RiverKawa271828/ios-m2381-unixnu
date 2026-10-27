@@ -7,9 +7,13 @@
 
 ## 1. 一句话现状（r55e 现役 + 取证读窗通道立通，2026-10-27）
 
-**=y 显示车道**：r53 fixup 11 生效（applied 6），SB 推进 BLSHBacklightHost
-brk 新墙；r54/r55 系 = fixup 12 + forensic reader（iOS 判读被 reader
-调试占用，通道通后立即补）。
+**=y 显示车道**：r55e 首轮 iOS 判读完成（2026-10-27，acm-reader 拉窗）：
+**applied=7**（15 条 parsed、r53 fixup 11 + r47 8a/8b + BLSHBacklightHost
+fixup 12 等全生效）、**真显示 swap 三连**（W1/W2/W3 t=243–245s，GOP 映射
+b8000000，10.4MB 帧缓冲）、系统 173 进程 / 881 spawn 全生态起跑；**换墙
+= SBMainDisplaySystemGestureManager sharedInstance 内 displayIdentity
+断言**（SB 自 t=68s 起 SIGABRT 循环 552 次同死点）。fixup 9 已出件 =
+**payload-r56-db3a7392**（16 条 fixups + forensic entry）。
 
 **forensic reader 调试五连**（本会话，9c53eee→cbdd5f0→b692151→r55d→r55e）：
 
@@ -37,14 +41,17 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
   NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
-- **r55 刷写 = 只刷 recovery_a**（boot_b/userdata 未被覆盖，r44/r49
-  "三件全刷"规矩只在 iOS 链被 nura 覆盖时触发——现态合法快捷卡）：
+- **下一发刷写 = 只刷 recovery_a ← r56**（boot_b/userdata 未被覆盖，
+  r44/r49 "三件全刷"规矩只在 iOS 链被 nura 覆盖时触发——现态合法快捷卡）：
   ```bash
   fastboot getvar current-slot      # 必须 = b
-  sha256sum out/m2381/payload-r55e-b060b512.img  # 前 8 = b060b512
-  fastboot flash recovery_a out/m2381/payload-r55e-b060b512.img
+  sha256sum out/m2381/payload-r56-db3a7392.img  # 前 8 = db3a7392
+  fastboot flash recovery_a out/m2381/payload-r56-db3a7392.img
   fastboot reboot
   ```
+  刷后 iOS 跑 8–15 分钟硬断电 → 菜单选 reader → `acm-reader.py
+  fetchchunk`（fetch 单流 ~13MiB 断，r56 实测两连；分块拉 16/16 块 +
+  SHA MATCH 31s 已转正）→ 判读 `applied=8` + displayIdentity 墙是否破。
 - **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
   fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
   重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
@@ -152,41 +159,48 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r55e reader 第一测工作单——2026-10-27 交接）
+## 7. 下一步（r56 刷写 + iOS 快速迭代循环——2026-10-27 r55e 判读后）
 
-**r55d 实测定谳（用户 5 次实测 + 现场三照）**：内核**每必起**（保命
-cmdline 生效；2 次全程滚字到 panic 留屏，3 次中途黑屏 = 显示域抖动，
-不阻塞通道——reader 只读 userdata 尾 + USB，判定与屏幕无关）。死亡行
-实拍 = `[7.26] Trying to unpack initramfs → [7.34] Initramfs unpacking
-failed: damaged header → Freeing initrd memory: 1260K`，继续走到 20.6s
-`Kernel panic - not syncing: VFS: Unable to mount root fs on
-unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
-齐 = DTB/cmdline/LoadFile2 initrd 投递全通）。另实证 ABL 连败预算
-耗尽自动落 fastboot 一次。
+**r55e 首轮判读（2026-10-27，本会话 acm-reader 拉窗 32MiB SHA 对拍）**：
 
-1. **根因（已修，builder 对齐 fuxi 13 字段）**：build-forensic-reader.py
-   手写 newc 只写 12 字段（缺 check + namesize 少 NUL）→ 文件名错位 →
-   内核拒包 "damaged header" → 无 /init → root panic → USB gadget
-   永不出现。修复已三重验证（内核等价 13 字段解析 / GNU cpio /
-   内容 sha 对拍源件全绿）。
-2. **r55e 已刷 + 通道立通（2026-10-27 实测闭环）**：`set_active b`
-   （retry-count 7）→ 只刷 recovery_a ← payload-r55e-**b060b512** →
-   reader 首验全绿：`lsusb` 1d6b:0104、init 报 `userdata=sda22 …
-   magic=SHLOG001`、32MiB 窗在位；同 shell `dd /dev/sde27 前 96MiB |
-   sha256sum` == 镜像 sha（**刷写读回对拍 §2 纪律闭环**）。宿主侧 =
-   udev 规则 99-m2381-reader.rules 已装（串口权限持久化）；
-   工具 = `devices/m2381/unixnu-m2381/scripts/acm-reader.py`
-   （probe/cmd/fetch，FLASHING §7）。
-3. **下会话 = 快速迭代修 iOS（工作单）**：控制变量 iOS 跑 = 菜单
-   default xnu → **8–15 分钟**（BootLog 每 2s 一槽、~509 槽 ≈ 17 分钟
-   回卷丢早期 applied 证据，勿超）屏幕形态稳定 + 2–3 分钟 → 长按硬断
-   电 → reader 拉窗（acm-reader.py fetch）→ `read-m2381-ufs-log.py
-   --all` 判读 `applied=7` + BLSHBacklightHost 换墙 + W1 swap → 下一
-   发 fixups。每轮循环 ≈ 刷 recovery_a（若 ADT/args 变）+ 一跑一读。
-4. **显示域抖动（次优先，不阻塞）**：fw_devlink=off 下 probe 顺序非
+- 窗：rounds=314 slots=314/509 uptime=628s（用户跑 ~10.5 分钟后硬断电，
+  未回卷，最早证据完好）；write_errors=0。
+- **三大判读项全中**：`applied=7`（尾槽）；**W1/W2/W3 真显示 swap**（
+  t=243.275/244.712/245.286s，done=1410/188/207ms；GOP=b8000000
+  10.4MB）；诊断页 deadline 退出后苹果 logo 常亮（swap timeline 与
+  屏幕形态吻合）。
+- **换墙 = displayIdentity 断言**：SB 自 t=68s 起 SIGABRT 循环，552 次
+  崩溃 PC/LR/bt 逐字节相同（slide +a57c000）。符号化（1020 万 nlist +
+  验活 LR-4 全 bl）：applicationDidFinishLaunching → SBProximity-
+  BacklightPolicyFactory createNew… +0x8c → SBMainDisplaySystemGesture-
+  Manager sharedInstance（once 块）→ super2 `SBSystemGestureManager
+  _initWithDisplayIdentity:`，identity = `+[FBDisplayManager
+  mainIdentity]`（= sharedInstance ivar@8，无显示栈从不注册）= nil →
+  NSParameterAssert（SBSystemGestureManager.m:119，'Invalid parameter
+  not satisfying: displayIdentity'）。注：SBMainDisplay 自己的
+  _initWithDisplayIdentity: 是 'unallowed initializer'（line 53）陷阱，
+  sharedInstance 特意走 super 绕开——**勿修陷阱，修父类**。
+- **fixup 9 出件**：`.25,1e64f10` `-[SBSystemGestureManager
+  _initWithDisplayIdentity:]` 入口 `ret` 返 self（同 8b 形）→
+  **payload-r56-db3a7392**（16 条 fixups，ADT 内字串实证在位 + forensic
+  entry LFN 读回 OK）。
+- 工具坑两枚已修/转正：acm-reader fetch 行过滤丢 `+`/`/`（修正
+  43..122）；单流 ~13MiB 必断（ACM gadget 长流卡死）→ `fetchchunk`
+  分块拉（2MiB×16，每块新会话，16/16 + SHA MATCH 31s）。
+
+1. **下会话 = 刷 r56 + 迭代循环**：只刷 recovery_a ← payload-r56-
+   **db3a7392**（§2 卡）→ 菜单 default xnu 跑 8–15 分钟（17 分钟回卷
+   红线）→ 硬断电 → reader → `fetchchunk` → parser `--all` 判读
+   `applied=8` + displayIdentity 墙是否破（预期新墙：identity 消费者
+   nil 比对链或 SB UI 下层）→ 下一发 fixups。每轮 = 刷 recovery_a +
+   一跑一读；ADT/args 不变时 skip 重刷。
+2. **拉窗纪律**：判定只看宿主（屏幕黑不阻塞）；判读前先看 header
+   rounds/slots_written（跨引导不清零，parser 已守计数契约）；若
+   `fetch` 断流直接换 `fetchchunk`，勿反复重试单流。
+3. **显示域抖动（次优先，不阻塞）**：fw_devlink=off 下 probe 顺序非
    确定，DSI/面板序列偶发失手 → fbcon 丢显示（3/5 黑屏的候选解释）。
-   若 r55e 通道通后需要屏显判读再议（panel/DSI probe 依赖整序）。
-5. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
+   需要屏显判读再议（panel/DSI probe 依赖整序）。
+4. **ABL 重试计数自动重置（BootSlotReset DXE，用户需求 2026-10-27）**：
    机制实证（nura FLASHING §3）= 计数在 **boot_b 的 GPT entry 属性位**
    （Android A/B：bits 52-55 tries_remaining / bit 56 successful），
    `fastboot set_active b` 重置预算，nura 用 qbootctl 起机 mark
@@ -197,8 +211,8 @@ unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
    boot_b 属性位**（否则 gpt_open != gpt_last 写手停 = 日志窗停更，
    r49/r50 的 gpt 0->0 机制）；红线注记 = 只动属性位 + CRC（nura
    qbootctl 先例，不动分区数据区）；手动恢复 = `fastboot set_active b
-   && fastboot reboot`（用户验证过）。与 sheng-autoreset 并列 r56。
-6. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
+   && fastboot reboot`（用户验证过）。
+5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
 ## 8. 轮次索引（r43 → r55e；详情 = commit message + STATE-history 对应节）
@@ -219,4 +233,5 @@ unknown-block(0,0)`（8 核企鹅 + UFS 全量枚举 sde/sdc/sdf + bdev fs 表
 | r54 | `1ef5eb63`（裸件） | fixup 12（BLSHBacklightHost 入口返 nil）；判读被 reader 调试顺延 | history §0.37 |
 | r55a–c | `fb2c5dd1`→`69538b41` | reader 三连翻车定谳：LFN 毁（短名覆盖 toml）→ entry 缺 dtb 秒退 → ENABLE_SECUREBOOT=1 拒签（boot_b 换 `289614ba`）；payload.py 插桩转正 | history §0.37 |
 | r55d | `087f9ca3` | 保命 cmdline 定谳：内核每必起（企鹅/UFS 全枚举），死因 = **initramfs cpio 手写 12 字段错位**（damaged header 实拍）→ root panic → 无 USB 同根因；LoadFile2 投递链实证是通的 | history §0.38/0.39 |
-| r55e | `b060b512` | **取证 reader 通道立通**（1d6b:0104 + magic=SHLOG001 + 32MiB 窗在位）；reader 内读回对拍闭环；iOS 判读待控制变量跑 | history §0.39/0.40 |
+| r55e | `b060b512` | **取证 reader 通道立通**（1d6b:0104 + magic=SHLOG001 + 32MiB 窗在位）；reader 内读回对拍闭环；**首轮 iOS 判读**：applied=7 + W1–W3 真 swap（t=243–245s）+ 173 进程全生态，换墙 = displayIdentity 断言（SB SIGABRT ×552 同死点，符号化定谳 FBDisplayManager.mainIdentity=nil） | history §0.39/0.40/0.41 |
+| r56 | `db3a7392` | fixup 9（SBSystemGestureManager _initWithDisplayIdentity: 入口 ret，破 displayIdentity 墙）；fetchchunk 分块拉窗转正 | history §0.41 |

@@ -139,25 +139,29 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r55e 闭环、下会话 iOS 快速迭代；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r55e 判读 + r56 出件，下会话刷 r56 续迭代；工作单 = `docs/STATE.md` §7）
 
 1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
    ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
-   （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）。
+   （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）；
+   ~~r55e 首轮 iOS 判读~~ ✅（applied=7 + W1–W3 真 swap + 换墙
+   displayIdentity 断言，见 §0.41）。
 2. **取证 reader 通道已立通（r55e = b060b512 现役，2026-10-27 闭环）**：
-   刷写读回对拍 ✓（reader shell 里 dd recovery_a 前 96MiB sha == 镜像
-   sha，§2 纪律闭环）、lsusb 1d6b:0104、init 报 magic=SHLOG001、32MiB
-   窗在位。宿主 = udev 规则 99-m2381-reader.rules（串口权限持久化）+
+   刷写读回对拍 ✓、lsusb 1d6b:0104、magic=SHLOG001、32MiB 窗在位。
+   宿主 = udev 规则 99-m2381-reader.rules +
    `devices/m2381/unixnu-m2381/scripts/acm-reader.py`（probe/cmd/
-   fetch，配 read-m2381-ufs-log.py）；全流程 = FLASHING §7。r55d 根因
-   存档 = initrd cpio 手写 12 字段错位（newc 契约 13 字段含 check、
-   namesize 含 NUL；LoadFile2 投递链实拍证明是通的）。
-3. **下会话 = 快速迭代修 iOS**：控制变量跑 = 菜单 xnu **8–15 分钟**
-   （BootLog 每 2s 一槽，slot_count≈509 → ~17 分钟回卷会覆盖最早的
-   applied/fixup 证据，勿超）屏幕稳定 + 2–3 分钟 → 长按硬断电 →
-   acm-reader.py fetch → read-m2381-ufs-log.py --all 判读 `applied=7`
-   + BLSHBacklightHost 换墙 + W1 swap → 下一发 fixups（ADT/args 变才
-   重刷 recovery_a）。rebootbl 实测只重启不落 ABL fastboot；人工 =
+   **fetchchunk**——单流 fetch 在 ~13MiB 必断 r56 实测两连，拉窗直接
+   用 fetchchunk，配 read-m2381-ufs-log.py）；全流程 = FLASHING §7。
+   r55d 根因存档 = initrd cpio 手写 12 字段错位。
+3. **下会话 = 刷 r56 + 快速迭代修 iOS**：只刷 recovery_a ←
+   **payload-r56-db3a7392**（16 条 fixups；fixup 9 =
+   SBSystemGestureManager _initWithDisplayIdentity: 入口 ret 破
+   displayIdentity 墙——根因 = FBDisplayManager.mainIdentity=nil，
+   SBMainDisplay 同名 init 是陷阱勿修）→ 菜单 xnu 跑 **8–15 分钟**
+   （~17 分钟回卷红线，勿超）屏幕稳定 + 2–3 分钟 → 长按硬断电 →
+   重上电选 reader → `fetchchunk` → parser `--all` 判读 `applied=8`
+   + displayIdentity 墙是否破 → 下一发 fixups（ADT/args 变才重刷
+   recovery_a）。rebootbl 实测只重启不落 ABL fastboot；人工 =
    电源+音量减（无人值守才需要 nura 侧完整方法）。
 4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds。
