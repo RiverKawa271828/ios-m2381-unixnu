@@ -33,9 +33,19 @@ fastboot getvar partition-size:userdata
 - 同一时刻只允许一个 fastboot 通道；本仓与 nura 侧刷写互斥。
 - `fastboot boot` 是死路（魅族 ABL 裁剪 CmdBoot），只能 flash。
 
-## 2. 读回（刷前必做）
+## 2. 读回（刷后对拍）
 
-设备在 Flyme / nura 下且有 root 时：
+**iOS 链现态（无 adb）= 用取证 reader 读回（r55e 实证）**：刷完重启后
+菜单选 reader，shell 里定位分区并 hash（busybox sha256sum 在）：
+
+```bash
+python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py cmd \
+  'grep PARTNAME=recovery_a /sys/class/block/*/uevent'   # 找设备名（如 /dev/sde27）
+python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py cmd \
+  'dd if=/dev/sde27 bs=1M count=96 2>/dev/null | sha256sum'   # == 镜像 sha 即实证
+```
+
+设备在 Flyme / nura 下且有 root 时（全分区镜像读回）：
 
 ```bash
 adb shell su -c 'dd if=/dev/block/by-name/boot_b of=/data/local/tmp/boot_b.before.img'
@@ -49,21 +59,25 @@ sha256sum boot_b.before.img recovery_a.before.img
   （本机 254GB 空闲）和用户拍板。
 - 读回件存 `backups/`（不入 git），文件名带日期/分区。
 
-## 3. 刷写（iOS 链现役形态，r49/r50 定谳后的卡片格式）
+## 3. 刷写（iOS 链现役形态）
 
-每轮刷写 = **三件全刷**（boot_b + recovery_a + userdata），按当轮"刷写卡"执行：
+**常规迭代轮 = 只刷 recovery_a**（当轮 payload；boot_b/userdata 未被动）；
+**三件全刷**（boot_b + recovery_a + userdata）只在 iOS 链被 nura 覆盖后
+触发的恢复轮（r44 两次踩坑定的规矩），按当轮"刷写卡"执行：
 
 - **发卡前先确认设备现态**：走过 nura-min 读回流程后 iOS 链已被覆盖，
   "只刷 recovery_a" 快捷卡只在 iOS 链未被 nura 覆盖时合法（r44 两次踩坑）。
 - payload 只认**平铺路径** `out/m2381/payload-rNN-<sha8>.img`（`--out`
   双层路径歧义已在 r49 作废，旧路径文件保留作回滚件不覆盖）；
   卡上必带**刷前 sha256 门**（`sha256sum` 输出须以卡上 sha 前 8 开头）。
-- 现役件（2026-10-27，sha 前 8）：boot_b = `a1d51f04`
-  （devices/m2381/unixnu-m2381/build/m2381/boot/boot.img）+ recovery_a =
-  当轮 payload + userdata = `fd43ee70`
+- 刷前 `fastboot --set-active=b` 重置 ABL 重试预算（同槽连败耗尽会自动
+  落 fastboot；getvar current-slot 必须 = b）。
+- 现役件（2026-10-27 r55e 后，sha 前 8）：boot_b = `289614ba`
+  （无 SB 版，ENABLE_SECUREBOOT=0）+ recovery_a = r55e `b060b512`
+  （当轮 payload）+ userdata = `fd43ee70`
   （out/m2381/ci-artifacts/userdata-root.img）。现势详见 `docs/STATE.md` §2。
-- 每槽刷完立即读回 sha 对拍；刷完 `fastboot reboot`（`fastboot boot` 死路），
-  让 ABL 走 boot_b。
+- 每槽刷完立即读回 sha 对拍（§2；iOS 链态走 reader）；刷完
+  `fastboot reboot`（`fastboot boot` 死路），让 ABL 走 boot_b。
 
 ## 4. 回滚
 
