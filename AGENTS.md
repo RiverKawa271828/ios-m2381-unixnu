@@ -134,9 +134,9 @@ docs/hardware/            stock FDT/DTS、DTB（只读参考）
 docs/archive/             旧 sweet 笔记、B2 评估与启动链、STATE 轮次史（§0.0–0.34）、完工计划（史料）
 reference/                UniXNU/uefi-fuxi/unixnu-fuxi 等克隆（gitignore）
 research/                 IPSW 等本地大件（gitignore；旧 iPhone X IPSW 已无用）
-tools/                    adt.py / mkadt.py / remotezip.py（留作参考）
 artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore）
-devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
+devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + records/ 实据
+                          + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
 ## 7. 下一步（2026-10-27 r55e 判读 + r56 出件，下会话刷 r56 续迭代；工作单 = `docs/STATE.md` §7）

@@ -95,8 +95,12 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 - **ADT 变更预告（上游 `688fa88`）**：下轮 payload 的 ADT 会因 21H461
   profile 新增 product-id/J120AP compatible//product/audio 而变化——
   属预期正文变更，payload sha 变化不是事故。
-- **诊断工具链（不入 git）**：`temp/` = symbolicate46.py / disasm48.py /
-  blstub48.py / live48.py / cache-extract / logwindow-rNN.img 序列。
+- **诊断工具链**：符号化工具集已收编入设备仓
+  `devices/m2381/unixnu-m2381/scripts/re-tools/`（见 §4.2）；
+  `temp/` 只留 cache-extract（4.4G 解码缓存）+ 近两轮日志窗
+  （r52/r53）+ 当轮解析产物。2026-10-27 清理 = 旧轮 payload
+  r49–r55d、老 logwindow r42–r50、r49/r50-verify、r51 构建日志、
+  B2 期 tools/（adt/mkadt/remotezip）全数删除。
 
 ## 4. 方法资产（反复要用的）
 
@@ -107,8 +111,11 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 2. **dyld 缓存符号化**：CRASH 行 `+N` 去滑；**先读 REASON 行**（SIGABRT
    的 PC 停在 abort 链，给不了抛点）；bt 帧序内→外，live 判据 =
    **bl-target 校验**（LR 落点必须是真调用指令——r47 修正 r46 的"陈旧帧"
-   误判：位置不预示真伪，bl-target 才是判活器）。全步骤见
-   memory `dyld-cache-symbolication` + `temp/symbolicate46.py`。
+   误判：位置不预示真伪，bl-target 才是判活器）。工具已收编入设备仓
+   **`devices/m2381/unixnu-m2381/scripts/re-tools/`**（cachesym /
+   symbolicate / verifychain / disasm / find-string-xref + README 坑
+   表；cache 目录默认 `temp/cache-extract`，`UNIXNU_CACHE_EXTRACT`
+   可覆盖）；全步骤见 memory `dyld-cache-symbolication`。
 3. **chained-fixups 指针编码**：用户态 `__DATA_CONST` 存储值 =
    `VA | 0x400_00000000`（裸指针搜索必零）。
 4. **扫描器坑**：ADD 立即数掩码必须 `0xFF800000 == 0x91000000`

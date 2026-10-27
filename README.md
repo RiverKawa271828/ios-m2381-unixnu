@@ -1,27 +1,49 @@
 # ios-m2381-unixnu
 
 魅族 20 Classic（m2381 / SM8550）的 **UniXNU 原生移植**工作区：UniXNU 4K
-内核（donor = iPad7,1 / iPadOS 17.7.11 `21H461`，fuxi/nx729j 同款）+
-`unixnu-m2381` 设备仓 + `m2381Pkg`（Mu-Silicium UEFI）。
+内核（donor = iPad7,1 / iPadOS 17.7.11 `21H461`，fuxi/sheng 同款）+
+`devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
+（Mu-Silicium UEFI）。
 
-上游 = [UniXNU/UniXNU](https://github.com/UniXNU/UniXNU)（remote `upstream`，
-fetch-only；现 pin `16e592a`）。本仓 `m2381` 分支 = 上游 main + 工作区提交，
-跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREAM.md)）；不向 upstream push。
+## 进度（2026-10-27，r55e 判读 / r56 已出件）
 
-- **现状（2026-10-27，r55e 后）**：iOS 链全链上机（UEFI → XNU → launchd →
-  SpringBoard 起跑），当前墙 = BLSHBacklightHost（背光域，r53 定谳）；
-  **取证读窗通道已立通**（recovery_a 内置 Linux reader，FLASHING §7），
-  下一步 = fixups 快速迭代，见 [docs/STATE.md](docs/STATE.md) §7。
-- 旧 ios-sweet / B2 路线已退役，史料在 `docs/archive/`（含 STATE 轮次史）；
-  回滚件**只**在 nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`
-  （本仓 `artifacts/images/` 已于 2026-10-26 删除）。
-- GitHub：`origin` = `RiverKawa271828/ios-m2381-unixnu`，默认分支 = `m2381`
-  （`main` 已删，fork 对比 = m2381 vs 上游 main，永远干净）。
-- 云端构建：上游 `macos.yml`（workflow_dispatch）= 内核/userdata/payload
-  正式车道，设备仓走 orphan 分支 `device-m2381`，见 [docs/CI.md](docs/CI.md)；
-  日常出件在本机 Linux。
+**全链真机在跑**：UEFI → XNU → launchd → 173 进程用户态（configd /
+sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
+（W1–W3 三连，1080×2400 @ GOP 0xb8000000），诊断页→苹果 logo 常亮。
+当前在 **SpringBoard fixups 快速迭代**：displayIdentity 断言墙
+（r55e 定谳，fixup 9 = r56 `db3a7392` 已出件待验）。
 
-入口：
+- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r56，每轮
+  payload sha + 定谳一句话）；全量判定档案在
+  [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
+  §0.24–0.41 与各轮 commit message。
+- **移植记录（官方格式）**：设备仓
+  [porting.toml](devices/m2381/unixnu-m2381/porting.toml)（13 领域，
+  官方检查器已过）+ [records/](devices/m2381/unixnu-m2381/records/)
+  实据档案；格式要求见
+  [unixnu.com/zh/porting/records](https://unixnu.com/zh/porting/records)。
+- **SM8550 横向坐标**：组织母版 sheng（平板 6S Pro）全实现；社区
+  SM8550（fuxi/nuwa/vermeer/nx729j）均无真机运行记录——r55e 轮的
+  SpringBoard 起跑 + 真显示 swap 已与官方表第二梯队头部的 negroni
+  （SM8450）/ pong（SM8475）同级或更深；GPU 对标 tb128fu（Adreno 610
+  已渲染）。
+- **取证闭环**：每轮判读不靠屏幕——payload 内置 Linux forensic
+  reader（只读 ACM shell），宿主 `acm-reader.py fetchchunk` 拉取
+  userdata 尾部 32MiB SHLOG 窗（BootLog 每 2s 一槽），含 applied
+  计数、swap timeline、崩溃链 PC/LR/bt（带 dyld slide 可直接对
+  donor 符号表符号化）。流程 =
+  [docs/FLASHING.md §7](docs/FLASHING.md)。
+
+## 上游关系
+
+上游 = [UniXNU/UniXNU](https://github.com/UniXNU/UniXNU)（remote
+`upstream`，fetch-only；现 pin `16e592a`）。本仓 `m2381` 分支 = 上游
+main + 工作区提交，跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREAM.md)）；
+不向 upstream push。`main` 分支已删，fork 对比永远干净。
+姊妹仓（同组织）= [UniXNU-sheng](https://github.com/UniXNU/UniXNU-sheng)
+（SM8550 平板母版，机制全实证）。
+
+## 入口
 
 | 文件 | 内容 |
 |---|---|
@@ -32,14 +54,21 @@ fetch-only；现 pin `16e592a`）。本仓 `m2381` 分支 = 上游 main + 工作
 | [docs/FLASHING.md](docs/FLASHING.md) | 刷写、读回、回滚；取证 reader 循环（§7） |
 | [docs/HARDWARE-m2381.md](docs/HARDWARE-m2381.md) | 硬件常量与地址 |
 | [docs/CI.md](docs/CI.md) | 云端构建说明 |
-| [docs/m2381-bringup.md](docs/m2381-bringup.md) | P0 施工骨架（历史；donor 值以 board.toml 为准） |
-| [docs/archive/](docs/archive/) | 史料：STATE 轮次史（§0.0–0.34）、B2/sweet、完工计划、迁移记录 |
+| [docs/porting-notes.md](docs/porting-notes.md) | 参照设备清单、实测值、取证方法 |
+| [devices/m2381/unixnu-m2381/README.md](devices/m2381/unixnu-m2381/README.md) | 设备仓入口（结构 / 记录 / 构建） |
+| [docs/archive/](docs/archive/) | 史料：STATE 轮次史（§0.0–0.41）、B2/sweet、完工计划 |
 
-本地资产（不入 git）：
+旧 ios-sweet / B2 路线已退役，史料只在 `docs/archive/`；回滚件**只**
+在 nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`（本仓
+`artifacts/images/` 已于 2026-10-26 删除）。
+
+## 本地资产（不入 git）
 
 - `artifacts/vendor/`：OEM UEFI DXE blobs（m2381Pkg FV 备选）
 - `reference/`：上游/模板克隆（清单与 pin 见 docs/UPSTREAM.md §1）
 - `research/`：21H461 IPSW、KDK 15.8.2、ipsw CLI
-- `out/m2381/`：现役件（平铺 payload，现役 r55e `b060b512`；kernel 三件、
-  ci-artifacts/userdata-root.img；各轮取证拉窗件 reader-*-log.bin）
-- `temp/`：符号化/取证工具链与各轮日志窗（方法论见 docs/STATE.md §4）
+- `out/m2381/`：现役件（平铺 payload，现役 r56 `db3a7392`；kernel
+  三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
+  reader-*-log.bin）
+- `temp/`：符号化/取证工具与各轮日志窗（方法 =
+  [记忆 dyld-cache-symbolication] 与 docs/STATE.md §4）
