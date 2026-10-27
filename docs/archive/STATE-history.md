@@ -1811,3 +1811,21 @@ nura-min simg 是唯一安全件（sparse 头部）。
   （early console 被 fbcon takeover 清屏；panic 默认挂住不重启，early
   行会留在屏上到死）；args 改一行重打 payload。③兜底 = nura 原生
   ESP 形态不变。
+
+### 0.38 补四（同日）：r55d = nura 保命 cmdline（第四修）已刷 087f9ca3
+
+- 用户点破方向："直接拿 nura 现成的内核弄？nura 是正常启动的"——内核
+  本来就是 nura 的（ESP v71 同件），真正的差异 = **cmdline**：EFI stub
+  在 bootloader 提供 LoadOptions 时**整体替换**内核内置 cmdline，
+  r55b/c 的极简 args（earlycon=efifb console=tty1 loglevel=4 quiet）
+  丢光了 nura 实机 cmdline 的早期生存集合（`fw_devlink=off
+  clk_ignore_unused pd_ignore_unused icc-rpmh.qos_disable=1
+  icc_rpmh_qos_disable=1 qcom_geni_serial.con_enabled=1 console=ttyMSM0`
+  等）——高通板上少这些 = early 阶段 clk/pd/icc 框架过早探测 = "滚几
+  行死在 USB 前"的完美吻合。
+- r55d = nura 完整 cmdline（**去 root=/dev/sda22 与 init=systemd**——
+  本板 userdata 是 iOS root，reader 不得碰）+ `keep_bootcon loglevel=7`
+  （early console 不被 fbcon takeover 清掉，日志留屏到死）。payload
+  087f9ca3 已刷 recovery_a（slot=b OKAY 已 reboot）。
+- 下会话 = STATE §7.1 第一测 r55d：成功则 reader 通道立通（宿主
+  ttyACM 拉窗 + rebootbl 回 fastboot）；仍挂则日志留屏（拍死亡行）。

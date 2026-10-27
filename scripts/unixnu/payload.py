@@ -243,10 +243,18 @@ def build(ctx, kernel=None):
         # dtb: without it the Linux EFI stub falls back to the firmware's FDT
         # config table (meaningless to a qcom kernel — instant exit, back to
         # the menu); the board DTB that matches the reader kernel goes with it.
+        # args: the EFI stub REPLACES the kernel's built-in command line when
+        # options are provided, so this carries the nura-proven early-boot
+        # survival set (fw_devlink/clk/pd/icc) minus root=/dev/sda22 and
+        # init=systemd — this board's userdata is the iOS root and the reader
+        # must touch nothing but the log window.
         config += ('[[entry]]\nid = "forensic"\ntitle = "m2381 forensic log reader"\ntype = "linux"\n'
                    'path = "Payloads/forensic-kernel.efi"\ninitrd = "Payloads/forensic-initrd.img"\n'
                    'dtb = "Payloads/forensic.dtb"\n'
-                   'args = "earlycon=efifb console=tty1 loglevel=4 consoleblank=0 quiet"\n')
+                   'args = "earlycon=efifb console=ttyMSM0,115200n8 qcom_geni_serial.con_enabled=1 '
+                   'console=tty1 loglevel=7 keep_bootcon fw_devlink=off clk_ignore_unused '
+                   'pd_ignore_unused icc-rpmh.qos_disable=1 icc_rpmh_qos_disable=1 '
+                   'sysrq_always_enabled no_console_suspend"\n')
     (stage / 'EFI/UniXNU/unixnu.toml').write_text(config)
     for path in [stage, *stage.rglob('*')]:
         os.utime(path, (EPOCH, EPOCH))
