@@ -5,10 +5,13 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r66 = **探针 v2.1 已出件 `cec04b36` 待刷**，2026-10-28：
-r65a（d3d4e649）被探针锁序 bug 废轮（task_lock 内调
-get_task_map_reference → 递归拿锁 panic），v2.1 去显式 task_lock，
-判读主菜不变 = X5 首病灶事件点名写毒宿主）
+## 1. 一句话现状（r67 = **A/B 验证件 `ce469e83` 待刷**（r66 内核
+不变，仅 uikit-cache-probe 1→0），2026-10-28。r66 判读 = 确定性早期
+挂死（两次同点，t≈5s，GOP 从未映射无 logo 无 panic 屏；CPU1 最后
+中断入口钉在 ArmCpu::prepareGic+0x19c = AP 启动域）；机制源码实证 =
+vm_map_read_user 跨任务路径 vm_map_switch→copyin→switch back，r66
+round 1 对 init 的失败读在 AP 启动窗口内吃跨 map 页错误（v1 只走过
+成功路径）→ A/B 定探针罪责）
 
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
@@ -302,30 +305,32 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r66 已出件 `cec04b36` 待刷（2026-10-28）**：UIKitCacheProbe
-v2.1 = r65 全进程扫 + 锁序修复。r65a（d3d4e649）被探针自身 panic 废轮
-——`task_lock` 内调 `get_task_map_reference`（其内部自己拿 task_lock，
-bsd_kern.c:386 实证）→ 同线程递归拿锁 → `lock_mtx.c:175` panic；
-修复 = 去显式 task_lock，slide 无锁读。判读主菜不变 = X5 首病灶事件）
+## 7. 下一步（**r67 A/B 已出件 `ce469e83` 待刷（2026-10-28）**：r66
+判定 = 确定性早期挂死 + 机制源码实证（跨 map 失败读 × AP 启动窗口）；
+A/B 过 = r68 探针非侵入化；再挂 = 转 ArmCpu/SMP 域）
 
-1. **刷写卡（r66 = 只刷 recovery_a，设备自 r65 刷后状态未变）**：
-   fastboot（电源+音量减）→ `getvar current-slot` 必须 = b →
-   sha 门 `cec04b3638e7…253404a` → `flash recovery_a
-   payload-r66-cec04b36.img` → reboot → 跑 8–15 分硬断电（17 分钟
-   回卷红线）。
-2. **r66 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
-   `cec04b36…`，节点 = **sde27** → fetchchunk 拉窗，按 CRASH 行
-   slide 分段切出 r66 会话）→ **X5 首病灶事件（主菜）**：
-   `D <进程名> k<轮次> B<bgTC值> M<mainScreen值>`——谁、第几轮
-   （×2s）、值多大；辅菜 X4 聚合走势（p/n/g/f）、X7 `G` 首个任意槽
-   小值事件（槽址对照 temp/audit64-slots.py 定性）、X6 `L` 最近病灶
-   事件。回归六项照旧：applied（r64=21/25 parsed）/ AKS / vsync 120 /
-   旧墙复活面 / SB sig11 族死点 / procs-spawn。
-3. **判读后分支**：首病灶进程非 SB → 进程级传播链（谁先谁后，
-   uikit-cache-proc= 点名跟进）；SB 自身且 k 极小（dyld 阶段）→
-   once 域/objc-initialize 写路径手术；全程 D - 但 SB 照崩 → 扩窗
-   __DATA/其他库。GARBAGE_LIMIT 0x1000000 会把锁/计数器等合法小值
-   计入 g——用 X7 的槽址对照静态清单逐一定性，别拿 g 直接当病灶数。
+1. **刷写卡（r67 = 只刷 recovery_a）**：fastboot（电源+音量减）→
+   `getvar current-slot` = b → sha 门 `ce469e837602…e2569c` →
+   `flash recovery_a out/m2381/payload-r67-abtest-ce469e83.img` →
+   reboot → 看 logo：过 = 探针罪责实锤；同点再挂（1-2 分钟黑屏）=
+   探针无罪，转 ArmCpu/SMP 域。
+2. **r67 判读后分支**：
+   (a) 过墙 → **r68 = 探针非侵入化重编**：①vm_map_check_protection
+   预门（region 不满足可读就不发起 read，失败路径永不进入）；②首扫
+   延迟到 t≥12s（AP 启动完成后）；③读失败进程拉黑 100 轮。UKC 主菜
+   在 r68 恢复。
+   (b) 再挂 → 探针无罪：查 sm8550-common ArmCpu GIC 启动顺序
+   （prepareGic/GICR waker/SPI-IPI），对照上游近期 commits 与
+   asteroids/oneplus13t 的 SMP 配置；r68 = 探针继续关、SMP 域手术。
+3. **r66 判读存档（2026-10-28）**：确定性早期挂死（两次同点
+   t≈5s，只写 3 个诊断槽；procs=1、GOP physical=0 从未映射 = 无
+   logo 也画不出 panic 屏；CPU1 最后中断入口钉在
+   ArmCpu::prepareGic+0x19c = AP 启动域；槽 3+ 的"推进"是旧会话
+   arc 残影）。r65a panic 七帧全符号化闭环 = 递归 task_lock（已
+   修）。机制源码实证 = vm_map_read_user 跨任务路径
+   （vm_map.c:19636）vm_map_switch→copyin→switch back，round 1 对
+   init 的失败读在 AP 启动窗口吃跨 map 页错误（v1 只走过成功
+   路径）。UKC 主菜（X5 首病灶）在 r68 恢复。
 4. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 失败簇是
    displayless 的果不是因；不阻塞，垃圾族治愈后若仍卡 keybag/
    锁屏，回头查 IOMFBDisplayRefresh 发布链。
