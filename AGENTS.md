@@ -139,16 +139,18 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r66 已出件 `cec04b36` 待刷（2026-10-28）**：UIKitCacheProbe
-v2.1 = r65 全进程扫 + 锁序修复。r65a（d3d4e649）废轮 = 探针
-capture() 持 task_lock 调 get_task_map_reference（其内部自己拿
-task_lock，bsd_kern.c:386）→ 同线程递归拿锁 panic `lock_mtx.c:175`
-（用户 panic 实拍）；修复 = 去显式 task_lock + slide 无锁读。判读
-主菜不变 = X5 首病灶事件点名写毒宿主；工作单 = `docs/STATE.md` §7。
-r64 判读要点存档：读回对拍 sde27 ✓；毒在 SB 首扫前就位（首轮
-21003 非零 + 44 小值槽，t≈20s）；探针线程首轮后停摆 = X5 索引
-slide 双加越界读（已修）；applied 69→21；SB sig11 ×268 死点不变
-0x1800F5FAC/FAR=0xf1）
+## 7. 下一步（**r67 A/B 件 `ce469e83` 待刷（2026-10-28）**：r66 内核
+不变仅 uikit-cache-probe 1→0。r66 判读 = 确定性早期挂死（两次同点
+t≈5s，GOP 从未映射 = 无 logo 无 panic 屏；CPU1 最后中断入口 =
+ArmCpu::prepareGic+0x19c = AP 启动域）；机制源码实证 =
+vm_map_read_user 跨任务路径 vm_map_switch→copyin→switch back
+（vm_map.c:19636），round 1 对 init 的失败读在 AP 启动窗口吃跨 map
+页错误，v1 只走过成功路径。A/B 过 = r68 探针非侵入化
+（check_protection 预门+首扫延迟+失败黑名单）；再挂 = 探针无罪转
+ArmCpu/SMP 域。r65a panic 七帧全符号化 = 递归 task_lock（已修）。
+工作单 = `docs/STATE.md` §7。r64 判读要点存档：毒在 SB 首扫前就位
+（首轮 21003 非零 + 44 小值槽，t≈20s）；applied 69→21；SB sig11
+×268 死点不变 0x1800F5FAC/FAR=0xf1）
 
 1. **r64 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
    （sde27 前 96MiB sha == `54b70ad7…97ec`）。r64 会话 = 288 槽
