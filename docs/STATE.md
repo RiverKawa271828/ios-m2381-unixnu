@@ -5,19 +5,18 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r53 定谳 / r54 已出件，2026-10-27）
+## 1. 一句话现状（r54 出件 + r55 取证 reader 已组，2026-10-27）
 
-**fixup 11 实机生效**：r53（payload 04f4d803）尾部快照 `parsed=14
-applied=6`——BannerKit displayConfiguration 站点被 ret 掉，SpringBoard
-从 SB init 推进到 **applicationDidFinishLaunching 的 backlight-host 层
-新墙**：`+[BLSHBacklightHost sharedBacklightHost]+0xbc` brk（sig5，bt
-12 帧全活；SBBacklightController init 链）。早期 sig6 = fixup 应用前
-的 BannerKit 循环残留（FAIL 行持久，勿误读）。显示栈健康（owned=1、
-swap 完成、UFS 正常）；**W1 首交换异常（offer=-1/done=-1）→ 撕裂
-logo 冻结** = =y swap 管道首帧竞争新观察（非致命）。chronod sig5 36/17
-照旧。**r54 = fixup 12**（BLSHBacklightHost 入口返 nil）payload
-**1ef5eb63** 已出件待刷（三件全刷，设备在 nura-min）。读窗判读坑 =
-环形窗残留（见 history §0.36）。
+r53 定谳 = **fixup 11 生效**（applied 5→6，BannerKit ret），SB 推进到
+**BLSHBacklightHost brk 新墙**（`+[BLSHBacklightHost sharedBacklightHost]
++0xbc` sig5）；r54 = fixup 12（BLSHBacklightHost 入口返 nil）payload
+**1ef5eb63**。**r55 = r54 + forensic 内置取证 reader**（type=linux entry，
+payload **fb2c5dd1**）——iOS 菜单加 "m2381 forensic log reader" 项，
+选它 = 上游 package/linux-log 形态（只读 dd SHLOG 窗 → USB ACM →
+rebootbl 回 fastboot），**读窗循环脱离 nura-min、不再刷 8.7GB userdata**。
+读窗判读坑（环形窗残留）已根治：parser 守 header 计数契约（history
+§0.36）。下会话 = 用户实测 r55（首次验 reader 本身）+ r54 fixup 12 判读
+（applied=7 + BLSHBacklightHost 换墙）。
 
 ## 2. 设备现状（2026-10-27 r52 读窗后 = **nura-min**）
 
@@ -28,9 +27,11 @@ logo 冻结** = =y swap 管道首帧竞争新观察（非致命）。chronod sig
 | userdata | nura root | — | 同上（devsh 7.3.0 在跑，172.16.42.1 可达） |
 
 - **下轮发卡 = 三件全刷**（iOS 链已被 nura 覆盖，r44/r49 规矩）。
-- r53 iOS 链三件（a1d51f04 / **04f4d803** / fd43ee70）已走完读窗定谳
-  使命；boot_b `a1d51f04` 与 userdata `fd43ee70` 仍是现役件可复用；
-  r54 待刷件 = `out/m2381/payload-r54-1ef5eb63.img`。
+- r53 iOS 链三件已走完读窗定谳使命；boot_b `a1d51f04` 与 userdata
+  `fd43ee70` 仍是现役件可复用。**待刷 = r55**：`out/m2381/payload-
+r55-fb2c5dd1.img`（= r54 fixup 12 的 1ef5eb63 + forensic entry 注入；
+r54 裸件保留）。设备现态 = nura-min（r53 读窗后用户刷回），**下轮仍三
+件全刷**——此后读窗走 §7.2 的 forensic reader，不再回 nura。
 - 刷写/读回/回滚纪律：`docs/FLASHING.md`。回滚件**只**在 nura 仓
   `/home/ri/work/nura-meizu-m2381/artifacts/`（红线 6；本仓 artifacts/images
   已于 2026-10-26 删除）。
@@ -130,25 +131,27 @@ logo 冻结** = =y swap 管道首帧竞争新观察（非致命）。chronod sig
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r54 读窗定谳工作单——r53 定谳后 2026-10-27）
+## 7. 下一步（r55 实测工作单——2026-10-27 交接）
 
-1. **r54 已出件**：fixup 12 = `+[BLSHBacklightHost sharedBacklightHost]`
-   入口 mov x0,#0; ret 返 nil（`.35,61c7b64`，表内 1ee8ef8 同配方；
-   变体备选 = SBBacklightController initWithContextProvider 入口）；
-   payload **1ef5eb63**（15 fixups，ADT d57a5879，kernel 3ab2ace4 等四元
-   不变）平铺 `out/m2381/payload-r54-1ef5eb63.img`。
-2. **发卡 = 三件全刷**（设备在 nura-min）：boot_b←`a1d51f04` +
-   recovery_a←`1ef5eb63` + userdata←`fd43ee70`；刷前 sha 门 + 读回对拍
-   + current-slot=b。
-3. **读窗判读（注意环形窗残留坑——先分 slot 段再判读，history §0.36）**：
-   `parsed=15 applied=7`（fixup 12 醒来 = host 站点在路径）；REASON/
-   CRASH 换墙 = bt bl-target 验活符号化（§4 方法 2/7）；W1 swap 是否
-   复现 offer=-1（撕裂帧复现性）；若 SB 活 = 锁屏形态判读（keybag
-   首考）。
-4. **机制线（并行，不阻塞）**：mainConfiguration 供给者反查 + mfb
-   选择子失败簇对照 sheng IOMFB 表 + W1 swap 首帧竞争定性（=y 栈）。
-5. **独立主题（不阻塞）**：chronod sig5（r53 ×17 加凶，次优先）；
-   XS/fileset-KC 重绑定器；arm64e 专项；GPU/触摸主题化（显示墙破后）。
+1. **r55 三件全刷**（设备在 nura-min，这是最后一轮需要 nura-min 的刷
+   写）：boot_b←`a1d51f04` + recovery_a←**`fb2c5dd1`** + userdata←
+   `fd43ee70`；刷前 sha 门 + 读回对拍 + current-slot=b。
+2. **r55 双判读**：①iOS 引导照常（default=xnu，3 秒超时自动进）——
+   fixup 12 判读 = `parsed=15 applied=7` + BLSHBacklightHost 换墙符号
+   化 + W1 swap 复现性；等待 ~10-20 分钟后断电（SB 循环照旧记时间）。
+   ②**取证 reader 首验**：断电→进 fastboot→`fastboot reboot`→菜单选
+   "m2381 forensic log reader"→USB ACM（/dev/ttyACM*，1d6b:0104）→
+   拉窗（reader /run/log.bin 就绪后 shell `cat`，或 base64）→ 宿主
+   `read-m2381-ufs-log.py log.bin --all` → `/bin/rebootbl` 回 fastboot。
+   流程细节 = FLASHING §7。判读失败分支：reader 内核起不来 = 回退
+   nura-min（通道常青）；ACM 无枚举 = configfs/udc 探针（init 的 say
+   行有 log）；dd 魔数非 SHLOG001 = 窗基址错位（对拍 sda22 尾）。
+3. **sheng-autoreset 试投（r56）**：kernel_args 加 `sheng-autoreset=900`
+   （BootReset.c fork 全套在，PMK8550 SDAM cell 待实测；成了 = 断电也
+   免了）。
+4. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
+   arm64e 专项；GPU/触摸主题化；AdvancedLogDxe 固件日志（PORTING-GAP
+   行动项 3）；records 页（行动项 4）。
 
 ## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
 
@@ -165,3 +168,4 @@ logo 冻结** = =y swap 管道首帧竞争新观察（非致命）。chronod sig
 | r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙） | PLAN-display-lane.md |
 | r52 | `22f8f0bd` | **=y 一级实机全过**（PE handoff+真显示配置+swap+屏幕自稳）；SB 崩溃循环定谳 = BannerKit displayConfiguration 断言（深抛者钉死+验活）；设备回 nura-min | history §0.35 |
 | r53 | `04f4d803` | **fixup 11 生效**（applied 5→6，BannerKit ret）；SB 推进到 BLSHBacklightHost brk 新墙（sig5）；W1 swap 异常→撕裂 logo 新观察 | history §0.36 |
+| r55 | `fb2c5dd1` | r54（fixup 12，BLSHBacklightHost 入口返 nil，裸件 1ef5eb63）+ **forensic 内置取证 reader**（type=linux entry，FLASHING §7）；读窗循环脱 nura-min；待刷 | history §0.37 |

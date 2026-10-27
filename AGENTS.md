@@ -139,24 +139,24 @@ artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore
 devices/m2381/            unixnu-m2381 设备仓 + m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r52 读窗定谳；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r55 组件完成；工作单 = `docs/STATE.md` §7）
 
-1. ~~上游同步/调研/拍板~~ ✅ r51（05cdd33）；~~=y 车道施工~~ ✅（d1c0645，
-   内核 `3ab2ace4` + payload `22f8f0bd`）。
-2. **r52 读窗定谳 ✅**：**=y 车道一级实机全过**——PE handoff（诊断页
-   2-3min 让位）+ NativeLegacyDisplay 接管 + 苹果 logo 上屏自稳；日志环
-   证 DISPLAY stage=10 / GOP 全帧映射 / 三次 swap 完成 / IOMFB 真显示
-   配置（1080×2400 ARGB）。**SpringBoard 未破墙**：sig6 崩溃循环 14 次，
-   backboardd 2/0 稳定（logo 冻结 = 最后合成帧）；抛点钉死 =
-   BannerKit `-[BNBannerSourceListener initWithServiceDomain:
-   displayConfiguration:authorizedBundleIDs:]` 断言（r50 深抛者收口，
-   bl-target 验活首个全活用户态链；实参 = `[<类> mainConfiguration]`
-   返 nil）。设备已刷回 nura-min。
-3. **r53 = fixup 11 出件 + 三件全刷**：BannerKit 深层 init 入口 ret
-   （三元组在 STATE §7；kernel 复用只重打 payload），读窗判读
-   applied=6 + 下一墙符号化；机制线并行（mfb 选择子失败簇对照 sheng
-   IOMFB 表 + mainConfiguration 供给者反查）。
-4. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
+1. ~~上游同步/调研/拍板~~ ✅ r51；~~=y 施工~~ ✅ r51（d1c0645）；
+   ~~r52 读窗定谳~~ ✅（=y 一级全过，BannerKit 抛点钉死）；~~r53~~ ✅
+   （fixup 11 生效 applied=6，SB 推进 BLSHBacklightHost brk 新墙）。
+2. **r55 待刷（用户实测）**：payload `fb2c5dd1` = r54 fixup 12
+   （BLSHBacklightHost 入口返 nil，裸件 1ef5eb63）+ **forensic 内置
+   取证 reader**（菜单 "m2381 forensic log reader"，type=linux，
+   FLASHING §7）——读窗循环脱 nura-min，不再刷 8.7GB userdata。
+   三件全刷（boot_b a1d51f04 / recovery_a fb2c5dd1 / userdata
+   fd43ee70）。判读 = applied=7 + BLSHBacklightHost 换墙 + reader 首验。
+3. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
+   header 计数契约（slots_written 截断）；判读前先看 header rounds。
+   下一轮起读窗走 forensic reader（USB ACM），nura-min 只作回退。
+4. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
+   全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
+   页 / bring-up 检查点表）。
+5. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
    重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
    （=y 显示破墙后 ADRENO=y 叠加）。
 

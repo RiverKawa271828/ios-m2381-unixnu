@@ -121,3 +121,58 @@ boot_b 不动；Mu 会重新扫描 ESP。
   nura 侧重刷（含 userdata）。
 - userdata 4K LBA（实机 GPT 三源对拍，权威值在设备仓 `board.toml`）：
   first=2,330,472 / last=123,871,226。
+
+## 7. 取证 reader 循环（r55 起，无需 nura-min）
+
+> payload 内置 `type = "linux"` entry（forensic）：UniXNU 菜单选
+> "m2381 forensic log reader" → LoadImage 一个 Linux EFI-stub 内核 PE +
+> LoadFile2 initrd → 只读 dd 出 userdata 尾部 32MiB SHLOG 窗 → USB CDC
+> ACM serial shell → 宿主拉回 → `/bin/rebootbl` 回 fastboot。
+> **全程只读 UFS、不挂载任何文件系统、不刷任何分区。**
+
+### 构件（devices/m2381/unixnu-m2381/forensic/）
+
+| 件 | 出处 | sha 前 8 |
+|---|---|---|
+| forensic-kernel.efi | nura ESP v71 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，**m2381 实机验证过**：UART/USB/UFS/configfs 全通） | `4aad92b3` |
+| forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `babe82cc` |
+
+### 构建（每次 payload 重打后）
+
+```bash
+# 1) 构件（内核不变时只需一次；rebootbl.c 改了才重编）
+python3 devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py \
+    --kernel temp/forensic-vmlinuz-efi \
+    --busybox temp/forensic-esp/busybox \
+    --rebootbl temp/forensic-esp/rebootbl \
+    --out-dir temp/forensic-esp
+# 2) 注入 BUILT payload（./unixnu payload 之后）
+python3 devices/m2381/unixnu-m2381/scripts/add-forensic-entry.py \
+    out/m2381/ipados-17.7.11-21H461/m2381/payload/payload.img
+# 3) 平铺出件照旧（payload-rNN-<sha8>.img）
+```
+
+### 读窗循环（iOS 引导断电后）
+
+1. 进 fastboot（电源+音量减，或 iOS 侧 `sheng-autoreset` 到点自落）；
+2. `fastboot reboot`（或直接 ABL 默认）→ UniXNU 菜单 → 选
+   **"m2381 forensic log reader"**（xnu 仍是 default，3 秒超时不动它）；
+3. reader 起来后 USB 枚举 ACM 串口（`/dev/ttyACM*`，id 1d6b:0104）；
+   拉窗（任选其一）：
+   ```bash
+   # a) 串口 shell 里手动（sz 无则用 base64）：
+   stty -F /dev/ttyACM0 115200 && cat /dev/ttyACM0 &
+   #  b) reader 的 /run/log.bin 已就绪，直接 shell:
+   #     echo ready: shell on USB serial 后按回车进交互
+   ```
+4. 宿主收 log.bin → `read-m2381-ufs-log.py log.bin --all`（parser 已守
+   header 计数契约，残留段自动截断）；
+5. `/bin/rebootbl` → 回 fastboot → 下一轮。
+
+### 红线不变
+
+- 只读 userdata 尾部；不写不挂载；fastboot 单通道照旧。
+- kernel PE 是 nura 的 pmOS 内核：**只用于取证 reader，不是 iOS 链的
+  一部分**；iOS 引导永远走菜单 default（xnu entry）。
+- 若 reader 起不来（内核/DTB 意外），回退 = nura-min 老路（§6），
+  通道常青。

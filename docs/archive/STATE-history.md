@@ -1681,3 +1681,48 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - **r54 读窗判读点**：`parsed=15 applied=7`（fixup 12 醒来 = host 站点
   在路径）+ REASON 换墙符号化 + W1 swap 是否复现 offer=-1（撕裂帧
   复现性）。
+
+## 0.37 2026-10-27 续八：读窗契约根治（parser 守 header 计数）+ 官方移植文档合规对照 + r54（fixup 12）+ r55（forensic 内置取证 reader）
+
+- **读窗误读根治（用户点名，c353cd7）**：r53 首读中招的环形窗残留 =
+  parser 违反上游 BootLog.c 读者契约（"header 每轮最后写，读者永不
+  信任 header 未计数的 slot"）。修复 = slots_written ≤ slot_count 时
+  截断到 0..slots_written-1 并打提示，wrapped 不截；r53/r52 双窗验证。
+  **不做自动清空**（上游也不清）：清窗毁早死引导证据（applied 0→6
+  早期快照即证据）+ 白磨 UFS。r56 起 kernel_args 可加
+  `sheng-build-tag=rNN`（BootProgress.c:526 现成）让每行带轮号。
+- **官方移植文档对照（unixnu.com/zh/porting/ 全 19 页）**：报告 =
+  `docs/PORTING-GAP-REVIEW.md`。骨架高度合规（device-repo v2/组件化/
+  patches 正道/SoC feed）；差距集中「验证与发布」板块：官方 log-capture
+  四方法对照——①AdvancedLogDxe 固件日志二维码导出（未集成，行动项），
+  ②UART/拍照（屏幕照片在用），③**持久日志+Linux reader（r55 补齐）**，
+  ④fastboot boot 循环（m2381 ABL 死路，等价物 = sheng-autoreset PMIC
+  cell 待实测）；另有 records 适配记录页与 bring-up 检查点表两项文档债。
+- **forensic reader（= 官方方法③标准形态，fork 上游 uefi-fuxi
+  package/linux-log）**：
+  - 机制实证：UniXNUPkg Boot.c（git 历史 e95b37d 恢复原源）`type =
+    "linux"` = LoadImage(PE) + Entry->Args 置 LoadOptions + initrd 上
+    LoadFile2 media + StartImage；返回后恢复 FDT/卸 initrd 回菜单。
+    unixnu.toml 的 linux entry 是一等公民（二进制 strings {xnu, linux,
+    action, tools} + boot: LoadImage 全链日志行）。
+  - 内核 = nura ESP v71 的 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，sha
+    4aad92b3，**m2381 实机验证过**的同一件：UART/USB/UFS/configfs
+    全通；无内嵌 initramfs，cmdline 由 entry args 覆盖）。
+  - initramfs（1.3MB）= busybox 1.36.1 arm64 static（Ubuntu ports）+
+    init（fork 上游：PARTNAME=userdata 查找、尾 65536×512B dd、
+    configfs acm.usb0 gadget、USB serial shell）+ rebootbl（自编译
+    aarch64 static，reboot(RESTART2,"bootloader")）。
+  - 注入器 = devices/m2381/unixnu-m2381/scripts/add-forensic-entry.py
+    （mcopy 无挂载改 FAT：两件进 Payloads/ + unixnu.toml 追 entry，
+    /tmp/payload-test.img 验证通过）；构件构建 =
+    forensic/build-forensic-reader.py。流程入 FLASHING §7。
+- **r54 出件（fixup 12，1ef5eb63）**：r53 新墙
+  `+[BLSHBacklightHost sharedBacklightHost]+0xbc` brk（sig5，bt 12 帧
+  全活）→ 入口 mov x0,#0; ret 返 nil（1ee8ef8 同配方；.35,61c7b64；
+  页内偏移 0xb64 合规；变体 = SBBacklightController
+  initWithContextProvider 入口）。
+- **r55 组件（fb2c5dd1）**：r54 裸件 + forensic entry 注入 = 现役待刷
+  件；r54 裸件保留。三件卡不变（boot_b a1d51f04 / userdata fd43ee70）。
+- **r55 读窗判读点**：①iOS 侧 `parsed=15 applied=7`（fixup 12 醒 =
+  host 站点在路径）+ BLSHBacklightHost 换墙符号化 + W1 swap 复现性；
+  ②reader 首验（USB ACM 枚举 / dd 魔数 / parser 无截断提示错误）。
