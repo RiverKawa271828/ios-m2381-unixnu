@@ -5,19 +5,22 @@
 `devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
 （Mu-Silicium UEFI）。
 
-## 进度（2026-10-27，r61 判读 = 五轮连破后转体系路线）
+## 进度（2026-10-28，r62 = 调研定谳 + 体系轮出件，待刷）
 
 **全链真机在跑**：UEFI → XNU → launchd → 175 进程用户态（configd /
 sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
 （1080×2400 @ GOP 0xb8000000，t≈86s 即上屏），**SpringBoard 已画
 boot progress 菊花、装载应用库、深入 wallpaper UI 构造**。五轮连破
 （displayIdentity → XB 断言 → UIScreen SIGSEGV → traitCollection nil →
-unspecified scale）；r61 换墙 = UIKit 缓存全局垃圾族 SIGSEGV——**用户
-拍板停止逐发 fixup，转体系路线**：下会话先调研上游（sheng/fuxi fixup
-清单）与其他 fork 的解法，再定系统性方案（NSAssertionHandler log-only
-类杀 + 全指定 TC + 机制线）出 r62。
+unspecified scale）；r61 换墙 = UIKit 缓存全局垃圾族 SIGSEGV——用户
+拍板转体系路线。**r62 调研定谳**：四过墙板（asteroids 桌面 /
+oneplus13t 无 GPU 锁屏 / pong 主屏 / negroni SB+touch）无一携带显示
+族 fixup，答案模板 = **AppleKeyStore 替身 + sheng-vsync + client 探针
+关闭**。r62 已按模板出件（`0854ea5e`：KeyStoreProbe+AppleKeyStoreState
+入 display archive、sheng-vsync=120、client=0；23 条 fixups 留作惰性
+oracle），**待刷 recovery_a**。
 
-- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r61，r62 起体系路线，每轮
+- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r62，每轮
   payload sha + 定谳一句话）；全量判定档案在
   [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
   §0.24–0.41 与各轮 commit message。
@@ -71,8 +74,8 @@ main + 工作区提交，跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREA
 - `artifacts/vendor/`：OEM UEFI DXE blobs（m2381Pkg FV 备选）
 - `reference/`：上游/模板克隆（清单与 pin 见 docs/UPSTREAM.md §1）
 - `research/`：21H461 IPSW、KDK 15.8.2、ipsw CLI
-- `out/m2381/`：现役件（平铺 payload，现役 r61 `169f160c`；kernel
-  三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
+- `out/m2381/`：现役件（平铺 payload，现役 r61 `169f160c`，待刷 r62
+  `0854ea5e`；kernel 三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
   reader-*-log.bin）
 - `temp/`：符号化/取证工具与各轮日志窗（方法 =
   [记忆 dyld-cache-symbolication] 与 docs/STATE.md §4）
