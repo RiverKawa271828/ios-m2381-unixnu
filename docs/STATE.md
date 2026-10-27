@@ -5,32 +5,31 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r58 判读 = XB 断言墙破 + SB 进应用装载 + r59 已出件，2026-10-27）
+## 1. 一句话现状（r59 判读 = UIScreen SIGSEGV 墙破 + trait 族换墙 + r60 已出件，2026-10-27）
 
-**r58 首轮判读（2026-10-27，acm-reader 拉窗 + 读回对拍 d27c4f36 ✓）**：
-窗 rounds=328/509 uptime=674s 无回卷；**applied=11**（18 parsed，fixup
-10a/10b 真执行）；**SpringBoard sig6 崩溃 = 0**（XBApplicationController
-断言墙实锤破）；W1/W2 swap 照常 t≈86s；procs=175/spawn=891。**换墙 =
-SIGSEGV ×588 同死点**：SB 进**应用装载**（`-[SBApplicationController
-init]` → `_loadApplications:remove:` → `SBApplication init` → 启动图
-PNG 摄取 → `__UIImageSourceAtPath` → `+[UIScreen
-_mainScreenThreadSafeTraitCollection]+0x2c`，12 帧验活全过）；故障 =
-`ldr x8, [x19, #0xe0]` 而 FAR=0xfe0 → **x19=0xf00 垃圾非 nil**——
-mainScreen 一族答案异常（r46 fixup 7 的 nil 分支实际不可达：入口缓存
-全局槽文件值就是 rebase 非零）。chronod sig5 ×303 次优先。
+**r59 首轮判读（2026-10-27，acm-reader 拉窗 + 读回对拍 a9144765 ✓）**：
+窗 rounds=327/509 uptime=674s 无回卷；**applied=13**（20 parsed，fixup
+13a/13b 真执行）；**SIGSEGV ×588 = 0**（UIScreen 垃圾解引用墙死）；
+procs=175/spawn=887。**换墙 = SIGABRT ×573 同死点**，REASON "'(null)
+returned nil from -traitCollection, which is not allowed.'"：链 =
+`SBCoverSheetPresentationManager sharedInstance`（once）→
+`SBWallpaperController sharedInstance` → （折叠 raise）；抛点 =
+`__UIGetCurrentFallbackTraitCollection+0x1f8`（line 117，
+`handleFailureInFunction:`——nil screen 的 `_fallbackTraitCollection`
+返 nil → displayScale 0 → 主线程 raise；该函数三个失败分支全 raise、
+无构造路径）。**fixup 14** = 取 trait 机器补丁位（VA 0x18a00dc50
+`mov x0,x20; bl msgSend$_fallbackTraitCollection`）→ 重定向
+`bl +[UITraitCollection _backgroundThreadFallbackTraitCollection];
+mov x19,x0`——UIKit 自己的 display 无关懒构造缓存 TC，整族治好。
 
-**r59 已出件（payload-r59-a9144765，2026-10-27）**：fixup 13a/13b =
-`+[UIScreen mainScreen]` 入口 + `_mainScreenThreadSafeTraitCollection`
-入口双 `mov x0,#0;ret` 返 nil（`.03,3255d40,ff4302d1f65706a9` /
-`.03,341e6d8,f44fbea9fd7b01a9` → `000080d2c0035fd6`，r49 getter 形）；
-无显示环境 nil 本就是 mainScreen 的诚实答案，nil messaging 让图像变体
-选择安全回退。20 条 fixups 全表对缓存校验过；ADT `f60ecf0c`（20 条 +
-PackedRAMDisk）；ESP 验四样全过。**待刷**。
+**r60 已出件（payload-r60-edabbafd，2026-10-27）**：21 条 fixups 全表
+对缓存校验过；ADT `1dd13c1b`（21 条 + PackedRAMDisk）；ESP 验四样全过。
+**待刷**。
 
-**r57 判读存档**：displayIdentity 墙破（applied=8 + swap 提前到
-t≈85s + 178 进程 + 菊花实拍）；换墙 XBApplicationController.m:120
-断言（×560）；fixup 10a/10b = NOP cbz/cbnz 双分支。全案 = git
-commit 2ec5987。
+**r58 判读存档**（commit db8a5d2）：XB 断言墙破（applied=11 + sig6=0
++ SB 进应用装载）；换墙 UIScreen trait SIGSEGV ×588（x19=0xf00 垃圾）；
+fixup 13a/13b = mainScreen + trait getter 双入口返 nil。r57 存档
+（commit 2ec5987）：displayIdentity 墙破（applied=8 + 菊花实拍）。
 
 **r56 = 废轮（教训已入法）**：出件漏 `--data-ramdisk`/`--trust-cache`
 → ESP 无 Data seed/initrd 行/trustcache → Data mount ENOENT panic，
@@ -59,16 +58,16 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r58**（18 条 fixups + Data seed + trustcache + forensic reader） | `d27c4f36` | **现役**（已刷 2026-10-27；读回对拍 ✓ == 镜像 sha） |
+| recovery_a | **r59**（20 条 fixups + Data seed + trustcache + forensic reader） | `a9144765` | **现役**（已刷 2026-10-27；读回对拍 ✓ == 镜像 sha） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
   NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
-- **下一发刷写 = r59 `a9144765`（只刷 recovery_a，set_active b 重置
-  预算）**；r58 轮次已闭环（测试跑 + 硬断电 + reader 拉窗判读 + 读回
-  对拍全绿，见 §1/§7）；下会话 = 刷 r59 → 跑 8–15 分钟 → 硬断电 →
-  reader 读回对拍 + `fetchchunk` → 判读 `applied≥11` + UIScreen 墙是否
-  破 + SB 应用装载是否推进到桌面层：
+- **下一发刷写 = r60 `edabbafd`（只刷 recovery_a，set_active b 重置
+  预算）**；r59 轮次已闭环（判读 + 读回对拍全绿，见 §1/§7）；下会话 =
+  刷 r60 → 跑 8–15 分钟 → 硬断电 → reader 读回对拍 + `fetchchunk` →
+  判读 `applied≥13` + trait 族墙是否破 + SB 是否推进过 wallpaper/封面
+  层：
 - **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
   fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
   重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
@@ -87,9 +86,9 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 3. 现役件与资产
 
-- **payload 四元（r57 起，r59 沿用）**：kernel `517229e7` / 探针后
-  `9252e8f5` / trust `7416ca4f` / 种子 `d04a0153`；ADT `f60ecf0c`
-  （**20 条 fixups** 含 fixup 10a/10b + 13a/13b，+ 上游 J120AP 身份件，
+- **payload 四元（r57 起，r60 沿用）**：kernel `517229e7` / 探针后
+  `9252e8f5` / trust `7416ca4f` / 种子 `d04a0153`；ADT `1dd13c1b`
+  （**21 条 fixups** 含 10a/10b + 13a/13b + 14，+ 上游 J120AP 身份件，
   < 32 上限）。fixup 表源 = 设备仓 OS profile `text_fixups`。
 - **applied 常驻集（=n 时代）**：{BTAudio, 5, 6, 7, 8a}。=y 上电后该
   oracle 继续有效（惰性判活器不变）；显示族 fixup（5–10）在真显示栈下
@@ -140,6 +139,8 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
    r57 实证 XBApplicationController 断言块距其 CFString 池 >400MB）；
    字节-pattern 扫描**不可把 rd/rn 位写死**（`add x4,x4,#0x928` 的
    低字节 = rd/rn≠0，pattern 若按 `0000` 编码全零命中，r57 实证）；
+   **regex 必须逐字节 re.escape**（未转义时 0x24 变 `$` 锚点静默零
+   命中，r59 实证——修正后先拿已知引用点验证扫描器再信零结果）；
    re-tools `find-string-xref` 的 rn==adrp_rd 判定本身没错（真引用
    生成器满足），错在窗口——大跨度引用一律手写全区扫。
 5. **CFString 定位路径**：REASON 串 → 裸串/CFString 候选 →
@@ -154,17 +155,14 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 5. 开放问题
 
-- **主墙（r58 钉死）**：SpringBoard SIGSEGV ×588 同死点 =
-  `+[UIScreen _mainScreenThreadSafeTraitCollection]+0x2c` 解引用垃圾
-  （x19=0xf00，FAR=0xfe0）——SB 应用装载链（启动图摄取 → UIImage →
-  trait collection）拿 mainScreen 答案时踩雷。fixup 13a/13b 双入口返
-  nil 已出件 → **待 r59 实机验证**。注意：r46 fixup 7（mainScreen nil
-  raise 跳过）实为休眠（其 nil 分支从入口不可达），13a 接棒它的语义。
-- **开放缝（r58 新）**：mainScreen 入口缓存全局槽文件值 = rebase 指向
-  类对象区（`_OBJC_CLASS_$__UISlideriOSVisualElement+0x28`），非 nil 非
-  screen——0xf00 的确切来源未钉死（栈上残留/被写坏/解析路径未明）；
-  13a 落地后该谜降级为机制线注脚，r59 若仍有 mainScreen 消费者崩溃
-  再查。
+- **主墙（r59 钉死）**：SIGABRT ×573 = `__UIGetCurrentFallbackTraitCollection`
+  line 117 raise（nil screen → nil fallback TC → displayScale 0）。
+  fixup 14 已出件（fetch 对重定向到 UIKit 自家后台 fallback TC，懒构造
+  缓存、display 无关）→ **待 r60 实机验证**。r58 的 UIScreen SIGSEGV
+  墙已由 13a/13b 实锤封死（r59 sig11=0）。
+- **开放缝**：mainScreen 入口缓存全局槽文件值 = rebase 指向类对象区
+  （`_OBJC_CLASS_$__UISlideriOSVisualElement+0x28`），非 nil 非
+  screen——0xf00 的确切来源未钉死；13a 落地后该谜降级为机制线注脚。
 - **机制线（真解，排期中）**：isMainDisplay/mainIdentity/mainConfiguration
   全族 nil 同根因 = 我们的显示栈从未向 FBDisplayManager/XB 层注册过
   main display。sheng 同 SoC =y 全通对照（差异 = dpu 钩子绑定 / probe
@@ -178,9 +176,9 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 6. 不能声称的
 
-- 显示墙未破：SpringBoard 未到 home screen（r58 = 菊花 + **应用装载
-  已启动**（SBApplicationController init 在跑）+ UIScreen SIGSEGV 循环
-  中）；keybag 未考（SB 未到锁屏）；触摸/按键/GPU 未上主题。
+- 显示墙未破：SpringBoard 未到 home screen（r59 = 应用装载已启动 +
+  wallpaper/封面层 trait 断言循环中）；keybag 未考（SB 未到锁屏）；
+  触摸/按键/GPU 未上主题。
 - =y 车道**一级已实机实证**（PE handoff + 控制台接管 + 推帧自稳 + 真
   显示配置到达 IOMFB 客户端层），且 r57 实证**用户态可画 boot progress
   UI**（菊花实拍）——但 main display 注册链仍断（isMainDisplay=0/
@@ -188,50 +186,46 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 - 类杀 NSAssertionHandler 未出件（兜底项；逐站点 fixup 仍优先——站点
   更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r59 刷写 + iOS 快速迭代循环——2026-10-27 r58 判读后）
+## 7. 下一步（r60 刷写 + iOS 快速迭代循环——2026-10-27 r59 判读后）
 
-**r58 首轮判读（2026-10-27，本会话 acm-reader 拉窗 + 读回对拍即时补）**：
+**r59 首轮判读（2026-10-27，本会话 acm-reader 拉窗 + 读回对拍即时补）**：
 
-- 窗：rounds=328/509 uptime=674s 无回卷 write_errors=0；读窗前
-  reader 内 dd recovery_a 前 96MiB sha == `d27c4f36…` 镜像（本轮
-  读回对拍即时闭环，无欠账）。
-- **三大判读项全中**：`applied=11`（18 parsed，fixup 10a/10b 真执行
-  ——惰性 oracle 再验证）；**SpringBoard sig6 崩溃 = 0**（r57 的
-  XBApplicationController 断言墙实锤破）；W1/W2 swap t≈86s 照常；
-  procs=175/spawn=891。
-- **换墙 = SIGSEGV ×588 同死点**（PC=LR `19ee82704` / slide
-  +14cb8000 / FAR=0xfe0 → x19=0xf00 垃圾非 nil）。**SB 进应用装载**：
-  `-[SBApplicationController init]+0x31c` → `_loadApplications:remove:`
-  → `_loadApplicationFromApplicationInfo:` → `-[SBApplication
-  initWithApplicationInfo:]+0xc4` → `refreshLaunchImagesInSnapshot-
-  ManifestIfNeeded` → `XBApplicationSnapshotManifestImpl
-  beginSnapshotAccessTransaction:`（block）→ `_ingestDefaultPNGsIn-
-  Manifest:withLaunchImageBaseName:+0xa00` → `+[UIImage
-  imageWithContentsOfFile:]` → `__UIImageSourceAtPath+0xac` →
-  `+[UIScreen _mainScreenThreadSafeTraitCollection]+0x2c`（`ldr x8,
-  [x19, #0xe0]`）——**12 帧验活全过，栈全活**，语义清楚。
-- **机制注脚**：x19 = mainScreen 的答案。r46 fixup 7 补的 nil-raise
-  分支（mainScreen+0xcc）在入口缓存全局非 nil 时不可达——全局槽文件
-  值就是 rebase（指向类对象区），mainScreen 从没走过那条路径；0xf00
-  确切来源未钉死（→ §5 开放缝）。
-- **fixup 13a/13b 出件 → payload-r59-a9144765**：`+[UIScreen
-  mainScreen]` 入口 + `_mainScreenThreadSafeTraitCollection` 入口双
-  `mov x0,#0;ret` 返 nil（r49 getter 形；13a 同时接棒 r46 fixup 7 的
-  语义——无显示环境 nil 本就是诚实答案）。20 条全表对缓存校验过；
-  ADT `f60ecf0c` 含 20 条 + PackedRAMDisk；ESP 验四样全过。**待刷**。
+- 窗：rounds=327/509 uptime=674s 无回卷 write_errors=0；读回对拍 ==
+  `a9144765…` 即时闭环。
+- **三大判读项全中**：`applied=13`（20 parsed，fixup 13a/13b 真执行）；
+  **SIGSEGV ×588 = 0**（r58 的 UIScreen 墙实锤封死）；procs=175/
+  spawn=887。
+- **换墙 = SIGABRT ×573 同死点**（PC `1ea99af74` / slide +1f210000），
+  REASON "'(null) returned nil from -traitCollection, which is not
+  allowed.'"。链（验活全过）：`SBCoverSheetPresentationManager
+  sharedInstance`（once 块）→ `+[SBWallpaperController sharedInstance]
+  +0x70` → （raise 折叠）→ terminate。
+- **抛点钉死之路（RE 增量）**：REASON 串起点 0x18b3abe33（'%@ returned
+  nil...'，隔壁就是 `_UIFallbackEnvironment_NonARC.m`）→ 指针搜出
+  CFString 槽 0x1f0186168 → 唯一代码 xref = `__UIGetCurrentFallback-
+  TraitCollection+0x1f8`（`handleFailureInFunction:...`，line 0x75）。
+  该函数取 `[mainScreen _fallbackTraitCollection]`（= `[screen
+  traitCollection]`，nil screen → nil）→ displayScale≤0 且主线程 →
+  raise；三个失败分支全 raise、自身无构造路径。
+  **工具坑第三枚**：自制 adrp+add 全区扫描的 regex 没转义——0x24 变
+  `$` 锚点静默零命中（用 re.escape 修正后拿已知引用点验证过）。
+- **fixup 14 出件 → payload-r60-edabbafd**：补丁位 = 该 getter 的取值
+  对 VA 0x18a00dc50（`.03,3261c50`，`mov x0,x20; bl msgSend$_fallback-
+  TraitCollection`）→ 替换 `bl +[UITraitCollection _backgroundThread-
+  FallbackTraitCollection]; mov x19,x0`（UIKit 自家 display 无关懒构造
+  缓存 TC，scale>0）——getter 返真对象，三分支 raise 全死，整族治好。
+  21 条全表校验；ADT `1dd13c1b`；ESP 四样全过。**待刷**。
 
-1. **r59 刷写 + 测试跑 + 下会话取证**：刷卡（设备现态 = iOS 链，只刷
+1. **r60 刷写 + 测试跑 + 下会话取证**：刷卡（设备现态 = iOS 链，只刷
    recovery_a）：`fastboot getvar current-slot`（=b）→ `fastboot
    --set-active b`（预算重置）→ 刷前 sha256sum 门 → `fastboot flash
-   recovery_a out/m2381/payload-r59-a9144765.img` → 开机菜单默认 xnu
-   跑 8–15 分钟（17 分钟回卷红线，菊花态稳定后加 2–3 分钟）→ 硬断电
-   （人工 = 长按电源；rebootbl 不落 fastboot）→ 菜单选 reader →
-   读回对拍（dd recovery_a 前 96MiB sha == `a9144765…`）→ `fetchchunk`
-   → parser `--all`：判读 `applied≥11`（fixup 13a/13b 真执行）+
-   UIScreen 墙是否破 + **SB 应用装载是否推进**（图标/桌面层进程——
-   若 sig11 消失但 SB 卡住无新崩溃，看 [profile] PS/PP 采样判定挂在
-   哪；isMainDisplay=0/外显误判仍是候选渗透点）。每轮 = 刷 recovery_a
-   + 一跑一读；ADT/args 不变时 skip 重刷。
+   recovery_a out/m2381/payload-r60-edabbafd.img` → 开机菜单默认 xnu
+   跑 8–15 分钟（17 分钟回卷红线）→ 硬断电（长按电源）→ 菜单选 reader
+   → 读回对拍（dd recovery_a 前 96MiB sha == `edabbafd…`）→
+   `fetchchunk` → parser `--all`：判读 `applied≥13`（fixup 14 真执行）
+   + trait 族墙是否破 + **SB 是否推进过 wallpaper/封面层**（若崩溃
+   消失但卡住无新崩，看 [profile] PS/PP 采样找挂点）。每轮 = 刷
+   recovery_a + 一跑一读；ADT/args 不变时 skip 重刷。
    **出件配方红线（r56 废轮教训入法）**：payload 命令必须带全三件——
    `UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload -D
    devices/m2381/unixnu-m2381 --trust-cache
@@ -262,7 +256,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
-## 8. 轮次索引（r43 → r58；详情 = commit message + STATE-history 对应节）
+## 8. 轮次索引（r43 → r60；详情 = commit message + STATE-history 对应节）
 
 | 轮 | payload | 定谳 | 详情 |
 |---|---|---|---|
@@ -284,4 +278,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r56 | `db3a7392` | **废轮**：出件漏 `--data-ramdisk`/`--trust-cache` → ESP 无 Data seed/initrd 行/trustcache → Data mount ENOENT panic（kern_exec.c:8196，t≈1s），554s panic-hold 诊断页，applied=0，fixup 9 未测到；ADT PackedRAMDisk 映射依赖 seed flag → 必须规范重建 | 本会话判读 |
 | r57 | `1e7ea60b` | **displayIdentity 墙实锤破**：applied=8（fixup 9 真执行）+ W1–W3 swap 提前到 t≈85s + 178 procs/907 spawn + **面板画出 boot progress 菊花**；换墙 = XBApplicationController.m:120 断言（'invalid mainDisplay configuration'，SB ×560 同死点 t=66s 起，符号化定谳 isMainDisplay==0 双分支跳 handleFailureInMethod）；读回对拍补欠全绿 | 本会话判读 |
 | r58 | `d27c4f36` | **XB 断言墙实锤破**（applied=11 + SB sig6=0）+ SB 进应用装载；换墙 = UIScreen trait SIGSEGV ×588（`_mainScreenThreadSafeTraitCollection+0x2c` 解引用 x19=0xf00 垃圾，12 帧验活全过）；读回对拍即时闭环 | 本会话判读 |
-| r59 | `a9144765` | fixup 13a/13b（`+[UIScreen mainScreen]` + trait getter 双入口 `mov x0,#0;ret` 返 nil @ `.03,3255d40/341e6d8`，r49 getter 形；13a 接棒休眠的 r46 fixup 7）→ 20 条 fixups；全表校验 + ADT `f60ecf0c` + ESP 验四样全过；**待刷** | 本会话出件 |
+| r59 | `a9144765` | **UIScreen SIGSEGV 墙实锤封死**（applied=13 + sig11=0）；换墙 = traitCollection nil 断言 ×573（`__UIGetCurrentFallbackTraitCollection` line 117；REASON 串→CFString→xref 钉死抛点；SBWallpaperController/封面层链验活全过）；读回对拍即时闭环 | 本会话判读 |
+| r60 | `edabbafd` | fixup 14（`__UIGetCurrentFallbackTraitCollection+0xa8` 取值对重定向 `bl _backgroundThreadFallbackTraitCollection; mov x19,x0` @ `.03,3261c50`——UIKit 自家懒构造 TC，整族治好）→ 21 条 fixups；全表校验 + ADT `1dd13c1b` + ESP 验四样全过；**待刷** | 本会话出件 |
