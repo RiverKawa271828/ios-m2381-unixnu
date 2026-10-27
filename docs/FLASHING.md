@@ -191,7 +191,11 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
    #   → m2381 forensic log reader 7.3.0 / usb: acm on a600000.usb
    #   → userdata=sda22 sectors=… log=33554432 bytes magic=SHLOG001
    python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py \
-       fetch out/m2381/reader-<轮次>-log.bin    # 设备端 sha + base64 流拉 + 宿主对拍
+       fetchchunk out/m2381/reader-<轮次>-log.bin
+   #   设备端 sha + 分块拉（2MiB×16，每块新会话）+ 宿主对拍；
+   #   r56 实测单流 fetch 在 ~13MiB 处必断（ACM gadget 长流卡死，
+   #   两连复现），fetchchunk 16/16 块 + SHA MATCH 31s——断流直接换它，
+   #   勿反复重试单流
    python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py \
        out/m2381/reader-<轮次>-log.bin --all    # parser 已守 header 计数契约
    ```
