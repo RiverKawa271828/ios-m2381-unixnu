@@ -148,17 +148,22 @@ fastboot；宿主已确认）。r55c+289614ba（无 SB）上电，无闪回 = Lo
 StartImage 都过了，内核被跳进但 early 死。
 
 1. **黑屏定位（优先）**——候选假设按成本排：
-   a. **console 不可见 ≠ 内核死**：cmd-mode DSC 面板 + 我们 GOP
-     （SimpleFbDxe 用 ABL fb）给 EFI stub 建 simpledrm 可能不工作——
-     **先验"内核活没活"**：宿主 `lsusb` 持续观察（gadget = 活）+
-     init 里最早的 say 已经打 tty0——若确认活着只是看不到，换
-     `logshell=/dev/ttyMSM0`（UART，m2381 UART 引脚查 docs/HARDWARE）
-     或让 init 起一个**USB serial gadget 只回显**（不等 dd）。
-   b. **内核 early panic**：cmdline 试 nura 形态补 `console=ttyMSM0,
-     115200n8 keep_bootcon earlycon` + 拍照/UART；或换 `dtb=firmware`
-     对照（不行——ADT）；检查 nura 内核 config 对 UEFI 启动的依赖
-     （nura 走 ABL+vendor_boot DTB，我们从 UEFI stub 给 DTB——理论
-     等价但 boot services 版本/内存 map 差异真实存在）。
+   a. **（用户实测纠正）内核滚了几行再黑** = 内核确实开始执行
+     （early 输出可见），死在 very early（USB 零枚举 = gadget 驱动
+     之前）。**第一取证动作 = 重跑并拍下滚的那几行内容**（死亡点
+     直接证据：decompressor 行？memory/x0 报错？Storage?）。
+   b. 候选假设（按滚字内容定）：UEFI 内存 map 与 qcom 内核冲突
+     （我们高段 GCD 0x8c0000000 布局 vs nura Mu 的 map）；DTB 与
+     内核版本错位（内核 4aad92b3=v71/r91，DTB=apk rc6-r91，核对
+     同 build）；EL2/内存属性差异（m2381Pkg vs nura Mu 环境差）。
+   c. **console 补强**：cmdline 换 nura 形态 `console=ttyMSM0,
+     115200n8 earlycon keep_bootcon`（m2381 UART 引脚查
+     docs/HARDWARE，nura FLASHING 可能记录了 UART 接法）。
+   d. **兜底形态**：不走 UniXNU 菜单 LoadImage，改 nura 原生路径
+     （取证专用 ESP：nura BOOTAA64.EFI 同件由 nura Mu 引导；但
+     nura Mu = boot_b 换回 nura 固件——与 iOS 链互斥，每轮换刷）；
+     或第一信号改 **USB serial gadget 只回显**（init 最早 say 后
+     立即起 gadget，不等 dd——定位死点前后）。
    c. **换载体形态（兜底）**：reader 不走 UniXNU 菜单 LoadImage，改
      nura 原生形态——recovery_a 只刷一个**取证专用 ESP**（nura
      BOOTAA64.EFI 同件 + 我们的 initramfs 挂 ESP 上，由 nura Mu 引导
