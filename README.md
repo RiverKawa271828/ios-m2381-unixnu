@@ -5,7 +5,7 @@
 `devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
 （Mu-Silicium UEFI）。
 
-## 进度（2026-10-28，r62 已判读定谳：体系三件生效，垃圾族升级，r63 = UIKit 侧候选）
+## 进度（2026-10-28，r64 = 缓存全局审计轮已出件 `54b70ad7` 待刷）
 
 **全链真机在跑**：UEFI → XNU → launchd → 200 进程用户态（configd /
 sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
@@ -22,10 +22,16 @@ calls 6→49 / vsync hz=120 start+refresh / 探针客户端消失，C0=
 IOMFB_FDR_Loader 实为真实消费者）；applied=67 未跌破 14 = 环境未愈
 合；旧墙链全灭（r57–r60 五墙封死确认）；**换墙 = SB sig11 ×520 垃
 圾控制流**（unslid PC 0x1822F5FAC = cstring 区野跳，0xf00/0xf1 族升
-级）。**r63 = UIKit 侧候选**（全指定 TC 构造 / UIKit 缓存全局审计，
-工作单 = docs/STATE.md §7）。
+级）。**r63**（`04eb0533`，已刷已判）：fixup16 全指定 fallback TC 真
+执行（applied 67→69）但垃圾族未愈，死点漂回 r61 点——链钉死 = bgTC
+缓存槽 0x1f48ce5e0 被写 0xf1，病根在缓存全局槽写路径。**r64 =
+缓存全局审计**（`54b70ad7` 已出件待刷）：静态腿 = 21H461 缓存
+slide-v2 链格式破译 + UIKitCore __DATA_DIRTY 全链枚举 5410 槽——四
+病灶槽文件态全 0，毒在运行时写路径；动态腿 = UIKitCacheProbe 内核探
+针（2s 轮询 SpringBoard __DATA_DIRTY 全窗，ext 行 X4-X7 t 序列）；
+判读主菜 = 首垃圾 tick/槽址/值形态（工作单 = docs/STATE.md §7）。
 
-- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r62，每轮
+- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r64，每轮
   payload sha + 定谳一句话）；全量判定档案在
   [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
   §0.24–0.41 与各轮 commit message。
