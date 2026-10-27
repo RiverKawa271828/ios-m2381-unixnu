@@ -139,13 +139,16 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r65 已出件 `d3d4e649` 待刷（2026-10-28）**：UIKitCacheProbe
-v2 全进程扫——r64 定谳毒在 SB 首扫前就位，v2 逐任务扫 UIKitCore
-__DATA_DIRTY，首个病灶槽出垃圾的进程点名写毒宿主；工作单 =
-`docs/STATE.md` §7。r64 判读要点存档：读回对拍 sde27 ✓；探针首轮
-扫描即见 21003 非零 + 44 小值槽（t≈20s）；探针线程首轮后停摆 =
-X5 索引 slide 双加越界读（已修）；applied 69→21；SB sig11 ×268
-死点不变 0x1800F5FAC/FAR=0xf1）
+## 7. 下一步（**r66 已出件 `cec04b36` 待刷（2026-10-28）**：UIKitCacheProbe
+v2.1 = r65 全进程扫 + 锁序修复。r65a（d3d4e649）废轮 = 探针
+capture() 持 task_lock 调 get_task_map_reference（其内部自己拿
+task_lock，bsd_kern.c:386）→ 同线程递归拿锁 panic `lock_mtx.c:175`
+（用户 panic 实拍）；修复 = 去显式 task_lock + slide 无锁读。判读
+主菜不变 = X5 首病灶事件点名写毒宿主；工作单 = `docs/STATE.md` §7。
+r64 判读要点存档：读回对拍 sde27 ✓；毒在 SB 首扫前就位（首轮
+21003 非零 + 44 小值槽，t≈20s）；探针线程首轮后停摆 = X5 索引
+slide 双加越界读（已修）；applied 69→21；SB sig11 ×268 死点不变
+0x1800F5FAC/FAR=0xf1）
 
 1. **r64 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
    （sde27 前 96MiB sha == `54b70ad7…97ec`）。r64 会话 = 288 槽
