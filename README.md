@@ -5,17 +5,19 @@
 `devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
 （Mu-Silicium UEFI）。
 
-## 进度（2026-10-27，r60 判读 = traitCollection nil 墙破 / r61 已出件）
+## 进度（2026-10-27，r61 判读 = 五轮连破后转体系路线）
 
 **全链真机在跑**：UEFI → XNU → launchd → 175 进程用户态（configd /
 sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
 （1080×2400 @ GOP 0xb8000000，t≈86s 即上屏），**SpringBoard 已画
-boot progress 菊花、装载应用库并推进到 wallpaper/封面层**。四轮连破
-（displayIdentity → XB 断言 → UIScreen SIGSEGV → traitCollection nil）；
-当前新墙 = fallback TC scale≤0 的 "unspecified values" 检查（r60 定谳
-×758；fixup 15a/15b 分支改写 = r61 `169f160c` 已出件待刷）。
+boot progress 菊花、装载应用库、深入 wallpaper UI 构造**。五轮连破
+（displayIdentity → XB 断言 → UIScreen SIGSEGV → traitCollection nil →
+unspecified scale）；r61 换墙 = UIKit 缓存全局垃圾族 SIGSEGV——**用户
+拍板停止逐发 fixup，转体系路线**：下会话先调研上游（sheng/fuxi fixup
+清单）与其他 fork 的解法，再定系统性方案（NSAssertionHandler log-only
+类杀 + 全指定 TC + 机制线）出 r62。
 
-- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r61，每轮
+- **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r61，r62 起体系路线，每轮
   payload sha + 定谳一句话）；全量判定档案在
   [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
   §0.24–0.41 与各轮 commit message。
