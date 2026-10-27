@@ -110,7 +110,7 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
 | UFS | 控制器 `0x1d84000`（UFSHCI 4.0）、PHY `0x1d80000`、ICE `0x1d88000`；Samsung KLUFG8RHHD-B0G1 512GB |
 | 触摸 | Goodix GT9916（berlin 族），GENI I2C4 `0xa90000` 400kHz，addr `0x5d`，irq tlmm25 edge-falling，reset tlmm24 active-low，avdd l14b_3p2 / vddio l12b_1p8 |
 | 按键 | PMK8550 PON：pwrkey + resin(vol-down)；SPMI |
-| 分区 | boot_b 96MiB；recovery_a 100MiB；userdata 12GB（r34 root） |
+| 分区 | boot_b 96MiB；recovery_a 100MiB；userdata 12GB（现 = CI 重建 iOS root，尾部 32MiB = SHLOG 取证窗） |
 | ABL | v4；gunzip 到 `0x80080000`；解压上限约 83.5MB；忽略 boot.img ramdisk；校验 image_size / appended DTB；无 CmdBoot |
 | UEFI 窗口 | FD `0xA7100000+0x300000`；内核窗 `0xA8000000+0x10000000`；Display `0xB8000000+0x2B00000`；bootloader log `0xA7605000+0x8000` |
 

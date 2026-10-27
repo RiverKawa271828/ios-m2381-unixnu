@@ -40,8 +40,9 @@
 | P5 | 常态：跟随上游 rebase；触摸/显示/GPU 等主题化推进 | upstream behind 归零常态化 |
 
 > **状态（2026-10-27）**：P0–P4 全部完成（launchd r25 起、SpringBoard 起跑
-> 至 r50），现处 P5 常态轮。当前主墙 = SpringBoard displayConfiguration
-> 断言（`docs/STATE.md` §1/§7）。
+> 至 r53），现处 P5 常态轮。当前主墙 = BLSHBacklightHost（背光域，r53
+> 定谳）；取证读窗通道 r55e 立通（FLASHING §7），进入 fixups 快速迭代
+> （`docs/STATE.md` §1/§7）。
 
 ## 4. 从旧阶段带来的实证约束（B2 遗产，沿用前需在新流程下复验）
 
