@@ -139,13 +139,19 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r56 废轮判读 + r57 已出件已刷，下会话取证判读；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r57 判读 = displayIdentity 破墙 + r58 已出件待刷；工作单 = `docs/STATE.md` §7）
 
-1. ~~r55e 首轮判读~~ ✅（applied=7 + W1–W3 真 swap + 换墙
-   displayIdentity 断言，见 §0.41）；~~r56~~ ❌ **废轮**——出件漏
-   `--data-ramdisk`/`--trust-cache` 两 flag → ESP 无 Data seed/initrd
-   行/trustcache → Data mount ENOENT panic（kern_exec.c:8196，t≈1s），
-   554s panic-hold 诊断页，applied=0，fixup 9 未测到。
+1. ~~r55e~~ ✅（applied=7 + W1–W3 真 swap + 换墙 displayIdentity）；
+   ~~r56~~ ❌ 废轮（出件漏 `--data-ramdisk`/`--trust-cache`，教训入法）；
+   ~~r57~~ ✅ **displayIdentity 墙实锤破**：applied=8（fixup 9 真执行）
+   + W1–W3 真 swap 提前到 t≈85s + 178 procs/907 spawn + **面板画出
+   boot progress 菊花**（SB 画 UI 了）；**换墙 = XBApplicationController
+   .m:120 断言**（'invalid mainDisplay configuration'，SB ×560 同死点
+   t=66s 起；`initWithMainDisplayConfiguration:` 内 config
+   `isMainDisplay==0` → cbz/cbnz 双分支跳 handleFailureInMethod）。
+   符号化方法增量：抛点帧被 dispatch_client_callout 折叠时，**先猎
+   file/line CFString 常量对再反汇编**，比追 bt 快；字节-pattern 扫描
+   勿把 rd/rn 位写死、跨段引用必全区扫（两坑 r57 实证）。
 2. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
@@ -153,13 +159,14 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    救不了 ADT）；forensic reader 已由 payload.py 集成
    （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
    在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk。
-3. **下会话 = r57 取证判读**（r57 `1e7ea60b` 已刷 2026-10-27，测试跑
-   8–15 分钟 + 硬断电）：菜单选 reader → **先读回对拍 recovery_a ==
-   1e7ea60b**（补欠本轮刷后对拍）→ `fetchchunk` → parser `--all` 判读
-   `applied=8`（fixup 9 = SBSystemGestureManager
-   _initWithDisplayIdentity: 入口 ret 生效）+ displayIdentity 墙是否破
-   （根因 = FBDisplayManager.mainIdentity=nil，SBMainDisplay 同名 init
-   是陷阱勿修只修父类）→ 下一发 fixups（ADT/args 变才重刷）。
+3. **下会话 = r58 刷写 + 判读**（r58 `d27c4f36` 已出件：fixup 10a/10b
+   = NOP `cbz w0`@`.37,2526b84` / `cbnz w0`@`.37,2526b90`，18 条
+   fixups，ADT `630455ac`，ESP 四样全过）：设备现态 = iOS 链 →
+   **只刷 recovery_a**（getvar current-slot=b → set_active b 重置预算 →
+   刷前 sha 门 → flash）→ xnu 跑 8–15 分钟（17 分钟回卷红线）→ 硬断电
+   → reader → 读回对拍 recovery_a == `d27c4f36…` → `fetchchunk` →
+   判读 `applied≥8`（fixup 10 真执行）+ 墙是否破 + 注意 isMainDisplay=0
+   向下游渗透（外显误判/方向链）→ 下一发 fixups（ADT/args 变才重刷）。
    rebootbl 实测只重启不落 ABL fastboot；人工 = 电源+音量减。
 4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds；
@@ -168,9 +175,10 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
 5. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
    全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
    页 / bring-up 检查点表）。
-6. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先）；XS/fileset-KC
-   重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；GPU/触摸主题化
-   （=y 显示破墙后 ADRENO=y 叠加）。
+6. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先，r57 ×287）；
+   XS/fileset-KC 重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；
+   GPU/触摸主题化（=y 显示破墙后 ADRENO=y 叠加）；机制线（main display
+   注册链为何 nil，sheng 对照差异 = dpu 钩子/probe 车队/IOMFB 选择子）。
 
 > **P1 关键定案**（细节见 `docs/archive/STATE-history.md` §1）：P2 基座 = shengPkg 骨架 + mars blob
 > （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗
