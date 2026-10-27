@@ -139,15 +139,14 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r60 判读 = traitCollection nil 墙破 + scale 检查换墙 + r61 已出件待刷；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**体系路线**：2026-10-27 用户拍板停止逐发 fixup，下会话先调研上游/fork 再定系统性方案出 r62；工作单 = `docs/STATE.md` §7）
 
-1. ~~r55e~r59~~ 五轮闭环（displayIdentity → XB 断言 → UIScreen
-   SIGSEGV → traitCollection nil，SB 一路推进到 wallpaper/封面层）；
-   ~~r60~~ ✅ **nil 断言墙破**（applied=14 + 'returned nil' 零出现）；
-   **换墙 = 同函数块 A scale≤0**：报 "unspecified values" ×758——
-   fixup 14 给的 `_backgroundThreadFallbackTraitCollection` 是故意全
-   unspecified 的占位（scale=0.0），掉进 `__UIGetCurrentFallbackTrait-
-   Collection+0x124` 的第二个 raise 块。
+1. **r57–r61 五轮连破存档**：displayIdentity（r57）→ XB 断言（r58）→
+   UIScreen SIGSEGV（r59）→ traitCollection nil 块 B（r60）→
+   unspecified 块 A/块 C（r61）；SB 一路从封面层深入 wallpaper UI
+   构造。**r61 定谳 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径
+   FAR=0xf1，与 r58 0xf00 同族）：**UIKit 缓存单例全局在无显示环境
+   成批变垃圾源，逐发 fixup = 打地鼠（用户判）**，转体系路线。
 2. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
@@ -155,19 +154,16 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    救不了 ADT）；forensic reader 已由 payload.py 集成
    （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
    在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk。
-3. **下会话 = r61 刷写 + 判读**（r61 `169f160c` 已出件：fixup 15a/15b
-   = 两个 scale 检查分支无条件成功（`.03,3261c8c`：`cbz w21;b.gt` →
-   `b 成功;nop`；`.03,3261cec`：`b.le` → `b 成功` 保留 ldr）——getter
-   返 bg TC，nil/scale 三块 raise 全不可达，23 条 fixups，ADT
-   `f6dba410`，ESP 四样全过）：设备现态 = iOS 链 → **只刷 recovery_a**
-   （getvar current-slot=b → set_active b 重置预算 → 刷前 sha 门 →
-   flash）→ xnu 跑 8–15 分钟（17 分钟回卷红线）→ 硬断电 → reader →
-   读回对拍 recovery_a == `169f160c…` → `fetchchunk` → 判读
-   `applied≥14`（fixup 15 真执行）+ unspecified 断言是否消失 + SB 是否
-   推进过 wallpaper/封面层（崩溃消失但卡住 → 看 [profile] PS/PP 采样
-   找挂点；bg TC unspecified 值下游渗漏是候选）→ 下一发 fixups
-   （ADT/args 变才重刷）。rebootbl 实测只重启不落 ABL fastboot；
-   人工 = 电源+音量减。
+3. **下会话 = 调研 + 体系方案 + 出 r62**：①先调研——上游 UniXNU
+   `docs/porting/` 的 SpringBoard/bring-up 段 + **sheng/fuxi 设备仓
+   profile `text_fixups` 全清单**（sheng 同 donor 同 SoC 全实现 = 答案
+   模板）+ negroni/pong 等 fork 的过 SB 墙方案 → 差距表；②体系候选
+   拍板——**NSAssertionHandler log-only 类杀**（勘址已毕 0x1874494d4/
+   0x187449618，砍 raise 留 NSLog 日志信号）+ 全指定 TC 构造 + UIKit
+   缓存全局垃圾族审计 + 机制线 track 2（真显示注册，sheng 模板）；
+   ③出 r62（ADT/args 变才重刷，常规 = 只刷 recovery_a）。纪律不变：
+   17 分钟回卷红线 / reader 读回对拍 / fetchchunk / 出件配方红线
+   三 flag + ESP 四样。
 4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds；
    `fetchchunk` 勿用单流 fetch（~13MiB 必断）。nura-min 只作 reader
