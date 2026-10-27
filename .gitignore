@@ -76,3 +76,8 @@ __pycache__/
 *.tmp
 *.log
 out/
+
+# Local build staging (re-derivable; the audit ABI json is regenerated per display build)
+devices/m2381/unixnu-m2381/build/xnu-prelink/
+devices/m2381/unixnu-m2381/build/display-analysis/
+devices/m2381/unixnu-m2381/build/native-legacy-display/
