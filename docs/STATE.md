@@ -5,35 +5,32 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r52 定谳，2026-10-27）
+## 1. 一句话现状（r53 定谳 / r54 已出件，2026-10-27）
 
-**=y 车道一级（驱动/控制台/OS 推帧）实机全过**：payload `22f8f0bd`
-单次引导 593 轮 / 1189s（诊断页 ~2-3min 让位 → 苹果 logo 上屏自稳，
-PE handoff + NativeLegacyDisplay 接管实证）；日志环：`DISPLAY stage=10`、
-GOP FB 映射 `0xb8000000` 全帧 10,368,000B（=1080×2400×4）、三次全帧
-swap 完成（t≈86-88s）、IOMFB Debug Info 给出**真显示配置**（ARGB
-layer0、swap completion state=4）——=y 显示栈健康。**但 SpringBoard
-未破墙**：sig6 崩溃循环 14 次（census 28/14），backboardd 2/0 稳定
-（屏上 logo 冻结 = 最后合成帧）；REASON 506 条同串
-displayConfiguration——**抛者首次钉死且 bl-target 验活**：
-`-[BNBannerSourceListener initWithServiceDomain:displayConfiguration:
-authorizedBundleIDs:]+0x1e8`（BannerKit），链 = SBBannerManager init →
-initWithAuthorizedBundleIDs → 该 init → NSAssertionHandler，实参 =
-`[<类> mainConfiguration]` 返 nil。r50"抛者更深"悬案收口。applied=5
-原班人马（8b/9/10 未醒 = 站点未达，SB 死在更浅处）。设备已刷回
-nura-min，下轮**三件全刷**。
+**fixup 11 实机生效**：r53（payload 04f4d803）尾部快照 `parsed=14
+applied=6`——BannerKit displayConfiguration 站点被 ret 掉，SpringBoard
+从 SB init 推进到 **applicationDidFinishLaunching 的 backlight-host 层
+新墙**：`+[BLSHBacklightHost sharedBacklightHost]+0xbc` brk（sig5，bt
+12 帧全活；SBBacklightController init 链）。早期 sig6 = fixup 应用前
+的 BannerKit 循环残留（FAIL 行持久，勿误读）。显示栈健康（owned=1、
+swap 完成、UFS 正常）；**W1 首交换异常（offer=-1/done=-1）→ 撕裂
+logo 冻结** = =y swap 管道首帧竞争新观察（非致命）。chronod sig5 36/17
+照旧。**r54 = fixup 12**（BLSHBacklightHost 入口返 nil）payload
+**1ef5eb63** 已出件待刷（三件全刷，设备在 nura-min）。读窗判读坑 =
+环形窗残留（见 history §0.36）。
 
 ## 2. 设备现状（2026-10-27 r52 读窗后 = **nura-min**）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
-| boot_b | nura UEFI | `e74c73da` | **设备现态 = nura-min**（用户 r52 读窗前刷回） |
+| boot_b | nura UEFI | `e74c73da` | **设备现态 = nura-min**（r53 读窗后，用户自刷回） |
 | recovery_a | nura ESP | `0a102220` | 同上（与 FLASHING §6 nura 值对拍一致） |
 | userdata | nura root | — | 同上（devsh 7.3.0 在跑，172.16.42.1 可达） |
 
 - **下轮发卡 = 三件全刷**（iOS 链已被 nura 覆盖，r44/r49 规矩）。
-- r52 iOS 链三件（a1d51f04 / **22f8f0bd** / fd43ee70）已走完读窗定谳
-  使命；boot_b `a1d51f04` 与 userdata `fd43ee70` 仍是现役件可复用。
+- r53 iOS 链三件（a1d51f04 / **04f4d803** / fd43ee70）已走完读窗定谳
+  使命；boot_b `a1d51f04` 与 userdata `fd43ee70` 仍是现役件可复用；
+  r54 待刷件 = `out/m2381/payload-r54-1ef5eb63.img`。
 - 刷写/读回/回滚纪律：`docs/FLASHING.md`。回滚件**只**在 nura 仓
   `/home/ri/work/nura-meizu-m2381/artifacts/`（红线 6；本仓 artifacts/images
   已于 2026-10-26 删除）。
@@ -133,31 +130,25 @@ nura-min，下轮**三件全刷**。
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r53 工作单——r52 定谳后 2026-10-27）
+## 7. 下一步（r54 读窗定谳工作单——r53 定谳后 2026-10-27）
 
-1. **r53 出件 = fixup 11**：`profiles/os/ipados-17.7.11-21H461/profile.toml`
-   `text_fixups` 追加
-   `"dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9"`
-   （BannerKit `-[BNBannerSourceListener initWithServiceDomain:
-   displayConfiguration:authorizedBundleIDs:]` 入口 ret 返 self，8b 同
-   配方；期望字节 = `sub sp,sp,#0xa0; stp x26,x25,[sp,#0x50]` 已核）。
-   ADT/payload sha 变 = 预期正文变更。变体（深层 ret 后下游再崩时）：
-   caller `initWithAuthorizedBundleIDs:` 入口 `.17,670e634`（期望
-   `f657bda9f44f01a9`）。kernel 不变（3ab2ace4 复用），只重打 payload。
-2. **发卡 = 三件全刷**（设备在 nura-min 态）：boot_b←`a1d51f04` +
-   recovery_a←新 payload（平铺 `out/m2381/payload-r53-<sha8>.img`）+
-   userdata←`fd43ee70`；刷前 sha256 门 + 每槽读回对拍 + `getvar
-   current-slot` = b。
-3. **读窗定谳（照 r47-r52 例行）**：`parsed=14 applied=6`（fixup 11
-   醒来 = BannerKit 站点在路径）；REASON 变化 = 下一墙符号化（照 §4
-   方法 2/7）；若 SB 活 = 锁屏形态判读（keybag 首考）/respring 周期；
-   swap timeline 与 IOMFB dict 继续对照（显示栈回归检查）。
-4. **机制线（并行，不阻塞 r53）**：①解开放缝③（GOT 类引用解码）或
-   全区扫 `msgSend$mainConfiguration` 桩反查实现类，定位
-   mainConfiguration 供给者；②对照 sheng 的 IOMFB 用户客户端选择子
-   实现面，查 mfb sel6/0x80000000 e00002d5 未实现项（=y 栈补全方向）。
-5. **独立主题（不阻塞）**：chronod sig5（次优先）；XS/fileset-KC 重绑定
-   器；arm64e 专项；GPU/触摸主题化（显示墙破后）。
+1. **r54 已出件**：fixup 12 = `+[BLSHBacklightHost sharedBacklightHost]`
+   入口 mov x0,#0; ret 返 nil（`.35,61c7b64`，表内 1ee8ef8 同配方；
+   变体备选 = SBBacklightController initWithContextProvider 入口）；
+   payload **1ef5eb63**（15 fixups，ADT d57a5879，kernel 3ab2ace4 等四元
+   不变）平铺 `out/m2381/payload-r54-1ef5eb63.img`。
+2. **发卡 = 三件全刷**（设备在 nura-min）：boot_b←`a1d51f04` +
+   recovery_a←`1ef5eb63` + userdata←`fd43ee70`；刷前 sha 门 + 读回对拍
+   + current-slot=b。
+3. **读窗判读（注意环形窗残留坑——先分 slot 段再判读，history §0.36）**：
+   `parsed=15 applied=7`（fixup 12 醒来 = host 站点在路径）；REASON/
+   CRASH 换墙 = bt bl-target 验活符号化（§4 方法 2/7）；W1 swap 是否
+   复现 offer=-1（撕裂帧复现性）；若 SB 活 = 锁屏形态判读（keybag
+   首考）。
+4. **机制线（并行，不阻塞）**：mainConfiguration 供给者反查 + mfb
+   选择子失败簇对照 sheng IOMFB 表 + W1 swap 首帧竞争定性（=y 栈）。
+5. **独立主题（不阻塞）**：chronod sig5（r53 ×17 加凶，次优先）；
+   XS/fileset-KC 重绑定器；arm64e 专项；GPU/触摸主题化（显示墙破后）。
 
 ## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
 
@@ -173,3 +164,4 @@ nura-min，下轮**三件全刷**。
 | r50 | `4e69f450` | oracle 全排除（五站点全灭，抛者更深）；定位收口，转上游同步+调研 | history §0.34 |
 | r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙） | PLAN-display-lane.md |
 | r52 | `22f8f0bd` | **=y 一级实机全过**（PE handoff+真显示配置+swap+屏幕自稳）；SB 崩溃循环定谳 = BannerKit displayConfiguration 断言（深抛者钉死+验活）；设备回 nura-min | history §0.35 |
+| r53 | `04f4d803` | **fixup 11 生效**（applied 5→6，BannerKit ret）；SB 推进到 BLSHBacklightHost brk 新墙（sig5）；W1 swap 异常→撕裂 logo 新观察 | history §0.36 |
