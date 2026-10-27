@@ -139,32 +139,34 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**体系路线**：2026-10-27 用户拍板停止逐发 fixup，下会话先调研上游/fork 再定系统性方案出 r62；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r62 体系轮待刷**：2026-10-28 调研定谳 + 体系方案出件 `0854ea5e`；判读工作单 = `docs/STATE.md` §7）
 
-1. **r57–r61 五轮连破存档**：displayIdentity（r57）→ XB 断言（r58）→
-   UIScreen SIGSEGV（r59）→ traitCollection nil 块 B（r60）→
-   unspecified 块 A/块 C（r61）；SB 一路从封面层深入 wallpaper UI
-   构造。**r61 定谳 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径
-   FAR=0xf1，与 r58 0xf00 同族）：**UIKit 缓存单例全局在无显示环境
-   成批变垃圾源，逐发 fixup = 打地鼠（用户判）**，转体系路线。
-2. **出件配方红线（r56 教训入法）**：payload 命令必须带全
+1. **调研定谳（2026-10-28，上游设备目录 f85b5a6→0fc0fc1）**：①
+   text_fixups 全清单——sheng=4 条基线、fuxi=0 条，**没有过墙板携带
+   显示族 fixup**（我们 23 条 = 4 基线 + 19 条 displayless kill 族）；
+   ②过墙板模板（asteroids 桌面 / oneplus13t 无 GPU 锁屏 / pong 主屏 /
+   negroni SB+touch）= **AKS 替身 + sheng-vsync + client 关闭**；
+   asteroids T20-T29 实证"无 AKS 替身 SB 永远跑不完 boot"；r52 的
+   "mfb C0 sel6 失败"嫌疑 = 自设探针客户端（已关），权重大降。
+2. **r62 出件（体系轮，待刷）**：KeyStoreProbe.cpp（sheng 原版）+
+   AppleKeyStoreState 组件编进 display archive（`b6daee99` 七成员）+
+   `sheng-vsync=120` + `offline-mobile-graphics-client=0`；23 条
+   fixups 全保留（惰性 oracle：环境愈合 → applied 跌破 14 = 定量
+   信号）。kernel `542300ca` / 探针后 `158adedb` / ADT `b5b4a172`
+   （random-seed 每次变 = 预期）。**下一发 = 只刷 recovery_a
+   `payload-r62-0854ea5e.img`**（iOS 链未被 nura 覆盖，快捷卡合法）。
+3. **r63 备选（若 SEGV 垃圾族仍在）**：全指定 TC 构造 / UIKit 缓存
+   全局垃圾族审计 / NSAssertionHandler log-only 类杀（勘址已毕
+   0x1874494d4/0x187449618，砍 raise 留 NSLog 日志信号）。
+4. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
    ADT 的 PackedRAMDisk 映射只有带 --data-ramdisk 才生成（手术注入
    救不了 ADT）；forensic reader 已由 payload.py 集成
    （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
-   在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk。
-3. **下会话 = 调研 + 体系方案 + 出 r62**：①先调研——上游 UniXNU
-   `docs/porting/` 的 SpringBoard/bring-up 段 + **sheng/fuxi 设备仓
-   profile `text_fixups` 全清单**（sheng 同 donor 同 SoC 全实现 = 答案
-   模板）+ negroni/pong 等 fork 的过 SB 墙方案 → 差距表；②体系候选
-   拍板——**NSAssertionHandler log-only 类杀**（勘址已毕 0x1874494d4/
-   0x187449618，砍 raise 留 NSLog 日志信号）+ 全指定 TC 构造 + UIKit
-   缓存全局垃圾族审计 + 机制线 track 2（真显示注册，sheng 模板）；
-   ③出 r62（ADT/args 变才重刷，常规 = 只刷 recovery_a）。纪律不变：
-   17 分钟回卷红线 / reader 读回对拍 / fetchchunk / 出件配方红线
-   三 flag + ESP 四样。
-4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
+   在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk
+   （r62 出件已照办全过）。
+5. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds；
    `fetchchunk` 勿用单流 fetch（~13MiB 必断）。nura-min 只作 reader
    失败回退（届时只刷 recovery_a=nura ESP 即可，boot_b 不动）。
