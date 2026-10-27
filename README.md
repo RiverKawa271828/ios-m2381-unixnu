@@ -5,7 +5,7 @@
 `devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
 （Mu-Silicium UEFI）。
 
-## 进度（2026-10-28，r62 = 调研定谳 + 体系轮出件，待刷）
+## 进度（2026-10-28，r62 体系轮已刷，用户报未起，判读待下会话）
 
 **全链真机在跑**：UEFI → XNU → launchd → 175 进程用户态（configd /
 sleepd / mDNSResponder / akd … 全生态），**IOMFB 真 swap 上屏**
@@ -16,9 +16,10 @@ unspecified scale）；r61 换墙 = UIKit 缓存全局垃圾族 SIGSEGV——用
 拍板转体系路线。**r62 调研定谳**：四过墙板（asteroids 桌面 /
 oneplus13t 无 GPU 锁屏 / pong 主屏 / negroni SB+touch）无一携带显示
 族 fixup，答案模板 = **AppleKeyStore 替身 + sheng-vsync + client 探针
-关闭**。r62 已按模板出件（`0854ea5e`：KeyStoreProbe+AppleKeyStoreState
-入 display archive、sheng-vsync=120、client=0；23 条 fixups 留作惰性
-oracle），**待刷 recovery_a**。
+关闭**。r62 已按模板出件并**已刷**（`0854ea5e`：KeyStoreProbe+
+AppleKeyStoreState 入 display archive、sheng-vsync=120、client=0；
+23 条 fixups 留作惰性 oracle；fastboot 实录 OKAY），**用户报未起，
+读回对拍+判读待下会话**（reader：dd 对拍 → fetchchunk → 判读六项）。
 
 - **轮次索引**：[docs/STATE.md §8](docs/STATE.md)（r43→r62，每轮
   payload sha + 定谳一句话）；全量判定档案在
@@ -74,8 +75,8 @@ main + 工作区提交，跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREA
 - `artifacts/vendor/`：OEM UEFI DXE blobs（m2381Pkg FV 备选）
 - `reference/`：上游/模板克隆（清单与 pin 见 docs/UPSTREAM.md §1）
 - `research/`：21H461 IPSW、KDK 15.8.2、ipsw CLI
-- `out/m2381/`：现役件（平铺 payload，现役 r61 `169f160c`，待刷 r62
-  `0854ea5e`；kernel 三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
+- `out/m2381/`：现役件（平铺 payload，现役 r62 `0854ea5e` 已刷读回
+  待补；kernel 三件、ci-artifacts/userdata-root.img；各轮取证拉窗件
   reader-*-log.bin）
 - `temp/`：符号化/取证工具与各轮日志窗（方法 =
   [记忆 dyld-cache-symbolication] 与 docs/STATE.md §4）
