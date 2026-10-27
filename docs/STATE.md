@@ -18,27 +18,35 @@ rebootbl 回 fastboot），**读窗循环脱离 nura-min、不再刷 8.7GB userd
 §0.36）。下会话 = 用户实测 r55（首次验 reader 本身）+ r54 fixup 12 判读
 （applied=7 + BLSHBacklightHost 换墙）。
 
-## 2. 设备现状（2026-10-27 r52 读窗后 = **nura-min**）
+## 2. 设备现状（2026-10-27 r54 后 = **iOS 链现役**，未刷回 nura）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
-| boot_b | nura UEFI | `e74c73da` | **设备现态 = nura-min**（r53 读窗后，用户自刷回） |
-| recovery_a | nura ESP | `0a102220` | 同上（与 FLASHING §6 nura 值对拍一致） |
-| userdata | nura root | — | 同上（devsh 7.3.0 在跑，172.16.42.1 可达） |
+| boot_b | 本仓 UEFI | `a1d51f04` | **现役**（iOS 链，未被动） |
+| recovery_a | r54 裸件（fixup 12，15 fixups） | `1ef5eb63` | **已刷上电**（用户 r54 轮实机，12 分钟断电） |
+| userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
-- **下轮发卡 = 三件全刷**（iOS 链已被 nura 覆盖，r44/r49 规矩）。
-- r53 iOS 链三件已走完读窗定谳使命；boot_b `a1d51f04` 与 userdata
-  `fd43ee70` 仍是现役件可复用。**待刷 = r55**：`out/m2381/payload-
-r55-fb2c5dd1.img`（= r54 fixup 12 的 1ef5eb63 + forensic entry 注入；
-r54 裸件保留）。设备现态 = nura-min（r53 读窗后用户刷回），**下轮仍三
-件全刷**——此后读窗走 §7.2 的 forensic reader，不再回 nura。
-- 刷写/读回/回滚纪律：`docs/FLASHING.md`。回滚件**只**在 nura 仓
-  `/home/ri/work/nura-meizu-m2381/artifacts/`（红线 6；本仓 artifacts/images
-  已于 2026-10-26 删除）。
-- **发卡规矩（r49 事故定谳）**：①发卡前先确认设备现态——走过 nura-min
-  读回流程后 iOS 链已被覆盖，**必须三件全刷**；②payload 只认平铺路径
-  `out/m2381/payload-rNN-<sha8>.img`（--out 双层路径歧义已废弃）；
-  ③卡上必带刷前 `sha256sum` 门。
+- **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
+  NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
+- **r55 刷写 = 只刷 recovery_a**（boot_b/userdata 未被覆盖，r44/r49
+  "三件全刷"规矩只在 iOS 链被 nura 覆盖时触发——现态合法快捷卡）：
+  ```bash
+  fastboot getvar current-slot      # 必须 = b
+  sha256sum out/m2381/payload-r55-fb2c5dd1.img   # 前 8 = fb2c5dd1
+  fastboot flash recovery_a out/m2381/payload-r55-fb2c5dd1.img
+  fastboot reboot
+  ```
+- 读窗从此走 **forensic reader**（菜单选 "m2381 forensic log reader"，
+  FLASHING §7）——**iOS 链现役时连 nura-min 回退都不用刷**，reader 在
+  payload 里；nura-min 只在 reader 本身起不来时才需要（届时三件全刷
+  规矩恢复生效）。
+- r54 裸件（1ef5eb63）已被 r55 覆盖用途；r53 件（04f4d803）已定谳
+  退役。回滚件只在 nura 仓 `/home/ri/work/nura-meizu-m2381/artifacts/`
+  （红线 6）。
+- **发卡规矩（r49 事故定谳）**：①发卡前先确认设备现态（NCM 接口/
+  devsh 可达 = nura → 三件全刷；iOS 屏幕形态 = 只刷 recovery_a）；
+  ②payload 只认平铺路径 `out/m2381/payload-rNN-<sha8>.img`；③卡上
+  必带刷前 `sha256sum` 门。
 
 ## 3. 现役件与资产
 
@@ -131,21 +139,23 @@ r54 裸件保留）。设备现态 = nura-min（r53 读窗后用户刷回），*
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r55 实测工作单——2026-10-27 交接）
+## 7. 下一步（r55 实测工作单——2026-10-27 交接，设备 = iOS 链现役）
 
-1. **r55 三件全刷**（设备在 nura-min，这是最后一轮需要 nura-min 的刷
-   写）：boot_b←`a1d51f04` + recovery_a←**`fb2c5dd1`** + userdata←
-   `fd43ee70`；刷前 sha 门 + 读回对拍 + current-slot=b。
+1. **r55 只刷 recovery_a**（现态 iOS 链未被 nura 覆盖，快捷卡合法，
+   见 §2）：`fastboot flash recovery_a out/m2381/payload-r55-fb2c5dd1.img`
+   （刷前 sha 门 fb2c5dd1）→ `fastboot reboot`。
 2. **r55 双判读**：①iOS 引导照常（default=xnu，3 秒超时自动进）——
    fixup 12 判读 = `parsed=15 applied=7` + BLSHBacklightHost 换墙符号
    化 + W1 swap 复现性；等待 ~10-20 分钟后断电（SB 循环照旧记时间）。
    ②**取证 reader 首验**：断电→进 fastboot→`fastboot reboot`→菜单选
    "m2381 forensic log reader"→USB ACM（/dev/ttyACM*，1d6b:0104）→
-   拉窗（reader /run/log.bin 就绪后 shell `cat`，或 base64）→ 宿主
+   拉窗（reader /run/log.bin 就绪后 shell cat，或 base64）→ 宿主
    `read-m2381-ufs-log.py log.bin --all` → `/bin/rebootbl` 回 fastboot。
-   流程细节 = FLASHING §7。判读失败分支：reader 内核起不来 = 回退
-   nura-min（通道常青）；ACM 无枚举 = configfs/udc 探针（init 的 say
-   行有 log）；dd 魔数非 SHLOG001 = 窗基址错位（对拍 sda22 尾）。
+   流程细节 = FLASHING §7。判读失败分支：reader 内核起不来 = 刷 nura
+   ESP 回 nura-min 老路（届时 boot_b 未动只刷 recovery_a 即可——nura
+   ESP 件在 nura 仓，回 iOS 再只刷 recovery_a 当轮件）；ACM 无枚举 =
+   configfs/udc 探针（init 的 say 行有 log）；dd 魔数非 SHLOG001 =
+   窗基址错位（对拍 sda22 尾）。
 3. **sheng-autoreset 试投（r56）**：kernel_args 加 `sheng-autoreset=900`
    （BootReset.c fork 全套在，PMK8550 SDAM cell 待实测；成了 = 断电也
    免了）。
