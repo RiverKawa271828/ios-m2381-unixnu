@@ -129,7 +129,27 @@
 # _initWithDisplayIdentity: ("unallowed initializer", line 53) — its
 # sharedInstance deliberately goes through super to skip it; do NOT patch
 # the trap.
-"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9", "dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1e64f10,ff8301d1f85f02a9,c0035fd6f85f02a9"]
+# 2026-10-27 addition 10 (r57/r58): the r57 boot (first full-recipe ESP:
+# seed + initrd line + trustcache + PackedRAMDisk all present) broke the
+# display-identity wall for real — parsed=16 applied=8 (fixup 9 executed),
+# W1-W3 real swaps at t=85s (earliest yet; r55e needed 243s), 178 procs /
+# 907 spawns and SpringBoard drew the boot-progress flower on the panel
+# (user photo) before the next SIGABRT loop: 560 identical crashes since
+# t=66s, reason 'provided an invalid mainDisplay configuration'. Fully
+# bl-target-verified terminate chain collapsed at dispatch_client_callout;
+# the raiser was pinned by the file/line CFStrings next to the condition
+# string ('XBApplicationController.m', line 0x78=120): -[XBApplication
+# Controller initWithMainDisplayConfiguration:...] builds its internal
+# config then guards msgSend$isMainDisplay (cbz w0 @ .37+0x2526b84, VA
+# 0x2028d6b84) and msgSend$isExternal (cbnz w0 @ .37+0x2526b90) — both
+# branch to the handleFailureInMethod:file:lineNumber:description: block
+# (0x2028d6c3c). With our displayless stack nothing marks the fresh config
+# isMainDisplay, so the first branch always fires. Both entries NOP the two
+# conditional branches (1f2003d5, r46-precedented branch rewrite) so init
+# proceeds down its normal path (registers observers, _updateStatusBar
+# Orientation, _deleteLegacyCachesSnapshotPathsIfNeeded). Same displayless
+# wall, BackBoard/XB application-controller layer.
+"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9", "dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1e64f10,ff8301d1f85f02a9,c0035fd6f85f02a9", "dyld_shared_cache_arm64.37,2526b84,c0050034,1f2003d5", "dyld_shared_cache_arm64.37,2526b90,60050035,1f2003d5"]
 "trust_cache_sha256" = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7", "8900d6a93d7a59ce1a872a5c081e559f4240a218f97e12d44d22dda46644d68f"]
 
 
