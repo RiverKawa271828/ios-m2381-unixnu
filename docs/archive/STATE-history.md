@@ -1766,9 +1766,9 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - **r55c（69538b41 = fixup 12 + reader 三件 + dtb）+ 289614ba 实机**：
   用户实测**无闪回**（LoadImage/StartImage 过了，SB 修复生效）→
   **黑屏：linux 内核滚了几行就黑，之后纯黑屏；USB 零枚举**（宿主
-  lsusb 无设备侧、无 NCM、无 fastboot）= 内核 early 挂死（gadget 都
-  没到）。"滚了几行" = EFI stub 阶段输出（earlycon=efifb 经 GOP fb
-  可见）→ stub 后内核解压/启动阶段死。候选假设（下会话工作单
+  lsusb 无设备侧、无 NCM、无 fastboot）。用户纠正确认 = 内核真的
+  开始执行（滚字 = 内核早期输出，非 stub 阶段），死在 very early
+  （USB gadget 驱动之前）。候选假设（下会话工作单
   STATE §7.1）：a. 内核 early panic（cmdline/fdt/boot services 差异
   —— nura 内核在 nura 自己的 Mu 上实机通，我们的 m2381Pkg 环境差异
   是真实变量）；b. console 失效但内核活着（USB 零枚举否掉大部分）；
