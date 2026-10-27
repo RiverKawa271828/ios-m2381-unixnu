@@ -5,25 +5,27 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r54 出件 + r55 取证 reader 已组，2026-10-27）
+## 1. 一句话现状（r55c+289614ba 上机，reader 黑屏待查，2026-10-27）
 
-r53 定谳 = **fixup 11 生效**（applied 5→6，BannerKit ret），SB 推进到
-**BLSHBacklightHost brk 新墙**（`+[BLSHBacklightHost sharedBacklightHost]
-+0xbc` sig5）；r54 = fixup 12（BLSHBacklightHost 入口返 nil）payload
-**1ef5eb63**。**r55 = r54 + forensic 内置取证 reader**（type=linux entry，
-payload **fb2c5dd1**）——iOS 菜单加 "m2381 forensic log reader" 项，
-选它 = 上游 package/linux-log 形态（只读 dd SHLOG 窗 → USB ACM →
-rebootbl 回 fastboot），**读窗循环脱离 nura-min、不再刷 8.7GB userdata**。
-读窗判读坑（环形窗残留）已根治：parser 守 header 计数契约（history
-§0.36）。下会话 = 用户实测 r55（首次验 reader 本身）+ r54 fixup 12 判读
-（applied=7 + BLSHBacklightHost 换墙）。
+**=y 显示车道**：r53 fixup 11 生效（applied 6），SB 推进 BLSHBacklightHost
+brk 新墙；r54/r55c = fixup 12 + forensic reader（待判读，iOS 判读被
+reader 调试占用）。
+
+**forensic reader 调试三连**（本会话，commits 9c53eee→cbdd5f0→b692151）：
+①fb2c5dd1 LFN 破坏（短名覆盖 toml）→ 机制正道 payload.py 插桩
+（[payload] forensic=true）；②秒退根因一 = entry 无 dtb → 补
+`dtb = "Payloads/forensic.dtb"`（nura sm8550-meizu-20.dtb）；③秒退根因二
+= ENABLE_SECUREBOOT=1（sheng 拍来）LoadImage 拒签 → 1→0，**boot_b
+换件 = 289614ba**（替代 a1d51f04）。r55c（69538b41）+289614ba 实机：
+**无闪回（LoadImage 过了）但黑屏无内核滚字，USB 零枚举 = 内核 early
+挂死**（gadget 都没到）。下会话 = 黑屏定位（工作单 §7）。
 
 ## 2. 设备现状（2026-10-27 r54 后 = **iOS 链现役**，未刷回 nura）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
-| boot_b | 本仓 UEFI | `a1d51f04` | **现役**（iOS 链，未被动） |
-| recovery_a | r54 裸件（fixup 12，15 fixups） | `1ef5eb63` | **已刷上电**（用户 r54 轮实机，12 分钟断电） |
+| boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
+| recovery_a | r55c（fixup 12 + forensic reader + dtb） | `69538b41` | **现役已上电**（菜单选 reader 黑屏中） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
@@ -139,31 +141,37 @@ rebootbl 回 fastboot），**读窗循环脱离 nura-min、不再刷 8.7GB userd
 - 类杀 NSAssertionHandler 未出件（兜底项；r52 后仍是兜底，fixup 11
   优先——站点更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r55 实测工作单——2026-10-27 交接，设备 = iOS 链现役）
+## 7. 下一步（reader 黑屏定位工作单——2026-10-27 交接）
 
-1. ~~r55 刷写~~ ✅ 本会话已刷（2026-10-27）：设备 fastboot 态
-   （用户提前进好），current-slot=b ✅、刷前 sha 门 fb2c5dd1 ✅、
-   `flash recovery_a` OKAY（2.6s/0.03s）、分区尺寸 0x6400000 一致、
-   `fastboot reboot` 已离开 fastboot（ABL 接管）。读回验证 = reader
-   本身就是通道（见 2②）；boot_b/userdata 未动。
-2. **r55 双判读**：①iOS 引导照常（default=xnu，3 秒超时自动进）——
-   fixup 12 判读 = `parsed=15 applied=7` + BLSHBacklightHost 换墙符号
-   化 + W1 swap 复现性；等待 ~10-20 分钟后断电（SB 循环照旧记时间）。
-   ②**取证 reader 首验**：断电→进 fastboot→`fastboot reboot`→菜单选
-   "m2381 forensic log reader"→USB ACM（/dev/ttyACM*，1d6b:0104）→
-   拉窗（reader /run/log.bin 就绪后 shell cat，或 base64）→ 宿主
-   `read-m2381-ufs-log.py log.bin --all` → `/bin/rebootbl` 回 fastboot。
-   流程细节 = FLASHING §7。判读失败分支：reader 内核起不来 = 刷 nura
-   ESP 回 nura-min 老路（届时 boot_b 未动只刷 recovery_a 即可——nura
-   ESP 件在 nura 仓，回 iOS 再只刷 recovery_a 当轮件）；ACM 无枚举 =
-   configfs/udc 探针（init 的 say 行有 log）；dd 魔数非 SHLOG001 =
-   窗基址错位（对拍 sda22 尾）。
-3. **sheng-autoreset 试投（r56）**：kernel_args 加 `sheng-autoreset=900`
-   （BootReset.c fork 全套在，PMK8550 SDAM cell 待实测；成了 = 断电也
-   免了）。
+**现场态**：设备黑屏挂在 reader 内核 early（USB 零枚举、无 NCM、无
+fastboot；宿主已确认）。r55c+289614ba（无 SB）上电，无闪回 = LoadImage/
+StartImage 都过了，内核被跳进但 early 死。
+
+1. **黑屏定位（优先）**——候选假设按成本排：
+   a. **console 不可见 ≠ 内核死**：cmd-mode DSC 面板 + 我们 GOP
+     （SimpleFbDxe 用 ABL fb）给 EFI stub 建 simpledrm 可能不工作——
+     **先验"内核活没活"**：宿主 `lsusb` 持续观察（gadget = 活）+
+     init 里最早的 say 已经打 tty0——若确认活着只是看不到，换
+     `logshell=/dev/ttyMSM0`（UART，m2381 UART 引脚查 docs/HARDWARE）
+     或让 init 起一个**USB serial gadget 只回显**（不等 dd）。
+   b. **内核 early panic**：cmdline 试 nura 形态补 `console=ttyMSM0,
+     115200n8 keep_bootcon earlycon` + 拍照/UART；或换 `dtb=firmware`
+     对照（不行——ADT）；检查 nura 内核 config 对 UEFI 启动的依赖
+     （nura 走 ABL+vendor_boot DTB，我们从 UEFI stub 给 DTB——理论
+     等价但 boot services 版本/内存 map 差异真实存在）。
+   c. **换载体形态（兜底）**：reader 不走 UniXNU 菜单 LoadImage，改
+     nura 原生形态——recovery_a 只刷一个**取证专用 ESP**（nura
+     BOOTAA64.EFI 同件 + 我们的 initramfs 挂 ESP 上，由 nura Mu 引导
+     的原样路径）——但 recovery_a 被占用，需与 payload 互斥（每轮
+     读完刷回 payload，多一次 96MiB 刷写 ≈ 秒级）。
+2. **iOS 判读（被 reader 调试顺延，不丢）**：正常引导 iOS（菜单
+   default=xnu 3 秒超时）→ 等 10-20 分钟断电 → 现在读窗通道 = reader
+   （若通）或临时回 nura-min（recovery_a 刷 nura ESP，boot_b 不动）。
+   判读 `parsed=15 applied=7` + BLSHBacklightHost 换墙 + W1 swap。
+3. **sheng-autoreset 试投（r56）**：kernel_args 加
+   `sheng-autoreset=900`（PMK8550 SDAM cell 待实测）。
 4. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
-   arm64e 专项；GPU/触摸主题化；AdvancedLogDxe 固件日志（PORTING-GAP
-   行动项 3）；records 页（行动项 4）。
+   arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
 ## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
 

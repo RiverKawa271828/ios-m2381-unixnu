@@ -1739,3 +1739,43 @@ nura-min simg 是唯一安全件（sparse 头部）。
   刷——reader 在 payload 里，从菜单进；reader 起不来才需要刷 nura
   ESP（只 recovery_a，boot_b 不动）。
 - STATE §2/§7 + AGENTS §7 已同步修正。
+
+## 0.38 2026-10-27 续九：reader 三连修（LFN→dtb→SecureBoot）boot_b 换件 289614ba；reader 黑屏（内核 early 挂）下会话定位
+
+- **r55 首刷（fb2c5dd1）翻车 = LFN 破坏**：add-forensic-entry.py 用 8.3
+  短名（UNIXNU~1.TOM）覆盖 toml → FAT LFN 条目丢失 → Mu FAT 驱动按
+  LFN 打不开 \EFI\UniXNU\unixnu.toml → config 整体丢弃 → 菜单显示
+  "built-in configuration" + no boot entry found（用户截图铁证）。
+  mdel+LFN 重写的在位修复也不可靠 → **注入器退役，机制正道 =
+  payload.py 插桩**（board.toml [payload] forensic=true → stage 复制
+  .cache/forensic 三件 + unixnu.toml 追 type=linux entry，正规
+  write_volume 通道无 LFN 风险）。教训：**mtools 在位编辑 FAT 的短名
+  覆盖必毁 LFN，payload 内文件只能由构建管线生成**。
+- **秒退双根因（r55b→r55c→boot_b 换件）**：
+  ①entry 无 dtb key → Boot.c PrepareDeviceTree 不装树 → Linux EFI
+  stub 回退固件 FDT config table（m2381 ADT，qcom 内核无效）→ 秒挂。
+  修 = entry 加 `dtb = "Payloads/forensic.dtb"`（nura
+  sm8550-meizu-20.dtb，Inject.c:427 InstallConfigurationTable 机制）。
+  ②**ENABLE_SECUREBOOT=1**（board.toml firmware.defines，sheng 拍来）
+  → Mu SB 下 LoadImage 验 PE Authenticode（Silicium 硬编码 PK/db，私钥
+  不在手）→ 未签名 PE = EFI_SECURITY_VIOLATION → Boot.c 卸载回菜单。
+  修 = ENABLE_SECUREBOOT 1→0（iOS 链零依赖：kernel.macho 非 PE 走
+  trustcache/AMFI；FV 内模块不经 LoadImage；DarwinBoot loader=firmware
+  不从卷加载）。FV 重建 → package-m2381-boot.py 重打 → **boot_b
+  289614ba**（新 fd 7237ea09，替代 a1d51f04；发卡三件值更新）。
+- **r55c（69538b41 = fixup 12 + reader 三件 + dtb）+ 289614ba 实机**：
+  用户实测**无闪回**（LoadImage/StartImage 过了，SB 修复生效）→
+  **黑屏：linux 内核滚了几行就黑，之后纯黑屏；USB 零枚举**（宿主
+  lsusb 无设备侧、无 NCM、无 fastboot）= 内核 early 挂死（gadget 都
+  没到）。"滚了几行" = EFI stub 阶段输出（earlycon=efifb 经 GOP fb
+  可见）→ stub 后内核解压/启动阶段死。候选假设（下会话工作单
+  STATE §7.1）：a. 内核 early panic（cmdline/fdt/boot services 差异
+  —— nura 内核在 nura 自己的 Mu 上实机通，我们的 m2381Pkg 环境差异
+  是真实变量）；b. console 失效但内核活着（USB 零枚举否掉大部分）；
+  c. 兜底 = 改走 nura 原生形态（取证专用 ESP，recovery_a 与 payload
+  互斥轮换）。
+- **发卡现役件（2026-10-27 reader 调试后）**：boot_b = **289614ba**
+  （无 SB）+ recovery_a = 当轮 payload（r55c = 69538b41）+ userdata =
+  fd43ee70。回滚件只在 nura 仓。
+- **下会话 = STATE §7 工作单**：黑屏定位（宿主 USB 观察 → cmdline/
+  UART → 兜底 ESP 形态）+ iOS 判读顺延补做（applied=7）+ autoreset。
