@@ -1889,3 +1889,52 @@ nura-min simg 是唯一安全件（sparse 头部）。
 - 下会话 = STATE §7.3：控制变量 iOS 跑（8–15 分钟）→ acm-reader
   fetch → parser 判读 `applied=7` + BLSHBacklightHost 换墙 + W1 swap
   → 进入 fixups 快速迭代。
+
+### 0.41（2026-10-27 下午）：r55e 首轮 iOS 判读定谳（applied=7 + 换墙 displayIdentity）+ fixup 9 出件（payload-r56-db3a7392）+ fetchchunk 转正
+
+- **控制变量跑**：用户 iOS（r55e payload xnu default entry）跑 ~10.5
+  分钟（诊断页 1–2 分钟 → 苹果 logo 常亮未进桌面）→ 长按硬断电 →
+  重上电菜单选 reader → acm-reader 拉窗。
+- **通道两次单流 fetch 断流**（~13MiB 解码量处，设备端 sha 稳定）：
+  分块拉（2MiB×16，每块新 ACM 会话 + dd|base64）**16/16 块 + SHA
+  MATCH 31s**。顺带发现并修 acm-reader fetch 行过滤 bug（48..122 丢
+  含 `+`/`/` 的 base64 行 → 整包解码必损；修 43..122）；`fetchchunk`
+  子命令转正（acm-reader.py）。窗 = rounds=314 slots=314/509
+  uptime=628s（未回卷，write_errors=0）。
+- **三大判读项全中**：尾槽 `[text fixup] parsed=15 applied=7`（惰性
+  oracle：显示族+背光族 fixup 全生效，r53 fixup 11 与 r47 8a/8b、
+  fixup 12 都打上了）；**[swap timeline] W1/W2/W3 真显示 swap**
+  （t=243.275/244.712/245.286s，done=1410/188/207ms；GOP 映射
+  b8000000 10.4MB = 1080×2400×4）；系统全生态起跑（173 进程 / 881
+  spawn；analyticsd/configd/sleepd/mDNSResponder/akd 等齐）。
+- **换墙定谳 = displayIdentity 断言**：SB 自 t=68s 起 SIGABRT 循环
+  （p27→195→213→…→254 不停重拉），552 次崩溃 PC/LR/bt **逐字节相同**
+  （slide +a57c000）。符号化（21H461 本地 1020 万 nlist + LR-4 bl
+  验活全过）：`-[UIApplication _handleDelegateCallbacksWithOptions…]`
+  → `-[SpringBoard applicationDidFinishLaunching:] +0x888` →
+  `+[SBProximityBacklightPolicyFactory createNew…]+0x8c` →
+  `+[SBMainDisplaySystemGestureManager sharedInstance]`（once 块）→
+  `-[SBMainDisplaySystemGestureManager _init]` → msgSendSuper2
+  `-[SBSystemGestureManager _initWithDisplayIdentity:]`，identity =
+  `+[FBDisplayManager mainIdentity]`（= sharedInstance ivar@8，无显示
+  栈从不注册）= **nil** → NSParameterAssert（SBSystemGestureManager.m
+  **:119**，REASON 行 `'Invalid parameter not satisfying:
+  displayIdentity'` ×276 全同）。
+- **RE 行政细节**：SBMainDisplaySystemGestureManager 自己还有一个
+  `_initWithDisplayIdentity:` 陷阱（0x1cfe90ac0，"unallowed
+  initializer"，:53）——sharedInstance 的 once 块特意走 super 绕开它；
+  **勿修陷阱，修父类**。`+[FBDisplayManager mainIdentity]` = `[shared
+ Instance mainIdentity]` = 返 ivar@8（retains）——根因 = legacy 显示
+  车道无人给 FBDisplayManager 注册主显 identity。
+- **fixup 9**：`.25,1e64f10` `-[SBSystemGestureManager
+  _initWithDisplayIdentity:]` 入口 `ret` 返 self（同 8b 形；expected
+  `ff8301d1f85f02a9` = sub sp,#0x60 + stp x24,x23）→ profile.toml
+  16 条 → `./unixnu payload`（UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1）
+  → add-forensic-entry（LFN 读回 OK）→ **payload-r56-db3a7392**；
+  ADT 内 fixup9 字串逐字节实证在位（BLSHBacklightHost 条目之后）。
+- 预期 r56 新墙：identity nil 的下游消费者（比对/解引用链）或 SB UI
+  下层断言；applied 预期 8（fixup9 所在页在 sharedInstance 构造时即
+  被换入）。
+- 下会话 = STATE §7.1：只刷 recovery_a ← db3a7392 → xnu 8–15 分钟 →
+  硬断电 → `fetchchunk` → 判读 applied=8 + displayIdentity 墙是否破
+  → 下一发 fixups。
