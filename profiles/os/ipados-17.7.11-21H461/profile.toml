@@ -173,7 +173,33 @@
 # zeroes the trait/image-variant consumers downstream (UIImageSourceAtPath
 # falls back to the base representation). Fixup 7 becomes dormant at the
 # same time as these pages take over its job.
-"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9", "dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1e64f10,ff8301d1f85f02a9,c0035fd6f85f02a9", "dyld_shared_cache_arm64.37,2526b84,c0050034,1f2003d5", "dyld_shared_cache_arm64.37,2526b90,60050035,1f2003d5", "dyld_shared_cache_arm64.03,3255d40,ff4302d1f65706a9,000080d2c0035fd6", "dyld_shared_cache_arm64.03,341e6d8,f44fbea9fd7b01a9,000080d2c0035fd6"]
+# 2026-10-27 addition 12 (r59/r60): fixup 13a/13b verified live (parsed=20
+# applied=13, SIGSEGV x588 gone) — mainScreen now answers nil and
+# _mainScreenThreadSafeTraitCollection stays nil-safe — but the trait
+# family raised one frame deeper: SIGABRT x573 identical, reason
+# "'(null) returned nil from -traitCollection, which is not allowed.'".
+# Bl-target-verified chain: SBCoverSheetPresentationManager sharedInstance
+# (dispatch_once) -> SBWallpaperController sharedInstance -> (collapsed
+# raise) -> terminate. Pinner: the format string ('%@ returned nil from
+# -traitCollection...', next to _UIFallbackEnvironment_NonARC.m) lives in
+# a CFString whose only code xref is __UIGetCurrentFallbackTraitCollection
+# +0x1f8 (handleFailureInFunction:file:lineNumber:description:, line
+# 0x75=117). That getter takes [mainScreen _fallbackTraitCollection]
+# (= [screen traitCollection]; nil screen -> nil) and raises when
+# displayScale <= 0 on the main thread — no construction path of its own,
+# all three failure branches raise. Fix: patch the fetch pair at
+# __UIGetCurrentFallbackTraitCollection+0xa8 (.03+0x3261c50, VA
+# 0x18a00dc50: `mov x0,x20; bl msgSend$_fallbackTraitCollection`) to
+# `bl +[UITraitCollection _backgroundThreadFallbackTraitCollection];
+# mov x19,x0` — UIKit's own display-independent fallback TC, lazily
+# constructed and cached, real object with scale > 0, so the getter
+# returns a valid collection instead of raising. This heals the whole
+# fallback-trait family (both class wrappers tail-call the getter) rather
+# than one wallpaper consumer. Tooling note: the xref pin needed a
+# masked+escaped adrp+add full-cache scan — unescaped regex turns bytes
+# like 0x24 into '$' anchors and silently matches nothing (third scanner
+# pit, see workspace memory).
+"text_fixups" = ["dyld_shared_cache_arm64.15,421e8bc,28ad1bb0008544f9,c0035fd6008544f9", "dyld_shared_cache_arm64.13,1b05bec,44008052,24008052", "dyld_shared_cache_arm64.13,1b05b08,44008052,24008052", "BTAudioHALPlugin,38bec,ffc300d1f44f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.09,62aee70,ffc305d1,c0035fd6", "dyld_shared_cache_arm64.25,19c1ed0,ffc301d1e923026d,20008052c0035fd6", "dyld_shared_cache_arm64.03,3255e0c,f50200b4,08000014", "dyld_shared_cache_arm64.25,19cd2bc,ff4302d1fa6704a9,c0035fd6fa6704a9", "dyld_shared_cache_arm64.25,1fc7930,ff4301d1f65702a9,c0035fd6f65702a9", "dyld_shared_cache_arm64.25,1911f78,ffc301d1fa6702a9,c0035fd6fa6702a9", "dyld_shared_cache_arm64.25,1a308e4,ff8302d1eb2b036d,c0035fd6eb2b036d", "dyld_shared_cache_arm64.25,1ee8ef8,ff8302d1fc6f04a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1ee9188,ff4301d1f85f01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.17,670e6a0,ff8302d1fa6705a9,c0035fd6fa6705a9", "dyld_shared_cache_arm64.35,61c7b64,ff0301d1f65701a9,000080d2c0035fd6", "dyld_shared_cache_arm64.25,1e64f10,ff8301d1f85f02a9,c0035fd6f85f02a9", "dyld_shared_cache_arm64.37,2526b84,c0050034,1f2003d5", "dyld_shared_cache_arm64.37,2526b90,60050035,1f2003d5", "dyld_shared_cache_arm64.03,3255d40,ff4302d1f65706a9,000080d2c0035fd6", "dyld_shared_cache_arm64.03,341e6d8,f44fbea9fd7b01a9,000080d2c0035fd6", "dyld_shared_cache_arm64.03,3261c50,e00314aafbe06094,c6bbff97f30300aa"]
 "trust_cache_sha256" = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7", "8900d6a93d7a59ce1a872a5c081e559f4240a218f97e12d44d22dda46644d68f"]
 
 

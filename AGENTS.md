@@ -139,18 +139,17 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（2026-10-27 r58 判读 = XB 断言墙破 + SB 进应用装载 + r59 已出件待刷；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（2026-10-27 r59 判读 = UIScreen SIGSEGV 墙破 + trait 族换墙 + r60 已出件待刷；工作单 = `docs/STATE.md` §7）
 
-1. ~~r55e~~ ✅（displayIdentity 墙前史）；~~r56~~ ❌ 废轮（教训入法）；
-   ~~r57~~ ✅ displayIdentity 墙破（applied=8 + 菊花实拍；换墙
-   XBApplicationController.m:120 断言，fixup 10a/10b = NOP cbz/cbnz）；
-   ~~r58~~ ✅ **XB 断言墙破**（applied=11 + **SB sig6=0** + W1/W2
-   t≈86s）+ **SB 进应用装载**（SBApplicationController init → SB 启动
-   图摄取链）；**换墙 = UIScreen trait SIGSEGV ×588**：
-   `_mainScreenThreadSafeTraitCollection+0x2c` 解引用 x19=0xf00 垃圾
-   （FAR=0xfe0；mainScreen 答案异常，r46 fixup 7 实为休眠——其 nil
-   分支入口不可达）。方法增量照旧：抛点帧折叠猎 CFString 对；pattern
-   扫描勿写死 rd/rn；跨段引用全区扫。
+1. ~~r55e/r56/r57/r58~~ ✅/❌/✅/✅（三轮连破：displayIdentity →
+   XB 断言 → UIScreen SIGSEGV；r58 起 SB 进应用装载）；~~r59~~ ✅
+   **UIScreen SIGSEGV 墙封死**（applied=13 + sig11=0）；**换墙 =
+   traitCollection nil 断言 ×573**：`__UIGetCurrentFallbackTraitCollection`
+   line 117 raise（nil screen → nil fallback TC → displayScale 0；
+   REASON 串→CFString 槽→唯一 xref 钉死抛点；SBWallpaperController/
+   封面层链验活全过）。工具坑第三枚：自制扫描 regex 须逐字节
+   re.escape（0x24 变 `$` 静默零命中）——修正后先拿已知点验证再信
+   零结果。
 2. **出件配方红线（r56 教训入法）**：payload 命令必须带全
    `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
    devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
@@ -158,17 +157,20 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
    救不了 ADT）；forensic reader 已由 payload.py 集成
    （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
    在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk。
-3. **下会话 = r59 刷写 + 判读**（r59 `a9144765` 已出件：fixup 13a/13b
-   = `+[UIScreen mainScreen]` 入口 + `_mainScreenThreadSafeTrait-
-   Collection` 入口双 `mov x0,#0;ret` 返 nil（`.03,3255d40/341e6d8`，
-   r49 getter 形），20 条 fixups，ADT `f60ecf0c`，ESP 四样全过）：设备
-   现态 = iOS 链 → **只刷 recovery_a**（getvar current-slot=b →
-   set_active b 重置预算 → 刷前 sha 门 → flash）→ xnu 跑 8–15 分钟
-   （17 分钟回卷红线）→ 硬断电 → reader → 读回对拍 recovery_a ==
-   `a9144765…` → `fetchchunk` → 判读 `applied≥11`（fixup 13 真执行）+
-   UIScreen 墙是否破 + SB 应用装载是否推进（若 sig11 消失但卡住，看
-   [profile] PS/PP 采样找挂点）→ 下一发 fixups（ADT/args 变才重刷）。
-   rebootbl 实测只重启不落 ABL fastboot；人工 = 电源+音量减。
+3. **下会话 = r60 刷写 + 判读**（r60 `edabbafd` 已出件：fixup 14 =
+   `__UIGetCurrentFallbackTraitCollection+0xa8` 取值对
+   `mov x0,x20; bl msgSend$_fallbackTraitCollection` → `bl +[UITrait-
+   Collection _backgroundThreadFallbackTraitCollection]; mov x19,x0`
+   （`.03,3261c50`；UIKit 自家 display 无关懒构造缓存 TC，getter 返真
+   对象、三分支 raise 全死、整族治好），21 条 fixups，ADT `1dd13c1b`，
+   ESP 四样全过）：设备现态 = iOS 链 → **只刷 recovery_a**（getvar
+   current-slot=b → set_active b 重置预算 → 刷前 sha 门 → flash）→
+   xnu 跑 8–15 分钟（17 分钟回卷红线）→ 硬断电 → reader → 读回对拍
+   recovery_a == `edabbafd…` → `fetchchunk` → 判读 `applied≥13`（fixup
+   14 真执行）+ trait 族墙是否破 + SB 是否推进过 wallpaper/封面层
+   （崩溃消失但卡住 → 看 [profile] PS/PP 采样找挂点）→ 下一发 fixups
+   （ADT/args 变才重刷）。rebootbl 实测只重启不落 ABL fastboot；
+   人工 = 电源+音量减。
 4. **读窗纪律（r53 教训入法）**：SHLOG 窗跨引导不清零，parser 已守
    header 计数契约（slots_written 截断）；判读前先看 header rounds；
    `fetchchunk` 勿用单流 fetch（~13MiB 必断）。nura-min 只作 reader
