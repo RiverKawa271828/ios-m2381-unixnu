@@ -1798,3 +1798,16 @@ nura-min simg 是唯一安全件（sparse 头部）。
   CRC32 写 primary/backup）+ **BootLog GPT check 豁免 boot_b 属性位**
   （否则写手停 state=4 日志窗停更）；红线 = 只动属性位+CRC，不动
   分区数据区，misc 不碰。
+
+### 0.38 补三（同日）：pstore/UART 双双判死（nura 记录），捕获收窄为录像+keep_bootcon
+
+- 用户提示 nura 有记录——查实（BOOT-CHAIN-RE §6.3 + SUSPEND-S2IDLE
+  §2.2）：**ramoops 四重死**，最致命 = 0xa8000000 被 ABL 每 boot 重写
+  （nura 实测搬址也死），我们每轮重启必过 ABL → 死前 console 结构性
+  留不住，ramoops 闭环划掉；**UART** = m2381 无引出（BOOT-CHAIN-RE
+  墙四："交接后第一秒没有任何观测通道"），划掉。
+- **可行捕获**：①240fps 慢动作录像（零成本）；②cmdline 加
+  `keep_bootcon fbcon=nodefer loglevel=7`——"日志瞬间消失"的对症药
+  （early console 被 fbcon takeover 清屏；panic 默认挂住不重启，early
+  行会留在屏上到死）；args 改一行重打 payload。③兜底 = nura 原生
+  ESP 形态不变。
