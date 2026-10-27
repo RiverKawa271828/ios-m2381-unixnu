@@ -162,12 +162,11 @@ StartImage 都过了，内核被跳进但 early 死。
      pstore 空则需确认 no-map 保留区未被 ABL 覆写）；
      ③UART（ttyMSM0，cmdline nura 形态有 qcom_geni_serial.con_enabled
      ——物理接引脚查 nura 仓/HARDWARE）。
-   b. 候选假设（按 ramoops 内容定）：UEFI ExitBootServices 后内存
-     map 冲突（我们高段 GCD 0x8c0000000 布局 vs nura Mu 的 map，
-     EfiBootServices/保留区重叠 → 内核 early panic）；DTB 与内核
-     版本错位（内核=v71/r91 ESP 件，DTB=apk rc6-r91，核对同 build）；
-     保留区（ramoops@0xa8000000 等）被我们固件/内核占用；EL2/内存
-     属性差异（m2381Pkg vs nura Mu）。
+   b. 候选假设（按录像内容定）：ExitBootServices 后 early 挂——
+     UEFI 内存 map 与内核期望冲突（我们高段 GCD 0x8c0000000 vs
+     nura Mu map）；DTB 与内核版本错位（内核=v71/r91 ESP 件 vs
+     DTB=apk rc6-r91，核对同 build）；EL2/内存属性差异；内核对
+     fb/simpledrm 的 cmd-mode 面板处理（fbcon 初始化挂）。
    c. **console 补强**：cmdline 换 nura 形态 `console=ttyMSM0,
      115200n8 earlycon keep_bootcon`（m2381 UART 引脚查
      docs/HARDWARE，nura FLASHING 可能记录了 UART 接法）。
