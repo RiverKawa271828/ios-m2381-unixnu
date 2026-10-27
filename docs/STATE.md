@@ -12,8 +12,25 @@
 fixup 12 等全生效）、**真显示 swap 三连**（W1/W2/W3 t=243–245s，GOP 映射
 b8000000，10.4MB 帧缓冲）、系统 173 进程 / 881 spawn 全生态起跑；**换墙
 = SBMainDisplaySystemGestureManager sharedInstance 内 displayIdentity
-断言**（SB 自 t=68s 起 SIGABRT 循环 552 次同死点）。fixup 9 已出件 =
-**payload-r56-db3a7392**（16 条 fixups + forensic entry）。
+断言**（SB 自 t=68s 起 SIGABRT 循环 552 次同死点）。
+
+**r56 = 废轮（2026-10-27 判读）**：出件漏 `--data-ramdisk`/`--trust-cache`
+两 flag（commit 只记了 `./unixnu payload`）→ ESP 无 scratch-data.img +
+toml 无 initrd 行 + 无 trustcache sidecar → 无 PackedRAMDisk →
+NativeRamBlock 起不来 → APFS 发布不了 Data 卷 → `volume_seed` 查
+UUID 18AB5557 返 0 → ENOENT panic `offline scratch Data mount failed: 2`
+（kern_exec.c:8196，t≈1s）；554s 全程 panic-hold 诊断页（procs=1/
+spawn=0/**applied=0**，fixup 9 根本没测到）。**ADT 的 PackedRAMDisk
+映射只有带 --data-ramdisk 才生成**（payload.py devicetree）→ 手术注入
+救不了，必须规范重建。
+
+**r57 已出件并已刷（payload-r57-1e7ea60b，2026-10-27）**：规范命令
+重建（kernel 增量 `517229e7`→探针后 `9252e8f5` + 完整 flags）；seed
+`d04a0153` / trust `7416ca4f` == r55e 已验证件逐字节相同；unixnu.toml
+== r55e 逐字节（initrd 行回归）；ADT `f5eaeb4b` 16 条 fixups（含
+fixup 9 `.25,1e64f10`）+ PackedRAMDisk 映射在。forensic reader 已由
+payload.py 集成（`[payload] forensic=true` 自动装），add-forensic-entry.py
+仅存手术用。
 
 **forensic reader 调试五连**（本会话，9c53eee→cbdd5f0→b692151→r55d→r55e）：
 
@@ -36,22 +53,16 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | r55e（fixup 12 + forensic reader + 保命 cmdline，initrd 修复版） | `b060b512` | **现役**（已刷 + 读回对拍 + 通道首验 ✓） |
+| recovery_a | **r57**（16 条 fixups + Data seed + trustcache + forensic reader） | `1e7ea60b` | **现役**（已刷 2026-10-27；读回对拍顺延下会话 reader 内首步做） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
   NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
-- **下一发刷写 = 只刷 recovery_a ← r56**（boot_b/userdata 未被覆盖，
-  r44/r49 "三件全刷"规矩只在 iOS 链被 nura 覆盖时触发——现态合法快捷卡）：
-  ```bash
-  fastboot getvar current-slot      # 必须 = b
-  sha256sum out/m2381/payload-r56-db3a7392.img  # 前 8 = db3a7392
-  fastboot flash recovery_a out/m2381/payload-r56-db3a7392.img
-  fastboot reboot
-  ```
-  刷后 iOS 跑 8–15 分钟硬断电 → 菜单选 reader → `acm-reader.py
-  fetchchunk`（fetch 单流 ~13MiB 断，r56 实测两连；分块拉 16/16 块 +
-  SHA MATCH 31s 已转正）→ 判读 `applied=8` + displayIdentity 墙是否破。
+- **下一发刷写 = 无（r57 已刷 2026-10-27，测试跑进行中）**；下会话取证
+  = 菜单选 reader → **先读回对拍**（`dd if=<recovery_a 设备> bs=1M
+  count=96 | sha256sum` == `1e7ea60b…`，补本轮欠的刷后对拍）→
+  `fetchchunk` → parser `--all` 判读 `applied=8` + displayIdentity 墙
+  是否破：
 - **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
   fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
   重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
@@ -70,9 +81,9 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 3. 现役件与资产
 
-- **payload 四元（r51 起）**：kernel `3ab2ace4` / 探针 `474724fd` /
-  trust `7416ca4f` / 种子 `d04a0153`；ADT 346c6cde（13 条 fixups +
-  上游 688fa88 的 J120AP compatible/product-id//product/audio，< 32 上限）。
+- **payload 四元（r57 起）**：kernel `517229e7` / 探针后 `9252e8f5` /
+  trust `7416ca4f` / 种子 `d04a0153`；ADT `f5eaeb4b`（16 条 fixups 含
+  fixup 9，+ 上游 J120AP 身份件，< 32 上限）。
   fixup 表源 = 设备仓 OS profile `text_fixups`。
 - **applied 常驻集（=n 时代）**：{BTAudio, 5, 6, 7, 8a}。=y 上电后该
   oracle 继续有效（惰性判活器不变）；显示族 fixup（5–10）在真显示栈下
@@ -195,12 +206,22 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   43..122）；单流 ~13MiB 必断（ACM gadget 长流卡死）→ `fetchchunk`
   分块拉（2MiB×16，每块新会话，16/16 + SHA MATCH 31s）。
 
-1. **下会话 = 刷 r56 + 迭代循环**：只刷 recovery_a ← payload-r56-
-   **db3a7392**（§2 卡）→ 菜单 default xnu 跑 8–15 分钟（17 分钟回卷
-   红线）→ 硬断电 → reader → `fetchchunk` → parser `--all` 判读
-   `applied=8` + displayIdentity 墙是否破（预期新墙：identity 消费者
-   nil 比对链或 SB UI 下层）→ 下一发 fixups。每轮 = 刷 recovery_a +
+1. **r57 测试跑 + 下会话取证**：r57 已刷（2026-10-27，set-active=b +
+   sha 门 + 只刷 recovery_a）→ xnu 跑 8–15 分钟（17 分钟回卷红线）→
+   硬断电。下会话 = 菜单选 reader → **先读回对拍 recovery_a ==
+   1e7ea60b**（补欠）→ `fetchchunk` → parser `--all`：判读 `applied=8`
+   （fixup 9 生效）+ displayIdentity 墙是否破（预期新墙：identity 消费
+   者 nil 比对链或 SB UI 下层）→ 下一发 fixups。每轮 = 刷 recovery_a +
    一跑一读；ADT/args 不变时 skip 重刷。
+   **出件配方红线（r56 废轮教训入法）**：payload 命令必须带全三件——
+   `UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload -D
+   devices/m2381/unixnu-m2381 --trust-cache
+   out/m2381/trust/original-trust.bundle --data-ramdisk
+   devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
+   缺 --data-ramdisk = ADT 无 PackedRAMDisk 映射（手术救不了）→
+   Data mount ENOENT panic；缺 --trust-cache = ESP 无信任缓存 sidecar。
+   刷卡前对 ESP 验四样：scratch-data.img 在、toml 有 initrd 行、
+   trustcache 在、ADT 有 PackedRAMDisk。
 2. **拉窗纪律**：判定只看宿主（屏幕黑不阻塞）；判读前先看 header
    rounds/slots_written（跨引导不清零，parser 已守计数契约）；若
    `fetch` 断流直接换 `fetchchunk`，勿反复重试单流。
@@ -222,7 +243,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
-## 8. 轮次索引（r43 → r55e；详情 = commit message + STATE-history 对应节）
+## 8. 轮次索引（r43 → r57；详情 = commit message + STATE-history 对应节）
 
 | 轮 | payload | 定谳 | 详情 |
 |---|---|---|---|
@@ -241,4 +262,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r55a–c | `fb2c5dd1`→`69538b41` | reader 三连翻车定谳：LFN 毁（短名覆盖 toml）→ entry 缺 dtb 秒退 → ENABLE_SECUREBOOT=1 拒签（boot_b 换 `289614ba`）；payload.py 插桩转正 | history §0.37 |
 | r55d | `087f9ca3` | 保命 cmdline 定谳：内核每必起（企鹅/UFS 全枚举），死因 = **initramfs cpio 手写 12 字段错位**（damaged header 实拍）→ root panic → 无 USB 同根因；LoadFile2 投递链实证是通的 | history §0.38/0.39 |
 | r55e | `b060b512` | **取证 reader 通道立通**（1d6b:0104 + magic=SHLOG001 + 32MiB 窗在位）；reader 内读回对拍闭环；**首轮 iOS 判读**：applied=7 + W1–W3 真 swap（t=243–245s）+ 173 进程全生态，换墙 = displayIdentity 断言（SB SIGABRT ×552 同死点，符号化定谳 FBDisplayManager.mainIdentity=nil） | history §0.39/0.40/0.41 |
-| r56 | `db3a7392` | fixup 9（SBSystemGestureManager _initWithDisplayIdentity: 入口 ret，破 displayIdentity 墙）；fetchchunk 分块拉窗转正 | history §0.41 |
+| r56 | `db3a7392` | **废轮**：出件漏 `--data-ramdisk`/`--trust-cache` → ESP 无 Data seed/initrd 行/trustcache → Data mount ENOENT panic（kern_exec.c:8196，t≈1s），554s panic-hold 诊断页，applied=0，fixup 9 未测到；ADT PackedRAMDisk 映射依赖 seed flag → 必须规范重建 | 本会话判读 |
+| r57 | `1e7ea60b` | 规范重建出件（seed d04a0153 / trust 7416ca4f == r55e 件，toml==r55e，ADT f5eaeb4b 16 fixups 含 fixup 9 + PackedRAMDisk）+ 已刷（读回对拍顺延）；**测试跑进行中，下会话取证判读 applied=8 + displayIdentity 墙** | 本会话 |
