@@ -148,14 +148,26 @@ fastboot；宿主已确认）。r55c+289614ba（无 SB）上电，无闪回 = Lo
 StartImage 都过了，内核被跳进但 early 死。
 
 1. **黑屏定位（优先）**——候选假设按成本排：
-   a. **（用户实测纠正）内核滚了几行再黑** = 内核确实开始执行
-     （early 输出可见），死在 very early（USB 零枚举 = gadget 驱动
-     之前）。**第一取证动作 = 重跑并拍下滚的那几行内容**（死亡点
-     直接证据：decompressor 行？memory/x0 报错？Storage?）。
-   b. 候选假设（按滚字内容定）：UEFI 内存 map 与 qcom 内核冲突
-     （我们高段 GCD 0x8c0000000 布局 vs nura Mu 的 map）；DTB 与
-     内核版本错位（内核 4aad92b3=v71/r91，DTB=apk rc6-r91，核对
-     同 build）；EL2/内存属性差异（m2381Pkg vs nura Mu 环境差）。
+   a. **（用户实测纠正）内核滚了几行再黑，且一下子消失拍不到** =
+     内核开始执行、early 输出可见后死在 very early（USB 零枚举）。
+     "滚几行"大概率 = EFI stub 输出（Booting/DTB/Exiting boot
+     services）或 early console；随后黑 = fbcon 未接管/内核死。
+     **捕获手段三选（拍不到就用后两个）**：
+     ①手机**慢动作录像 240fps** 拍黑屏前几帧（零成本，第一试）；
+     ②**ramoops 闭环（首选）**：reader 的 DTB（nura sm8550-meizu-20）
+     **自带 ramoops@a8000000**（console-size 0x7d800 保留内存）——
+     内核 console/pstore 写入后即使挂死，**重启刷回 nura 读
+     /sys/fs/pstore/console-ramoops** 即得死亡现场（要求 nura 的
+     stock/vendor_boot DTB 同节点——同源 apk，大概率在；若 nura 侧
+     pstore 空则需确认 no-map 保留区未被 ABL 覆写）；
+     ③UART（ttyMSM0，cmdline nura 形态有 qcom_geni_serial.con_enabled
+     ——物理接引脚查 nura 仓/HARDWARE）。
+   b. 候选假设（按 ramoops 内容定）：UEFI ExitBootServices 后内存
+     map 冲突（我们高段 GCD 0x8c0000000 布局 vs nura Mu 的 map，
+     EfiBootServices/保留区重叠 → 内核 early panic）；DTB 与内核
+     版本错位（内核=v71/r91 ESP 件，DTB=apk rc6-r91，核对同 build）；
+     保留区（ramoops@0xa8000000 等）被我们固件/内核占用；EL2/内存
+     属性差异（m2381Pkg vs nura Mu）。
    c. **console 补强**：cmdline 换 nura 形态 `console=ttyMSM0,
      115200n8 earlycon keep_bootcon`（m2381 UART 引脚查
      docs/HARDWARE，nura FLASHING 可能记录了 UART 接法）。
@@ -173,9 +185,19 @@ StartImage 都过了，内核被跳进但 early 死。
    default=xnu 3 秒超时）→ 等 10-20 分钟断电 → 现在读窗通道 = reader
    （若通）或临时回 nura-min（recovery_a 刷 nura ESP，boot_b 不动）。
    判读 `parsed=15 applied=7` + BLSHBacklightHost 换墙 + W1 swap。
-3. **sheng-autoreset 试投（r56）**：kernel_args 加
-   `sheng-autoreset=900`（PMK8550 SDAM cell 待实测）。
-4. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
+3. **ABL 重试计数自动重置（r56 主题，用户需求 2026-10-27）**：
+   机制实证（nura FLASHING §3）= 计数在 **boot_b 的 GPT entry 属性位**
+   （Android A/B：bits 52-55 tries_remaining / bit 56 successful），
+   `fastboot set_active b` 重置预算，nura 用 qbootctl 起机 mark
+   successful；misc 分区与直刷链无关（不碰）。**方案 = UEFI 侧**：
+   m2381Pkg 加 BootSlotReset DXE（起机读 GPT LBA2-33 → boot_b entry
+   属性清 tries/successful=1 → 重算 entry array + header CRC32 →
+   写 primary/backup），**配套改 XNU 侧 BootLog 的 GPT check 豁免
+   boot_b 属性位**（否则 gpt_open != gpt_last 写手停 = 日志窗停更，
+   r49/r50 的 gpt 0->0 机制）；红线注记 = 只动属性位 + CRC（nura
+   qbootctl 先例，不动分区数据区）；手动恢复 = `fastboot set_active b
+   && fastboot reboot`（用户验证过）。与 sheng-autoreset 并列 r56。
+5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
 ## 8. 轮次索引（r43 → r52；详情 = commit message + STATE-history 对应节）
