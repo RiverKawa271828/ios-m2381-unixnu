@@ -72,12 +72,12 @@ sha256sum boot_b.before.img recovery_a.before.img
   卡上必带**刷前 sha256 门**（`sha256sum` 输出须以卡上 sha 前 8 开头）。
 - 刷前 `fastboot --set-active=b` 重置 ABL 重试预算（同槽连败耗尽会自动
   落 fastboot；getvar current-slot 必须 = b）。
-- 现役件（2026-10-27 r59 判读后，sha 前 8）：boot_b = `289614ba`
-  （无SB 版，ENABLE_SECUREBOOT=0）+ recovery_a = r59 `a9144765`
+- 现役件（2026-10-27 r60 判读后，sha 前 8）：boot_b = `289614ba`
+  （无SB 版，ENABLE_SECUREBOOT=0）+ recovery_a = r60 `edabbafd`
   （读回对拍 ✓ == 镜像）+ userdata =
   `fd43ee70`
-  （out/m2381/ci-artifacts/userdata-root.img）。**下一发 = r60
-  `edabbafd`（只刷 recovery_a）**。现势详见 `docs/STATE.md` §2。
+  （out/m2381/ci-artifacts/userdata-root.img）。**下一发 = r61
+  `169f160c`（只刷 recovery_a）**。现势详见 `docs/STATE.md` §2。
 - 每槽刷完立即读回 sha 对拍（§2；iOS 链态走 reader）；刷完
   `fastboot reboot`（`fastboot boot` 死路），让 ABL 走 boot_b。
 

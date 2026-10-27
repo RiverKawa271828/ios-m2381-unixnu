@@ -5,31 +5,31 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r59 判读 = UIScreen SIGSEGV 墙破 + trait 族换墙 + r60 已出件，2026-10-27）
+## 1. 一句话现状（r60 判读 = traitCollection nil 断言墙破 + scale 检查换墙 + r61 已出件，2026-10-27）
 
-**r59 首轮判读（2026-10-27，acm-reader 拉窗 + 读回对拍 a9144765 ✓）**：
-窗 rounds=327/509 uptime=674s 无回卷；**applied=13**（20 parsed，fixup
-13a/13b 真执行）；**SIGSEGV ×588 = 0**（UIScreen 垃圾解引用墙死）；
-procs=175/spawn=887。**换墙 = SIGABRT ×573 同死点**，REASON "'(null)
-returned nil from -traitCollection, which is not allowed.'"：链 =
-`SBCoverSheetPresentationManager sharedInstance`（once）→
-`SBWallpaperController sharedInstance` → （折叠 raise）；抛点 =
-`__UIGetCurrentFallbackTraitCollection+0x1f8`（line 117，
-`handleFailureInFunction:`——nil screen 的 `_fallbackTraitCollection`
-返 nil → displayScale 0 → 主线程 raise；该函数三个失败分支全 raise、
-无构造路径）。**fixup 14** = 取 trait 机器补丁位（VA 0x18a00dc50
-`mov x0,x20; bl msgSend$_fallbackTraitCollection`）→ 重定向
-`bl +[UITraitCollection _backgroundThreadFallbackTraitCollection];
-mov x19,x0`——UIKit 自己的 display 无关懒构造缓存 TC，整族治好。
+**r60 首轮判读（2026-10-27，acm-reader 拉窗 + 读回对拍 edabbafd ✓）**：
+窗 rounds=423/509 uptime=875s 无回卷（跑了 ~14.5 分钟）；**applied=14**
+（21 parsed，fixup 14 真执行）；**r59 的 nil 断言墙死**（'returned nil
+from -traitCollection' 零出现）；procs=175/spawn=925。**换墙 = SIGABRT
+×758 同死点**，REASON "'A trait environment returned a trait collection
+with unspecified values for traits that are not allowed to be
+unspecified.'"——**同一函数的第二个 raise 块**：该消息 CFString
+（0x1f0186188）的 xref 就在 `__UIGetCurrentFallbackTraitCollection+0x124`
+（块 A：x19 非 nil 但 displayScale≤0 时 raise）；fixup 14 给的
+`_backgroundThreadFallbackTraitCollection` 是**故意全 unspecified 的
+占位**（scale=0.0），掉进块 A。
 
-**r60 已出件（payload-r60-edabbafd，2026-10-27）**：21 条 fixups 全表
-对缓存校验过；ADT `1dd13c1b`（21 条 + PackedRAMDisk）；ESP 验四样全过。
+**r61 已出件（payload-r61-169f160c，2026-10-27）**：fixup 15a/15b =
+两个 scale 检查分支改无条件成功（`.03,3261c8c`：`cbz w21;b.gt` →
+`b 成功;nop`；`.03,3261cec`：`b.le` → `b 成功`（保留 ldr））——getter
+直接返回 bg TC（真对象非 nil），nil/scale 三块 raise 全部不可达。23 条
+fixups 全表校验；ADT `f6dba410`（23 条 + PackedRAMDisk）；ESP 四样全过。
 **待刷**。
 
-**r58 判读存档**（commit db8a5d2）：XB 断言墙破（applied=11 + sig6=0
-+ SB 进应用装载）；换墙 UIScreen trait SIGSEGV ×588（x19=0xf00 垃圾）；
-fixup 13a/13b = mainScreen + trait getter 双入口返 nil。r57 存档
-（commit 2ec5987）：displayIdentity 墙破（applied=8 + 菊花实拍）。
+**r59 判读存档**（commit 61a41c8）：UIScreen SIGSEGV 墙封死（applied=13
++ sig11=0）；换墙 traitCollection nil 断言 ×573（抛点
+`__UIGetCurrentFallbackTraitCollection+0x1f8` 块 B）；fixup 14 = 取值
+对重定向 bg TC。r58（db8a5d2）/r57（2ec5987）更早存档见 git。
 
 **r56 = 废轮（教训已入法）**：出件漏 `--data-ramdisk`/`--trust-cache`
 → ESP 无 Data seed/initrd 行/trustcache → Data mount ENOENT panic，
@@ -58,16 +58,16 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r59**（20 条 fixups + Data seed + trustcache + forensic reader） | `a9144765` | **现役**（已刷 2026-10-27；读回对拍 ✓ == 镜像 sha） |
+| recovery_a | **r60**（21 条 fixups + Data seed + trustcache + forensic reader） | `edabbafd` | **现役**（已刷 2026-10-27；读回对拍 ✓ == 镜像 sha） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54），未刷回 nura-min**（用户确认 2026-10-27；
   NCM 无 172.16.42.x 接口 = 非 nura，佐证）。
-- **下一发刷写 = r60 `edabbafd`（只刷 recovery_a，set_active b 重置
-  预算）**；r59 轮次已闭环（判读 + 读回对拍全绿，见 §1/§7）；下会话 =
-  刷 r60 → 跑 8–15 分钟 → 硬断电 → reader 读回对拍 + `fetchchunk` →
-  判读 `applied≥13` + trait 族墙是否破 + SB 是否推进过 wallpaper/封面
-  层：
+- **下一发刷写 = r61 `169f160c`（只刷 recovery_a，set_active b 重置
+  预算）**；r60 轮次已闭环（判读 + 读回对拍全绿，见 §1/§7）；下会话 =
+  刷 r61 → 跑 8–15 分钟 → 硬断电 → reader 读回对拍 + `fetchchunk` →
+  判读 `applied≥14` + getter 三 raise 块是否全死 + SB 是否推进过
+  wallpaper/封面层：
 - **ABL 重试预算行为（r55d 实测）**：同槽连败数次后预算耗尽自动落
   fastboot（用户实测一次）。恢复 = `fastboot --set-active=b`（留在 b、
   重置预算，nura FLASHING §3）再刷；自动重置 = r56 BootSlotReset DXE
@@ -86,10 +86,10 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 3. 现役件与资产
 
-- **payload 四元（r57 起，r60 沿用）**：kernel `517229e7` / 探针后
-  `9252e8f5` / trust `7416ca4f` / 种子 `d04a0153`；ADT `1dd13c1b`
-  （**21 条 fixups** 含 10a/10b + 13a/13b + 14，+ 上游 J120AP 身份件，
-  < 32 上限）。fixup 表源 = 设备仓 OS profile `text_fixups`。
+- **payload 四元（r57 起，r61 沿用）**：kernel `517229e7` / 探针后
+  `9252e8f5` / trust `7416ca4f` / 种子 `d04a0153`；ADT `f6dba410`
+  （**23 条 fixups** 含 10a/10b + 13a/13b + 14 + 15a/15b，+ 上游 J120AP
+  身份件，< 32 上限）。fixup 表源 = 设备仓 OS profile `text_fixups`。
 - **applied 常驻集（=n 时代）**：{BTAudio, 5, 6, 7, 8a}。=y 上电后该
   oracle 继续有效（惰性判活器不变）；显示族 fixup（5–10）在真显示栈下
   变睡守，换代时退役。
@@ -155,14 +155,15 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 5. 开放问题
 
-- **主墙（r59 钉死）**：SIGABRT ×573 = `__UIGetCurrentFallbackTraitCollection`
-  line 117 raise（nil screen → nil fallback TC → displayScale 0）。
-  fixup 14 已出件（fetch 对重定向到 UIKit 自家后台 fallback TC，懒构造
-  缓存、display 无关）→ **待 r60 实机验证**。r58 的 UIScreen SIGSEGV
-  墙已由 13a/13b 实锤封死（r59 sig11=0）。
-- **开放缝**：mainScreen 入口缓存全局槽文件值 = rebase 指向类对象区
-  （`_OBJC_CLASS_$__UISlideriOSVisualElement+0x28`），非 nil 非
-  screen——0xf00 的确切来源未钉死；13a 落地后该谜降级为机制线注脚。
+- **主墙（r60 钉死）**：SIGABRT ×758 = `__UIGetCurrentFallbackTraitCollection`
+  块 A（+0x124，line 117 变体：TC 非 nil 但 displayScale≤0 → 报
+  "unspecified values"）。fixup 15a/15b 已出件（两个 scale 检查分支
+  改无条件成功，getter 返 bg TC）→ **待 r61 实机验证**。已封死墙：
+  displayIdentity（r57）→ XB 断言（r58）→ UIScreen SIGSEGV（r59）→
+  traitCollection nil（r60）。
+- **机制线注脚**：bg TC 全 unspecified 是 UIKit 设计（占位用）——真解
+  仍是给显示栈注册 main display；fixup 15 放行 unspecified TC 属 bring-up
+  期妥协，lane 换代时随 13/14 一起退役。
 - **机制线（真解，排期中）**：isMainDisplay/mainIdentity/mainConfiguration
   全族 nil 同根因 = 我们的显示栈从未向 FBDisplayManager/XB 层注册过
   main display。sheng 同 SoC =y 全通对照（差异 = dpu 钩子绑定 / probe
@@ -176,9 +177,9 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 
 ## 6. 不能声称的
 
-- 显示墙未破：SpringBoard 未到 home screen（r59 = 应用装载已启动 +
-  wallpaper/封面层 trait 断言循环中）；keybag 未考（SB 未到锁屏）；
-  触摸/按键/GPU 未上主题。
+- 显示墙未破：SpringBoard 未到 home screen（r60 = 应用装载 + wallpaper
+  层仍在 fixup 循环中）；keybag 未考（SB 未到锁屏）；触摸/按键/GPU
+  未上主题。
 - =y 车道**一级已实机实证**（PE handoff + 控制台接管 + 推帧自稳 + 真
   显示配置到达 IOMFB 客户端层），且 r57 实证**用户态可画 boot progress
   UI**（菊花实拍）——但 main display 注册链仍断（isMainDisplay=0/
@@ -186,45 +187,39 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 - 类杀 NSAssertionHandler 未出件（兜底项；逐站点 fixup 仍优先——站点
   更准、无全系统断言静音副作用）。
 
-## 7. 下一步（r60 刷写 + iOS 快速迭代循环——2026-10-27 r59 判读后）
+## 7. 下一步（r61 刷写 + iOS 快速迭代循环——2026-10-27 r60 判读后）
 
-**r59 首轮判读（2026-10-27，本会话 acm-reader 拉窗 + 读回对拍即时补）**：
+**r60 首轮判读（2026-10-27，本会话 acm-reader 拉窗 + 读回对拍即时补）**：
 
-- 窗：rounds=327/509 uptime=674s 无回卷 write_errors=0；读回对拍 ==
-  `a9144765…` 即时闭环。
-- **三大判读项全中**：`applied=13`（20 parsed，fixup 13a/13b 真执行）；
-  **SIGSEGV ×588 = 0**（r58 的 UIScreen 墙实锤封死）；procs=175/
-  spawn=887。
-- **换墙 = SIGABRT ×573 同死点**（PC `1ea99af74` / slide +1f210000），
-  REASON "'(null) returned nil from -traitCollection, which is not
-  allowed.'"。链（验活全过）：`SBCoverSheetPresentationManager
-  sharedInstance`（once 块）→ `+[SBWallpaperController sharedInstance]
-  +0x70` → （raise 折叠）→ terminate。
-- **抛点钉死之路（RE 增量）**：REASON 串起点 0x18b3abe33（'%@ returned
-  nil...'，隔壁就是 `_UIFallbackEnvironment_NonARC.m`）→ 指针搜出
-  CFString 槽 0x1f0186168 → 唯一代码 xref = `__UIGetCurrentFallback-
-  TraitCollection+0x1f8`（`handleFailureInFunction:...`，line 0x75）。
-  该函数取 `[mainScreen _fallbackTraitCollection]`（= `[screen
-  traitCollection]`，nil screen → nil）→ displayScale≤0 且主线程 →
-  raise；三个失败分支全 raise、自身无构造路径。
-  **工具坑第三枚**：自制 adrp+add 全区扫描的 regex 没转义——0x24 变
-  `$` 锚点静默零命中（用 re.escape 修正后拿已知引用点验证过）。
-- **fixup 14 出件 → payload-r60-edabbafd**：补丁位 = 该 getter 的取值
-  对 VA 0x18a00dc50（`.03,3261c50`，`mov x0,x20; bl msgSend$_fallback-
-  TraitCollection`）→ 替换 `bl +[UITraitCollection _backgroundThread-
-  FallbackTraitCollection]; mov x19,x0`（UIKit 自家 display 无关懒构造
-  缓存 TC，scale>0）——getter 返真对象，三分支 raise 全死，整族治好。
-  21 条全表校验；ADT `1dd13c1b`；ESP 四样全过。**待刷**。
+- 窗：rounds=423/509 uptime=875s 无回卷（~14.5 分钟跑）；读回对拍 ==
+  `edabbafd…` 即时闭环。
+- **三大判读项全中**：`applied=14`（21 parsed，fixup 14 真执行）；
+  **r59 的 nil 断言零出现**（'returned nil from -traitCollection' 死）；
+  procs=175/spawn=925；同封面层链还在循环。
+- **换墙 = SIGABRT ×758 同死点**，REASON "'A trait environment returned
+  a trait collection with unspecified values for traits that are not
+  allowed to be unspecified.'"。**机制**：该消息 CFString
+  （0x1f0186188）的 xref = `__UIGetCurrentFallbackTraitCollection+0x124`
+  ——同函数的**块 A**（x19 非 nil 但 displayScale≤0 → raise）；fixup 14
+  给的 `_backgroundThreadFallbackTraitCollection` 是**故意全 unspecified
+  的占位 TC**（scale=0.0），正好掉进块 A。r59 块 B（nil）已被 fixup 14
+  治死 ✓。
+- **fixup 15a/15b 出件 → payload-r61-169f160c**：两个 scale 检查分支改
+  无条件成功——15a `.03,3261c8c`（VA 0x18a00dc8c，`cbz w21;b.gt` →
+  `b 成功;nop`）、15b `.03,3261cec`（VA 0x18a00dcec，`b.le` → `b 成功`
+  保留 ldr）——getter 直接返回 bg TC（真对象非 nil），nil/scale 三块
+  raise 全不可达。23 条全表校验；ADT `f6dba410`；ESP 四样全过。**待刷**。
 
-1. **r60 刷写 + 测试跑 + 下会话取证**：刷卡（设备现态 = iOS 链，只刷
+1. **r61 刷写 + 测试跑 + 下会话取证**：刷卡（设备现态 = iOS 链，只刷
    recovery_a）：`fastboot getvar current-slot`（=b）→ `fastboot
    --set-active b`（预算重置）→ 刷前 sha256sum 门 → `fastboot flash
-   recovery_a out/m2381/payload-r60-edabbafd.img` → 开机菜单默认 xnu
+   recovery_a out/m2381/payload-r61-169f160c.img` → 开机菜单默认 xnu
    跑 8–15 分钟（17 分钟回卷红线）→ 硬断电（长按电源）→ 菜单选 reader
-   → 读回对拍（dd recovery_a 前 96MiB sha == `edabbafd…`）→
-   `fetchchunk` → parser `--all`：判读 `applied≥13`（fixup 14 真执行）
-   + trait 族墙是否破 + **SB 是否推进过 wallpaper/封面层**（若崩溃
-   消失但卡住无新崩，看 [profile] PS/PP 采样找挂点）。每轮 = 刷
+   → 读回对拍（dd recovery_a 前 96MiB sha == `169f160c…`）→
+   `fetchchunk` → parser `--all`：判读 `applied≥14`（fixup 15 真执行）
+   + getter 三 raise 块是否全死（unspecified 断言应消失）+ **SB 是否
+   推进过 wallpaper/封面层**（若崩溃消失但卡住无新崩，看 [profile]
+   PS/PP 采样找挂点；bg TC unspecified 值下游渗漏是候选）。每轮 = 刷
    recovery_a + 一跑一读；ADT/args 不变时 skip 重刷。
    **出件配方红线（r56 废轮教训入法）**：payload 命令必须带全三件——
    `UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload -D
@@ -256,7 +251,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 5. **独立主题（不阻塞）**：chronod sig5；XS/fileset-KC 重绑定器；
    arm64e 专项；GPU/触摸主题化；AdvancedLogDxe；records 页。
 
-## 8. 轮次索引（r43 → r60；详情 = commit message + STATE-history 对应节）
+## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节）
 
 | 轮 | payload | 定谳 | 详情 |
 |---|---|---|---|
@@ -279,4 +274,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r57 | `1e7ea60b` | **displayIdentity 墙实锤破**：applied=8（fixup 9 真执行）+ W1–W3 swap 提前到 t≈85s + 178 procs/907 spawn + **面板画出 boot progress 菊花**；换墙 = XBApplicationController.m:120 断言（'invalid mainDisplay configuration'，SB ×560 同死点 t=66s 起，符号化定谳 isMainDisplay==0 双分支跳 handleFailureInMethod）；读回对拍补欠全绿 | 本会话判读 |
 | r58 | `d27c4f36` | **XB 断言墙实锤破**（applied=11 + SB sig6=0）+ SB 进应用装载；换墙 = UIScreen trait SIGSEGV ×588（`_mainScreenThreadSafeTraitCollection+0x2c` 解引用 x19=0xf00 垃圾，12 帧验活全过）；读回对拍即时闭环 | 本会话判读 |
 | r59 | `a9144765` | **UIScreen SIGSEGV 墙实锤封死**（applied=13 + sig11=0）；换墙 = traitCollection nil 断言 ×573（`__UIGetCurrentFallbackTraitCollection` line 117；REASON 串→CFString→xref 钉死抛点；SBWallpaperController/封面层链验活全过）；读回对拍即时闭环 | 本会话判读 |
-| r60 | `edabbafd` | fixup 14（`__UIGetCurrentFallbackTraitCollection+0xa8` 取值对重定向 `bl _backgroundThreadFallbackTraitCollection; mov x19,x0` @ `.03,3261c50`——UIKit 自家懒构造 TC，整族治好）→ 21 条 fixups；全表校验 + ADT `1dd13c1b` + ESP 验四样全过；**待刷** | 本会话出件 |
+| r60 | `edabbafd` | **traitCollection nil 断言墙破**（applied=14 + 'returned nil' 零出现）；换墙 = 同函数块 A scale≤0 报 "unspecified values" ×758（bg TC 故意全 unspecified，scale=0）；读回对拍即时闭环 | 本会话判读 |
+| r61 | `169f160c` | fixup 15a/15b（两个 scale 检查分支无条件成功 @ `.03,3261c8c/3261cec`——getter 返 bg TC，nil/scale 三块 raise 全不可达）→ 23 条 fixups；全表校验 + ADT `f6dba410` + ESP 验四样全过；**待刷** | 本会话出件 |
