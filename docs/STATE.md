@@ -5,7 +5,32 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r74 已出件待刷（2026-10-28）**：fixup #27 =
+## 1. 一句话现状（**r75 已出件待刷（2026-10-28 深夜）**：fixup #28 =
+`CA::Layer::set_position` NaN 抛点强制走 Apple 自带清洗路径
+（`.03,26850c4,40090034,4a000014`）。**r74 已刷已判：预注册分支①
+成立 = #27 实锤生效**（窗 344e72e5 325/509 uptime=650s，recovery_a
+读回对拍 `b0f2f656…a6a461` ✓）：workspace 门 'you can't call this
+before [SBMainWorkspace start]' **0 出现** + applied **22→23**
+（parsed=27 applied=23）。**换墙 = SB sig6 `CALayerInvalidGeometry`
+'CALayer position contains NaN: [nan nan]'（delegate =
+WGShortLookStyleButton，WidgetKit 控件）×~296——SB 首次死在真实视
+图构造层**：过 workspace 门后在布局 widget 按钮，NaN = displayless
+0 scale/bounds 几何（r60 族 0 scale 在 UI 层现形）；**用户屏面对齐
+= 2:30 画出进度条（真 boot progress UI）但不动（视图布局循环
+死）**。抛点 = `CA::Layer::set_position`（QuartzCore .03
+0x1894310c4 链，+0x98/+0x1ac 两 raise）；**Apple 自带解药** =
+audit-exempt 分支（0x1894311ec：log + NaN→0 fcsel + w2=0 递归重设
+不抛）→ **#28 = 0x1894310c4 `cbz w0`→`b` 强制豁免**（expected
+`40090034` 实读核验，零入边）。PB 'configuration' ×89（r73 ×164 减
+半，REASON 不变）；chronod sig5 ~427（独立主题）。**回归六项全
+绿**：applied 23 / AKS 116 开 1189 调 / vsync 120 start+refresh /
+SWAP accepted=1 / spawn 960 / noidle 650s 无停写无 halt 无 sleep
+timer expired；sig11 CRASH 0；X5 探针升级出活值（B0 M0 + I/R/S 三
+槽）。**决策规则判定 = 有进展**（墙链单调后移：生命周期门 → 渲染
+几何；换内核讨论不触发，见 memory kernel-donor-switch-decision-
+rule）。r74 RE 修正段（"raiser 在缓存外"作废 + raiser = fw 内
+SBMainWorkspace `_sharedInstanceWithNilCheckPolicy:`）见 git
+a48e7ac 与 §4.9）
 `+[SBMainWorkspace _sharedInstanceWithNilCheckPolicy:]` policy==1
 nil-check 断言 kill（`cbz→nop`，nil 改为返回 nil）。**r74 RE 修正
 （同日二判）**：r73 的"raiser 在缓存外 SpringBoard.app 盘上二进
@@ -218,7 +243,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r74**（fixup #27 = SBMainWorkspace `_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill，27 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `b0f2f656` | **出件待刷（2026-10-28 晚）**；`out/m2381/payload-r74-b0f2f656.img`（96MiB，sha256 全 = `b0f2f6560525b8993b5cf80bcb6f8ce49c321546456aa6e04f0566420da0945a`）；ESP 四样已验（scratch-data 在 / toml initrd 行 trustcache 在 ADT PackedRAMDisk=1 + 27 条 fixup 对拍零缺失）；r73 = `a3f310d4` 现役已判（判读 = §1，含 r74 RE 修正） |
+| recovery_a | **r75**（fixup #28 = `CA::Layer::set_position` NaN 清洗路径强制，28 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `23868de1` | **出件待刷（2026-10-28 深夜）**；`out/m2381/payload-r75-23868de1.img`（96MiB，sha256 全 = `23868de161164db35c0a2b8201c3c8650155545ab19742de7f389b3943a6a461`）；ESP 四样已验（ADT PackedRAMDisk + 28 条 fixup 对拍零缺失 + scratch-data + initrd 行 + trustcache）；r74 = `b0f2f656` 已刷已判（判读 = §1） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -385,46 +410,46 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r74 已出件待刷（2026-10-28 晚）**：payload
-`b0f2f656`（内核不变 = ce34e9ae 代）；fixup #27 = SBMainWorkspace
-`_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill；用户执行
-刷写）
+## 7. 下一步（**r75 已出件待刷（2026-10-28 深夜）**：payload
+`23868de1`（内核不变 = ce34e9ae 代）；fixup #28 = `CA::Layer::
+set_position` NaN 清洗路径强制；用户执行刷写）
 
-1. **刷写卡（r74 = 只刷 recovery_a）**：iOS 链现役未被覆盖
-   （boot_b=UEFI `289614ba` + recovery_a=r73 `a3f310d4` +
+1. **刷写卡（r75 = 只刷 recovery_a）**：iOS 链现役未被覆盖
+   （boot_b=UEFI `289614ba` + recovery_a=r74 `b0f2f656` +
    userdata=`fd43ee70`）→ fastboot（电源+音量减）→
    `getvar current-slot` = b → sha 门
-   `b0f2f6560525b8993b5cf80bcb6f8ce49c321546456aa6e04f0566420da0945a` →
-   `flash recovery_a out/m2381/payload-r74-b0f2f656.img` → reboot。
-   **跑 8–15 分硬断电**（勿超 17 分回卷线）；reader 选单流程照旧
-   （FLASHING §7）。
-2. **r74 判读工作单（预注册）**：开场三连照旧 + header 分代。分支：
-   ①**'you can't call this before [SBMainWorkspace start]' 0 出现
-   + applied 22→23** = #27 生效（定点页必执行 = raiser 本尊）；
-   看 SB 新墙（预期候选：nil-workspace 下游 deref——policy1 调用
-   者拿 nil 后的使用点；或 SB 推进到更深装载层）。注意 #26+#27
-   叠加语义：manager=nil 且 workspace=nil 双 nil 组合。
-   ②原点保留 → 查 applied（#27 页不执行则 fixup 链路问题；执行
-   而墙在 = raise 另有源头，REASON 细读）。
-   ③PB 'configuration' 独立墙照旧记录（r73 基线 ×164）。
-   ④回归六项照旧 + sig11 CRASH 行必须仍 0 + noidle 维持。
-   判读工具箱必须用修正版（add 掩码 0xFF800000，§4.9）。
-3. **r73 判读存档**：§1（#26 生效 + 新墙 + 修正版 raiser RE 全链
-   + 回归六项）；三坑 §4.8 + 掩码三犯/阳性对照铁律 §4.9。r73
-   刷写+读回对拍已闭环（a3f310d4，窗 451ed5c2）。
+   `23868de161164db35c0a2b8201c3c8650155545ab19742de7f389b3943a6a461` →
+   `flash recovery_a out/m2381/payload-r75-23868de1.img` → reboot。
+   **跑 8–15 分硬断电**（勿超 17 分回卷线）；reader 选单照旧。
+   **屏面观察点 = 进度条是否开始走动**（r74 = 2:30 出现但冻结）。
+2. **r75 判读工作单（预注册）**：开场三连照旧 + header 分代。分支：
+   ①**'CALayer position contains NaN' 0 出现 + applied 23→24** =
+   #28 生效（sanitize 路径接管）；预期候选：布局继续 → 下一渲染
+   几何墙（bounds NaN 族 / 其它 CA 检查点）、或 SB 推进到
+   wallpaper/图标层（**若进度条走动 = 里程碑级信号**）；若清洗后
+   渲染异常（花屏/冻结/新 REASON）细读定点。
+   ②原点保留 → 查 applied（#28 页不执行 = 链路问题；执行而墙在 =
+   raise 另有源（set_bounds 族？）→ REASON 细读）。
+   ③PB 'configuration' 照旧记录（r74 基线 ×89）。
+   ④回归六项 + sig11 CRASH 仍 0 + noidle 维持。
+3. **r74 判读存档**：§1（#27 生效 + CALayer NaN 墙 + 抛点/清洗路
+   径全链 + 回归六项 + 决策规则判定 = 有进展）；换内核决策规则 =
+   memory `kernel-donor-switch-decision-rule`（连续两轮原地踏步才
+   触发；触发后先归因内核侧/用户态侧；中间路线 = 保内核换 iPhone
+   donor 21H16）。
 4. **出件配方红线不变**：payload 三 flag + --unique-chip-id
    3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
    .../package/*.c（tree kits/sheng = symlink 同一实体），root
    package 镜像同步；fixup 追加 = profiles/os/ipados-17.7.11-21H461/
    profile.toml text_fixups（expected 字节必须以 cache-extract 文
    件实读核验，勿手算）；判读纪律 = header 分代 + re-tools
-   read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk。
-5. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；
-   PosterBoard 同法可用阳性对照+正面 disasm 管线定点）；chronod
-   sig5（r57 已知独立主题，r73 ~400 行）；BootSlotReset DXE；
-   XS/fileset-KC 重绑定器；arm64e 专项；GPU/触摸/UFS 提速主题化
-   （UFS 数据面 0 失败、~57MiB/s 轮询口径、5% 占空比 = 显示破墙
-   后的体验项）。
+   read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk +
+   **xref 扫描必须用修正掩码（add 判定 0xFF800000，§4.9）+ 零引用
+   结论先过阳性对照**。
+5. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；同管
+   线可定点）；chronod sig5（r57 独立主题，r74 ~427 行）；
+   BootSlotReset DXE；XS/fileset-KC 重绑定器（换 iPhone donor 中间
+   路线的备件）；arm64e 专项；GPU/触摸/UFS 提速主题化。
 
 ## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节；r62 起 = 体系路线）
 
@@ -463,4 +488,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r71 | `89e74a92` | **noidle=1 实锤生效关账**（607s 连续写零 halt + PMRD 无 sleep timer expired，用户 10 分钟无停机实证）+ dirty 窗 R0 全窗读通 + **sig11=0 保持治愈** + 回归六项全绿（applied 21/AKS 1139/vsync/SWAP/spawn 1031）；SB sig6 ×347 原点原 REASON（dispatch_once_callout 块内）+ **PosterBoard sig6 ×167 新客**（'configuration' 断言，外层 dispatch_lane_serial_drain）；SS 扫描 266 行候选全 = 终结链帧+`<unmapped>` 数据指针 → ≤9 预算病灶 tear zone 未及 → r72 扫描器三改 | 刷写+判读 10-28 |
 | r72 | `e5ae4ca9` | **扫描器三改 + 体系最大突破：nil 调用者指令级钉死**（内核 4b6bfc38）：bt 排除+真去重+bl 门把 tear zone 第一回打捞上岸 → `-[SBIconController initWithMainDisplayWindowScene:…]→widgetMetricsServer→lockScreenManager→+[SBLockScreenManager _sharedInstanceCreateIfNeeded:] dispatch_once 块`（sharedApplication 非空走正常构造，管理器 init 内 NSPlaceholderSet nil 抛出；断言孪生 SBLockScreenManager.m:362 零捕获）；展开穿 +initialize→PendingInitialize FatalCorruptHashTables 双抛；PB 同链独立墙（'configuration'）；回归六项全绿、sig11 CRASH 0（PROC 聚合行 sig11 非墙）；坑沉淀：手工去滑须 python（手算错进位差点误判）+ bl 门候选需 disasm 复核（LSDA 可撞编码） | 刷写+判读 10-28 |
 | r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**；回归六项全绿 + sig11=0；同日二判修正初版"raiser 在缓存外"（扫描器 add 掩码 bug，§4.9）→ raiser 实为 fw 内 SBMainWorkspace（见 r74 行） | 刷写+判读+RE 修正 10-28 |
-| r74 | `b0f2f656` | **fixup #27 出件**：raiser 钉死 = `+[SBMainWorkspace _sharedInstanceWithNilCheckPolicy:]`（fw .25/0x1cf9a45ac，reason CFString 唯一 xref = +0xc8；policy==1 实例槽 0x1f56cf6a0 nil → 0x1cf9a464c 断言路径 SBWorkspace.m:1719）；#27 = 定点 0x1cf9a4630 cbz→nop（expected `c85243f9c80000b4` 实读核验，零入边）；内核不变 ce34e9ae 代；ESP 四样过（27 条 fixup 对拍零缺失）；判读预注册 = §7.2（sig6 workspace 门 0 出现 + applied 22→23 = 生效） | 出件待刷 10-28 |
+| r74 | `b0f2f656` | **分支①成立：#27 实锤生效**（内核 ce34e9ae 代；窗 344e72e5 325/509 uptime=650s）：workspace 门 0 出现 + applied 22→23；**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position contains NaN'（WGShortLookStyleButton）×~296——SB 首次死在真实视图构造层**（NaN = displayless 0 scale/bounds 几何；屏面 2:30 进度条出现但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89（减半）；回归六项全绿 + sig11 0 + noidle；抛点 = `CA::Layer::set_position`；**决策规则判定 = 有进展，不触发换内核**；r75 = #28 | 刷写+判读+出件 10-28 |
+| r75 | `23868de1` | **fixup #28 出件**：`CA::Layer::set_position` audit-exempt `cbz w0`→`b`（.03,26850c4,40090034,4a000014，expected 实读核验，零入边）——强制 NaN position 走 Apple 自带清洗（log + NaN→0 + w2=0 递归不抛）；内核不变 ce34e9ae 代；ESP 四样过（28 条 fixup 对拍零缺失）；判读预注册 = §7.2（NaN 0 出现 + applied 23→24 = 生效；屏面观察点 = 进度条走动） | 出件待刷 10-28 |
