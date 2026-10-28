@@ -5,7 +5,25 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r75 已出件待刷（2026-10-28 深夜）**：fixup #28 =
+## 1. 一句话现状（**r76 已出件待刷（2026-10-29 凌晨）**：fixup #29 =
+`CA::Layer::set_bounds` 同构 NaN 清洗（`.03,26e0068,600c0034,63000014`）。
+**r75 已刷已判：分支①精确成立 = #28 实锤生效**（窗 d361a0c3 250/509
+uptime=501s，recovery_a 读回对拍 `23868de1…a6a461` ✓）：'CALayer
+position contains NaN' **0 出现** + applied **23→24**（parsed=28
+applied=24）；**换墙 = 孪生检查 `CALayer bounds contains NaN: [0 0;
+nan nan]` ×111**（预注册预期候选命中：position→bounds 同函数族推进；
+抛点 = `CA::Layer::set_bounds` .03/0x18948c068 链 +0xbc raise，与
+set_position 完全同构：fcmp NaN 检查 + audit 豁免 cbz w0 →
+raise:format）→ #29 = 同法强制清洗路径（expected `600c0034` 实读核
+验，零入边）。PB 'configuration' ×98（r74 ×89 同量级）；chronod
+sig5 ~223。**回归六项全绿**：applied 24 / AKS 117 开 1221 调 /
+vsync 120 / SWAP accepted=1 / spawn 951 / noidle 501s 无停写无
+halt；sig11 CRASH 0；X5 活值继续（I/R/S 三槽）；W1 SS 两形正常
+（SB 0x205f36000 / PB 0x213fa8000 滑后）。**屏面对齐：1:03 logo +
+1:54 进度条出现但冻结（与 r74 相同形态 = 布局循环仍死在 bounds）**。
+**决策规则判定 = 有进展**（连续两轮墙链单调后移：workspace 门 →
+position → bounds，全是首现新检查点）。r75 RE/方法详见 §7.3 存
+档）
 `CA::Layer::set_position` NaN 抛点强制走 Apple 自带清洗路径
 （`.03,26850c4,40090034,4a000014`）。**r74 已刷已判：预注册分支①
 成立 = #27 实锤生效**（窗 344e72e5 325/509 uptime=650s，recovery_a
@@ -243,7 +261,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r75**（fixup #28 = `CA::Layer::set_position` NaN 清洗路径强制，28 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `23868de1` | **出件待刷（2026-10-28 深夜）**；`out/m2381/payload-r75-23868de1.img`（96MiB，sha256 全 = `23868de161164db35c0a2b8201c3c8650155545ab19742de7f389b3943a6a461`）；ESP 四样已验（ADT PackedRAMDisk + 28 条 fixup 对拍零缺失 + scratch-data + initrd 行 + trustcache）；r74 = `b0f2f656` 已刷已判（判读 = §1） |
+| recovery_a | **r76**（fixup #29 = `CA::Layer::set_bounds` NaN 清洗强制，29 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `2bdd272a` | **出件待刷（2026-10-29 凌晨）**；`out/m2381/payload-r76-2bdd272a.img`（96MiB，sha256 全 = `2bdd272a1871974965c22a49a57fb1bc1622dc46b453b1baa0541eda4d287808`）；ESP 四样已验（ADT PackedRAMDisk + 29 条 fixup 对拍零缺失 + scratch-data + initrd 行 + trustcache）；r75 = `23868de1` 已刷已判（判读 = §1） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -489,4 +507,5 @@ set_position` NaN 清洗路径强制；用户执行刷写）
 | r72 | `e5ae4ca9` | **扫描器三改 + 体系最大突破：nil 调用者指令级钉死**（内核 4b6bfc38）：bt 排除+真去重+bl 门把 tear zone 第一回打捞上岸 → `-[SBIconController initWithMainDisplayWindowScene:…]→widgetMetricsServer→lockScreenManager→+[SBLockScreenManager _sharedInstanceCreateIfNeeded:] dispatch_once 块`（sharedApplication 非空走正常构造，管理器 init 内 NSPlaceholderSet nil 抛出；断言孪生 SBLockScreenManager.m:362 零捕获）；展开穿 +initialize→PendingInitialize FatalCorruptHashTables 双抛；PB 同链独立墙（'configuration'）；回归六项全绿、sig11 CRASH 0（PROC 聚合行 sig11 非墙）；坑沉淀：手工去滑须 python（手算错进位差点误判）+ bl 门候选需 disasm 复核（LSDA 可撞编码） | 刷写+判读 10-28 |
 | r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**；回归六项全绿 + sig11=0；同日二判修正初版"raiser 在缓存外"（扫描器 add 掩码 bug，§4.9）→ raiser 实为 fw 内 SBMainWorkspace（见 r74 行） | 刷写+判读+RE 修正 10-28 |
 | r74 | `b0f2f656` | **分支①成立：#27 实锤生效**（内核 ce34e9ae 代；窗 344e72e5 325/509 uptime=650s）：workspace 门 0 出现 + applied 22→23；**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position contains NaN'（WGShortLookStyleButton）×~296——SB 首次死在真实视图构造层**（NaN = displayless 0 scale/bounds 几何；屏面 2:30 进度条出现但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89（减半）；回归六项全绿 + sig11 0 + noidle；抛点 = `CA::Layer::set_position`；**决策规则判定 = 有进展，不触发换内核**；r75 = #28 | 刷写+判读+出件 10-28 |
-| r75 | `23868de1` | **fixup #28 出件**：`CA::Layer::set_position` audit-exempt `cbz w0`→`b`（.03,26850c4,40090034,4a000014，expected 实读核验，零入边）——强制 NaN position 走 Apple 自带清洗（log + NaN→0 + w2=0 递归不抛）；内核不变 ce34e9ae 代；ESP 四样过（28 条 fixup 对拍零缺失）；判读预注册 = §7.2（NaN 0 出现 + applied 23→24 = 生效；屏面观察点 = 进度条走动） | 出件待刷 10-28 |
+| r75 | `23868de1` | **分支①精确成立：#28 实锤生效**（窗 d361a0c3 250/509 uptime=501s）：position NaN 0 出现 + applied 23→24；**换墙 = 孪生 `CALayer bounds contains NaN [0 0; nan nan]` ×111**（set_bounds +0xbc，与 set_position 完全同构）；PB ×98；回归六项全绿 + sig11 0；屏面 = 1:54 进度条出现但冻结（布局仍死在 bounds）；**决策规则 = 有进展**；r76 = #29 同构定点 | 刷写+判读+出件 10-29 |
+| r76 | `2bdd272a` | **fixup #29 出件**：`CA::Layer::set_bounds` audit-exempt `cbz w0`→`b`（.03,26e0068,600c0034,63000014，expected 实读核验，零入边）；内核不变 ce34e9ae 代；ESP 四样过（29 条对拍零缺失）；判读预注册 = §7.2（bounds NaN 0 出现 + applied 24→25 = 生效；屏面观察点 = 进度条走动/新检查点） | 出件待刷 10-29 |
