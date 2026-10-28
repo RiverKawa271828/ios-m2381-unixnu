@@ -2,8 +2,9 @@
 
 魅族 20 Classic（m2381 / SM8550）的 **UniXNU 原生移植**工作区：UniXNU 4K
 内核（donor = iPad7,1 / iPadOS 17.7.11 `21H461`，fuxi/sheng 同款）+
-`devices/m2381/unixnu-m2381` 设备仓 + `devices/m2381/uefi/m2381Pkg`
-（Mu-Silicium UEFI）。
+独立设备仓 [UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)
+（2026-10-29 自本仓 subtree split 拆出，本地 `../UniXNU-m2381`）+
+`devices/m2381/uefi/m2381Pkg`（Mu-Silicium UEFI）。
 
 ## 进度（2026-10-28，r64 = 缓存全局审计轮已出件 `54b70ad7` 待刷）
 
@@ -36,8 +37,9 @@ slide-v2 链格式破译 + UIKitCore __DATA_DIRTY 全链枚举 5410 槽——四
   [docs/archive/STATE-history.md](docs/archive/STATE-history.md)
   §0.24–0.41 与各轮 commit message。
 - **移植记录（官方格式）**：设备仓
-  [porting.toml](devices/m2381/unixnu-m2381/porting.toml)（13 领域，
-  官方检查器已过）+ [records/](devices/m2381/unixnu-m2381/records/)
+  [porting.toml](https://github.com/RiverKawa271828/UniXNU-m2381/blob/main/porting.toml)（13 领域，
+  官方检查器已过）+
+  [records/](https://github.com/RiverKawa271828/UniXNU-m2381/tree/main/records)
   实据档案；格式要求见
   [unixnu.com/zh/porting/records](https://unixnu.com/zh/porting/records)。
 - **SM8550 横向坐标**：组织母版 sheng（平板 6S Pro）全实现；社区
@@ -73,7 +75,7 @@ main + 工作区提交，跟随上游 = rebase（[docs/UPSTREAM.md](docs/UPSTREA
 | [docs/HARDWARE-m2381.md](docs/HARDWARE-m2381.md) | 硬件常量与地址 |
 | [docs/CI.md](docs/CI.md) | 云端构建说明 |
 | [docs/porting-notes.md](docs/porting-notes.md) | 参照设备清单、实测值、取证方法 |
-| [devices/m2381/unixnu-m2381/README.md](devices/m2381/unixnu-m2381/README.md) | 设备仓入口（结构 / 记录 / 构建） |
+| [UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)（本地 `../UniXNU-m2381`） | 设备仓（2026-10-29 拆出独立仓；入口 = 其 README.md） |
 | [docs/archive/](docs/archive/) | 史料：STATE 轮次史（§0.0–0.41）、B2/sweet、完工计划 |
 
 旧 ios-sweet / B2 路线已退役，史料只在 `docs/archive/`；回滚件**只**
