@@ -1,5 +1,14 @@
 # ios-m2381-unixnu — 魅族 20 Classic（m2381 / SM8550）iOS via UniXNU
 
+> **2026-10-29 donor 二次反转（用户拍板"不搞了，换ios16的版本"）**：=y 主屏
+> 注册链攻坚（r78a/r78b sel6 刀两轮未落地）停车道；donor 回退
+> **iPhone10,3 / iOS 16.7.16 / 20H392**（=本次换配前的原配对，资产保留
+> 正是为今天）。A11/t8015 = 经典 arm64 kernelcache，**无需 fileset 重绑
+> 定器**，纯配置级换道。理由：r35–r77 墙链全部是 21H461 十七代用户态墙，
+> 16.7.16 配对下整体蒸发；跨代风险（entropy/Image4）回到已驯服状态
+> （entropy 守卫仍在树内、绿蓝条曾全通、prelink 三值已 derive）。
+> 21H461 与 =y 车道资产全数保留作回溯。施工单 = `docs/STATE.md` §8。
+>
 > **2026-10-24 donor 换配（用户拍板，两步）**：根因 = 内核源码 xnu-10063.141.1
 > （iOS 17.6 代）与 20H392（16 代）全程跨代配对（entropy 墙 + AppleImage4
 > mix-n-match 墙同根因）。先换 iPhone XS `21H16`（手机身份）后发现其

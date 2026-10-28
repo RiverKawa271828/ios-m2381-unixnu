@@ -615,3 +615,27 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 `native_legacy_object`（及该 vptr 是否=copy 表）。屏面 logo 1:04/进度
 条 1:20 冻结。判读分支 ③ 的第三种形态：**修法代码全对而 wait 调用
 不经过被 patch 的 vptr**。
+
+## 8. 下一步（**r79 = iOS 16.7.16 donor 回退（2026-10-29 用户拍板"不搞了，换ios16的版本"）**）
+
+**拍板**：=y 车道停（sel6 刀 r78a/r78b 两轮未落地，触止损评估点，用户直接拍换道）；donor 回退 **iPhone10,3 / iOS 16.7.16 / 20H392**（=10-24 换配前的原配对，资产全部保留作回溯，当时"留作回溯"现在启用）。**A11/t8015 = 经典 arm64 kernelcache（非 fileset）→ 零重绑定器成本，纯配置级换道**。
+
+**为什么成立（对 10-24 拍板的反转理由）**：r35–r77 的整条墙链（traitCollection/avocado widget/once 域/sel6 FDR gate）全部是 **21H461 用户态+kext 的 17 代墙**；换 20H392 = IOMFB kext 与 SpringBoard/UIKit/FDR_Loader 全部回到 16 代内部自洽配对，17 代墙链整体蒸发。跨代风险（xnu-10063.141.1 内核源码 vs 16 代件）回到 10-24 前的状态——**但那套墙当时已被驯服**（entropy 守卫 373f769 仍在树内、绿蓝条+panic screen 全通；20H392 prelink 三值已 derive）。
+
+**盘点（本会话查证）**：
+- **IPSW 已到位**：用户本地件 `/home/ri/Downloads/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw`（6,171,035,648 B），sha256 = `ece1194f7e233e9109c5790a8d23a4564a10a254e15ec5b09978a343265568fb` **与旧档记录的全 zip sha 一字不差**，已硬链接入 `research/ipsw/20H392/`（步骤 1 完成）。CDN URL 也验活（HTTP 200 同长度）。备用件：21H16 IPSW 用户 Downloads 在（7,805,610,705 B，sha 验算中）——fileset-KC 重绑定器路线的备件。
+- 旧 pin（git `d42a993~1:.../board.toml`）：product iPhone10,3 / build 20H392 / device_class **d22ap** / chip_id 0x8015 / board_id 6；OS dmg sha：`087-86698-044.dmg = 80f426d5…c92483`。
+- 20H392 kernelcache sha256 = `2ec297bac95bcba01046fd0148e97e7e5885c05a6c18827f39f534ba375c1221`（经典 arm64）。
+- **prelink 三值已 derive 在案**：`docs/archive/STATE-history.md:635` = slide `-0x1000000` + AMFI `0xfffffff008f3bd18`（三重指纹法）；text_fixups 是第三个值（见 :582，需按 16 代缓存重建或从旧档取）。
+- 20H392 trust cache 打包 commit 65b8eb8 在史（flat container bundle）。
+
+**施工单（下会话，按序）**：
+1. ~~下载~~ **已完成**（sha 对拍 ✓）；下会话直接从步骤 2 开工：IPSW 解包（KernelCache/DeviceTree/StaticTrustCache/Cryptex1,SystemTrustCache 四件）并逐成员对拍 OS dmg sha（`087-86698-044.dmg = 80f426d5…c92483`）。
+2. 新建 `profiles/os/ios-16.7.16-20H392/`（仿 21H461 profile.toml 结构：os 元数据 darwin 22.x/xnu 无关项、[ipsw] 旧 pin、[kernel.prelink] 三值、trust-cache pins、ADT 身份 d22ap/iPhone10,3/t8015）。
+3. `board.toml` → `os_profile = "ios-16.7.16-20H392"`。
+4. **text fixups 清零起步**：23 条自加 displayless-kill 族全部是 21H461 VA，新 donor 全部作废；16 代用户态裸起，遇墙再按 §4.9 定点法逐个补（"遇一堵修一堵"支路纪律平移）。
+5. 内核重链（prelink 对 20H392 KC）→ 出件；判读门 = 20H392 时代的既有证据形态（entropy 守卫日志/绿蓝条/panic screen）。
+6. userdata 重建（16.7.16 root，Linux 可构建）。
+7. **设备现态**：手机已回 nura 充电——下会话首刷 = **三件全刷**（boot_b 不动件 + recovery_a 新 payload + userdata 新件）。
+
+**红线/纪律全数平移**：刷写四样、读回对拍、判读修正掩码+阳性对照、止损线（2-3 会话，卡死则再评）。
