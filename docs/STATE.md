@@ -531,3 +531,55 @@ iPhone donor 21H16）。**sel6 这刀打完若注册链仍断**，下一刀按
 package 镜像同步；判读纪律 = header 分代 + re-tools read_run +
 recovery_a=sde27 + fetchchunk + 修正掩码 0xFF800000 + 零引用先过
 阳性对照（§4.9）。
+
+**r78 第一刀定谳（2026-10-29 会话，①定点 sel6 语义完成 + ②修法已进件）**：
+
+**三层闭环**：①`e00002d5` = **kIOReturnBusy**（`iokit_common_err(0x2d5)`
+Device Busy；xnu IOReturn.h:168 + 仓内 ShengUfs RootCommandsBridge
+双源钉死，"NotPermitted" 假设作废；头文件副本存
+`temp/IOReturn-xnu-main.h`）。②窗矩阵（子代理 A，r52/r53/r55e/r69 四
+窗）：8 种去重参数组合跨窗稳定——`(N,0x80000001)→0`、
+`(N,0x80000000)→e00002d5`（N=arg0 递增请求号，[5820]/[5824] 恒镜像
+arg0）、`(0,0x80000003)→0`、`(1,1)/(0,2)→0`；r69 变质 = pid=86 客户端
+sel6 风暴 25236 calls/6297 fails（~26 calls/s 忙等）至窗末不收敛。
+regs 四窗恒 0。③**Apple 二进制 RE（donor KC
+IOMobileGraphicsFamily，carve+capstone）**：prelink 段全局映射
+`file = vm − 0x482c000`（kext LC fileoff 是 slice 相对，第一次 carve
+全错已修正）；user client 分派表 @`0x6f354c0`（IOExternalMethodDispatch
+24B/项，sel6 = 3 scalars）→ trampoline `0x6779518` → ext_wait
+`0x6777390`（写 client+0xf8=arg0、清 +0x100）→ **display 虚槽 176 =
+`0x678d998`**（vtable `0x6f38570`；槽 249=getDisplayDimensions 与在案
+ABI 交叉验证一致；实例大小 0x18a0=6304 与探针 +5864 状态字吻合）。
+
+**v176 wait 分派语义（0x678d998 全函数破译）**：默认返回
+kIOReturnBusy；`flags.bit31==0` → 转发 display+0x1608 gate 对象
+vslot29（窗里 (1,1)/(0,2) 走此路 → 0）；bit31==1 且
+request(flags&0x7fffffff)∈{3,4} → inline 检查 `+5856==0 &&
++5840(powered)!=0` → 0（**m2381 已通：announcePoweredByFirmware
+10-21 进件后 +5840=1 在窗可证，旧"powered 无人写"叙事证伪**）；
+bit31==1 且 request∈{0,1,2} → **同走 +0x1608 gate vslot29，其 wait
+形态永不完成 = Busy 全部来源**。gate 完成信号属 platform 显示管线
+（本 port 未实现），GOP 路径不消费其 payload。附带破译：
+default_fb_surface ext（e00002bc 族）= `display->v174` 返 0 → 打
+"No Default FB Surface found" → kIOReturnError（**下一刀素材**；
+e00002c7=Unsupported、e00002f0=sel28 另族）。
+
+**修法（=sheng announce 同款 stand-in 哲学，GopFramebuffer
+submodule commit 477fc19）**：`nativeLegacyInstallWaitStandin` 在
+startDisplay（announce 同址同条件）copy display vtable 512 槽、slot
+176 → `nativeLegacyWaitStandin`：bit31 且 request∉{3,4} → 计数
+`native_legacy_wait_standin_calls` +1 并报 kIOReturnSuccess，其余
+（bit31==0 / request 3/4）转发原实现不变。探针
+`[mfb clients]` 块首行新增 `wait-standin N`（devices 正源 + root
+package 镜像已同步）。
+
+**r78 出件与判读预注册（§7.2）**：本机 Linux 出件中（内核重链
++ payload，改组件未动 defconfig）。判读分支：①**命中** = sel6
+`e00002d5` 行清零/不再增长 + `wait-standin` 计数 >0 增长 + C0/C1
+fails 停涨 → 看 mainConfiguration/isMainDisplay 侧推进与屏面进度条
+（供给族下游预期连锁）；②**部分** = sel6 清零但新墙（预期 =
+default_fb_surface e00002bc 族或 FDR 后续）→ 下一刀按 v174 供给面
+RE（素材已在案）；③**未命中** = Busy 仍在 → standin 未触发
+（primary/bootMapping 条件或 patch 时序），回读
+wait-standin=0 判接线。刷写纪律照旧（设备现态三件套核对 +
+recovery_a=sde27 读回对拍）。
