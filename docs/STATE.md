@@ -5,13 +5,16 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r69 = **探针 v4 三窗钉定扫描已出件 `2685ddf2` 待刷**，
-2026-10-28。r68 判读两大定谳：①v3 探针存活（k1→272，f=0）；②**病灶槽
-全程干净 vs SB 465 崩同点 = r63"槽中毒"推断被推翻，毒不在
-__DATA_DIRTY**；反汇编 bt1 调用点指令级闭环：接收者槽 0x1f049f1c8 /
-IMP 槽 0x1f00eb808 / SEL 槽 0x1f046e1d8 **全在 UIKitCore
-__DATA_CONST (0x1f00e6440+0x3d34e0)，r64-r68 从未扫过**，文件态干净
-= 毒若真在运行时绑定值 → v4 钉 SpringBoard 三窗直读三槽活值）
+## 1. 一句话现状（r70 = **#21 修正 + 探针加读已出件 `9b3a26f0` 待刷**，
+内核 `2799e328`，2026-10-28 深夜。r69 活读判读 + fixup-aware 复核 +
+DeepSeek 三轮协作 = **0x1800F5FAC 墙根因终审**：崩点真身 =
+objc_retain 谓词 0x1800F5FA4（x0=FAR=0xF1），毒源 = r60 fixup14
+（.03,3261c50，commit 618811a）删掉 `mov x0,x20`——页缓存支路
+（0xdbf0，槽 0x1F48D59F8 非零）把 gate（0x1AC062BD0 = dyld4::gDyld
+API 快派发）返回值 0xF1 当 receiver 送 bgTC；三槽无辜（管道槽）；
+H2 排除；r60 出件→r61 墙首现时间线闭合。判读三分支 = 崩消失（关账，
+转 display 机制三件套）/ FAR==S 槽值（槽垃圾）/ FAR 仍 0xF1（第四
+入口）。取证双铁律（header 分代 + re-tools read_run）已工具化）
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
 位；值 = 低 48 位 = 绝对未滑 VA；value_add=0），UIKitCore
@@ -304,21 +307,37 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r69 已出件 `2685ddf2` 待刷（2026-10-28）**：探针 v4 =
-钉 SpringBoard 三窗（DIRTY+DATA+**DATA_CONST**）扫描，X4 直读崩溃链
-三槽（IMP/接收者/SEL）活值；刷后判读 = I/R/S 槽是否出小值）
+## 7. 下一步（**r70 已出件 `9b3a26f0` 待刷（2026-10-28 深夜）**：#21
+修正（e00314aac5bbff97）+ 探针 W0 行 + CRASH 行寄存器捕获；判读三分支
+见 §1）
 
-1. **刷写卡（r69 = 只刷 recovery_a）**：fastboot（电源+音量减）→
-   `getvar current-slot` = b → sha 门 `2685ddf294cb…` →
-   `flash recovery_a out/m2381/payload-r69-2685ddf2.img` → reboot →
-   跑 8–15 分硬断电。
-2. **r69 判读工作单**：reader 三连（对拍 `2685ddf2…`，sde27，
-   fetchchunk，按 slide 分段）→ **X4 `UKC k<轮> I<R> R<S> S<L>` 三槽
-   活值**：任一槽出现小值（<0x1000000）= dyld 绑定/COW 路径投毒实锤
-   （对照文件态链编码 0x201f48ccab8 类）；全程干净 + SB 照崩 = 毒为
-   构造瞬态（寄存器级）→ r70 转崩溃寄存器捕获（telemetry 组件加
-   x0）。辅菜：X6 `C`（DATA_CONST 首小值事件）/ X7 `A`（__DATA 首
-   小值）/ X5 B/M（DIRTY 病灶槽连续性）。回归六项照旧。
+1. **刷写卡（r70 = 只刷 recovery_a）**：fastboot（电源+音量减）→
+   `getvar current-slot` = b → sha 门
+   `9b3a26f01cbf784e6f07b5dd3f5423a8c8154e1535cb5d85f85451b7d14e38fd` →
+   `flash recovery_a out/m2381/payload-r70-9b3a26f0.img` → reboot →
+   跑 8–15 分硬断电（<17 分回卷线）。
+2. **r70 判读工作单**：reader 三连（对拍 `9b3a26f0…`，sde27，
+   fetchchunk）→ **先过 read-m2381-ufs-log.py 分代（header
+   slots_written 截残影，禁止直 grep 原始镜像）**，然后三分支：
+   ①SIG11 消失 = #21 修正闭环（gate 残留 x0 唯一毒源），r63→r69 整族
+   关账，重心转 display 机制三件套（假 UIScreen + displayConfiguration
+   + _UIScreenInitialDisplayConfigurationLoader）；②崩保留且
+   FAR == W0 行 S 槽值 = [0x1F48D59F8] 槽垃圾实锤（x0=x20 后强交叉）；
+   ③FAR 仍 0xF1 = 第四入口 → 带 DeepSeek F 清单四样回找（全 CRASH 行 +
+   S/G1/G2 崩前后 2 轮 + *gDyld/(*gDyld+0x258) 运行态 + 0x1F049EBB8 /
+   0x1F48CCAB8+0x10）。交叉核对：X19≠0 = 页缓存支路；W0 行 G1 应恒
+   -1；CRASH 行 R=1 才是硬件异常快照。辅菜：X5 B/M + X6/X7 照旧，回归
+   六项照旧。r71 备件（commit 73e1152 已存）：0xdc3c cbnz x0→b
+   0xdc40（场景支路垃圾护栏）。
+3. **r69 判读存档（2026-10-28，活读窗 33e1b811 + 深挖终审）**：探针 v4
+   存活（k1→272，f=0）；三链槽活值全干净且 = 文件绑定值+slide 逐位
+   吻合 → r63 槽中毒推断终审推翻（三槽实为 msgSend 管道：SEL
+   mainScreen/_fallbackTraitCollection + UIScreen classref + 共享
+   thunk）；SB sig11 ×406 同点 0x1800F5FAC = objc_retain 谓词
+   0x1800F5FA4，x0=FAR=0xF1；SB sig6 ×258（unspecified traits 同根）；
+   活读窗混 6 代 boot 残影（header slots_written=232/509），"多崩族"
+   = 残影幻象；**根因机制 + r60 起源 + H2 排除 + gate 身份假设详见
+   记忆 watchdogd 与 temp/r69-r70-forensics-deepseek.md §8**。
 3. **r66 判读存档（2026-10-28）**：确定性早期挂死（两次同点
    t≈5s，只写 3 个诊断槽；procs=1、GOP physical=0 从未映射 = 无
    logo 也画不出 panic 屏；CPU1 最后中断入口钉在
