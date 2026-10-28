@@ -629,8 +629,9 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **prelink 三值已 derive 在案**：`docs/archive/STATE-history.md:635` = slide `-0x1000000` + AMFI `0xfffffff008f3bd18`（三重指纹法）；text_fixups 是第三个值（见 :582，需按 16 代缓存重建或从旧档取）。
 - 20H392 trust cache 打包 commit 65b8eb8 在史（flat container bundle）。
 
-**施工单（下会话，按序）**：
-1. ~~下载~~ **已完成**（sha 对拍 ✓）；下会话直接从步骤 2 开工：IPSW 解包（KernelCache/DeviceTree/StaticTrustCache/Cryptex1,SystemTrustCache 四件）并逐成员对拍 OS dmg sha（`087-86698-044.dmg = 80f426d5…c92483`）。
+**施工单（下会话，按序；设备 8% 电量 → 用户拍板"先把充电修好，上游已经有了"）**：
+0. **充电先行（用户拍板）**：iOS payload 车道下设备不能充电 = 会话时长被电池卡死（8% 无法开工）。上游已有 → 本地查证：sheng/fuxi/nx729j 的 package/ 与 components.toml 均**无** charger/battery 组件 ⇒ 十有八九是**上游 main 新近提交**（本地最后一次上游同步停在 r69 时代）。动作 = ①`git fetch upstream` + 看 upstream/main 新提交里的充电/电源组件（grep charger/battery/fuel/SMB/PMIC）②按 UPSTREAM.md 同步纪律 rebase ③把充电组件接进 m2381（PMIC = PM8550 族，SM8550 平台与 sheng 同 SoC，sheng 板若有现成接线直接抄板级值）。**充电没修好前不开 20H392 施工**（顺序理由：没电一切白搭）。
+1. ~~下载~~ **已完成**（sha 对拍 ✓）；充电通了再开工：IPSW 解包（KernelCache/DeviceTree/StaticTrustCache/Cryptex1,SystemTrustCache 四件）并逐成员对拍 OS dmg sha（`087-86698-044.dmg = 80f426d5…c92483`）。
 2. 新建 `profiles/os/ios-16.7.16-20H392/`（仿 21H461 profile.toml 结构：os 元数据 darwin 22.x/xnu 无关项、[ipsw] 旧 pin、[kernel.prelink] 三值、trust-cache pins、ADT 身份 d22ap/iPhone10,3/t8015）。
 3. `board.toml` → `os_profile = "ios-16.7.16-20H392"`。
 4. **text fixups 清零起步**：23 条自加 displayless-kill 族全部是 21H461 VA，新 donor 全部作废；16 代用户态裸起，遇墙再按 §4.9 定点法逐个补（"遇一堵修一堵"支路纪律平移）。
