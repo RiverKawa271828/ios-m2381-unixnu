@@ -139,24 +139,22 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r77 已出件待刷（2026-10-29 凌晨）**：payload
-`93854822`（内核不变 ce34e9ae 代）= fixup #30 = `_WGMainScreenScale`
-block invoke 入口 4 指令覆盖：`fmov d0,#2.0; str d0,[once 槽
-0x231ec4030]; ret`（`.37,2117fac,ffc300d1f44f01a9fd7b02a9fd830091,
-0010601ee8cf17b00019803dc0035fd6`；expected 实读核验，adrp python
-算毕回验，零入边）。**r76 已刷已判：分支①再命中 = #29 实锤生
-效**（窗 acd75917 271/509 uptime=544s，对拍 ✓）：bounds NaN 0 出现
-+ applied 24→25；**换墙 = 'Failed to initialized main screen
-scale!' ×136**（`____WGMainScreenScale_block_invoke`：读
-`[[UIScreen mainScreen] scale]` 写 once 槽，≤0 断言；displayless
-mainScreen=nil → scale 恒 0；**性质换挡 = 从"可清洗垃圾"进入"环
-境供给缺失"，修法换型 = 供给替代清洗**）；PB ×133；chronod ×338
-（增量观察）；回归六项全绿 + sig11 0；屏面 = 1:24 进度条（提前
-30s）仍冻结。**决策规则判定 = 有进展**（三连单调后移：workspace
-门 → position → bounds → mainScreen scale；用户态治愈进入收尾区，
-剩余墙 = 供给族与 PB displayConfiguration，皆"缺显示配置"下游）。
-**刷写卡 = 只刷 recovery_a**（sha 门
-`93854822e007320bed…2d35b`；跑 8–15 分硬断电；**屏面观察点 = 进度
-条是否走动**）；判读预注册 = STATE §7.2（scale 断言 0 出现 +
-applied 25→26 = 生效；候选：下一供给墙或 wallpaper/图标层推进）。
-工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r77 已刷已判 + 战略转 =y（2026-10-29 凌晨）**）：
+
+**四连击达成 = #30 实锤生效**（窗 078a8227 208/509 uptime=417s，
+对拍 ✓）：scale 断言 0 出现 + applied 25→26；**墙链五连单调后移**
+（nil-set→workspace 门→position→bounds→scale 全灭，每轮 applied
++1）；PB CRASH 133→8 暴跌；回归六项全绿。**新墙 = SB sig11 ×172
+once 域毒化果**（`-[WGCarouselListViewController
+_updateCarouselEffect]` 读 `___sharedInstance.onceToken+0x8` =
+0x4000000000000018 毒化标记当指针；全链符号化验活 =
+CFXRegistrationPost→rootFolderDidChange→newAvocadoWidgetList…→
+_updateCarouselEffect——**SB 已深达今天视图 widget 列表装载**）；
+果非因（r72 同款机制）→ 本轮不出 fixup。**战略拍板 = 修复继续但
+换主攻**：用户态 fixup 降支路（供给族遇一堵修一堵），**主菜转 =y
+main display 注册链攻坚**（displayless 是根因，换 iPhone donor 墙
+同形重长，=y 接通则供给族成片消失）；止损线 = =y 攻坚 2–3 会话，
+若 =y 卡死且供给族又积 5+ 堵则评估中间路线 B（保内核换 iPhone
+donor 21H16，fileset-KC 重绑定器已破译待实现）。**取证双铁律照
+旧**；判读纪律含修正掩码 + 阳性对照（§4.9）。工作单 =
+`docs/STATE.md` §7）
