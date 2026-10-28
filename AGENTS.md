@@ -139,106 +139,22 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r75 已出件待刷（2026-10-28 深夜）**：payload
-`23868de1`（内核不变 ce34e9ae 代）= fixup #28 = `CA::Layer::
-set_position` NaN 抛点强制走 Apple 自带清洗路径
-（`.03,26850c4,40090034,4a000014`，audit-exempt `cbz w0`→`b`：log +
-NaN→0 fcsel + w2=0 递归重设不抛；expected 实读核验，零入边）。
-**r74 已刷已判：分支①成立 = #27 实锤生效**（窗 344e72e5 325/509
-uptime=650s，对拍 ✓）：workspace 门 0 出现 + applied 22→23；
-**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position
-contains NaN'（WGShortLookStyleButton）×~296 = SB 首次死在真实视
-图构造层**（NaN = displayless 0 scale/bounds；屏面 2:30 进度条出现
-但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89 减
-半；回归六项全绿 + sig11 0 + noidle；X5 探针升级出活值。
-**决策规则判定 = 有进展**（墙链单调后移：生命周期门 → 渲染几何；
-换内核讨论不触发，规则见 memory
-kernel-donor-switch-decision-rule：连续两轮原地踏步才触发，触发后
-先归因内核侧/用户态侧，中间路线 = 保内核换 iPhone donor 21H16）。
-**刷写卡 = 只刷 recovery_a**（sha 门
-`23868de161164db35…43a6a461`；跑 8–15 分硬断电；**屏面观察点 =
-进度条是否走动**）；判读预注册 = STATE §7.2（NaN 0 出现 +
-applied 23→24 = 生效，看下一渲染几何墙或 wallpaper/图标层推进；
-PB ×89 基线；回归六项 + sig11 0 + noidle）。**xref 纪律更新**：
-修正掩码 0xFF800000 + 零引用先过阳性对照（§4.9）。工作单 =
-`docs/STATE.md` §7）
-
-2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
-   缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
-   字节单位；值 = 低 48 位绝对未滑 VA）；UIKitCore **__DATA_DIRTY**
-   （0x1f489fef0+0x39958）全链枚举 5410 槽定性；**四病灶槽（bgTC
-   0x1f48ce5e0 / 锁 0x1f48ce340 / __UIMainScreenTraitCollectionLock
-   0x1f48cf938 / mainScreen 单例槽 0x1f48d5550）文件态全 0** = 懒
-   缓存 nil 静置态；工作假说 = **ObjC 元数据/once 域损坏级联**（
-   0xf00/0xf1 跨 slide 不变 → 数据常量或确定性页内偏移，排除
-   "指针减错基"）。②动态——**UIKitCacheProbe.c** 编入 display
-   archive（startup.o record 编译私有 task/vm_map ABI，
-   BootFaultProbe 先例）：2s 轮询 SpringBoard 的 __DATA_DIRTY 全窗
-   （vm_map_read_user + task_shared_region_slide），发布 ext 行
-   X4-X7（计数/slide/首垃圾事件/最近变更）；门控
-   `uikit-cache-probe=1`；boot-ui-focus3 移除（cmdline 1000B 上限）。
-   25 条 fixups 验证在位；ESP 四样过；payload =
-   `out/m2381/payload-r64-54b70ad7.img`（96MiB）。
-2. **r62 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
-   （recovery_a = **sde27**，前 96MiB sha == `0854ea5e…db1a`；坑 =
-   勿按 sda 大 LUN 猜节点，FLASHING §6 实测表为准；ACM 推大文本会
-   丢字节，比对走设备端 sha）。窗 rounds=291/509 uptime=605s 无回
-   卷。**体系三件生效**：①AKS 替身活了（opens 3→18 / calls 6→49，
-   selector 0:18/7:15/14:1/17:15）；②vsync 生效（hz=120 start=1
-   refresh=1 + IOMFBDisplayRefresh）；③client=0 生效（探针客户端消
-   失；剩余 C0 = **IOMFB_FDR_Loader pid=75** 真实消费者——r52
-   "C0=自设探针"的修正再修正：**C0 本来就是 IOMFB**）。applied=67
-   （23 parsed）未跌破 14 = 环境未愈合；旧墙链全灭（nil/unspecified/
-   XB/displayIdentity 全零 + sig6=0，r57–r60 五墙封死确认）；**换墙
-   = SB sig11 ×520 垃圾控制流**（unslid PC `0x1822F5FAC` = cstring
-   区野跳，字符串当指令执行后 FAR=0xf1；fp 链全废）——0xf00/0xf1 族
-   从"有效码+垃圾操作数"升级为"垃圾 PC"。SB 整程 respawn 循环未过
-   wallpaper/封面层；procs=200/spawn=1003；SWAP 有真活动（accepted=1
-   COPY 10.3MB）。
-3. **r63 判读定谳（2026-10-28）**：fixup16a/16b 真执行（applied
-   67→69）+ AKS 爆发（opens 123/calls 1121，t=22s 起）但**垃圾族未
-   愈**——死点漂回 r61 有效码点（unslid PC 0x1800F5FAC，x0=0xf1；
-   bt1 去滑 = 0x18A00DC50 fixup14 getter 站点）；链钉死 = **bgTC
-   缓存槽 0x1f48ce5e0 被写进 0xf1**，病根在缓存全局槽写路径（构造/
-   once 域），在 TC 内容下游之前 → **r64 缓存全局审计转正**（§7.1）。
-4. **r63 出件（已刷已判）**：fixup16a/16b = 全指定 fallback TC
-   （bgTC 病理链 RE 定谳：懒缓存 0x189ffcb68 → _defaultTraitCollection
-   0x18aa851b0 → _objc_msgSend$mainScreen + 栈块 0x18aa85268，cbz
-   门控 setDisplayScale/Gamut——displayless 下 mainScreen=nil → 全
-   unspecified 占位）。fixup16a（.03,3cd9288 cbz→nop）+ 16b
-   （.03,3cd9290 bl $scale→fmov d0,#2.0）。
-3. **调研定谳存档（2026-10-28，上游设备目录 f85b5a6→0fc0fc1）**：①
-   text_fixups 全清单——sheng=4 条基线、fuxi=0 条，**没有过墙板携带
-   显示族 fixup**（我们 23 条 = 4 基线 + 19 条 displayless kill 族）；
-   ②过墙板模板（asteroids 桌面 / oneplus13t 无 GPU 锁屏 / pong 主屏 /
-   negroni SB+touch）= **AKS 替身 + sheng-vsync + client 关闭**；
-   asteroids T20-T29 实证"无 AKS 替身 SB 永远跑不完 boot"。③UniXNU
-   系全用 iPad donor（30 个 format-2 全 = ipados-17.7.11-21H461）；
-   iPhone 用户态实证在 Bergamota/ios-sweet 系（Poco F1 → 未修改
-   iPhone XR iOS 18.7.8 22H352 用户态到 SpringBoard/主屏，markakash
-   正在 SM8550 小米 13 Ultra 上起步同路线，kernel = xnu-11215）——
-   换 iOS 用户态 = 换基座独立大主题，非 r6x 修复项。
-5. **出件配方红线（r56 教训入法）**：payload 命令必须带全
-   `--trust-cache out/m2381/trust/original-trust.bundle --data-ramdisk
-   devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img`；
-   ADT 的 PackedRAMDisk 映射只有带 --data-ramdisk 才生成（手术注入
-   救不了 ADT）；forensic reader 已由 payload.py 集成
-   （add-forensic-entry.py 仅存手术用）。刷卡前对 ESP 验四样：seed 文件
-   在 / toml 有 initrd 行 / trustcache 在 / ADT 有 PackedRAMDisk
-   （r62 出件已照办全过）。
-5. **合规差距报告**：`docs/PORTING-GAP-REVIEW.md`（对照官方 porting
-   全 19 页；行动项 = sheng-autoreset 试投 / AdvancedLogDxe / records
-   页 / bring-up 检查点表）。
-6. **独立主题（不阻塞）**：chronod sig5 崩溃循环（次优先，r57 ×287）；
-   XS/fileset-KC 重绑定器（换代 fileset-KC 情形转正）；arm64e 专项；
-   GPU/触摸主题化（=y 显示破墙后 ADRENO=y 叠加）；机制线（main display
-   注册链为何 nil，sheng 对照差异 = dpu 钩子/probe 车队/IOMFB 选择子）。
-
-> **P1 关键定案**（细节见 `docs/archive/STATE-history.md` §1）：P2 基座 = shengPkg 骨架 + mars blob
-> （fuxiPkg 是半程态不可当母版）；payload = recovery_a ESP（85MB gunzip 窗
-> 装不下 192MiB ramdisk 载荷，量化定死）；kernel 步只能 macOS（xcodebuild），
-> Linux 侧全链路已跑通；unique-chip-id = `3645ad55d47e77c1`（软件种子）。
-
-> **禁止**再把 ios-sweet 的 84 补丁树、旧 shim、16K 内核当施工面；需要旧
-> 结论时查 `docs/archive/`（含 `PLAN-unixnu-b2-era.md`、`BOOT-CHAIN-b2.md`、
-> `NOTES-m2381.md`）。
+## 7. 下一步（**r76 已出件待刷（2026-10-29 凌晨）**：payload
+`2bdd272a`（内核不变 ce34e9ae 代）= fixup #29 = `CA::Layer::
+set_bounds` NaN 清洗强制（`.03,26e0068,600c0034,63000014`，与 #28
+完全同构：audit-exempt `cbz w0`→`b` 强制走 Apple 自带清洗：log +
+NaN→0 fcsel + 递归重设不抛；expected `600c0034` 实读核验，零入
+边）。**r75 已刷已判：分支①精确成立 = #28 实锤生效**（窗
+d361a0c3 250/509 uptime=501s，对拍 ✓）：position NaN 0 出现 +
+applied 23→24；**换墙 = 孪生检查 `CALayer bounds contains NaN [0 0;
+nan nan]` ×111**（抛点 set_bounds +0xbc，预注册"下一渲染几何墙"
+命中——position→bounds 同函数族单调推进）；PB 'configuration' ×98
+（r74 ×89 同量级）；回归六项全绿 + sig11 0 + noidle；屏面 = 1:03
+logo / 1:54 进度条出现但冻结（= 布局仍死在 bounds，#28 只治了
+position）。**决策规则判定 = 有进展**（连续两轮墙链单调后移：
+workspace 门 → position → bounds 全是首现检查点；换内核讨论不触
+发）。**刷写卡 = 只刷 recovery_a**（sha 门
+`2bdd272a1871974965…d287808`；跑 8–15 分硬断电；**屏面观察点 =
+进度条是否走动**）；判读预注册 = STATE §7.2（bounds NaN 0 出现 +
+applied 24→25 = 生效；预期候选：第三检查点（frame/anchorPoint 族）
+或 SB 推进 wallpaper/图标层）。工作单 = `docs/STATE.md` §7）
