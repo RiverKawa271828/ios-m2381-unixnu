@@ -6,7 +6,7 @@
 |---|---|---|---|
 | **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `f85b5a6` (2026-10-27) |
 | **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `../UniXNU-m2381`（工作区根 `/home/ri/work/unixnu-meizu`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
-| **本设备 UEFI（Mu fork，2026-10-29 收编）** | https://github.com/RiverKawa271828/Mu-Silicium（拟改名 uefi-m2381） | `../uefi-m2381`（分支 main） | m2381Pkg 真相源；tip `17e3ce0` |
+| **本设备 UEFI（2026-10-29 新建）** | https://github.com/RiverKawa271828/uefi-m2381（待建仓首推） | `../uefi-m2381`（分支 main） | 基座 = 上游 uefi-sheng `sheng@0eb4514` + overlay `5297334`；实证来源 = nura 链 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `3325e352` |
@@ -156,9 +156,9 @@ git push --force-with-lease origin m2381
 ```
 
 - **UEFI**：`reference/uefi-fuxi` 的 `fuxiPkg` 是 `m2381Pkg` 的模板；
-  m2381Pkg 现居 Mu fork `../uefi-m2381`（Platforms/Meizu/m2381Pkg，
-  2026-10-29 收编，devices/m2381/uefi 与 sync.sh 退役）；固件构建 =
-  `./unixnu build firmware --uefi ../uefi-m2381`。
+  m2381Pkg 现居 UEFI 仓 `../uefi-m2381`（基座 = 上游 uefi-sheng
+  `sheng@0eb4514` + overlay 提交，2026-10-29 收编，devices/m2381/uefi 与
+  sync.sh 退役）；固件构建 = `./unixnu build firmware --uefi ../uefi-m2381`。
 - **boot manager / 内核侧**：上游树就在本仓 `m2381` 里（`drivers/`、
   `patches/xnu`、`kits/`…），跟随上游 = rebase；要单拿某个主题也可以
   `git cherry-pick`。路线 = 原生移植：`unixnu kernel/userdata` 全流程都要跑
