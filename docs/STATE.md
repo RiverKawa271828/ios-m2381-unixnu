@@ -5,16 +5,30 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r70 = **#21 修正 + 探针加读已出件 `9b3a26f0` 待刷**，
-内核 `2799e328`，2026-10-28 深夜。r69 活读判读 + fixup-aware 复核 +
-DeepSeek 三轮协作 = **0x1800F5FAC 墙根因终审**：崩点真身 =
-objc_retain 谓词 0x1800F5FA4（x0=FAR=0xF1），毒源 = r60 fixup14
-（.03,3261c50，commit 618811a）删掉 `mov x0,x20`——页缓存支路
-（0xdbf0，槽 0x1F48D59F8 非零）把 gate（0x1AC062BD0 = dyld4::gDyld
-API 快派发）返回值 0xF1 当 receiver 送 bgTC；三槽无辜（管道槽）；
-H2 排除；r60 出件→r61 墙首现时间线闭合。判读三分支 = 崩消失（关账，
-转 display 机制三件套）/ FAR==S 槽值（槽垃圾）/ FAR 仍 0xF1（第四
-入口）。取证双铁律（header 分代 + re-tools read_run）已工具化）
+## 1. 一句话现状（**r70 已刷已判（2026-10-28）**：payload `9b3a26f0`
+（内核 2799e328），reader 窗 header 分代 = 59/509 槽 uptime=118s
+（log sha 6cf9e36e…）。**判读三分支 ①成立：sig11 @0x1800F5FAC 本代
+0 出现（残影区 605 行 sig11 = r69 代对照），#21 修正实锤生效，
+r63→r69 垃圾族 sig11 关账**；②③ 无 sig11 崩溃行 = N/A；④ W0 全程
+`S- G1- G2-`（SB __DATA_DIRTY 窗 59 轮从未 fresh——SB 每 ~3.4s
+sig6 死一轮）而 X4 __DATA_CONST 三槽活值干净（去滑 slide
+0x130d4000 后 R=0x1f48ccab8=文件态绑定值，槽中毒模型再排除）。
+**换墙 = SB sig6 ×33 全同点**：`NSInvalidArgumentException
+-[__NSPlaceholderSet initWithObjects:count:] attempt to insert nil
+object from objects[0]`（不是预注的 trait 断言）——R2 exit 捕获
+PC=libsystem_kernel exit、bt = objc_terminate→libc++abi 终结链
+（全部按镜像归属核验），nil 插入调用点被 C++ unwind 撕掉，bt 外层
+帧 = 残渣。**halt = 非崩溃**：SB 反复死→无人报 activity→139.4s
+PMRD idle sleep timer expired→SLEEP_STATE→IOCPUSleepKernel→
+ArmCpu::haltCPU+0x2c→quiesceCPU diagnosePower 诊断 panic
+（ArmCpu.cpp:732 故意埋的 unsupported-quiesce 哨）→停机；用户所
+见文本页 = 该 panic 屏（11 帧全符号化 = IOPM
+powerChangeDone 重启/睡眠路径，timer=2128597÷19200Hz≈111s 与
+uptime 对拍 ✓）。r70 出件背景 = 0x1800F5FAC 墙根因终审（#21 删
+mov x0,x20→页缓存支路送 gate 返回值 0xF1 入 bgTC = objc_retain
+谓词；修正字节 e00314aac5bbff97；三槽无辜；H2 排除；r60 起源时间
+线闭合；DeepSeek 三轮协作）。取证双铁律（header 分代 + re-tools
+read_run）已工具化）
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
 位；值 = 低 48 位 = 绝对未滑 VA；value_add=0），UIKitCore
@@ -165,7 +179,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r63**（25 条 fixups 含 fixup16 全指定 TC + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `04eb0533` | **现役已刷已验已判（2026-10-28）**；读回对拍 ✓（reader 内 sde27 前 96MiB == 镜像）；判读 = §1 r63 定谳（fixup16 真执行 / 垃圾族未愈）；**r64 `54b70ad7` 已出件待刷** |
+| recovery_a | **r70**（#21 修正字节 + 探针 W0 宽行 + CRASH 行寄存器捕获 + 25 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `9b3a26f0` | **现役已刷已判（2026-10-28）**；判读 = §1 r70 定谳（sig11 关账 / SB sig6 NSPlaceholderSet 新墙 / 空闲睡眠 halt）；**r71 待出件** |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -307,28 +321,48 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r70 已出件 `9b3a26f0` 待刷（2026-10-28 深夜）**：#21
-修正（e00314aac5bbff97）+ 探针 W0 行 + CRASH 行寄存器捕获；判读三分支
-见 §1）
+## 7. 下一步（**r71 工作单（2026-10-28 r70 判读后）**：两主菜 =
+SB sig6 NSPlaceholderSet nil 定位 + 空闲睡眠 halt 处置；三分支①
+成立 = sig11 族关账，DeepSeek F 清单第四入口分支作废）
 
-1. **刷写卡（r70 = 只刷 recovery_a）**：fastboot（电源+音量减）→
-   `getvar current-slot` = b → sha 门
-   `9b3a26f01cbf784e6f07b5dd3f5423a8c8154e1535cb5d85f85451b7d14e38fd` →
-   `flash recovery_a out/m2381/payload-r70-9b3a26f0.img` → reboot →
-   跑 8–15 分硬断电（<17 分回卷线）。
-2. **r70 判读工作单**：reader 三连（对拍 `9b3a26f0…`，sde27，
-   fetchchunk）→ **先过 read-m2381-ufs-log.py 分代（header
-   slots_written 截残影，禁止直 grep 原始镜像）**，然后三分支：
-   ①SIG11 消失 = #21 修正闭环（gate 残留 x0 唯一毒源），r63→r69 整族
-   关账，重心转 display 机制三件套（假 UIScreen + displayConfiguration
-   + _UIScreenInitialDisplayConfigurationLoader）；②崩保留且
-   FAR == W0 行 S 槽值 = [0x1F48D59F8] 槽垃圾实锤（x0=x20 后强交叉）；
-   ③FAR 仍 0xF1 = 第四入口 → 带 DeepSeek F 清单四样回找（全 CRASH 行 +
-   S/G1/G2 崩前后 2 轮 + *gDyld/(*gDyld+0x258) 运行态 + 0x1F049EBB8 /
-   0x1F48CCAB8+0x10）。交叉核对：X19≠0 = 页缓存支路；W0 行 G1 应恒
-   -1；CRASH 行 R=1 才是硬件异常快照。辅菜：X5 B/M + X6/X7 照旧，回归
-   六项照旧。r71 备件（commit 73e1152 已存）：0xdc3c cbnz x0→b
-   0xdc40（场景支路垃圾护栏）。
+1. **设备现态（r70 读窗后）**：读窗走的是 payload ESP 自带的
+   forensic 入口（unixnu.toml `id="forensic"`，forensic-kernel.efi
+   + initrd + dtb 全在 recovery_a ESP 内），**不落任何分区**——
+   三分区全是本项目现役件（boot_b=UEFI `289614ba`、
+   recovery_a=r70 `9b3a26f0`、userdata=fd43ee70）→ 下一轮 iOS 卡
+   **按需刷**（r71 若只动 ADT/内核 = 照旧只刷 recovery_a）；重启
+   （或菜单选 xnu）即回 iOS。判读 reader 身份看 uname：forensic
+   kernel（#92-meizu-meizu20）≠ nura-min，勿再误判（10-28 一次）。
+2. **r71 主菜 A = SB sig6 NSPlaceholderSet nil 调用点定位**：r70
+   实证 exit 时 fp 链被 unwind 撕（PC=libsystem_kernel exit，
+   bt 外层帧 = 残渣），方向：①BootFaultProbe SIGABRT 路径加
+   **栈下扫描**（exit 时从 SP 向低地址扫残留栈上的文本 VA——
+   C++ unwind 不擦栈，抛点返回址大概率还在低地址栈上），顺带把
+   NSException 堆对象 name/reason 指针带出；②备选 = 离线 RE
+   SpringBoard 二进制（SystemOS 内 SB 是独立 Mach-O 非缓存件）
+   `setWithObjects:`/`initWithObjects:` 在 boot 路径的调用点。
+3. **r71 主菜 B = 空闲睡眠 halt 处置（独立可先行）**：机制链 =
+   PMRD setAggressiveness(idle 3000ms)→sleep timer expired→
+   SLEEP_STATE→IOCPUSleepKernel→ArmCpu::haltCPU→quiesceCPU
+   diagnosePower panic（哨是故意埋的）。按 upstream-first 先查
+   上游：①IOPMrootDomain 空闲睡眠合法关闭路径（aggressiveness
+   源头、pid=39 powerd 是谁养的）；②haltCPU/quiesceCPU 补全
+   （bring-up 先静默 halt 不 panic 也行）；③睡眠路径 stub。
+   sig6 治好之前每个 3s 空闲都会再 halt，此项不做桌面永远站不住。
+4. **r70 判读存档（2026-10-28）**：见 §1 头段。r70 备件（0xdc3c
+   cbnz→b 场景支路垃圾护栏）**注销**——sig11 族关账，该支路不再
+   可达。判读表遗留：W0/X5 的 SB __DATA_DIRTY 窗 59 轮 rc[0] 恒败
+   （__DATA_CONST 窗每轮 fresh）——r71 顺手查 capture 的 dirty 窗
+   预门/读路径为何失败（SB 每 3.4s 死一轮可能是根因），不阻塞。
+5. **r69 判读存档（2026-10-28，活读窗 33e1b811 + 深挖终审）**：探针 v4
+   存活（k1→272，f=0）；三链槽活值全干净且 = 文件绑定值+slide 逐位
+   吻合 → r63 槽中毒推断终审推翻（三槽实为 msgSend 管道：SEL
+   mainScreen/_fallbackTraitCollection + UIScreen classref + 共享
+   thunk）；SB sig11 ×406 同点 0x1800F5FAC = objc_retain 谓词
+   0x1800F5FA4，x0=FAR=0xF1；SB sig6 ×258（unspecified traits 同根）；
+   活读窗混 6 代 boot 残影（header slots_written=232/509），"多崩族"
+   = 残影幻象；**根因机制 + r60 起源 + H2 排除 + gate 身份假设详见
+   记忆 watchdogd 与 temp/r69-r70-forensics-deepseek.md §8**。
 3. **r69 判读存档（2026-10-28，活读窗 33e1b811 + 深挖终审）**：探针 v4
    存活（k1→272，f=0）；三链槽活值全干净且 = 文件绑定值+slide 逐位
    吻合 → r63 槽中毒推断终审推翻（三槽实为 msgSend 管道：SEL
@@ -384,3 +418,10 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r61 | `169f160c` | fixup 15a/15b 生效（applied=70 + 'unspecified' 断言零出现，nil/scale 块全死）；**换墙 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径 FAR=0xf1，与 r58 0xf00 同族——UIKit 缓存全局垃圾族定性）；**用户拍板：停逐发 fixup，下会话转体系路线（上游/fork 调研优先）** | 本会话判读 |
 | r62 | `0854ea5e` | **调研定谳 + 体系方案落地 + 判读定谳**：四过墙板模板（AKS 替身/vsync/client=0）三差距全补；已刷（10-28 fastboot 实录 OKAY）+ 读回对拍 ✓（sde27）+ 判读（10-28）：**体系三件实锤生效**（AKS opens 3→18 calls 6→49 / vsync hz=120 start+refresh / 探针客户端消失，C0=IOMFB_FDR_Loader 实为真实消费者——r52 嫌疑修正再修正）；applied=67 未跌破 14=环境未愈合；旧墙链全灭（r57–r60 五墙封死确认）；**换墙 = SB sig11 ×520 垃圾控制流**（unslid PC 0x1822F5FAC=cstring 区野跳，0xf00/0xf1 族升级）；r63 = UIKit 侧候选（全指定 TC / 缓存全局审计） | 出件+刷写 10-28，判读 10-28 |
 | r63 | `04eb0533` | **全指定 fallback TC + 判读定谳**：RE 定谳 bgTC 病理链（懒缓存 getter → _defaultTraitCollection → mainScreen + 栈块 setScale/setGamut）；fixup16a（cbz→nop）+ fixup16b（bl $scale→fmov d0,#2.0），25 条；**已刷已验已判（10-28，sde27 对拍 ✓）**：fixup16 真执行（applied 69）+ AKS 爆发（opens 123/calls 1121）+ SWAP 泵大（8222 calls）；**垃圾族未愈——死点漂回 r61 有效码点（0x1800F5FAC，x0=0xf1），链钉死 = bgTC 缓存槽被写 0xf1，病根在槽写路径**；r64 = 缓存全局审计转正 | 出件+刷写+判读 10-28 |
+| r64 | `54b70ad7` | **缓存全局审计轮**：静态定谳四病灶槽文件态全 0（懒缓存 nil 静置）= 毒在运行时写路径；UIKitCacheProbe 随件；判读 = 毒在 SB 首扫前就位 + 探针 OOB 停摆 bug（slide 双加越界，已修） | 出件+判读 10-28 |
+| r65 | `d3d4e649` | 废轮：探针锁序 bug panic 实拍（递归 task_lock：capture 先 task_lock 再 get_task_map_reference，已修 = 去显式 task_lock） | 10-28 |
+| r66 | `cec04b36` | 确定性早期挂死定谳 = 跨 map 失败读撞 AP 启动窗口（CPU1 最后中断入口 ArmCpu::prepareGic+0x19c）；槽 3+ "推进" = 旧会话残影；r67 A/B 件（probe 1→0 免重编） | 10-28 |
+| r67 | `ce469e83` | A/B 过 = 探针罪责实锤（probe 0 后 logo+进度条回来，墙原样 sig11 ×400 @0x1800F5FAC）；r68 出件（探针 v3 非侵入化三修） | 10-28 |
+| r68 | `3c177c54` | v3 存活 + 病灶槽 165 轮全程干净 vs SB 465 崩同点 → **r63 槽中毒推断被推翻（毒不在 __DATA_DIRTY）**；反汇编定位 __DATA_CONST 三槽；r69 出件（探针 v4 三窗钉定） | 10-28 |
+| r69 | `2685ddf2` | 活读判读：三链槽活值 = 文件绑定值+slide 逐位吻合（预注册"全干净+SB 照崩"分支成立）→ 构造瞬态/写路径上游；sig11 符号化终审进 r70；re-tools 升级 read_run；r70 出件（#21 修正 + 寄存器捕获 + W0） | 10-28 |
+| r70 | `9b3a26f0` | **#21 修正实锤生效：sig11 @0x1800F5FAC 本代 0 出现（三分支①成立，r63→r69 垃圾族关账）**；换墙 = SB sig6 `NSPlaceholderSet initWithObjects:` nil ×33 同点（调用点被 unwind 撕）；**halt = 非崩溃：空闲睡眠路径（139s timer expired→SLEEP_STATE）撞 ArmCpu::haltCPU diagnosePower 诊断 panic**；W0 dirty 窗全程未 fresh（dirty 读恒败，遗留）；r71 = nil 定位 + 睡眠处置 | 刷写+判读 10-28 |
