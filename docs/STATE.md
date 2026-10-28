@@ -5,37 +5,47 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r73 出件中（2026-10-28）**：fixup #26 =
-SBLockScreenManager 单例构造 kill。**r72 判读 = 体系最大突破：
-NSPlaceholderSet nil 调用者指令级钉死**（窗 a434ad07 294/509 槽
-uptime=598s 无回卷，recovery_a 对拍 `e5ae4ca9` ✓）：r72 扫描器三
-改实锤——bt 排除 + 真去重 + bl/blr 门把 tear zone（抛点帧）第一
-次打捞上岸：**死亡链 = `-[SBIconController
-initWithMainDisplayWindowScene:…]` → `-[SBIconController
-widgetMetricsServer]` → `-[SBIconController lockScreenManager]` →
-`+[SBLockScreenManager _sharedInstanceCreateIfNeeded:]` 的
-dispatch_once 块（invoke =
-`___53+[SBLockScreenManager _sharedInstanceCreateIfNeeded:]_block_invoke`）：
-`UIApplication.sharedApplication` 非空 → 走正常构造分支 → 管理器
-构造（Swift init 路径）内 `[NSPlaceholderSet initWithObjects:]`
-objects[0]=nil 抛出**（断言孪生分支 SBLockScreenManager.m:362
-"Unexpectedly created SBLockScreenManager before UIApplication
-instance was created." 全程零捕获 = sharedApplication 已活实锤）；
-异常展开穿 `+initialize` 机器（`_initializeNonMetaClass`/
-`lockAndFinishInitializing`/`lookUpImpOrForward` 全在 tear zone）
-→ PendingInitialize DenseMap 致命（`FatalCorruptHashTables` 函数
-入口 = 最内帧，fatal 助手 noreturn bl island → `__cxa_throw` 二次
-抛出）→ terminate = sig6。PosterBoard 同终结链，外层 =
-dispatch lane/pthread_once（'configuration' 断言 = PB 自己的 init
-墙，独立支路待 SB 破后再回头）。**fixup #26 = 构造器入口永不创建
-（`cbz w2,return` → `b return`，实例槽保持 nil）**
-（`dyld_shared_cache_arm64.25,19116b8,2202003428e40dd0,110000141f2003d5`；
-bring-up-only，显示栈落地时须重访）。回归六项全绿（applied 21 稳
-/AKS 1093/vsync 120/SWAP accepted=1/spawn 980/noidle 600s 连续写
-维持；PROC 行一次 pid230/231 sig11 drop1 = 聚合统计非 CRASH 行，
-垃圾族未复发，sig11 CRASH 行 0）。b<main> 双代一致：SB 去滑
-0x205f02000 / PB 0x213f74000（跨 boot 固定装载槽）。r71 定谳
-（noidle 关账 / 扫描器三改动机 / halt 链机制 / #21 修正）见 §7.4；
+## 1. 一句话现状（**r73 已刷已判（2026-10-28）**：**预注册分支①成立
+= fixup #26 实锤生效**（窗 451ed5c2 301/509 槽 uptime=609s 无回
+卷，recovery_a 读回对拍 `a3f310d42f488a66…585e56d` ✓）：`[text
+fixup] parsed=26 applied=22` = 21→22（#26 页执行 oracle）+
+**NSPlaceholderSet objects[0]=nil 断言本代 0 出现**（r70–r72 三代
+×33/×347 的原墙关账，r72 定谳的 nil 调用者链被 #26 拦死）。**换墙
+= SB sig6 ×266 新点**：REASON = `NSInternalInconsistencyException
+'you can't call this before [SBMainWorkspace start]'`（×172 行）=
+预注册预期①"SBLockScreenManager=nil 的下游"形状命中：SB 反复死在
+一个 workspace-start 门；死亡形状单一（PC 0x1d95e6f74 = abort 链
+噪声点，bt 8 帧全终结链 = 抛点帧被 unwind 撕净，dispatch_async_
+and_wait invoke 外层）。**raiser 定位 RE（本会话主破案）**：REASON
+串 → 全缓存唯一实例 0x1d02917bc（SpringBoard.framework
+0x1cf99c000 内，`SBWorkspace.m` 文件标记串 0x1d0291785 紧邻，同池
+邻居 = sceneManager/transientOverlayPresentationManager/
+currentTransaction/daemonHandlers）→ CFString 对象 0x1ea27d3c8
+（isa/flags/datap/len=50 全验证）→ **引用模型扫尽 = 零引用**：
+①adrp+add/ldr 配对（相邻 + 12 指令宽窗，SB fw text 全区 + SB 主
+二进制窗 + 全部小段）②绝对指针槽（低 48 位 + bit42 tag 全缓存
+57 映射）③i32 相对指针（SB 邻域）——全零，仅存的两个指针槽 = 两
+个 CFString 对象自身的 datap 字段 ⇒ **框架内这套断言常量 = 死拷
+贝；活 raiser 在缓存外 = SpringBoard.app 盘上主二进制**（镜像表实
+证 /Applications/SpringBoard.app/SpringBoard 不在 21H461 缓存，
+缓存只有 framework + AccessibilityBundles 拷贝）⇒ **现 cache
+text_fixups 机制够不着 r74 修点**（fixup 挂 dyld 缓存文件页校验路
+径；盘上 Mach-O 另一套）。**支路③核对 = PB 独立墙未动**：sig6
+×164 / 'Invalid parameter not satisfying: configuration' ×94（r72
+同墙）；chronod sig5 ~400 行（r57 已知独立主题）。**回归六项全
+绿**：applied 22 / AKS opens=118 calls=1248 / vsync hz=120
+start=1 refresh=1 / SWAP accepted=1 bytes=10.3MB / procs=196
+spawn=962 / noidle 维持（609s 无 139s 停写 + PMRD 零 `sleep timer
+expired` + 零 halt）；sig11 CRASH 行 0 ✓；X5 dirty 窗 R0 全窗读
+通保持；W1 SS 三形（SB 滑后 0x213d5e000→去滑 0x205f02000 / PB
+0x221dd0000→0x213f74000 = **跨 boot 固定装载槽 r72 实证再证**；
+第三形 b1d15f9000→0x1c379d000 ×3 归属未定）。**扫描器三坑再付费
+（全部入 §4 方法）**：①fsx needle 要求紧随 NUL → 短语式搜索恒 0
+（找串要直搜 data.find）；②按映射起点过滤会误截跨段区域（必须重
+叠式判定）；③手工解 imm12/去滑又错两次（imm12 手算 0x368 实为
+0x478；b1d15f9000 手算 0x1cf3039000 实为 0x1c379d000）——**"手工
+必须走 python"一天内第三次付费**。r72 判读（nil 调用者指令级钉死
+全链）见 git a0447d2；r71（noidle 关账/扫描器三改）见 §7 存档；
 取证双铁律（header 分代 + re-tools read_run）已工具化）
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
@@ -187,7 +197,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r72**（扫描器三改探针 + noidle=1 + dirty 窗 R 码 + 25 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `e5ae4ca9` | **现役已刷已判（2026-10-28）**；判读 = §1 r72 定谳（**nil 调用者指令级钉死 = SBLockScreenManager 单例构造**）；**r73 出件待刷（内核 ce34e9ae，fixup #26）** |
+| recovery_a | **r73**（fixup #26 = SBLockScreenManager 单例构造 kill，26 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核 `ce34e9ae`） | `a3f310d4` | **现役已刷已判（2026-10-28）**；判读 = §1 r73 定谳（**#26 生效：nil-set 墙死（applied 22 + NSPlaceholderSet 0 出现）；换墙 = SB workspace-start 门 sig6 ×266；raiser 在缓存外 SpringBoard.app 盘上二进制**） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -288,6 +298,18 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
    首次全活（bl-target 三帧全过）。**无论哪代，bl-target 验活必做**；
    去滑先核 N 值（r48 帧列表曾有 0x10000 转录滑差 → 符号落 HomeUI
    垃圾 = 红旗）。
+8. **r73 断言-串定位三坑（全部当日付费）**：①`find-string-xref.py`
+   的 needle = 串尾紧随 NUL——短语式子串搜索恒 0 命中；找串本体要
+   用 Cache 直搜（data.find 不带 NUL 要求）。②xref 全区扫必须重叠式
+   判映射（`hi<=addr or lo>=addr+size` 跳过）；按映射起点写
+   `addr >= lo` 过滤会把起点在 lo 之前但覆盖 lo 之后代码的整段截掉
+   （r73 因此漏扫 .25 全段）。③引用模型三件套 = adrp 配对（相邻或
+   宽窗）/ 绝对槽（低 48 位掩码 + bit42 tag；r64 链格式：高位 16 =
+   next-delta）/ i32 相对指针——三者全零 + 断言运行时真触发 ⇒
+   raiser 在缓存外。**一切地址算术必须 python**（r73 一天手算错两
+   次：imm12 0x368 vs 实际 0x478；b1d15f9000 去滑 0x1cf3039000 vs
+   实际 0x1c379d000）；name→VA 反查走 symbolicate46 同款解析
+   （dec-symbols 头 @0x48 → 6×u32 → nlist 二分）。
 
 ## 5. 开放问题
 
@@ -329,31 +351,25 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r73 已出件待刷（2026-10-28）**：payload `a3f310d4`
-（内核 `ce34e9ae`）；fixup #26 = SBLockScreenManager 单例构造
-kill，主菜 = 看 SB 是否越过 nil-set 墙推进）
+## 7. 下一步（**r73 已刷已判（2026-10-28）**；r74 = SpringBoard.app
+盘上二进制 RE + 出件配方前提变更）
 
-1. **刷写卡（r73 = 只刷 recovery_a）**：iOS 链现役未被覆盖
-   （boot_b=UEFI `289614ba` + recovery_a=r72 + userdata=fd43ee70）
-   → fastboot（电源+音量减）→ `getvar current-slot` = b → sha 门
-   `a3f310d42f488a661bb9cb556223ab154da5127fed4fa20e682945230585e56d` →
-   `flash recovery_a out/m2381/payload-r73-a3f310d4.img` → reboot。
-   **跑 8–15 分硬断电**（勿超 17 分回卷线）。ESP 四样已验（ADT
-   PackedRAMDisk=1、fixup 26 条解析、cmdline 984B、noidle=1 在）。
-2. **r73 判读工作单（预注册）**：开场三连照旧 + 内核指纹验代（本
-   代 = r73 探针/内核格式）。分支：
-   ①**SB sig6 NSPlaceholderSet 消失** → #26 生效；看 SB 新墙（
-   CRASH 行 + REASON）——预期候选：SBLockScreenManager=nil 的下游
-   deref（新 fixup/stub 按新 REASON 定点）、或推进到更深的
-   SBIconController/图标装载墙。**注意：applied 应 21→22**（#26
-   页执行 oracle）。
-   ②**SB sig6 原点保留** → #26 页未执行（查 applied）或异常另有
-   源头（REASON 细读）→ 深挖 Swift init 内 set 构造点。
-   ③**PB 'configuration' 断言成为主导墙** → SB 停死后 PB 噪声占比
-   升高，回头按 PB init 路径定点（同法：REASON→断言串→CFString
-   →xref→invoke）。
-   ④回归六项照旧 + sig11 CRASH 行必须仍 0（PROC 行聚合 sig11 非
-   墙，r72 判读已定性）。
+1. **r74 主菜 = SpringBoard.app 盘上二进制 RE**：r73 定谳新墙
+   raiser 在缓存外（§1），先从 `.cache/firmware/target-volumes/
+   044-76034-038.dmg / 044-76040-038.dmg`（SystemOS）提取
+   `/Applications/SpringBoard.app/SpringBoard`，按 REASON 串
+   "you can't call this before [SBMainWorkspace start]" xref 定断
+   言站点与 raiser 方法。**出件配方二选一（动手前先上游调研）**：
+   a) fixup 机制扩展到盘上 Mach-O（kernel 页校验路径现只认 dyld
+   缓存文件身份，扩 = kernel+payload 两侧改）；b) 框架侧等效
+   stub——注意类 dup 场景：SBMainWorkspace/SBWorkspace 存在
+   fw/app 双拷贝（fw 拷贝常量池死、raiser 活在 app），但 r72 的
+   SBLockScreenManager once-token/实例槽 0x1f56d0b48 在 fw __DATA
+   且 #26 页真执行（applied 21→22）= fw 拷贝至少在 nil-set 路径
+   是活实现——先 RE app 二进制弄清运行时绑哪份再定配方。
+2. **r73 判读存档**：§1（#26 生效 + 新墙 + raiser RE 全链 +
+   回归六项）；方法三坑入 §4.8。刷写卡 = 已执行完毕（a3f310d4
+   只刷 recovery_a，读回对拍 ✓）。
 3. **出件配方红线不变**：payload 三 flag + --unique-chip-id
    3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
    .../package/*.c（tree kits/sheng = symlink 同一实体），root
@@ -361,15 +377,9 @@ kill，主菜 = 看 SB 是否越过 nil-set 墙推进）
    profile.toml text_fixups（expected 字节必须以 cache-extract 文
    件实读核验，勿手算）；判读纪律 = header 分代 + re-tools
    read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk。
-4. **r72/r71 判读存档**：r72 = §1（nil 调用者指令级钉死全链 +
-   FatalCorruptHashTables 二次抛机制 + PB 独立支路）；r71 =
-   noidle 关账 + 扫描器三改（窗 c13aaabd）；r70 = halt 链机制 +
-   #21 修正（commit e63e0d4/e2bea7e）。判读方法沉淀：**手工去滑
-   必须走 python（r72 曾手算错进位把 SB 簇算成 UIKitCore 区差点
-   误判 PFSceneTaxonomyNode）；bl 门候选仍需 disasm 复核（LSDA 表
-   指针可撞 bl 编码 1/16）**。
-5. **独立主题（不阻塞）**：chronod sig5（r57 已知独立主题）；PB
-   'configuration' 断言（③支路）；BootSlotReset DXE；XS/fileset-KC
+4. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；PB 同
+   样存在 fw/app 双拷贝问题，PosterBoard.app 也不在缓存）；chronod
+   sig5（r57 已知独立主题）；BootSlotReset DXE；XS/fileset-KC
    重绑定器；arm64e 专项；GPU/触摸/UFS 提速主题化（UFS 数据面
    0 失败、~57MiB/s 轮询口径、5% 占空比 = 显示破墙后的体验项）。
 
@@ -409,4 +419,4 @@ kill，主菜 = 看 SB 是否越过 nil-set 墙推进）
 | r70 | `9b3a26f0` | **#21 修正实锤生效：sig11 @0x1800F5FAC 本代 0 出现（三分支①成立，r63→r69 垃圾族关账）**；换墙 = SB sig6 `NSPlaceholderSet initWithObjects:` nil ×33 同点（调用点被 unwind 撕）；**halt = 非崩溃：空闲睡眠路径（139s timer expired→SLEEP_STATE）撞 ArmCpu::haltCPU diagnosePower 诊断 panic**；W0 dirty 窗全程未 fresh（dirty 读恒败，遗留）；r71 = nil 定位 + 睡眠处置 | 刷写+判读 10-28 |
 | r71 | `89e74a92` | **noidle=1 实锤生效关账**（607s 连续写零 halt + PMRD 无 sleep timer expired，用户 10 分钟无停机实证）+ dirty 窗 R0 全窗读通 + **sig11=0 保持治愈** + 回归六项全绿（applied 21/AKS 1139/vsync/SWAP/spawn 1031）；SB sig6 ×347 原点原 REASON（dispatch_once_callout 块内）+ **PosterBoard sig6 ×167 新客**（'configuration' 断言，外层 dispatch_lane_serial_drain）；SS 扫描 266 行候选全 = 终结链帧+`<unmapped>` 数据指针 → ≤9 预算病灶 tear zone 未及 → r72 扫描器三改 | 刷写+判读 10-28 |
 | r72 | `e5ae4ca9` | **扫描器三改 + 体系最大突破：nil 调用者指令级钉死**（内核 4b6bfc38）：bt 排除+真去重+bl 门把 tear zone 第一回打捞上岸 → `-[SBIconController initWithMainDisplayWindowScene:…]→widgetMetricsServer→lockScreenManager→+[SBLockScreenManager _sharedInstanceCreateIfNeeded:] dispatch_once 块`（sharedApplication 非空走正常构造，管理器 init 内 NSPlaceholderSet nil 抛出；断言孪生 SBLockScreenManager.m:362 零捕获）；展开穿 +initialize→PendingInitialize FatalCorruptHashTables 双抛；PB 同链独立墙（'configuration'）；回归六项全绿、sig11 CRASH 0（PROC 聚合行 sig11 非墙）；坑沉淀：手工去滑须 python（手算错进位差点误判）+ bl 门候选需 disasm 复核（LSDA 可撞编码） | 刷写+判读 10-28 |
-| r73 | `a3f310d4` | **fixup #26 = SBLockScreenManager 单例构造 kill 出件**（内核 ce34e9ae）：构造器入口 `cbz w2,return→b return`（`dyld_shared_cache_arm64.25,19116b8,2202003428e40dd0,110000141f2003d5`），实例槽保持 nil；判读预注册：SB sig6 消失+applied 21→22 → 看新墙（nil-manager 下游或推进）；原点保留 → 深挖 Swift init set 构造点 | 出件待刷 10-28 |
+| r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**（SBWorkspace.m 常量池）；RE 破案 = **raiser 在缓存外 SpringBoard.app 盘上二进制**（fw 常量池零引用实证；cache fixups 够不着）；PB ③支路维持（×164）；回归六项全绿 + sig11=0；r74 = 提取 SB.app RE + 出件配方二选一 | 刷写+判读 10-28 |
