@@ -1,15 +1,18 @@
 # ios-m2381-unixnu — 魅族 20 Classic（m2381 / SM8550）iOS via UniXNU
 
-> **2026-10-29 设备仓拆分（用户拍板"按上游要求来拆"）**：`devices/m2381/
-> unixnu-m2381` 拆出为独立仓 **[UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)**
-> （本地 `/home/ri/work/UniXNU-m2381`，与本仓并排 `../UniXNU-m2381`）。
-> `git subtree split` 保 93 提交全史（tip `2f06128c`）；keys/*.pem 本地
-> 随迁仍不入仓；独立实跑 check-m2381 = 4 ok 0 fail。构建 = 主树
-> `./unixnu -D ../UniXNU-m2381`；CI dispatch 改指新仓
-> `device_repository=RiverKawa271828/UniXNU-m2381, device_ref=main`，
-> 旧 orphan `device-m2381` 冻结回退至新仓 CI 首绿；`devices/m2381/`
-> 仅余 `uefi/`（m2381Pkg，迁独立仓列二期）+ 指路 README。历史 docs 里
-> `devices/m2381/unixnu-m2381/…` 路径一律指新仓对应路径。
+> **2026-10-29 拆分整理（用户拍板"按上游要求来拆"+"把uefi也整进去"）**：
+> ①设备仓 `devices/m2381/unixnu-m2381` 拆出独立仓
+> **[UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)**（本地
+> `../UniXNU-m2381`；`git subtree split` 保 93 提交全史 tip `2f06128c`；
+> keys/*.pem 本地随迁仍不入仓；独立实跑 check-m2381 = 4 ok 0 fail）；
+> ②m2381Pkg 收编 Mu fork = **`../uefi-m2381`**（分支 main；以 out/m2381/uefi
+> 实据树对拍合并，tip `17e3ce0`；GitHub 侧 Mu-Silicium 拟改名 uefi-m2381，
+> 旧链接自动重定向），sync.sh 与 `devices/m2381/` 整体退役；③三仓收拢于
+> 工作区根 `/home/ri/work/unixnu-meizu`（老主树路径留 shim 符号链接）。
+> 构建 = 主树 `./unixnu -D ../UniXNU-m2381`（固件加 `--uefi ../uefi-m2381`）；
+> CI dispatch 改指新仓 `device_repository=RiverKawa271828/UniXNU-m2381,
+> device_ref=main`，旧 orphan `device-m2381` 冻结回退至新仓 CI 首绿。
+> 历史 docs 里 `devices/m2381/…` 路径一律指新仓对应路径。
 >
 > **2026-10-29 donor 二次反转（用户拍板"不搞了，换ios16的版本"）**：=y 主屏
 > 注册链攻坚（r78a/r78b sel6 刀两轮未落地）停车道；donor 回退
@@ -93,7 +96,8 @@ userdata   = IPSW 重建的 iOS root（OS + Cryptex1,SystemOS 窗口，走
      与 fuxi 值对拍）；`[userdata]` first/last_lba
      **已实测**（实机 GPT 三源对拍，值在设备仓 `board.toml`），不许抄 fuxi；`[kernel]` defconfig 从
      `fuxi_defconfig` 派生再改板级差异。
-2. **`devices/m2381/uefi/m2381Pkg`（UEFI）**：从
+2. **m2381Pkg（UEFI，现居 `../uefi-m2381/Platforms/Meizu/m2381Pkg`，
+   2026-10-29 收编）**：从
    `reference/uefi-fuxi/Platforms/Xiaomi/fuxiPkg` 派生，按
    `docs/porting/uefi-firmware.md`。
    - FD `0xA7100000+0x300000`；SimpleFbDxe 在 ABL 帧缓冲 `0xb8000000`；
@@ -156,9 +160,10 @@ docs/archive/             旧 sweet 笔记、B2 评估与启动链、STATE 轮�
 reference/                UniXNU/uefi-fuxi/unixnu-fuxi 等克隆（gitignore）
 research/                 IPSW 等本地大件（gitignore；旧 iPhone X IPSW 已无用）
 artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore）
-devices/m2381/            m2381Pkg 落地处（uefi/，迁独立仓列二期）；设备仓本体
-                          = ../UniXNU-m2381（2026-10-29 拆出，含 porting.toml
-                          移植记录 + records/ 实据 + scripts/re-tools 全套）
+../UniXNU-m2381/          设备仓（2026-10-29 拆出；porting.toml 移植记录 +
+                          records/ 实据 + scripts/re-tools 全套）
+../uefi-m2381/            Mu-Silicium fork 分支 main（m2381Pkg 真相源；
+                          原 reference/uefi-m2381-nura，devices/m2381 退役）
 ```
 
 ## 7. 下一步（**r77 已刷已判 + 战略转 =y（2026-10-29 凌晨）**）：
