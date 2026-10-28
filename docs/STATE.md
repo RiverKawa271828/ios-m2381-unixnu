@@ -5,7 +5,42 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r77 已出件待刷（2026-10-29 凌晨）**：fixup #30 =
+## 1. 一句话现状（**r77 已刷已判（2026-10-29 凌晨）+ 战略转 =y**）：
+
+**四连击达成 = #30 实锤生效**（窗 078a8227 208/509 uptime=417s，
+recovery_a 读回对拍 `93854822…2d35b` ✓）：'Failed to initialized
+main screen scale!' **0 出现** + applied **25→26**（parsed=30
+applied=26）；**墙链五连单调后移全景**：nil-set（r73）→ workspace
+门（r74）→ position NaN（r75）→ bounds NaN（r76）→ mainScreen
+scale（r77 全灭），每轮 applied +1、每轮预注册分支①精确命中。
+**PB 'configuration' CRASH 133→8 暴跌**；chronod sig5 ×348（独立
+主题）；回归六项全绿 + sig11 断言族 0。**新墙 = SB sig11 ×172 全
+新高质量点**：`-[WGCarouselListViewController
+_updateCarouselEffect]+0x9dc` → 崩在 `__os_log_impl_flatten_and_
+send` 区，FAR = `0x4000000000000018`（bit62 标签态）；全链符号化验
+活 = `CFXRegistrationPost → -[SBIconController
+_rootFolderDidChange] → _newTodayViewController… →
+SBWidgetController newAvocadoWidgetListViewController… →
+updateCarouselAndRevealState → _updateCarouselEffect`——**SB 已深
+达今天视图（avocado）widget 列表装载**。RE 定性 = 崩点读
+`___sharedInstance.onceToken+0x8`（WidgetKit 持久状态控制器单例域
+0x231ec4060，与 #30 scale 槽同页）文件态干净全 0 → **运行时
+0x4000…0018 = once 块从未成功完成的毒化标记被当对象指针**——**果
+非因**（r72 FatalCorruptHashTables 同款机制）：要修须找 once block
+内部的失败因（疑 = dataSourceManager init 内又撞供给族），**非十
+分钟定点，本轮不出 fixup 件**。**屏面对齐：进度条 1:30 出现（
+r76 1:24 同量级）仍冻结**。**战略评估（用户拍板征询，本会话定
+谳）**：五轮数据 → ①决策规则未触发（无复发无回退）②墙已到
+"once 域毒化"层 = 供给族缺失的**下游果**——逐墙喂常量的边际收益
+开始递减（每堵新墙都可能又是另一 once 域的果）③**真正的分叉点不
+是 donor 而是 =y 显示供给链**：displayless 是根因，换 iPhone
+donor 这些墙同形重长（换 donor 不解决 displayless），只有 =y 接
+通真显示配置供给族才成片消失。**拍板 = 修复继续但换主攻：用户态
+fixup 降为支路（供给族遇一堵修一堵不再整轮追），主菜转 =y main
+display 注册链攻坚**；止损线 = =y 攻坚 2–3 会话，若 =y 卡死且供
+给族又积 5+ 堵则评估中间路线 B（保内核换 iPhone donor 21H16）。
+r77 崩点全链符号化与 once 毒化机制已存档（§8 r77 行）。**r76 已
+刷已判（2026-10-29 凌晨）：fixup #30 =
 `_WGMainScreenScale` block invoke 供给 2.0 替代断言
 （`.37,2117fac,ffc300d1f44f01a9fd7b02a9fd830091,
 0010601ee8cf17b00019803dc0035fd6` = 入口 4 指令覆盖
@@ -533,4 +568,4 @@ set_position` NaN 清洗路径强制；用户执行刷写）
 | r74 | `b0f2f656` | **分支①成立：#27 实锤生效**（内核 ce34e9ae 代；窗 344e72e5 325/509 uptime=650s）：workspace 门 0 出现 + applied 22→23；**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position contains NaN'（WGShortLookStyleButton）×~296——SB 首次死在真实视图构造层**（NaN = displayless 0 scale/bounds 几何；屏面 2:30 进度条出现但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89（减半）；回归六项全绿 + sig11 0 + noidle；抛点 = `CA::Layer::set_position`；**决策规则判定 = 有进展，不触发换内核**；r75 = #28 | 刷写+判读+出件 10-28 |
 | r75 | `23868de1` | **分支①精确成立：#28 实锤生效**（窗 d361a0c3 250/509 uptime=501s）：position NaN 0 出现 + applied 23→24；**换墙 = 孪生 `CALayer bounds contains NaN [0 0; nan nan]` ×111**（set_bounds +0xbc，与 set_position 完全同构）；PB ×98；回归六项全绿 + sig11 0；屏面 = 1:54 进度条出现但冻结（布局仍死在 bounds）；**决策规则 = 有进展**；r76 = #29 同构定点 | 刷写+判读+出件 10-29 |
 | r76 | `2bdd272a` | **分支①再命中：#29 实锤生效**（窗 acd75917 271/509 uptime=544s）：bounds NaN 0 出现 + applied 24→25；**换墙 = 'Failed to initialized main screen scale!' ×136**（`____WGMainScreenScale_block_invoke` .37/0x2024c7fac：mainScreen=nil→scale 0→断言；**性质换挡 = 供给缺失**）；PB ×133；回归六项全绿 + sig11 0；屏面 = 1:24 进度条（提前 30s）仍冻结；**决策规则 = 有进展（三连单调后移）**；r77 = #30 供给 2.0 | 刷写+判读+出件 10-29 |
-| r77 | `93854822` | **fixup #30 出件**：`_WGMainScreenScale` block invoke 入口 4 指令覆盖 = `fmov d0,#2.0; str d0,[once 槽 0x231ec4030]; ret`（.37,2117fac，expected 实读核验，adrp 回验精确，零入边）——供给替代断言（fmov#2.0 = fixup16b 先例）；内核不变 ce34e9ae 代；ESP 四样过（30 条对拍零缺失）；判读预注册 = §7.2（scale 断言 0 出现 + applied 25→26 = 生效；屏面观察点 = 进度条走动） | 出件待刷 10-29 |
+| r77 | `93854822` | **四连击达成：#30 实锤生效**（窗 078a8227 208/509 uptime=417s）：scale 断言 0 出现 + applied 25→26；墙链五连单调后移全景（nil-set→workspace→position→bounds→scale 全灭）；**PB CRASH 133→8 暴跌**；**新墙 = SB sig11 ×172 = once 域毒化果**（WGCarouselListViewController _updateCarouselEffect 读 `___sharedInstance.onceToken+0x8` = 0x4000…0018 毒化标记；全链 = rootFolderDidChange→avocado widget 列表装载，SB 最深抵达）；果非因 → 本轮不出 fixup，**战略转 =y**（见 §1） | 刷写+判读+战略转段 10-29 |
