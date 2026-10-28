@@ -139,29 +139,29 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r74 已出件待刷（2026-10-28 晚）**：payload
-`b0f2f656`（内核不变 ce34e9ae 代）= fixup #27 = SBMainWorkspace
-`_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill
-（`cbz→nop` 返回 nil）。**r73 已刷已判**：预注册分支①成立 = #26
-实锤生效（applied 21→22 + NSPlaceholderSet 断言 0 出现，r70–r72
-三代原墙关账）；换墙 = SB sig6 ×266 `'you can't call this before
-[SBMainWorkspace start]'`。**r74 RE 修正（同日二判）**：r73 初版
-"raiser 在缓存外 SpringBoard.app"**作废**——根因 = 扫描器 add 掩
-码 bug（`(w2 & 0x7F800000) == 0x91000000` 恒假，正确 =
-`0xFF800000`；§4.4 r57 同款坑三犯，当天传染全部扫描）；修正后
-raiser 钉死 = fw 内 `+[SBMainWorkspace
-_sharedInstanceWithNilCheckPolicy:]`（reason CFString 唯一 xref =
-+0xc8；policy==1 实例槽 0x1f56cf6a0 nil → SBWorkspace.m:1719 断言
-路径 → sig6）；#27 = 定点 .25/0x1910630（expected
-`c85243f9c80000b4` 实读核验，cbz 零入边）→ `c85243f91f2003d5`。
-**方法学新铁律（STATE §4.9）**：零引用结论必须先过阳性对照（r74
-用 BaseBoard NSParameterAssert 格式串一击证伪工具箱）；正面
-disasm 已知抛点函数是终审手段。**刷写卡 = 只刷 recovery_a**（sha
-门 `b0f2f6560525b8993…0945a`；跑 8–15 分硬断电）；判读预注册 =
-STATE §7.2（workspace 门 0 出现 + applied 22→23 = 生效，看
-nil-workspace 下游或推进；PB ③支路 ×164 基线；回归六项 + sig11
-0 + noidle）。**取证双铁律照旧**：header 分代 + re-tools
-read_run（fixup-aware）。工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r75 已出件待刷（2026-10-28 深夜）**：payload
+`23868de1`（内核不变 ce34e9ae 代）= fixup #28 = `CA::Layer::
+set_position` NaN 抛点强制走 Apple 自带清洗路径
+（`.03,26850c4,40090034,4a000014`，audit-exempt `cbz w0`→`b`：log +
+NaN→0 fcsel + w2=0 递归重设不抛；expected 实读核验，零入边）。
+**r74 已刷已判：分支①成立 = #27 实锤生效**（窗 344e72e5 325/509
+uptime=650s，对拍 ✓）：workspace 门 0 出现 + applied 22→23；
+**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position
+contains NaN'（WGShortLookStyleButton）×~296 = SB 首次死在真实视
+图构造层**（NaN = displayless 0 scale/bounds；屏面 2:30 进度条出现
+但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89 减
+半；回归六项全绿 + sig11 0 + noidle；X5 探针升级出活值。
+**决策规则判定 = 有进展**（墙链单调后移：生命周期门 → 渲染几何；
+换内核讨论不触发，规则见 memory
+kernel-donor-switch-decision-rule：连续两轮原地踏步才触发，触发后
+先归因内核侧/用户态侧，中间路线 = 保内核换 iPhone donor 21H16）。
+**刷写卡 = 只刷 recovery_a**（sha 门
+`23868de161164db35…43a6a461`；跑 8–15 分硬断电；**屏面观察点 =
+进度条是否走动**）；判读预注册 = STATE §7.2（NaN 0 出现 +
+applied 23→24 = 生效，看下一渲染几何墙或 wallpaper/图标层推进；
+PB ×89 基线；回归六项 + sig11 0 + noidle）。**xref 纪律更新**：
+修正掩码 0xFF800000 + 零引用先过阳性对照（§4.9）。工作单 =
+`docs/STATE.md` §7）
 
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
