@@ -583,3 +583,35 @@ RE（素材已在案）；③**未命中** = Busy 仍在 → standin 未触发
 （primary/bootMapping 条件或 patch 时序），回读
 wait-standin=0 判接线。刷写纪律照旧（设备现态三件套核对 +
 recovery_a=sde27 读回对拍）。
+
+**r78a 判读（2026-10-29 会话二）**：已刷已读（窗 267/509 t=537s 无回卷）。
+**分支③未命中，根因在构建链不在设计**：`update_submodules()`
+（scripts/unixnu/feeds.py:217）在 kernel 步起步跑 `git submodule
+update`，把 GopFramebuffer checkout 回主仓 gitlink（33e941a），同会话
+submodule commit 477fc19 被甩（reflog 实证：commit 02:51:59 →
+checkout 02:52:08）→ r78 内核 = **新探针（wait-standin 行在）+ 旧组件
+（无 standin）**。窗证据：wait-standin 全程 0；sel6 Busy 族原样
+（新增 (4,0x80000001)→0，s6# 环 N→a）；applied 惰性涨 0→25（r77=26
+同量级，引擎健康）；**C0 风暴消失（r69 25236 calls→本轮 77）**记档不
+下结论；屏面 logo 1:04 / 进度条 1:25 冻结（早于 r76 1:54 与 r77
+1:30）。**修正**：submodule checkout 477fc19 + 主仓 gitlink bump 同
+commit（新规矩：改组件必须 submodule commit + 主仓 `git add <模块路
+径>` 同轮完成，否则构建静默回退）。r78b 重建中（内核重链 + payload
+三 flag）。
+
+**r78b 判读（2026-10-29 会话二续）**：已刷已读（窗 337/509 t=678s，sha
+4d9cd833 ✓）。**分支③再未命中（wait-standin 全程 0、Busy 族原样），
+但本轮把静态疑点全部排除**：①构建链（90fef580=e4c01b0 组件，standin
+符号与 installer 序列都在内核）；②vtable 槽位——用 LEAF 占位锚点解出
+编译后 kext vtable（opaque211/245/246/306/307/338/345 + kickSwapQueue
+落槽 290，槽差逐一精确），**slot176 = 0x578d998 = donor Apple wait 尾
+模式吻合 = 零漂移**；③installer 全序列在 start() 内联体（IOMalloc
+0x1000+memcpy+`[copy+0x580]`=orig+`adr` 单指令写 standin（**adr ±1MB
+单指令，adrp 扫描假阴性——工具教训入档**）+vptr store）；④primary=
+true 实证（vsync hz=120 过 startVsync 的 `!primary||!bootMapping`
+门）；applied=26 同 r77 量级。**嫌疑收敛为单点：ext_wait 的 owner
+（`[uc+0xd8]`）可能不是被 patch 的 display 实例**。下轮探针 =
+wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
+`native_legacy_object`（及该 vptr 是否=copy 表）。屏面 logo 1:04/进度
+条 1:20 冻结。判读分支 ③ 的第三种形态：**修法代码全对而 wait 调用
+不经过被 patch 的 vptr**。
