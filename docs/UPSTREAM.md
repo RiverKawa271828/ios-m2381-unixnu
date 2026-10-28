@@ -14,7 +14,7 @@
 | sheng 参照（平板，**schema v2 参考设备**） | https://github.com/UniXNU/UniXNU-sheng | `reference/unixnu-sheng` | `d76556b` |
 | sheng 固件 | https://github.com/UniXNU/uefi-sheng | `reference/uefi-sheng` | `0eb4514` |
 | nx729j 参照（静态绑定先例） | https://github.com/2713385115/UniXNU-nx729j | `reference/UniXNU-nx729j` | 保留 |
-| 本设备 Mu fork（m2381Pkg 落点） | https://github.com/RiverKawa271828/Mu-Silicium | `reference/uefi-m2381-nura` | 保留 |
+| 本设备 Mu fork（已封存） | https://github.com/RiverKawa271828/Mu-Silicium | 本地克隆已删（2026-10-29，继任 = `../uefi-m2381` 新仓） | GitHub 留 meizu20-mars-port 史料 |
 
 - **分支模型（2026-10-23 起）**：`m2381` = `upstream/main` + 工作区提交。
   由旧的无祖先孤儿分支 `git rebase --onto upstream/main --root` 重建（备份：
