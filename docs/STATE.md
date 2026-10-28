@@ -331,19 +331,31 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
    `flash recovery_a out/m2381/payload-r71-89e74a92.img` → reboot。
    **跑 8–15 分硬断电**（noidle 生效后不再 139s 停机，SB 会一直
    sig6 循环刷满环，勿超 17 分回卷线）。
-2. **r71 判读工作单**：reader 三连（对拍 `89e74a92…`，sde27，
-   fetchchunk）→ header 分代 → 主菜：
-   ①**W1 `SS b<main> <候选…>` 行**：已知终结链地址（libc++abi/
-   objc_terminate）之上的新帧 = 抛点路径；`b<main>` = SB 主二进制
-   装载基，主窗候选直接给 SB 内调用点。离线：cache 窗候选去滑
-   （CRASH 行 +slide）走 re-tools；SB 窗候选按 `b<main>` 偏移。
-   ②**X5 `B- M- R<code>`**：R1=全窗 gate 拒、R3=半窗过（h1=半窗
-   在用，dirty 值只有前半）、R4=半窗读败——定性 r70 的 rc[0] 恒
-   败是 gate 形状还是读失败。③noidle 生效判据 = 窗 uptime 无
-   139s 停止写 + PMRD 无 `sleep timer expired` + `idle timer not
-   set (noidle=1)` DLOG。④若 SB 换崩点/新墙 → 照常 CRASH 行
-   分析；若 SS 行全空且 REASON 仍在 → 回退备选 = 离线 RE SB
-   二进制 setWithObjects: boot 路径。
+2. **r71 判读工作单（预注册，下会话开场即照抄执行）**：
+   开场三连 = `acm-reader.py probe`（应答则 reader 活）→
+   `acm-reader.py fetchchunk /tmp/r71-log.bin`（sha 双端对拍）→
+   `read-m2381-ufs-log.py /tmp/r71-log.bin --all > /tmp/r71-slots.txt`
+   （**header 分代，残影不入证据**；窗存档 out/m2381/reader-r71-*.bin/parsed）。
+   然后**内核指纹先验代**（本代必须有 `SS b` 行与 `R<码>` 行 =
+   r71 内核格式，缺 = 刷的还是旧 payload）。预注册分支：
+   ①**W1 `SS b<main> <候选…>` 有终结链之上的新帧** → cache 候选
+   去滑（CRASH 行 +slide）走 re-tools symbolicate；SB 候选按
+   `b<main>` 偏移 → 钉死 NSPlaceholderSet nil 调用者 → r72 =
+   fixup/stub 该点（bring-up-only 语义补）。
+   ②**SS 行只有 `b<main>` 无候选** → 扫描窗未覆盖或基址=0
+   （image0 读败）→ 备选 = 离线 RE SB 二进制（SystemOS 独立
+   Mach-O）`setWithObjects:`/`initWithObjects:` boot 路径。
+   ③**X5 `B- M- R1`（全窗拒仍在）** → dirty 区形状问题实锤 →
+   下轮加 map 区域 dump 诊断；R3/h1 → 半窗数据可用，恢复槽监控；
+   R4 → 读失败路径，查 copyin。
+   ④**noidle 判据** = 窗 uptime 远超 139s 仍连续写 + PMRD 无
+   `sleep timer expired`（有 `idle timer not set (noidle=1)` 更佳）
+   → B 关账；若仍 ~139s 停 → noidle 未生效（查 ESP args 实拍）或
+   preventer-drop 支路（IOPMrootDomain.cpp:3303）走通 → 下轮补查。
+   ⑤SB 换崩点/新墙 → 照常 CRASH 行 + REASON 分析；sig6 消失 =
+   意外治愈 → 直转 display 机制三件套。
+   回归六项照旧（applied/AKS/vsync/procs-spawn/chronod sig5/
+   SWAP）+ 跑窗纪律 8–15 分硬断电。
 3. **出件配方红线不变**：payload 三 flag（--trust-cache
    original-trust.bundle + --data-ramdisk scratch-data.img）+
    --unique-chip-id 3645ad55d47e77c1（**勿带 --skip-setup，Linux
