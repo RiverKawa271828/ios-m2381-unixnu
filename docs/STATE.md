@@ -5,6 +5,14 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
+> **2026-10-29 结构变更：设备仓拆出独立仓**
+> [UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)（本地
+> `../UniXNU-m2381`；`git subtree split` 保 93 提交全史，独立实跑
+> check-m2381 = 4 ok 0 fail）。本文与历史档中所有
+> `devices/m2381/unixnu-m2381/…` 路径现指该仓对应路径；构建/取证命令
+> 改为 `-D ../UniXNU-m2381` 与 `../UniXNU-m2381/scripts/…`；CI dispatch
+> 改指新仓（见 `docs/CI.md`）。
+
 ## 1. 一句话现状（**r77 已刷已判（2026-10-29 凌晨）+ 战略转 =y**）：
 
 **四连击达成 = #30 实锤生效**（窗 078a8227 208/509 uptime=417s，
