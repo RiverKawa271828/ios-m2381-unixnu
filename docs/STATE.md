@@ -487,85 +487,55 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r75 已出件待刷（2026-10-28 深夜）**：payload
-`23868de1`（内核不变 = ce34e9ae 代）；fixup #28 = `CA::Layer::
-set_position` NaN 清洗路径强制；用户执行刷写）
+## 7. 下一步（**r78 起 = =y main display 注册链攻坚（2026-10-29 用户拍板"直接开修"）**）：
 
-1. **刷写卡（r75 = 只刷 recovery_a）**：iOS 链现役未被覆盖
-   （boot_b=UEFI `289614ba` + recovery_a=r74 `b0f2f656` +
-   userdata=`fd43ee70`）→ fastboot（电源+音量减）→
-   `getvar current-slot` = b → sha 门
-   `23868de161164db35c0a2b8201c3c8650155545ab19742de7f389b3943a6a461` →
-   `flash recovery_a out/m2381/payload-r75-23868de1.img` → reboot。
-   **跑 8–15 分硬断电**（勿超 17 分回卷线）；reader 选单照旧。
-   **屏面观察点 = 进度条是否开始走动**（r74 = 2:30 出现但冻结）。
-2. **r75 判读工作单（预注册）**：开场三连照旧 + header 分代。分支：
-   ①**'CALayer position contains NaN' 0 出现 + applied 23→24** =
-   #28 生效（sanitize 路径接管）；预期候选：布局继续 → 下一渲染
-   几何墙（bounds NaN 族 / 其它 CA 检查点）、或 SB 推进到
-   wallpaper/图标层（**若进度条走动 = 里程碑级信号**）；若清洗后
-   渲染异常（花屏/冻结/新 REASON）细读定点。
-   ②原点保留 → 查 applied（#28 页不执行 = 链路问题；执行而墙在 =
-   raise 另有源（set_bounds 族？）→ REASON 细读）。
-   ③PB 'configuration' 照旧记录（r74 基线 ×89）。
-   ④回归六项 + sig11 CRASH 仍 0 + noidle 维持。
-3. **r74 判读存档**：§1（#27 生效 + CALayer NaN 墙 + 抛点/清洗路
-   径全链 + 回归六项 + 决策规则判定 = 有进展）；换内核决策规则 =
-   memory `kernel-donor-switch-decision-rule`（连续两轮原地踏步才
-   触发；触发后先归因内核侧/用户态侧；中间路线 = 保内核换 iPhone
-   donor 21H16）。
-4. **出件配方红线不变**：payload 三 flag + --unique-chip-id
-   3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
-   .../package/*.c（tree kits/sheng = symlink 同一实体），root
-   package 镜像同步；fixup 追加 = profiles/os/ipados-17.7.11-21H461/
-   profile.toml text_fixups（expected 字节必须以 cache-extract 文
-   件实读核验，勿手算）；判读纪律 = header 分代 + re-tools
-   read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk +
-   **xref 扫描必须用修正掩码（add 判定 0xFF800000，§4.9）+ 零引用
-   结论先过阳性对照**。
-5. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；同管
-   线可定点）；chronod sig5（r57 独立主题，r74 ~427 行）；
-   BootSlotReset DXE；XS/fileset-KC 重绑定器（换 iPhone donor 中间
-   路线的备件）；arm64e 专项；GPU/触摸/UFS 提速主题化。
+**背景**：r77 四连击达成（墙链五连单调后移，nil-set→workspace→
+position→bounds→scale 全灭，applied 26）；新墙 = once 域毒化果
+（SB 已深达 avocado widget 列表装载）；战略拍板 = fixup 降支路、
+=y 转主攻。
 
-## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节；r62 起 = 体系路线）
+**开工第一动作（下会话开场三件，全离线零刷机）**：
+1. **读机制线存量数据**：r52–r77 窗内 `[mfb clients]`/IOMFB 行、
+   mainConfiguration/mainIdentity 断言族历史（r52 的
+   "C0 sel6 e00002d5 失败簇" = IOMFB_FDR_Loader 真实消费者；
+   r62 后 vsync 120 start+refresh 已发布、AKS 已活——但
+   mainConfiguration 仍 nil = 注册链仍未通）。
+2. **sheng 逐环对照**：sheng 注册链通的每一环都有对照物——
+   `drivers/GopFramebuffer` 组件、设备仓
+   `scripts/build-native-legacy-display.py` 流水线（358 vtable +
+   bindings 绝对符号 + probe/GOPPresenter/late.a）、
+   `package/LegacyDisplayDPUSubstitute.cpp`（weak dpu 钩子**零替
+   身**现状）、`package/LegacyDisplayProbe.cpp`（fork 五外探针已
+   拔除）——对照 sheng 原版找我们裁掉了什么、缺了什么组件。
+3. **RE 断点**：main display 注册链数据流 = =y GOPPresenter 推帧
+   → IOMFB 客户端层 mainConfiguration/isMainDisplay——定位断在
+   哪一环（probe 车队/sheng-autoreset/KeyStoreProbe 编队形态参考
+   asteroids 模板）。
 
-| 轮 | payload | 定谳 | 详情 |
-|---|---|---|---|
-| r43 | `764539c9` | policy panic 过墙（kern_exec.c:8043 墙清除） | history §0.24 |
-| r44 | `a51aed16` | 崩溃簇符号化建成；FBS init ret + liveactivitiesd 禁用 | history §0.26 |
-| r45 | `d3c11770` | 两修复实机生效；推进到第二层显示断言（BKSDisplayServices） | history §0.27 |
-| r46 | `c3a24827` | mainScreen nil（fixup 7）；legacy-display 车道评估 | history §0.29 |
-| r47 | `821ab7c0` | 背光服务链（fixup 8a/8b）；ABI 头入仓、=y 配方映射 | history §0.30 |
-| r48 | `036e712f` | workspace 转换请求层（fixup 9）；CFString 解码方法 | history §0.31 |
-| r49 | — | 首试作废（旧载荷被刷，路径歧义）；二试：fixup 9 未执行，惰性 oracle 确立，fixup 10 三连修 | history §0.32/0.33 |
-| r50 | `4e69f450` | oracle 全排除（五站点全灭，抛者更深）；定位收口，转上游同步+调研 | history §0.34 |
-| r51 | `22f8f0bd` | 上游同步 f85b5a6 + 调研收口（=y 是唯一机制解）+ **=y 车道施工出件**（内核 3ab2ace4，七轮修四墙） | PLAN-display-lane.md |
-| r52 | `22f8f0bd` | **=y 一级实机全过**（PE handoff+真显示配置+swap+屏幕自稳）；SB 崩溃循环定谳 = BannerKit displayConfiguration 断言（深抛者钉死+验活）；设备回 nura-min | history §0.35 |
-| r53 | `04f4d803` | **fixup 11 生效**（applied 5→6，BannerKit ret）；SB 推进到 BLSHBacklightHost brk 新墙（sig5）；W1 swap 异常→撕裂 logo 新观察 | history §0.36 |
-| r54 | `1ef5eb63`（裸件） | fixup 12（BLSHBacklightHost 入口返 nil）；判读被 reader 调试顺延 | history §0.37 |
-| r55a–c | `fb2c5dd1`→`69538b41` | reader 三连翻车定谳：LFN 毁（短名覆盖 toml）→ entry 缺 dtb 秒退 → ENABLE_SECUREBOOT=1 拒签（boot_b 换 `289614ba`）；payload.py 插桩转正 | history §0.37 |
-| r55d | `087f9ca3` | 保命 cmdline 定谳：内核每必起（企鹅/UFS 全枚举），死因 = **initramfs cpio 手写 12 字段错位**（damaged header 实拍）→ root panic → 无 USB 同根因；LoadFile2 投递链实证是通的 | history §0.38/0.39 |
-| r55e | `b060b512` | **取证 reader 通道立通**（1d6b:0104 + magic=SHLOG001 + 32MiB 窗在位）；reader 内读回对拍闭环；**首轮 iOS 判读**：applied=7 + W1–W3 真 swap（t=243–245s）+ 173 进程全生态，换墙 = displayIdentity 断言（SB SIGABRT ×552 同死点，符号化定谳 FBDisplayManager.mainIdentity=nil） | history §0.39/0.40/0.41 |
-| r56 | `db3a7392` | **废轮**：出件漏 `--data-ramdisk`/`--trust-cache` → ESP 无 Data seed/initrd 行/trustcache → Data mount ENOENT panic（kern_exec.c:8196，t≈1s），554s panic-hold 诊断页，applied=0，fixup 9 未测到；ADT PackedRAMDisk 映射依赖 seed flag → 必须规范重建 | 本会话判读 |
-| r57 | `1e7ea60b` | **displayIdentity 墙实锤破**：applied=8（fixup 9 真执行）+ W1–W3 swap 提前到 t≈85s + 178 procs/907 spawn + **面板画出 boot progress 菊花**；换墙 = XBApplicationController.m:120 断言（'invalid mainDisplay configuration'，SB ×560 同死点 t=66s 起，符号化定谳 isMainDisplay==0 双分支跳 handleFailureInMethod）；读回对拍补欠全绿 | 本会话判读 |
-| r58 | `d27c4f36` | **XB 断言墙实锤破**（applied=11 + SB sig6=0）+ SB 进应用装载；换墙 = UIScreen trait SIGSEGV ×588（`_mainScreenThreadSafeTraitCollection+0x2c` 解引用 x19=0xf00 垃圾，12 帧验活全过）；读回对拍即时闭环 | 本会话判读 |
-| r59 | `a9144765` | **UIScreen SIGSEGV 墙实锤封死**（applied=13 + sig11=0）；换墙 = traitCollection nil 断言 ×573（`__UIGetCurrentFallbackTraitCollection` line 117；REASON 串→CFString→xref 钉死抛点；SBWallpaperController/封面层链验活全过）；读回对拍即时闭环 | 本会话判读 |
-| r60 | `edabbafd` | **traitCollection nil 断言墙破**（applied=14 + 'returned nil' 零出现）；换墙 = 同函数块 A scale≤0 报 "unspecified values" ×758（bg TC 故意全 unspecified，scale=0）；读回对拍即时闭环 | 本会话判读 |
-| r61 | `169f160c` | fixup 15a/15b 生效（applied=70 + 'unspecified' 断言零出现，nil/scale 块全死）；**换墙 = SIGSEGV 垃圾指针族 ×684**（bgTC retain 快路径 FAR=0xf1，与 r58 0xf00 同族——UIKit 缓存全局垃圾族定性）；**用户拍板：停逐发 fixup，下会话转体系路线（上游/fork 调研优先）** | 本会话判读 |
-| r62 | `0854ea5e` | **调研定谳 + 体系方案落地 + 判读定谳**：四过墙板模板（AKS 替身/vsync/client=0）三差距全补；已刷（10-28 fastboot 实录 OKAY）+ 读回对拍 ✓（sde27）+ 判读（10-28）：**体系三件实锤生效**（AKS opens 3→18 calls 6→49 / vsync hz=120 start+refresh / 探针客户端消失，C0=IOMFB_FDR_Loader 实为真实消费者——r52 嫌疑修正再修正）；applied=67 未跌破 14=环境未愈合；旧墙链全灭（r57–r60 五墙封死确认）；**换墙 = SB sig11 ×520 垃圾控制流**（unslid PC 0x1822F5FAC=cstring 区野跳，0xf00/0xf1 族升级）；r63 = UIKit 侧候选（全指定 TC / 缓存全局审计） | 出件+刷写 10-28，判读 10-28 |
-| r63 | `04eb0533` | **全指定 fallback TC + 判读定谳**：RE 定谳 bgTC 病理链（懒缓存 getter → _defaultTraitCollection → mainScreen + 栈块 setScale/setGamut）；fixup16a（cbz→nop）+ fixup16b（bl $scale→fmov d0,#2.0），25 条；**已刷已验已判（10-28，sde27 对拍 ✓）**：fixup16 真执行（applied 69）+ AKS 爆发（opens 123/calls 1121）+ SWAP 泵大（8222 calls）；**垃圾族未愈——死点漂回 r61 有效码点（0x1800F5FAC，x0=0xf1），链钉死 = bgTC 缓存槽被写 0xf1，病根在槽写路径**；r64 = 缓存全局审计转正 | 出件+刷写+判读 10-28 |
-| r64 | `54b70ad7` | **缓存全局审计轮**：静态定谳四病灶槽文件态全 0（懒缓存 nil 静置）= 毒在运行时写路径；UIKitCacheProbe 随件；判读 = 毒在 SB 首扫前就位 + 探针 OOB 停摆 bug（slide 双加越界，已修） | 出件+判读 10-28 |
-| r65 | `d3d4e649` | 废轮：探针锁序 bug panic 实拍（递归 task_lock：capture 先 task_lock 再 get_task_map_reference，已修 = 去显式 task_lock） | 10-28 |
-| r66 | `cec04b36` | 确定性早期挂死定谳 = 跨 map 失败读撞 AP 启动窗口（CPU1 最后中断入口 ArmCpu::prepareGic+0x19c）；槽 3+ "推进" = 旧会话残影；r67 A/B 件（probe 1→0 免重编） | 10-28 |
-| r67 | `ce469e83` | A/B 过 = 探针罪责实锤（probe 0 后 logo+进度条回来，墙原样 sig11 ×400 @0x1800F5FAC）；r68 出件（探针 v3 非侵入化三修） | 10-28 |
-| r68 | `3c177c54` | v3 存活 + 病灶槽 165 轮全程干净 vs SB 465 崩同点 → **r63 槽中毒推断被推翻（毒不在 __DATA_DIRTY）**；反汇编定位 __DATA_CONST 三槽；r69 出件（探针 v4 三窗钉定） | 10-28 |
-| r69 | `2685ddf2` | 活读判读：三链槽活值 = 文件绑定值+slide 逐位吻合（预注册"全干净+SB 照崩"分支成立）→ 构造瞬态/写路径上游；sig11 符号化终审进 r70；re-tools 升级 read_run；r70 出件（#21 修正 + 寄存器捕获 + W0） | 10-28 |
-| r70 | `9b3a26f0` | **#21 修正实锤生效：sig11 @0x1800F5FAC 本代 0 出现（三分支①成立，r63→r69 垃圾族关账）**；换墙 = SB sig6 `NSPlaceholderSet initWithObjects:` nil ×33 同点（调用点被 unwind 撕）；**halt = 非崩溃：空闲睡眠路径（139s timer expired→SLEEP_STATE）撞 ArmCpu::haltCPU diagnosePower 诊断 panic**；W0 dirty 窗全程未 fresh（dirty 读恒败，遗留）；r71 = nil 定位 + 睡眠处置 | 刷写+判读 10-28 |
-| r71 | `89e74a92` | **noidle=1 实锤生效关账**（607s 连续写零 halt + PMRD 无 sleep timer expired，用户 10 分钟无停机实证）+ dirty 窗 R0 全窗读通 + **sig11=0 保持治愈** + 回归六项全绿（applied 21/AKS 1139/vsync/SWAP/spawn 1031）；SB sig6 ×347 原点原 REASON（dispatch_once_callout 块内）+ **PosterBoard sig6 ×167 新客**（'configuration' 断言，外层 dispatch_lane_serial_drain）；SS 扫描 266 行候选全 = 终结链帧+`<unmapped>` 数据指针 → ≤9 预算病灶 tear zone 未及 → r72 扫描器三改 | 刷写+判读 10-28 |
-| r72 | `e5ae4ca9` | **扫描器三改 + 体系最大突破：nil 调用者指令级钉死**（内核 4b6bfc38）：bt 排除+真去重+bl 门把 tear zone 第一回打捞上岸 → `-[SBIconController initWithMainDisplayWindowScene:…]→widgetMetricsServer→lockScreenManager→+[SBLockScreenManager _sharedInstanceCreateIfNeeded:] dispatch_once 块`（sharedApplication 非空走正常构造，管理器 init 内 NSPlaceholderSet nil 抛出；断言孪生 SBLockScreenManager.m:362 零捕获）；展开穿 +initialize→PendingInitialize FatalCorruptHashTables 双抛；PB 同链独立墙（'configuration'）；回归六项全绿、sig11 CRASH 0（PROC 聚合行 sig11 非墙）；坑沉淀：手工去滑须 python（手算错进位差点误判）+ bl 门候选需 disasm 复核（LSDA 可撞编码） | 刷写+判读 10-28 |
-| r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**；回归六项全绿 + sig11=0；同日二判修正初版"raiser 在缓存外"（扫描器 add 掩码 bug，§4.9）→ raiser 实为 fw 内 SBMainWorkspace（见 r74 行） | 刷写+判读+RE 修正 10-28 |
-| r74 | `b0f2f656` | **分支①成立：#27 实锤生效**（内核 ce34e9ae 代；窗 344e72e5 325/509 uptime=650s）：workspace 门 0 出现 + applied 22→23；**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position contains NaN'（WGShortLookStyleButton）×~296——SB 首次死在真实视图构造层**（NaN = displayless 0 scale/bounds 几何；屏面 2:30 进度条出现但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89（减半）；回归六项全绿 + sig11 0 + noidle；抛点 = `CA::Layer::set_position`；**决策规则判定 = 有进展，不触发换内核**；r75 = #28 | 刷写+判读+出件 10-28 |
-| r75 | `23868de1` | **分支①精确成立：#28 实锤生效**（窗 d361a0c3 250/509 uptime=501s）：position NaN 0 出现 + applied 23→24；**换墙 = 孪生 `CALayer bounds contains NaN [0 0; nan nan]` ×111**（set_bounds +0xbc，与 set_position 完全同构）；PB ×98；回归六项全绿 + sig11 0；屏面 = 1:54 进度条出现但冻结（布局仍死在 bounds）；**决策规则 = 有进展**；r76 = #29 同构定点 | 刷写+判读+出件 10-29 |
-| r76 | `2bdd272a` | **分支①再命中：#29 实锤生效**（窗 acd75917 271/509 uptime=544s）：bounds NaN 0 出现 + applied 24→25；**换墙 = 'Failed to initialized main screen scale!' ×136**（`____WGMainScreenScale_block_invoke` .37/0x2024c7fac：mainScreen=nil→scale 0→断言；**性质换挡 = 供给缺失**）；PB ×133；回归六项全绿 + sig11 0；屏面 = 1:24 进度条（提前 30s）仍冻结；**决策规则 = 有进展（三连单调后移）**；r77 = #30 供给 2.0 | 刷写+判读+出件 10-29 |
-| r77 | `93854822` | **四连击达成：#30 实锤生效**（窗 078a8227 208/509 uptime=417s）：scale 断言 0 出现 + applied 25→26；墙链五连单调后移全景（nil-set→workspace→position→bounds→scale 全灭）；**PB CRASH 133→8 暴跌**；**新墙 = SB sig11 ×172 = once 域毒化果**（WGCarouselListViewController _updateCarouselEffect 读 `___sharedInstance.onceToken+0x8` = 0x4000…0018 毒化标记；全链 = rootFolderDidChange→avocado widget 列表装载，SB 最深抵达）；果非因 → 本轮不出 fixup，**战略转 =y**（见 §1） | 刷写+判读+战略转段 10-29 |
+**断点分类与修法映射（侦察即修，不单开侦察会话）**：
+- 参数/配置级 → 直接修（如 dpu 钩子 weak 零替身 → 按需供替身）；
+- 组件缺失级 → 按 asteroids 模板搬（AppleKeyStoreState 型组件
+  替身先例）；
+- 深水区 → RE 后定点，改内核要重编（内核步 Linux 可出，改
+  defconfig 必须重跑 defconfig 命令）。
+
+**里程碑（可观测）**：main display 注册链接通 = 探针/日志见
+`isMainDisplay=1` / `mainConfiguration 非 nil`（IOMFB 客户端层）；
+达成后供给族墙（scale/geometry/displayConfiguration + once 域毒
+化）预期成片消失 → SB 推进 wallpaper/图标层。
+
+**止损线（已入 memory kernel-donor-switch-decision-rule）**：=y
+攻坚 2–3 会话；若卡死且供给族又积 5+ 堵 → 评估中间路线 B（保内
+核换 iPhone donor 21H16，fileset-KC 重绑定器已破译待实现）。
+
+**支路纪律**：fixup 降支路——判读时若撞供给族断言（可十分钟定
+点）顺手修，不再整轮追；once 域毒化类（果）不追。
+
+**出件配方红线不变**：payload 三 flag + --unique-chip-id
+3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
+.../package/*.c（tree kits/sheng = symlink 同一实体），root
+package 镜像同步；fixup 追加 = profiles/os/ipados-17.7.11-21H461/
+profile.toml text_fixups（expected 字节 cache-extract 实读核验）；
+判读纪律 = header 分代 + re-tools read_run（fixup-aware）+
+recovery_a=sde27 + fetchchunk + 修正掩码 0xFF800000 + 零引用先过
+阳性对照（§4.9）。
