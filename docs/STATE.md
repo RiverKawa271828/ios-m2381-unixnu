@@ -487,55 +487,47 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r78 起 = =y main display 注册链攻坚（2026-10-29 用户拍板"直接开修"）**）：
+## 7. 下一步（**r78 = =y 攻坚开修（2026-10-29 用户拍板"直接开修"）**：
+**第一刀已钉死 = IOMFB 用户客户端 sel6 失败族（e00002d5）**）
 
-**背景**：r77 四连击达成（墙链五连单调后移，nil-set→workspace→
-position→bounds→scale 全灭，applied 26）；新墙 = once 域毒化果
-（SB 已深达 avocado widget 列表装载）；战略拍板 = fixup 降支路、
-=y 转主攻。
+**为什么是它（案卷在案，不是侦察）**：r52 首录 `[mfb clients] C0
+sel6 e00002d5`；r62 修正确认 C0 = **IOMFB_FDR_Loader pid=75 真实
+消费者**（非自设探针）；探针有参数记录（`sel6 args(0,80000003)
+→ 0 fail` / `args(1,1) → 0 fail` / `args(1,80000000) → 1 call 1
+fail e00002d5`）= **选择子分发表里 sel6 带 0x80000000 参数的调用
+被拒**。vsync（r62 已发 120Hz start+refresh）与 AKS（r62 已活）
+都到位而 mainConfiguration 仍 nil —— sel6 持续失败就是 main
+display 注册链上**有记录的具体断环**。修好它 = IOMFB 客户端层
+FDR 路径通 → mainConfiguration/isMainDisplay 预期接通。
 
-**开工第一动作（下会话开场三件，全离线零刷机）**：
-1. **读机制线存量数据**：r52–r77 窗内 `[mfb clients]`/IOMFB 行、
-   mainConfiguration/mainIdentity 断言族历史（r52 的
-   "C0 sel6 e00002d5 失败簇" = IOMFB_FDR_Loader 真实消费者；
-   r62 后 vsync 120 start+refresh 已发布、AKS 已活——但
-   mainConfiguration 仍 nil = 注册链仍未通）。
-2. **sheng 逐环对照**：sheng 注册链通的每一环都有对照物——
-   `drivers/GopFramebuffer` 组件、设备仓
-   `scripts/build-native-legacy-display.py` 流水线（358 vtable +
-   bindings 绝对符号 + probe/GOPPresenter/late.a）、
-   `package/LegacyDisplayDPUSubstitute.cpp`（weak dpu 钩子**零替
-   身**现状）、`package/LegacyDisplayProbe.cpp`（fork 五外探针已
-   拔除）——对照 sheng 原版找我们裁掉了什么、缺了什么组件。
-3. **RE 断点**：main display 注册链数据流 = =y GOPPresenter 推帧
-   → IOMFB 客户端层 mainConfiguration/isMainDisplay——定位断在
-   哪一环（probe 车队/sheng-autoreset/KeyStoreProbe 编队形态参考
-   asteroids 模板）。
+**开修顺序（下会话，直接动手）**：
+1. **定点 sel6 语义**（半小时级）：窗内 grep `sel6` 全部行拿全参
+   数×返回码矩阵；sheng 源码对照——sheng 的 IOMFB shim 用户客户
+   端选择子表（`drivers/` 内 IOMFB/NativeMetal/DisplayRefresh 相
+   关 + `docs/` gpu.md）逐选择子对齐，找 sel6 对应函数与
+   e00002d5 的返回条件；e00002d5 语义反查（IOKit 返回码表）。
+2. **补实现**：按 sheng 实现搬齐 sel6 分支（参数级直修或组件级
+   补齐；改内核须重编——Linux 出核链现成，改 defconfig 必重跑
+   defconfig 命令）。
+3. **出件 r78 上机**：判读 = ①`[mfb clients]` sel6 失败清零/
+   C0 状态改善 ②mainConfiguration 非 nil / isMainDisplay=1 ③屏
+   面进度条是否走动（供给族下游预期连锁反应）。
 
-**断点分类与修法映射（侦察即修，不单开侦察会话）**：
-- 参数/配置级 → 直接修（如 dpu 钩子 weak 零替身 → 按需供替身）；
-- 组件缺失级 → 按 asteroids 模板搬（AppleKeyStoreState 型组件
-  替身先例）；
-- 深水区 → RE 后定点，改内核要重编（内核步 Linux 可出，改
-  defconfig 必须重跑 defconfig 命令）。
+**里程碑（可观测）**：`isMainDisplay=1` / `mainConfiguration 非
+nil`（IOMFB 客户端层）→ 供给族墙（scale/geometry/displayConfig
++ once 域毒化）预期成片消失 → SB 推进 wallpaper/图标层。
 
-**里程碑（可观测）**：main display 注册链接通 = 探针/日志见
-`isMainDisplay=1` / `mainConfiguration 非 nil`（IOMFB 客户端层）；
-达成后供给族墙（scale/geometry/displayConfiguration + once 域毒
-化）预期成片消失 → SB 推进 wallpaper/图标层。
+**止损线**（memory kernel-donor-switch-decision-rule）：=y 攻坚
+2–3 会话；卡死且供给族又积 5+ 堵 → 评估中间路线 B（保内核换
+iPhone donor 21H16）。**sel6 这刀打完若注册链仍断**，下一刀按
+同法从 `[mfb clients]`/IOMFB 失败族的下一记录点开（数据现成）。
 
-**止损线（已入 memory kernel-donor-switch-decision-rule）**：=y
-攻坚 2–3 会话；若卡死且供给族又积 5+ 堵 → 评估中间路线 B（保内
-核换 iPhone donor 21H16，fileset-KC 重绑定器已破译待实现）。
-
-**支路纪律**：fixup 降支路——判读时若撞供给族断言（可十分钟定
-点）顺手修，不再整轮追；once 域毒化类（果）不追。
+**支路纪律**：fixup 降支路——判读撞供给族断言（十分钟可定点）
+顺手修；once 域毒化类（果）不追。
 
 **出件配方红线不变**：payload 三 flag + --unique-chip-id
 3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
 .../package/*.c（tree kits/sheng = symlink 同一实体），root
-package 镜像同步；fixup 追加 = profiles/os/ipados-17.7.11-21H461/
-profile.toml text_fixups（expected 字节 cache-extract 实读核验）；
-判读纪律 = header 分代 + re-tools read_run（fixup-aware）+
+package 镜像同步；判读纪律 = header 分代 + re-tools read_run +
 recovery_a=sde27 + fetchchunk + 修正掩码 0xFF800000 + 零引用先过
 阳性对照（§4.9）。
