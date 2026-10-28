@@ -5,9 +5,13 @@
 > **[UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)**（本地
 > `../UniXNU-m2381`；`git subtree split` 保 93 提交全史 tip `2f06128c`；
 > keys/*.pem 本地随迁仍不入仓；独立实跑 check-m2381 = 4 ok 0 fail）；
-> ②m2381Pkg 收编 Mu fork = **`../uefi-m2381`**（分支 main；以 out/m2381/uefi
-> 实据树对拍合并，tip `17e3ce0`；GitHub 侧 Mu-Silicium 拟改名 uefi-m2381，
-> 旧链接自动重定向），sync.sh 与 `devices/m2381/` 整体退役；③三仓收拢于
+> ②m2381Pkg 收编新 UEFI 仓 **`../uefi-m2381`**（分支 main；基座 = 上游
+> uefi-sheng `sheng@0eb4514` 完整克隆 + overlay 提交 `5297334`：m2381Pkg/
+> BootShim/Silicon 三处板级改动/Binaries pin→`036ba9f7` mars；**实证来源 =
+> nura 链**——nura 首把 Mu 跑通，unixnu 侧 Mu 树本就产自 nura 树，现役 FV
+> 构建树 = 上游 uefi-sheng 基座 + overlay；旧 RiverKawa271828/Mu-Silicium
+> fork = nura 期档案封存不再使用），sync.sh 与 `devices/m2381/` 整体退役；
+> ③三仓收拢于
 > 工作区根 `/home/ri/work/unixnu-meizu`（老主树路径留 shim 符号链接）。
 > 构建 = 主树 `./unixnu -D ../UniXNU-m2381`（固件加 `--uefi ../uefi-m2381`）；
 > CI dispatch 改指新仓 `device_repository=RiverKawa271828/UniXNU-m2381,
@@ -162,8 +166,8 @@ research/                 IPSW 等本地大件（gitignore；旧 iPhone X IPSW �
 artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore）
 ../UniXNU-m2381/          设备仓（2026-10-29 拆出；porting.toml 移植记录 +
                           records/ 实据 + scripts/re-tools 全套）
-../uefi-m2381/            Mu-Silicium fork 分支 main（m2381Pkg 真相源；
-                          原 reference/uefi-m2381-nura，devices/m2381 退役）
+../uefi-m2381/            UEFI 仓（= 上游 uefi-sheng sheng@0eb4514 + overlay
+                          提交；m2381Pkg 真相源；devices/m2381 已退役）
 ```
 
 ## 7. 下一步（**r77 已刷已判 + 战略转 =y（2026-10-29 凌晨）**）：

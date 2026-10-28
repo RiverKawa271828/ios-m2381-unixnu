@@ -11,11 +11,12 @@
 > check-m2381 = 4 ok 0 fail）。本文与历史档中所有
 > `devices/m2381/unixnu-m2381/…` 路径现指该仓对应路径；构建/取证命令
 > 改为 `-D ../UniXNU-m2381` 与 `../UniXNU-m2381/scripts/…`；CI dispatch
-> 改指新仓（见 `docs/CI.md`）。**同日续**：m2381Pkg 收编 Mu fork =
-> `../uefi-m2381`（分支 main，以 out/m2381/uefi 实据树对拍合并，
-> sync.sh 与 devices/m2381/uefi 退役）；三仓收拢于工作区根
-> `/home/ri/work/unixnu-meizu`（老主树路径留 shim 符号链接）；固件构建
-> = `--uefi ../uefi-m2381`。
+> 改指新仓（见 `docs/CI.md`）。**同日续**：m2381Pkg 收编新 UEFI 仓
+> `../uefi-m2381`（= 上游 uefi-sheng `sheng@0eb4514` 完整克隆 + overlay
+> 提交 `5297334`；实证来源 = nura 链；Binaries pin `036ba9f7` mars；旧
+> Mu-Silicium fork 封存；sync.sh 与 devices/m2381/uefi 退役）；三仓收拢于
+> 工作区根 `/home/ri/work/unixnu-meizu`（老主树路径留 shim 符号链接）；固
+> 件构建 = `--uefi ../uefi-m2381`。
 
 ## 1. 一句话现状（**r77 已刷已判（2026-10-29 凌晨）+ 战略转 =y**）：
 
