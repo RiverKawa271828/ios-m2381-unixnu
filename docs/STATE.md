@@ -305,23 +305,24 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r67 A/B 已出件 `ce469e83` 待刷（2026-10-28）**：r66
-判定 = 确定性早期挂死 + 机制源码实证（跨 map 失败读 × AP 启动窗口）；
-A/B 过 = r68 探针非侵入化；再挂 = 转 ArmCpu/SMP 域）
+## 7. 下一步（**r68 已出件 `3c177c54` 待刷（2026-10-28）**：探针 v3
+非侵入化，三处修复 = map 引用生命周期 / check_protection 预门（失败
+路径永不进入）/ 12s 预热 + 失败熔断；刷后判读主菜 = X5 首病灶事件，
+工作单同 r64 原案）
 
-1. **刷写卡（r67 = 只刷 recovery_a）**：fastboot（电源+音量减）→
-   `getvar current-slot` = b → sha 门 `ce469e837602…e2569c` →
-   `flash recovery_a out/m2381/payload-r67-abtest-ce469e83.img` →
-   reboot → 看 logo：过 = 探针罪责实锤；同点再挂（1-2 分钟黑屏）=
-   探针无罪，转 ArmCpu/SMP 域。
-2. **r67 判读后分支**：
-   (a) 过墙 → **r68 = 探针非侵入化重编**：①vm_map_check_protection
-   预门（region 不满足可读就不发起 read，失败路径永不进入）；②首扫
-   延迟到 t≥12s（AP 启动完成后）；③读失败进程拉黑 100 轮。UKC 主菜
-   在 r68 恢复。
-   (b) 再挂 → 探针无罪：查 sm8550-common ArmCpu GIC 启动顺序
-   （prepareGic/GICR waker/SPI-IPI），对照上游近期 commits 与
-   asteroids/oneplus13t 的 SMP 配置；r68 = 探针继续关、SMP 域手术。
+1. **刷写卡（r68 = 只刷 recovery_a，设备自 r67 刷后状态未变）**：
+   fastboot（电源+音量减）→ `getvar current-slot` = b → sha 门
+   `3c177c547f32…25a4c09` → `flash recovery_a
+   payload-r68-3c177c54.img` → reboot → 跑 8–15 分硬断电（17 分钟
+   回卷红线）。
+2. **r68 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
+   `3c177c54…`，节点 = **sde27** → fetchchunk 拉窗，按 CRASH 行
+   slide 分段切会话）→ **X4 UKC k 应逐轮递增（v3 存活判据）** →
+   **X5 首病灶事件（主菜）**：`D <进程名> k<轮次> B<bgTC值>
+   M<mainScreen值>`；辅菜 X4 聚合走势 / X7 `G` 首任意槽小值事件
+   （槽址对照 temp/audit64-slots.py 定性）/ X6 `L` 最近病灶。回归
+   六项照旧：applied / AKS / vsync 120 / 旧墙复活面 / SB sig11 族
+   死点 / procs-spawn。
 3. **r66 判读存档（2026-10-28）**：确定性早期挂死（两次同点
    t≈5s，只写 3 个诊断槽；procs=1、GOP physical=0 从未映射 = 无
    logo 也画不出 panic 屏；CPU1 最后中断入口钉在
