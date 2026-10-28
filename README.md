@@ -3,9 +3,9 @@
 魅族 20 Classic（m2381 / SM8550）的 **UniXNU 原生移植**工作区：UniXNU 4K
 内核（donor = iPad7,1 / iPadOS 17.7.11 `21H461`，fuxi/sheng 同款）+
 独立设备仓 [UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)
-（2026-10-29 自本仓 subtree split 拆出，本地 `../UniXNU-m2381`）+ Mu fork
-[uefi-m2381](https://github.com/RiverKawa271828/Mu-Silicium)
-（`../uefi-m2381`，Platforms/Meizu/m2381Pkg）。三仓收拢于工作区根
+（2026-10-29 自本仓 subtree split 拆出，本地 `../UniXNU-m2381`）+ UEFI 仓
+[uefi-m2381](https://github.com/RiverKawa271828/uefi-m2381)（待建仓首推；
+基座 = 上游 uefi-sheng + nura 遗产 overlay）。三仓收拢于工作区根
 `/home/ri/work/unixnu-meizu`。
 
 ## 进度（2026-10-28，r64 = 缓存全局审计轮已出件 `54b70ad7` 待刷）
