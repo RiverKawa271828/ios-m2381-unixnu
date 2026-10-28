@@ -139,13 +139,17 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r68 已出件 `3c177c54` 待刷（2026-10-28）**：探针 v3
-非侵入化——r67 A/B 定谳挂死是 v2.1 探针线程触发（probe=0 → logo
-回来 + SB sig11 ×400 死点原样 0x1800F5FAC/FAR=0xf1，墙不变）；v3
-修三处 = r66 的 map 引用双重释放/use-after-dealloc、跨 map 失败读
-路径（check_protection 预门，vm_map_switch→copyin→switch back 的
-窗口永不进入）、12s 预热 + 失败熔断。刷后判读 = X4 UKC k 逐轮递增
-+ X5 首病灶事件点名写毒宿主；工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r69 已出件 `2685ddf2` 待刷（2026-10-28）**：探针 v4 =
+钉 SpringBoard 三窗扫描（DIRTY+DATA+__DATA_CONST）。r68 判读定谳：
+①v3 存活（k1→272 f=0）；②**病灶槽全程干净 vs SB 465 崩 = r63
+"槽中毒"推断被推翻，毒不在 __DATA_DIRTY**；③反汇编 bt1 调用点指令
+级闭环 = 接收者槽 0x1f049f1c8 / IMP 槽 0x1f00eb808 / SEL 槽
+0x1f046e1d8 全在 UIKitCore __DATA_CONST（LC 精确解析
+0x1f00e6440+0x3d34e0，r64-r68 从未扫过），文件态干净 = 毒若真在
+运行时绑定值；④r68 bug#4 = 100 轮熔断器被 k7 一次读失败触发自盲
+200s（修 = 3 轮）；⑤kernel snprintf 无 % 格式不写 NUL = "D - k…"
+尾巴 artifact（ cosmetic）。r69 判读 = X4 三槽活值定毒源；工作单 =
+`docs/STATE.md` §7）
 
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4

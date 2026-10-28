@@ -5,14 +5,13 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（r67 = **A/B 验证件 `ce469e83` 待刷**（r66 内核
-不变，仅 uikit-cache-probe 1→0），2026-10-28。r66 判读 = 确定性早期
-挂死（两次同点，t≈5s，GOP 从未映射无 logo 无 panic 屏；CPU1 最后
-中断入口钉在 ArmCpu::prepareGic+0x19c = AP 启动域）；机制源码实证 =
-vm_map_read_user 跨任务路径 vm_map_switch→copyin→switch back，r66
-round 1 对 init 的失败读在 AP 启动窗口内吃跨 map 页错误（v1 只走过
-成功路径）→ A/B 定探针罪责）
-
+## 1. 一句话现状（r69 = **探针 v4 三窗钉定扫描已出件 `2685ddf2` 待刷**，
+2026-10-28。r68 判读两大定谳：①v3 探针存活（k1→272，f=0）；②**病灶槽
+全程干净 vs SB 465 崩同点 = r63"槽中毒"推断被推翻，毒不在
+__DATA_DIRTY**；反汇编 bt1 调用点指令级闭环：接收者槽 0x1f049f1c8 /
+IMP 槽 0x1f00eb808 / SEL 槽 0x1f046e1d8 **全在 UIKitCore
+__DATA_CONST (0x1f00e6440+0x3d34e0)，r64-r68 从未扫过**，文件态干净
+= 毒若真在运行时绑定值 → v4 钉 SpringBoard 三窗直读三槽活值）
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
 位；值 = 低 48 位 = 绝对未滑 VA；value_add=0），UIKitCore
@@ -305,24 +304,21 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r68 已出件 `3c177c54` 待刷（2026-10-28）**：探针 v3
-非侵入化，三处修复 = map 引用生命周期 / check_protection 预门（失败
-路径永不进入）/ 12s 预热 + 失败熔断；刷后判读主菜 = X5 首病灶事件，
-工作单同 r64 原案）
+## 7. 下一步（**r69 已出件 `2685ddf2` 待刷（2026-10-28）**：探针 v4 =
+钉 SpringBoard 三窗（DIRTY+DATA+**DATA_CONST**）扫描，X4 直读崩溃链
+三槽（IMP/接收者/SEL）活值；刷后判读 = I/R/S 槽是否出小值）
 
-1. **刷写卡（r68 = 只刷 recovery_a，设备自 r67 刷后状态未变）**：
-   fastboot（电源+音量减）→ `getvar current-slot` = b → sha 门
-   `3c177c547f32…25a4c09` → `flash recovery_a
-   payload-r68-3c177c54.img` → reboot → 跑 8–15 分硬断电（17 分钟
-   回卷红线）。
-2. **r68 判读工作单**：reader 三连（dd recovery_a 前 96MiB sha 对拍
-   `3c177c54…`，节点 = **sde27** → fetchchunk 拉窗，按 CRASH 行
-   slide 分段切会话）→ **X4 UKC k 应逐轮递增（v3 存活判据）** →
-   **X5 首病灶事件（主菜）**：`D <进程名> k<轮次> B<bgTC值>
-   M<mainScreen值>`；辅菜 X4 聚合走势 / X7 `G` 首任意槽小值事件
-   （槽址对照 temp/audit64-slots.py 定性）/ X6 `L` 最近病灶。回归
-   六项照旧：applied / AKS / vsync 120 / 旧墙复活面 / SB sig11 族
-   死点 / procs-spawn。
+1. **刷写卡（r69 = 只刷 recovery_a）**：fastboot（电源+音量减）→
+   `getvar current-slot` = b → sha 门 `2685ddf294cb…` →
+   `flash recovery_a out/m2381/payload-r69-2685ddf2.img` → reboot →
+   跑 8–15 分硬断电。
+2. **r69 判读工作单**：reader 三连（对拍 `2685ddf2…`，sde27，
+   fetchchunk，按 slide 分段）→ **X4 `UKC k<轮> I<R> R<S> S<L>` 三槽
+   活值**：任一槽出现小值（<0x1000000）= dyld 绑定/COW 路径投毒实锤
+   （对照文件态链编码 0x201f48ccab8 类）；全程干净 + SB 照崩 = 毒为
+   构造瞬态（寄存器级）→ r70 转崩溃寄存器捕获（telemetry 组件加
+   x0）。辅菜：X6 `C`（DATA_CONST 首小值事件）/ X7 `A`（__DATA 首
+   小值）/ X5 B/M（DIRTY 病灶槽连续性）。回归六项照旧。
 3. **r66 判读存档（2026-10-28）**：确定性早期挂死（两次同点
    t≈5s，只写 3 个诊断槽；procs=1、GOP physical=0 从未映射 = 无
    logo 也画不出 panic 屏；CPU1 最后中断入口钉在
