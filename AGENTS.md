@@ -139,31 +139,29 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r73 已刷已判（2026-10-28）**：payload `a3f310d4`
-（内核 `ce34e9ae`，只刷 recovery_a，读回对拍 ✓）。**预注册分支①
-成立 = fixup #26 实锤生效**：applied 21→22（`parsed=26 applied=22`）
-+ NSPlaceholderSet objects[0]=nil 断言本代 0 出现（r70–r72 三代原
-墙关账，r72 nil 调用者链被 #26 拦死）。**换墙 = SB sig6 ×266 新
-点**：REASON = `'you can't call this before [SBMainWorkspace
-start]'`（workspace-start 门，dispatch_async_and_wait 内，bt 全终
-结链）。**raiser RE 破案 = raiser 在缓存外**：REASON 串全缓存唯
-一实例 0x1d02917bc 在 SpringBoard.framework（`SBWorkspace.m` 文件
-标记串紧邻），但其 CFString 对象 0x1ea27d3c8 经三模型引用扫描
-（adrp 配对全区/绝对槽低48+tag 全缓存/i32 相对指针）全零 ⇒ 框架
-常量池 = 死拷贝，活 raiser = **SpringBoard.app 盘上主二进制**（镜
-像表实证 SB.app 不在 21H461 缓存）⇒ **现 cache text_fixups 够不
-着 r74 修点**。PB ③支路维持独立（'configuration' ×164）；chronod
-sig5 独立主题照旧。回归六项全绿 + sig11 CRASH 0 + noidle 维持
-（609s 无停写无 halt）。**r74 主菜** = 从 SystemOS DMG
-（`.cache/firmware/target-volumes/044-7603*-038.dmg`）提取
-`/Applications/SpringBoard.app/SpringBoard` → 按 REASON 串 xref 定
-断言站点 → 出件配方二选一（a: fixup 机制扩盘上 Mach-O；b: 框架侧
-等效 stub——类 dup 场景运行时绑哪份先查）。**取证双铁律照旧**：
-日志环先过 read-m2381-ufs-log.py header 分代（slots_written 截残
-影）；反汇编必走 re-tools read_run（fixup-aware）。**扫描器三坑新
-增**（STATE §4.8）：fsx needle 要 NUL 结尾 / 映射起点过滤误截区
-域 / 地址算术必须 python（r73 一天手算错两次）。工作单 =
-`docs/STATE.md` §7）
+## 7. 下一步（**r74 已出件待刷（2026-10-28 晚）**：payload
+`b0f2f656`（内核不变 ce34e9ae 代）= fixup #27 = SBMainWorkspace
+`_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill
+（`cbz→nop` 返回 nil）。**r73 已刷已判**：预注册分支①成立 = #26
+实锤生效（applied 21→22 + NSPlaceholderSet 断言 0 出现，r70–r72
+三代原墙关账）；换墙 = SB sig6 ×266 `'you can't call this before
+[SBMainWorkspace start]'`。**r74 RE 修正（同日二判）**：r73 初版
+"raiser 在缓存外 SpringBoard.app"**作废**——根因 = 扫描器 add 掩
+码 bug（`(w2 & 0x7F800000) == 0x91000000` 恒假，正确 =
+`0xFF800000`；§4.4 r57 同款坑三犯，当天传染全部扫描）；修正后
+raiser 钉死 = fw 内 `+[SBMainWorkspace
+_sharedInstanceWithNilCheckPolicy:]`（reason CFString 唯一 xref =
++0xc8；policy==1 实例槽 0x1f56cf6a0 nil → SBWorkspace.m:1719 断言
+路径 → sig6）；#27 = 定点 .25/0x1910630（expected
+`c85243f9c80000b4` 实读核验，cbz 零入边）→ `c85243f91f2003d5`。
+**方法学新铁律（STATE §4.9）**：零引用结论必须先过阳性对照（r74
+用 BaseBoard NSParameterAssert 格式串一击证伪工具箱）；正面
+disasm 已知抛点函数是终审手段。**刷写卡 = 只刷 recovery_a**（sha
+门 `b0f2f6560525b8993…0945a`；跑 8–15 分硬断电）；判读预注册 =
+STATE §7.2（workspace 门 0 出现 + applied 22→23 = 生效，看
+nil-workspace 下游或推进；PB ③支路 ×164 基线；回归六项 + sig11
+0 + noidle）。**取证双铁律照旧**：header 分代 + re-tools
+read_run（fixup-aware）。工作单 = `docs/STATE.md` §7）
 
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4

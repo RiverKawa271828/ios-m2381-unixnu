@@ -5,7 +5,28 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r73 已刷已判（2026-10-28）**：**预注册分支①成立
+## 1. 一句话现状（**r74 已出件待刷（2026-10-28）**：fixup #27 =
+`+[SBMainWorkspace _sharedInstanceWithNilCheckPolicy:]` policy==1
+nil-check 断言 kill（`cbz→nop`，nil 改为返回 nil）。**r74 RE 修正
+（同日二判）**：r73 的"raiser 在缓存外 SpringBoard.app 盘上二进
+制"结论**作废**——根因 = 扫描器 add 掩码 bug（`(w2 & 0x7F800000)
+== 0x91000000` **恒假**（0x91000000 & 0x7F800000 = 0x11000000），
+正确掩码 = `0xFF800000`；即 STATE §4.4 r57 同款坑第三次复发，当日
+从首个脚本传染到全部 xref 扫描——只有 adrp+LDR 形可见、adrp+ADD
+全盲）。**修正后 RE 定谳**：reason CFString 0x1ea27d3c8 唯一 xref
+= `+[SBMainWorkspace _sharedInstanceWithNilCheckPolicy:]+0xc8`；
+方法本体（fw .25 @0x1cf9a45ac）：policy==1（b.eq 路径）实例槽
+`0x1f56cf6a0` nil → 0x1cf9a464c 断言路径 → NSAssertionHandler
+`handleFailureInMethod:file(SBWorkspace.m CFString):line 0x6b7
+(1719):description(reason CFString)` → sig6；定点 = 0x1cf9a4630
+`ldr x8,[x22,#0x6a0]` + 0x1cf9a4634 `cbz x8,assert`（**零入边**，
+安全 NOP）；`expected=c85243f9c80000b4` / `replacement=
+c85243f91f2003d5`（expected 已 cache-extract 文件实读核验）。**方
+法学新沉淀（§4.9）：零引用结论必须先过阳性对照**——BaseBoard 的
+NSParameterAssert 格式串 CFString（PB 断言 ×94 每轮必经）在坏掩
+码下同样"零引用"，阳性对照一击证伪工具箱。SB.app 壳二进制 120KB
+不含该串的部分仍成立（非缓存框架差集也干净）。**r73 已刷已判
+（2026-10-28）**：**预注册分支①成立
 = fixup #26 实锤生效**（窗 451ed5c2 301/509 槽 uptime=609s 无回
 卷，recovery_a 读回对拍 `a3f310d42f488a66…585e56d` ✓）：`[text
 fixup] parsed=26 applied=22` = 21→22（#26 页执行 oracle）+
@@ -197,7 +218,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r73**（fixup #26 = SBLockScreenManager 单例构造 kill，26 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核 `ce34e9ae`） | `a3f310d4` | **现役已刷已判（2026-10-28）**；判读 = §1 r73 定谳（**#26 生效：nil-set 墙死（applied 22 + NSPlaceholderSet 0 出现）；换墙 = SB workspace-start 门 sig6 ×266；raiser 在缓存外 SpringBoard.app 盘上二进制**） |
+| recovery_a | **r74**（fixup #27 = SBMainWorkspace `_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill，27 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `b0f2f656` | **出件待刷（2026-10-28 晚）**；`out/m2381/payload-r74-b0f2f656.img`（96MiB，sha256 全 = `b0f2f6560525b8993b5cf80bcb6f8ce49c321546456aa6e04f0566420da0945a`）；ESP 四样已验（scratch-data 在 / toml initrd 行 trustcache 在 ADT PackedRAMDisk=1 + 27 条 fixup 对拍零缺失）；r73 = `a3f310d4` 现役已判（判读 = §1，含 r74 RE 修正） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -304,12 +325,25 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
    判映射（`hi<=addr or lo>=addr+size` 跳过）；按映射起点写
    `addr >= lo` 过滤会把起点在 lo 之前但覆盖 lo 之后代码的整段截掉
    （r73 因此漏扫 .25 全段）。③引用模型三件套 = adrp 配对（相邻或
-   宽窗）/ 绝对槽（低 48 位掩码 + bit42 tag；r64 链格式：高位 16 =
-   next-delta）/ i32 相对指针——三者全零 + 断言运行时真触发 ⇒
-   raiser 在缓存外。**一切地址算术必须 python**（r73 一天手算错两
-   次：imm12 0x368 vs 实际 0x478；b1d15f9000 去滑 0x1cf3039000 vs
-   实际 0x1c379d000）；name→VA 反查走 symbolicate46 同款解析
-   （dec-symbols 头 @0x48 → 6×u32 → nlist 二分）。
+   宽窗，**add 判定掩码必须 0xFF800000，见 §4.9**）/ 绝对槽（低 48
+   位掩码 + bit42 tag；r64 链格式：高位 16 = next-delta）/ i32 相
+   对指针——**"三者全零 ⇒ raiser 在缓存外"这类推断必须先过阳性对
+   照**（r74 教训：掩码 bug 下三者全零是假的）。**一切地址算术必须 python**（r73 一
+   天手算错两次：imm12 0x368 vs 实际 0x478；b1d15f9000 去滑
+   0x1cf3039000 vs 实际 0x1c379d000）；name→VA 反查走 symbolicate46
+   同款解析（dec-symbols 头 @0x48 → 6×u32 → nlist 二分）。
+9. **r74 add 掩码三犯 + 阳性对照铁律（当日最贵）**：①adrp 消费者的
+   add 判定必须 `(w2 & 0xFF800000) == 0x91000000`（或
+   `== 0x11000000` 用 0x7F800000）——`(w2 & 0x7F800000) ==
+   0x91000000` **恒假**（bit31 被 0x7F800000 丢掉）；这正是 §4.4
+   r57 已入档的同款坑第三次复发，r74 当天从首个脚本传染到全部
+   xref/全缓存/阳性对照扫描，制造出"raiser 在缓存外"的假结论直到
+   正面 disasm 真抛点才证伪。②**零引用结论必须先过阳性对照**：拿
+   一条"确知当轮在触发"的断言串（r74 用 BaseBoard 的
+   NSParameterAssert 格式串 CFString，PB 断言每轮必经）走同一管
+   线——阳性对照零引用 = 工具箱有洞，任何"缓存外/死拷贝"推断全部
+   作废。③正面 disasm 已知抛点函数（r72 钉死的 once block）是终
+   审手段：机制用眼睛看，不靠扫描器间接推断。
 
 ## 5. 开放问题
 
@@ -351,37 +385,46 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r73 已刷已判（2026-10-28）**；r74 = SpringBoard.app
-盘上二进制 RE + 出件配方前提变更）
+## 7. 下一步（**r74 已出件待刷（2026-10-28 晚）**：payload
+`b0f2f656`（内核不变 = ce34e9ae 代）；fixup #27 = SBMainWorkspace
+`_sharedInstanceWithNilCheckPolicy:` policy1 断言 kill；用户执行
+刷写）
 
-1. **r74 主菜 = SpringBoard.app 盘上二进制 RE**：r73 定谳新墙
-   raiser 在缓存外（§1），先从 `.cache/firmware/target-volumes/
-   044-76034-038.dmg / 044-76040-038.dmg`（SystemOS）提取
-   `/Applications/SpringBoard.app/SpringBoard`，按 REASON 串
-   "you can't call this before [SBMainWorkspace start]" xref 定断
-   言站点与 raiser 方法。**出件配方二选一（动手前先上游调研）**：
-   a) fixup 机制扩展到盘上 Mach-O（kernel 页校验路径现只认 dyld
-   缓存文件身份，扩 = kernel+payload 两侧改）；b) 框架侧等效
-   stub——注意类 dup 场景：SBMainWorkspace/SBWorkspace 存在
-   fw/app 双拷贝（fw 拷贝常量池死、raiser 活在 app），但 r72 的
-   SBLockScreenManager once-token/实例槽 0x1f56d0b48 在 fw __DATA
-   且 #26 页真执行（applied 21→22）= fw 拷贝至少在 nil-set 路径
-   是活实现——先 RE app 二进制弄清运行时绑哪份再定配方。
-2. **r73 判读存档**：§1（#26 生效 + 新墙 + raiser RE 全链 +
-   回归六项）；方法三坑入 §4.8。刷写卡 = 已执行完毕（a3f310d4
-   只刷 recovery_a，读回对拍 ✓）。
-3. **出件配方红线不变**：payload 三 flag + --unique-chip-id
+1. **刷写卡（r74 = 只刷 recovery_a）**：iOS 链现役未被覆盖
+   （boot_b=UEFI `289614ba` + recovery_a=r73 `a3f310d4` +
+   userdata=`fd43ee70`）→ fastboot（电源+音量减）→
+   `getvar current-slot` = b → sha 门
+   `b0f2f6560525b8993b5cf80bcb6f8ce49c321546456aa6e04f0566420da0945a` →
+   `flash recovery_a out/m2381/payload-r74-b0f2f656.img` → reboot。
+   **跑 8–15 分硬断电**（勿超 17 分回卷线）；reader 选单流程照旧
+   （FLASHING §7）。
+2. **r74 判读工作单（预注册）**：开场三连照旧 + header 分代。分支：
+   ①**'you can't call this before [SBMainWorkspace start]' 0 出现
+   + applied 22→23** = #27 生效（定点页必执行 = raiser 本尊）；
+   看 SB 新墙（预期候选：nil-workspace 下游 deref——policy1 调用
+   者拿 nil 后的使用点；或 SB 推进到更深装载层）。注意 #26+#27
+   叠加语义：manager=nil 且 workspace=nil 双 nil 组合。
+   ②原点保留 → 查 applied（#27 页不执行则 fixup 链路问题；执行
+   而墙在 = raise 另有源头，REASON 细读）。
+   ③PB 'configuration' 独立墙照旧记录（r73 基线 ×164）。
+   ④回归六项照旧 + sig11 CRASH 行必须仍 0 + noidle 维持。
+   判读工具箱必须用修正版（add 掩码 0xFF800000，§4.9）。
+3. **r73 判读存档**：§1（#26 生效 + 新墙 + 修正版 raiser RE 全链
+   + 回归六项）；三坑 §4.8 + 掩码三犯/阳性对照铁律 §4.9。r73
+   刷写+读回对拍已闭环（a3f310d4，窗 451ed5c2）。
+4. **出件配方红线不变**：payload 三 flag + --unique-chip-id
    3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
    .../package/*.c（tree kits/sheng = symlink 同一实体），root
    package 镜像同步；fixup 追加 = profiles/os/ipados-17.7.11-21H461/
    profile.toml text_fixups（expected 字节必须以 cache-extract 文
    件实读核验，勿手算）；判读纪律 = header 分代 + re-tools
    read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk。
-4. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；PB 同
-   样存在 fw/app 双拷贝问题，PosterBoard.app 也不在缓存）；chronod
-   sig5（r57 已知独立主题）；BootSlotReset DXE；XS/fileset-KC
-   重绑定器；arm64e 专项；GPU/触摸/UFS 提速主题化（UFS 数据面
-   0 失败、~57MiB/s 轮询口径、5% 占空比 = 显示破墙后的体验项）。
+5. **独立主题（不阻塞）**：PB 'configuration' 断言（③支路；
+   PosterBoard 同法可用阳性对照+正面 disasm 管线定点）；chronod
+   sig5（r57 已知独立主题，r73 ~400 行）；BootSlotReset DXE；
+   XS/fileset-KC 重绑定器；arm64e 专项；GPU/触摸/UFS 提速主题化
+   （UFS 数据面 0 失败、~57MiB/s 轮询口径、5% 占空比 = 显示破墙
+   后的体验项）。
 
 ## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节；r62 起 = 体系路线）
 
@@ -419,4 +462,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r70 | `9b3a26f0` | **#21 修正实锤生效：sig11 @0x1800F5FAC 本代 0 出现（三分支①成立，r63→r69 垃圾族关账）**；换墙 = SB sig6 `NSPlaceholderSet initWithObjects:` nil ×33 同点（调用点被 unwind 撕）；**halt = 非崩溃：空闲睡眠路径（139s timer expired→SLEEP_STATE）撞 ArmCpu::haltCPU diagnosePower 诊断 panic**；W0 dirty 窗全程未 fresh（dirty 读恒败，遗留）；r71 = nil 定位 + 睡眠处置 | 刷写+判读 10-28 |
 | r71 | `89e74a92` | **noidle=1 实锤生效关账**（607s 连续写零 halt + PMRD 无 sleep timer expired，用户 10 分钟无停机实证）+ dirty 窗 R0 全窗读通 + **sig11=0 保持治愈** + 回归六项全绿（applied 21/AKS 1139/vsync/SWAP/spawn 1031）；SB sig6 ×347 原点原 REASON（dispatch_once_callout 块内）+ **PosterBoard sig6 ×167 新客**（'configuration' 断言，外层 dispatch_lane_serial_drain）；SS 扫描 266 行候选全 = 终结链帧+`<unmapped>` 数据指针 → ≤9 预算病灶 tear zone 未及 → r72 扫描器三改 | 刷写+判读 10-28 |
 | r72 | `e5ae4ca9` | **扫描器三改 + 体系最大突破：nil 调用者指令级钉死**（内核 4b6bfc38）：bt 排除+真去重+bl 门把 tear zone 第一回打捞上岸 → `-[SBIconController initWithMainDisplayWindowScene:…]→widgetMetricsServer→lockScreenManager→+[SBLockScreenManager _sharedInstanceCreateIfNeeded:] dispatch_once 块`（sharedApplication 非空走正常构造，管理器 init 内 NSPlaceholderSet nil 抛出；断言孪生 SBLockScreenManager.m:362 零捕获）；展开穿 +initialize→PendingInitialize FatalCorruptHashTables 双抛；PB 同链独立墙（'configuration'）；回归六项全绿、sig11 CRASH 0（PROC 聚合行 sig11 非墙）；坑沉淀：手工去滑须 python（手算错进位差点误判）+ bl 门候选需 disasm 复核（LSDA 可撞编码） | 刷写+判读 10-28 |
-| r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**（SBWorkspace.m 常量池）；RE 破案 = **raiser 在缓存外 SpringBoard.app 盘上二进制**（fw 常量池零引用实证；cache fixups 够不着）；PB ③支路维持（×164）；回归六项全绿 + sig11=0；r74 = 提取 SB.app RE + 出件配方二选一 | 刷写+判读 10-28 |
+| r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**；回归六项全绿 + sig11=0；同日二判修正初版"raiser 在缓存外"（扫描器 add 掩码 bug，§4.9）→ raiser 实为 fw 内 SBMainWorkspace（见 r74 行） | 刷写+判读+RE 修正 10-28 |
+| r74 | `b0f2f656` | **fixup #27 出件**：raiser 钉死 = `+[SBMainWorkspace _sharedInstanceWithNilCheckPolicy:]`（fw .25/0x1cf9a45ac，reason CFString 唯一 xref = +0xc8；policy==1 实例槽 0x1f56cf6a0 nil → 0x1cf9a464c 断言路径 SBWorkspace.m:1719）；#27 = 定点 0x1cf9a4630 cbz→nop（expected `c85243f9c80000b4` 实读核验，零入边）；内核不变 ce34e9ae 代；ESP 四样过（27 条 fixup 对拍零缺失）；判读预注册 = §7.2（sig6 workspace 门 0 出现 + applied 22→23 = 生效） | 出件待刷 10-28 |
