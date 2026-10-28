@@ -139,22 +139,24 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r76 已出件待刷（2026-10-29 凌晨）**：payload
-`2bdd272a`（内核不变 ce34e9ae 代）= fixup #29 = `CA::Layer::
-set_bounds` NaN 清洗强制（`.03,26e0068,600c0034,63000014`，与 #28
-完全同构：audit-exempt `cbz w0`→`b` 强制走 Apple 自带清洗：log +
-NaN→0 fcsel + 递归重设不抛；expected `600c0034` 实读核验，零入
-边）。**r75 已刷已判：分支①精确成立 = #28 实锤生效**（窗
-d361a0c3 250/509 uptime=501s，对拍 ✓）：position NaN 0 出现 +
-applied 23→24；**换墙 = 孪生检查 `CALayer bounds contains NaN [0 0;
-nan nan]` ×111**（抛点 set_bounds +0xbc，预注册"下一渲染几何墙"
-命中——position→bounds 同函数族单调推进）；PB 'configuration' ×98
-（r74 ×89 同量级）；回归六项全绿 + sig11 0 + noidle；屏面 = 1:03
-logo / 1:54 进度条出现但冻结（= 布局仍死在 bounds，#28 只治了
-position）。**决策规则判定 = 有进展**（连续两轮墙链单调后移：
-workspace 门 → position → bounds 全是首现检查点；换内核讨论不触
-发）。**刷写卡 = 只刷 recovery_a**（sha 门
-`2bdd272a1871974965…d287808`；跑 8–15 分硬断电；**屏面观察点 =
-进度条是否走动**）；判读预注册 = STATE §7.2（bounds NaN 0 出现 +
-applied 24→25 = 生效；预期候选：第三检查点（frame/anchorPoint 族）
-或 SB 推进 wallpaper/图标层）。工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r77 已出件待刷（2026-10-29 凌晨）**：payload
+`93854822`（内核不变 ce34e9ae 代）= fixup #30 = `_WGMainScreenScale`
+block invoke 入口 4 指令覆盖：`fmov d0,#2.0; str d0,[once 槽
+0x231ec4030]; ret`（`.37,2117fac,ffc300d1f44f01a9fd7b02a9fd830091,
+0010601ee8cf17b00019803dc0035fd6`；expected 实读核验，adrp python
+算毕回验，零入边）。**r76 已刷已判：分支①再命中 = #29 实锤生
+效**（窗 acd75917 271/509 uptime=544s，对拍 ✓）：bounds NaN 0 出现
++ applied 24→25；**换墙 = 'Failed to initialized main screen
+scale!' ×136**（`____WGMainScreenScale_block_invoke`：读
+`[[UIScreen mainScreen] scale]` 写 once 槽，≤0 断言；displayless
+mainScreen=nil → scale 恒 0；**性质换挡 = 从"可清洗垃圾"进入"环
+境供给缺失"，修法换型 = 供给替代清洗**）；PB ×133；chronod ×338
+（增量观察）；回归六项全绿 + sig11 0；屏面 = 1:24 进度条（提前
+30s）仍冻结。**决策规则判定 = 有进展**（三连单调后移：workspace
+门 → position → bounds → mainScreen scale；用户态治愈进入收尾区，
+剩余墙 = 供给族与 PB displayConfiguration，皆"缺显示配置"下游）。
+**刷写卡 = 只刷 recovery_a**（sha 门
+`93854822e007320bed…2d35b`；跑 8–15 分硬断电；**屏面观察点 = 进度
+条是否走动**）；判读预注册 = STATE §7.2（scale 断言 0 出现 +
+applied 25→26 = 生效；候选：下一供给墙或 wallpaper/图标层推进）。
+工作单 = `docs/STATE.md` §7）

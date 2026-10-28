@@ -5,7 +5,31 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r76 已出件待刷（2026-10-29 凌晨）**：fixup #29 =
+## 1. 一句话现状（**r77 已出件待刷（2026-10-29 凌晨）**：fixup #30 =
+`_WGMainScreenScale` block invoke 供给 2.0 替代断言
+（`.37,2117fac,ffc300d1f44f01a9fd7b02a9fd830091,
+0010601ee8cf17b00019803dc0035fd6` = 入口 4 指令覆盖
+`fmov d0,#2.0; str d0,[once 槽 0x231ec4030]; ret`）。**r76 已刷已
+判：分支①再命中 = #29 实锤生效**（窗 acd75917 271/509
+uptime=544s，recovery_a 读回对拍 `2bdd272a…d287808` ✓）：bounds
+NaN **0 出现**（position 也保持 0）+ applied **24→25**（parsed=29
+applied=25）。**换墙 = `'Failed to initialized main screen scale!'`
+×136**——**性质换挡：从"可清洗垃圾"进入"环境供给缺失"**（抛点 =
+`____WGMainScreenScale_block_invoke`（WidgetKit 域 .37
+0x2024c7fac）：读 `[[UIScreen mainScreen] scale]` 写 once 槽
+0x231ec4030，≤0 即断言（line 18）；displayless mainScreen=nil →
+scale 恒 0 → 必死。**修法换型 = 供给替代清洗**：清 NaN 有 Apple
+自带路径可借，scale 没有供给源，只能我们喂（fmov #2.0，fixup 16b
+先例；写槽+返回语义完备，零入边）。PB 'configuration' ×133；chronod
+sig5 ×338（增量观察项）。**回归六项全绿**：applied 25 / AKS 116 开
+1207 调 / vsync 120 / SWAP accepted=1 / spawn 970 / noidle 544s 无
+停写无 halt；sig11 CRASH 0。**屏面对齐：进度条 1:24 出现（r75
+1:54 提前 30s）但仍冻结** = 布局链推进更深后死在 scale 供给（提前
+= 布局循环更早走到渲染准备 = #29 的间接证据）。**决策规则判定 =
+有进展**（三连单调后移：workspace 门 → position → bounds →
+mainScreen scale；墙越越接近环境本源——**用户态治愈已进入收尾
+区：剩余墙候选 = scale/几何供给族与 PB displayConfiguration，都是
+"缺显示配置"这一根源的下游**）。r75/r76 判读存档 = §7.3 与 §8 行）
 `CA::Layer::set_bounds` 同构 NaN 清洗（`.03,26e0068,600c0034,63000014`）。
 **r75 已刷已判：分支①精确成立 = #28 实锤生效**（窗 d361a0c3 250/509
 uptime=501s，recovery_a 读回对拍 `23868de1…a6a461` ✓）：'CALayer
@@ -261,7 +285,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r76**（fixup #29 = `CA::Layer::set_bounds` NaN 清洗强制，29 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `2bdd272a` | **出件待刷（2026-10-29 凌晨）**；`out/m2381/payload-r76-2bdd272a.img`（96MiB，sha256 全 = `2bdd272a1871974965c22a49a57fb1bc1622dc46b453b1baa0541eda4d287808`）；ESP 四样已验（ADT PackedRAMDisk + 29 条 fixup 对拍零缺失 + scratch-data + initrd 行 + trustcache）；r75 = `23868de1` 已刷已判（判读 = §1） |
+| recovery_a | **r77**（fixup #30 = `_WGMainScreenScale` 供给 2.0，30 条 fixups + 扫描器三改探针 + noidle=1 + dirty 窗 R 码 + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader；内核仍 `ce34e9ae` 代） | `93854822` | **出件待刷（2026-10-29 凌晨）**；`out/m2381/payload-r77-93854822.img`（96MiB，sha256 全 = `93854822e007320bed07fd6530f8091bb968e244e48db2b64cbb0edb24f2d35b`）；ESP 四样已验（ADT PackedRAMDisk + 30 条 fixup 对拍零缺失 + scratch-data + initrd 行 + trustcache）；r76 = `2bdd272a` 已刷已判（判读 = §1） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -508,4 +532,5 @@ set_position` NaN 清洗路径强制；用户执行刷写）
 | r73 | `a3f310d4` | **分支①成立：#26 实锤生效**（内核 ce34e9ae；窗 451ed5c2 301/509 uptime=609s）：applied 21→22 + NSPlaceholderSet 断言 0 出现（nil-set 墙关账）；**换墙 = SB sig6 ×266 'you can't call this before [SBMainWorkspace start]'**；回归六项全绿 + sig11=0；同日二判修正初版"raiser 在缓存外"（扫描器 add 掩码 bug，§4.9）→ raiser 实为 fw 内 SBMainWorkspace（见 r74 行） | 刷写+判读+RE 修正 10-28 |
 | r74 | `b0f2f656` | **分支①成立：#27 实锤生效**（内核 ce34e9ae 代；窗 344e72e5 325/509 uptime=650s）：workspace 门 0 出现 + applied 22→23；**换墙 = SB sig6 `CALayerInvalidGeometry` 'CALayer position contains NaN'（WGShortLookStyleButton）×~296——SB 首次死在真实视图构造层**（NaN = displayless 0 scale/bounds 几何；屏面 2:30 进度条出现但冻结 = SB 画真 boot progress UI 后视图布局循环死）；PB ×89（减半）；回归六项全绿 + sig11 0 + noidle；抛点 = `CA::Layer::set_position`；**决策规则判定 = 有进展，不触发换内核**；r75 = #28 | 刷写+判读+出件 10-28 |
 | r75 | `23868de1` | **分支①精确成立：#28 实锤生效**（窗 d361a0c3 250/509 uptime=501s）：position NaN 0 出现 + applied 23→24；**换墙 = 孪生 `CALayer bounds contains NaN [0 0; nan nan]` ×111**（set_bounds +0xbc，与 set_position 完全同构）；PB ×98；回归六项全绿 + sig11 0；屏面 = 1:54 进度条出现但冻结（布局仍死在 bounds）；**决策规则 = 有进展**；r76 = #29 同构定点 | 刷写+判读+出件 10-29 |
-| r76 | `2bdd272a` | **fixup #29 出件**：`CA::Layer::set_bounds` audit-exempt `cbz w0`→`b`（.03,26e0068,600c0034,63000014，expected 实读核验，零入边）；内核不变 ce34e9ae 代；ESP 四样过（29 条对拍零缺失）；判读预注册 = §7.2（bounds NaN 0 出现 + applied 24→25 = 生效；屏面观察点 = 进度条走动/新检查点） | 出件待刷 10-29 |
+| r76 | `2bdd272a` | **分支①再命中：#29 实锤生效**（窗 acd75917 271/509 uptime=544s）：bounds NaN 0 出现 + applied 24→25；**换墙 = 'Failed to initialized main screen scale!' ×136**（`____WGMainScreenScale_block_invoke` .37/0x2024c7fac：mainScreen=nil→scale 0→断言；**性质换挡 = 供给缺失**）；PB ×133；回归六项全绿 + sig11 0；屏面 = 1:24 进度条（提前 30s）仍冻结；**决策规则 = 有进展（三连单调后移）**；r77 = #30 供给 2.0 | 刷写+判读+出件 10-29 |
+| r77 | `93854822` | **fixup #30 出件**：`_WGMainScreenScale` block invoke 入口 4 指令覆盖 = `fmov d0,#2.0; str d0,[once 槽 0x231ec4030]; ret`（.37,2117fac，expected 实读核验，adrp 回验精确，零入边）——供给替代断言（fmov#2.0 = fixup16b 先例）；内核不变 ce34e9ae 代；ESP 四样过（30 条对拍零缺失）；判读预注册 = §7.2（scale 断言 0 出现 + applied 25→26 = 生效；屏面观察点 = 进度条走动） | 出件待刷 10-29 |
