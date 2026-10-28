@@ -139,37 +139,14 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r67 A/B 件 `ce469e83` 待刷（2026-10-28）**：r66 内核
-不变仅 uikit-cache-probe 1→0。r66 判读 = 确定性早期挂死（两次同点
-t≈5s，GOP 从未映射 = 无 logo 无 panic 屏；CPU1 最后中断入口 =
-ArmCpu::prepareGic+0x19c = AP 启动域）；机制源码实证 =
-vm_map_read_user 跨任务路径 vm_map_switch→copyin→switch back
-（vm_map.c:19636），round 1 对 init 的失败读在 AP 启动窗口吃跨 map
-页错误，v1 只走过成功路径。A/B 过 = r68 探针非侵入化
-（check_protection 预门+首扫延迟+失败黑名单）；再挂 = 探针无罪转
-ArmCpu/SMP 域。r65a panic 七帧全符号化 = 递归 task_lock（已修）。
-工作单 = `docs/STATE.md` §7。r64 判读要点存档：毒在 SB 首扫前就位
-（首轮 21003 非零 + 44 小值槽，t≈20s）；applied 69→21；SB sig11
-×268 死点不变 0x1800F5FAC/FAR=0xf1）
+## 7. 下一步（**r68 已出件 `3c177c54` 待刷（2026-10-28）**：探针 v3
+非侵入化——r67 A/B 定谳挂死是 v2.1 探针线程触发（probe=0 → logo
+回来 + SB sig11 ×400 死点原样 0x1800F5FAC/FAR=0xf1，墙不变）；v3
+修三处 = r66 的 map 引用双重释放/use-after-dealloc、跨 map 失败读
+路径（check_protection 预门，vm_map_switch→copyin→switch back 的
+窗口永不进入）、12s 预热 + 失败熔断。刷后判读 = X4 UKC k 逐轮递增
++ X5 首病灶事件点名写毒宿主；工作单 = `docs/STATE.md` §7）
 
-1. **r64 判读定谳（2026-10-28，reader 三连全过）**：读回对拍 ✓
-   （sde27 前 96MiB sha == `54b70ad7…97ec`）。r64 会话 = 288 槽
-   ≈576s（slide +15850000，AKS opens 2→92 单调无回卷；窗尾混 r63
-   尾 13 槽 = AKS 终值 123/1121 巧合，非 stale）。**UKC 主菜部分
-   损失**：首轮成功扫描（X4 冻结 `k1 st0 +15850000 n21003 g44`）就
-   见 __DATA_DIRTY 21003 非零 + **44 个小值槽**（<0x1000000），同槽
-   AKS 才 opens=2 = SB 生命起点——**毒在 SB 首次 UIKit 工作前全部
-   就位，写毒者更早（SB 自身 dyld/objc-initialize 极早期，或其他
-   UIKit 进程）**；但线程在 put(4) 后死于 put(5) 的越界读（bug =
-   `(SLOT+slide−UK_DIRTY_BASE)/8` slide 双加 → 越界 ~345MB；编译件
-   四格式串都在 = 源码即编译码），X5-X7 永空，k 冻 1，槽级 t 序列
-   没拿到。**修复已入 package/UIKitCacheProbe.c（双份同步）：索引去
-   slide + 范围钳制**。applied 69→21（parsed 25，未破 14 愈合线，
-   跟随 respawn 负载减半 spawn 419 vs 968）；垃圾族未愈：SB sig11
-   ×268/576s 死点仍 r61/r63 同点（unslid 0x1800F5FAC，FAR=0xf1）；
-   AKS alive（终态 opens=91/calls=763）；vsync 120 ✓；老 sig6 墙
-   零出现；procs=91/spawn=419；DISPLAY stage=10 同前；SB 未过
-   wallpaper。
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
    字节单位；值 = 低 48 位绝对未滑 VA）；UIKitCore **__DATA_DIRTY**
