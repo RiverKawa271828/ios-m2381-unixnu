@@ -5,28 +5,26 @@
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
 > 问题 / 下一步 / 轮次索引。
 
-## 1. 一句话现状（**r71 已出件待刷（2026-10-28）**：payload
-`89e74a92`（内核 `75b4953d`，ESP 内 `9e6f24d6`，ADT `5a451286`）。
-r70 判读定谳（窗 6cf9e36e，59/509 槽 uptime=118s）：**三分支①成立
-= sig11 @0x1800F5FAC 本代 0 出现（残影 605 行 = r69 代对照），
-#21 修正实锤生效，r63→r69 垃圾族关账**；④W0 全程 `S- G1- G2-`
-（dirty 窗 rc[0] 恒败而 CONST 窗 fresh，r69 同探针 B0 M0 正常→
-r70 运行态特有，未定性）+ X4 三槽干净（R 去滑 = 0x1f48ccab8 文件
-值）。**换墙 = SB sig6 ×33 全同点 `NSPlaceholderSet
-initWithObjects:` objects[0]=nil**（objc_terminate→libc++abi 终结
-链核验，nil 插入调用点被 C++ unwind 撕掉）。**halt = 非崩溃**：
-SB 反复死→PMRD 3s 空闲计时器 139.4s 到期→SLEEP_STATE→
-IOCPUSleepKernel→ArmCpu::haltCPU quiesceCPU diagnosePower 诊断
-panic（ArmCpu.cpp:732 故意哨）→停机 = 用户所见文本页（11 帧全符
-号化）。**r71 三件**：A = BootFaultProbe 栈下扫描（exit 时 SP 向
-上 48KiB 扫残留文本 VA，共享缓存窗 + 主二进制窗（dyld image0），
-发 W1 `SS b<main> <帧…>` 行——unwind 撕 fp 链不擦栈，抛点帧在
-高地址）；B = **上游 `noidle=1`**（IOPMrootDomain gNoIdleFlag，
-空闲计时器不 arm = halt 链根除，零补丁）；C = dirty 窗半窗回退 +
-失败码上报（X5 `B- M- R<code>`、W0 `R<code> h<bit>`；task->active
-预检）。r70 判读背景 = #21 删 mov x0,x20→gate 返回值 0xF1 入
-bgTC（修正 e00314aac5bbff97）。取证双铁律（header 分代 + re-tools
-read_run）已工具化）
+## 1. 一句话现状（**r71 已刷已判（2026-10-28）**：payload `89e74a92`
+（内核 `75b4953d`）实机 10 分钟硬断电，窗 c13aaabd 299/509 槽
+uptime=607s 无回卷。**判读④实锤：上游 `noidle=1` 生效关账**——
+607s 连续写 + PMRD 零 `sleep timer expired` + 零 halt 链行（r70
+只活到 119s），用户所见 = 进度条冻结、诊断文本页不再出现。回归六
+项全绿：applied 19→21（#21 修正页已执行）/ AKS calls 915→1139 /
+vsync hz=120 / SWAP accepted=1 / procs 199 spawn 1031 /
+**sig11=0（r63→r69 垃圾族保持治愈）**；X5 dirty 窗 **R0 全窗读
+通**（r70 全程拒 → C 项关账）。**墙没换 = SB sig6 ×347 原点原
+REASON（`NSPlaceholderSet initWithObjects:` objects[0]=nil，死亡
+在 dispatch_once_callout 块内）+ 新客 PosterBoard sig6 ×167 同终
+结链但 REASON = 'Invalid parameter not satisfying:
+configuration'（显示配置断言家族，外层 dispatch_lane_serial_drain
+——displayless 配置 nil 的第二消费者）**。**r71 主菜 A 判读 = 扫
+描器预算病灶定谳**：W1 `SS b` 行 266 条 ×2 实例（b<main>
+0x2251ca000/0x23323c000），候选帧符号化全 = 终结链已知帧 +
+3 个 `<unmapped>` 数据指针 → ≤9 预算被烧完，tear zone（抛点帧）
+未及；r72 = 扫描器三改（bt 帧排除 + 真去重 + bl/blr 回读门）。
+r70 定谳（halt 链机制 / #21 修正）见 §7.4；取证双铁律（header 分
+代 + re-tools read_run）已工具化）
 **r64 出件（2026-10-28，本机 Linux 全链）**：静态腿 = 21H461 缓存头 /
 slide-v2 链格式按 dyld-1241 源码破译（链 delta 在最高 16 位、4 字节单
 位；值 = 低 48 位 = 绝对未滑 VA；value_add=0），UIKitCore
@@ -177,7 +175,7 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（**无 SB 版**） | `289614ba` | **现役**（r55c 配套，ENABLE_SECUREBOOT=0） |
-| recovery_a | **r70**（#21 修正字节 + 探针 W0 宽行 + CRASH 行寄存器捕获 + 25 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `9b3a26f0` | **现役已刷已判（2026-10-28）**；判读 = §1 r70 定谳（sig11 关账 / SB sig6 NSPlaceholderSet 新墙 / 空闲睡眠 halt）；**r71 待出件** |
+| recovery_a | **r71**（SS 栈下扫描 + noidle=1 + dirty 窗 R 码 + 25 条 fixups + AKS 替身 + vsync + client=0 + Data seed + trustcache + forensic reader） | `89e74a92` | **现役已刷已判（2026-10-28）**；判读 = §1 r71 定谳（noidle 生效关账 / SB sig6 原点 + PB 新客 / 扫描器预算病灶）；**r72 出件中（内核 4b6bfc38，扫描器三改）** |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未被动） |
 
 - **设备现态 = iOS 链（r54 起），未刷回 nura**；r62 已刷已验已判
@@ -319,90 +317,50 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
   效果 / vsync 生效 / 显示族 fixup 转睡三项都未实证（用户报未起，
   窗待读），不能声称"体系方案生效"。
 
-## 7. 下一步（**r71 已出件待刷（2026-10-28）**：payload `89e74a92`，
-内核 `75b4953d`；SS 栈下扫描 + 上游 noidle=1 + dirty 窗诊断三件）
+## 7. 下一步（**r72 已出件待刷（2026-10-28）**：payload `e5ae4ca9`
+（内核 `4b6bfc38`）；探针扫描器三改，主菜 = 抓 NSPlaceholderSet
+nil 调用者）
 
-1. **刷写卡（r71 = 只刷 recovery_a）**：设备三分区全是本项目现役
-   件（boot_b=UEFI `289614ba` + recovery_a=r70 + userdata=fd43ee70
-   未动；r70 读窗走的是 payload ESP 自带 forensic 入口，不落分
-   区）→ 本轮只动 ADT/内核 → **只刷 recovery_a**。fastboot（电源
-   +音量减）→ `getvar current-slot` = b → sha 门
-   `89e74a925c3c98f4b88e36a8d72ae84d2722a53dad8e0c0422962f02300a9a62` →
-   `flash recovery_a out/m2381/payload-r71-89e74a92.img` → reboot。
-   **跑 8–15 分硬断电**（noidle 生效后不再 139s 停机，SB 会一直
-   sig6 循环刷满环，勿超 17 分回卷线）。
-2. **r71 判读工作单（预注册，下会话开场即照抄执行）**：
-   开场三连 = `acm-reader.py probe`（应答则 reader 活）→
-   `acm-reader.py fetchchunk /tmp/r71-log.bin`（sha 双端对拍）→
-   `read-m2381-ufs-log.py /tmp/r71-log.bin --all > /tmp/r71-slots.txt`
-   （**header 分代，残影不入证据**；窗存档 out/m2381/reader-r71-*.bin/parsed）。
-   然后**内核指纹先验代**（本代必须有 `SS b` 行与 `R<码>` 行 =
-   r71 内核格式，缺 = 刷的还是旧 payload）。预注册分支：
-   ①**W1 `SS b<main> <候选…>` 有终结链之上的新帧** → cache 候选
-   去滑（CRASH 行 +slide）走 re-tools symbolicate；SB 候选按
-   `b<main>` 偏移 → 钉死 NSPlaceholderSet nil 调用者 → r72 =
-   fixup/stub 该点（bring-up-only 语义补）。
-   ②**SS 行只有 `b<main>` 无候选** → 扫描窗未覆盖或基址=0
-   （image0 读败）→ 备选 = 离线 RE SB 二进制（SystemOS 独立
-   Mach-O）`setWithObjects:`/`initWithObjects:` boot 路径。
-   ③**X5 `B- M- R1`（全窗拒仍在）** → dirty 区形状问题实锤 →
-   下轮加 map 区域 dump 诊断；R3/h1 → 半窗数据可用，恢复槽监控；
-   R4 → 读失败路径，查 copyin。
-   ④**noidle 判据** = 窗 uptime 远超 139s 仍连续写 + PMRD 无
-   `sleep timer expired`（有 `idle timer not set (noidle=1)` 更佳）
-   → B 关账；若仍 ~139s 停 → noidle 未生效（查 ESP args 实拍）或
-   preventer-drop 支路（IOPMrootDomain.cpp:3303）走通 → 下轮补查。
-   ⑤SB 换崩点/新墙 → 照常 CRASH 行 + REASON 分析；sig6 消失 =
-   意外治愈 → 直转 display 机制三件套。
-   回归六项照旧（applied/AKS/vsync/procs-spawn/chronod sig5/
-   SWAP）+ 跑窗纪律 8–15 分硬断电。
-3. **出件配方红线不变**：payload 三 flag（--trust-cache
-   original-trust.bundle + --data-ramdisk scratch-data.img）+
-   --unique-chip-id 3645ad55d47e77c1（**勿带 --skip-setup，Linux
-   无 hdiutil**）；ESP 四样 + cmdline 994B<1000；ADT PackedRAMDisk
-   验证过。探针正源 = **devices/.../package/*.c**（BootFaultProbe
-   编译自 tree kits/sheng ← device package 镜像；UIKitCacheProbe
-   ← root package）；root package 与 device package 两份镜像本轮
-   起保持同步。
-4. **r70 判读存档（2026-10-28）**：见 §1 头段（三分支①成立 +
-   NSPlaceholderSet 新墙 + 空闲睡眠 halt 定谳）。r70 备件（0xdc3c
-   cbnz→b）注销；DeepSeek F 清单第四入口分支作废。
-5. **r69 判读存档（2026-10-28，活读窗 33e1b811 + 深挖终审）**：探针 v4
-   存活（k1→272，f=0）；三链槽活值全干净且 = 文件绑定值+slide 逐位
-   吻合 → r63 槽中毒推断终审推翻（三槽实为 msgSend 管道：SEL
-   mainScreen/_fallbackTraitCollection + UIScreen classref + 共享
-   thunk）；SB sig11 ×406 同点 0x1800F5FAC = objc_retain 谓词
-   0x1800F5FA4，x0=FAR=0xF1；SB sig6 ×258（unspecified traits 同根）；
-   活读窗混 6 代 boot 残影（header slots_written=232/509），"多崩族"
-   = 残影幻象；**根因机制 + r60 起源 + H2 排除 + gate 身份假设详见
-   记忆 watchdogd 与 temp/r69-r70-forensics-deepseek.md §8**。
-3. **r69 判读存档（2026-10-28，活读窗 33e1b811 + 深挖终审）**：探针 v4
-   存活（k1→272，f=0）；三链槽活值全干净且 = 文件绑定值+slide 逐位
-   吻合 → r63 槽中毒推断终审推翻（三槽实为 msgSend 管道：SEL
-   mainScreen/_fallbackTraitCollection + UIScreen classref + 共享
-   thunk）；SB sig11 ×406 同点 0x1800F5FAC = objc_retain 谓词
-   0x1800F5FA4，x0=FAR=0xF1；SB sig6 ×258（unspecified traits 同根）；
-   活读窗混 6 代 boot 残影（header slots_written=232/509），"多崩族"
-   = 残影幻象；**根因机制 + r60 起源 + H2 排除 + gate 身份假设详见
-   记忆 watchdogd 与 temp/r69-r70-forensics-deepseek.md §8**。
-3. **r66 判读存档（2026-10-28）**：确定性早期挂死（两次同点
-   t≈5s，只写 3 个诊断槽；procs=1、GOP physical=0 从未映射 = 无
-   logo 也画不出 panic 屏；CPU1 最后中断入口钉在
-   ArmCpu::prepareGic+0x19c = AP 启动域；槽 3+ 的"推进"是旧会话
-   arc 残影）。r65a panic 七帧全符号化闭环 = 递归 task_lock（已
-   修）。机制源码实证 = vm_map_read_user 跨任务路径
-   （vm_map.c:19636）vm_map_switch→copyin→switch back，round 1 对
-   init 的失败读在 AP 启动窗口吃跨 map 页错误（v1 只走过成功
-   路径）。UKC 主菜（X5 首病灶）在 r68 恢复。
-4. **C0 = IOMFB_FDR_Loader（pid=75）遗留观察项**：sel6 失败簇是
-   displayless 的果不是因；不阻塞，垃圾族治愈后若仍卡 keybag/
-   锁屏，回头查 IOMFBDisplayRefresh 发布链。
-5. **出件/刷写/判读纪律不变**：payload 配方三 flag + ESP 四样 +
-   fastboot sha 门 + reader 读回对拍（**recovery_a = sde27**，勿猜
-   sda）+ fetchchunk + 17 分钟回卷红线。
-6. **独立主题（不阻塞）**：chronod sig5；BootSlotReset DXE（ABL 预算
-   自动重置，方案在案）；XS/fileset-KC 重绑定器；arm64e 专项；
-   GPU/触摸主题化（过墙板实证无 GPU 也能到锁屏，GPU 降为体验项）。
+1. **刷写卡（r72 = 只刷 recovery_a）**：iOS 链现役未被覆盖
+   （boot_b=UEFI `289614ba` + recovery_a=r71 + userdata=fd43ee70）
+   → fastboot（电源+音量减）→ `getvar current-slot` = b → sha 门
+   `e5ae4ca95840daa022737b839767a11eabbd0941b33ba3cbc9b4ea6c8567ccac` →
+   `flash recovery_a out/m2381/payload-r72-e5ae4ca9.img` → reboot。
+   **跑 8–15 分硬断电**（noidle 已生效不再 139s 停机；勿超 17 分
+   回卷线）。ESP 四样已验（scratch-data+initrd 行/trustcache/ADT
+   PackedRAMDisk/forensic 件），cmdline 984B<1000，noidle=1 在。
+2. **r72 判读工作单（预注册）**：开场三连照旧（probe → fetchchunk
+   out/m2381/reader-r72-log.bin → header 分代解析）+ 内核指纹验代
+   （本代 CRASH 行 bt 后新 W1 形态）。预注册分支：
+   ①**W1 出现 bt 八帧之外的新帧** → 去滑（CRASH +slide）走
+   re-tools symbolicate（含 fixup-aware read_run）→ 钉
+   NSPlaceholderSet nil 调用者 → r73 fixup/stub 该点
+   （bring-up-only）；候选落在 b<main> 主二进制窗 → 按 b<main> 偏
+   移对照 SystemOS SB Mach-O。
+   ②**W1 仍只有终结链帧/空** → tear zone 帧在 exit 前已被终结链自
+   身栈帧覆盖（扫描时序假设破产）→ 转离线 RE（SystemOS SB 独立
+   Mach-O `setWithObjects:` boot 路径）。
+   ③PB 'configuration' 断言支路：find-string-xref 运行时拼装无果，
+   等 SB 主菜破后回头（可能同根 = displayless 配置 nil）。
+   ④回归六项照旧（applied/AKS/vsync/procs-spawn/chronod sig5/
+   SWAP）+ sig11 必须仍 0。
+3. **出件配方红线不变**：payload 三 flag + --unique-chip-id
+   3645ad55d47e77c1（勿带 --skip-setup）；探针正源 = devices/
+   .../package/*.c（tree kits/sheng = symlink 同一实体），root
+   package 镜像同步（本轮已照办）；判读纪律 = header 分代 +
+   re-tools read_run（fixup-aware）+ recovery_a=sde27 + fetchchunk。
+4. **r71 判读存档（2026-10-28，窗 c13aaabd 299/509 槽
+   uptime=607s）**：noidle 生效关账（连续写 + PMRD 零 sleep timer
+   expired + 用户 10 分钟无 halt 文本页）；X5 R0 全窗读通（dirty
+   窗诊断关账）；sig11=0 垃圾族保持治愈；SB sig6 ×347 原点原
+   REASON（dispatch_once_callout 块内）+ PB sig6 ×167 新客
+   （'configuration' 断言）；SS 扫描 266 行候选全 = 终结链帧 +
+   `<unmapped>` 数据指针（cache 洞区）→ ≤9 预算病灶，tear zone
+   未及 → r72 三改。r70 定谳（halt 链机制 / #21 修正）见 commit
+   e63e0d4/e2bea7e。
+5. **独立主题（不阻塞）**：chronod sig5 ×269 照旧（r57 已知独立
+   主题）；BootSlotReset DXE（ABL 预算自动重置，方案在案）；XS/
+   fileset-KC 重绑定器；arm64e 专项；GPU/触摸主题化。
 
 ## 8. 轮次索引（r43 → r61；详情 = commit message + STATE-history 对应节；r62 起 = 体系路线）
 
@@ -438,4 +396,5 @@ dd recovery_a 读回 == 镜像 sha）。下会话 = §7.3 iOS 快速迭代。
 | r68 | `3c177c54` | v3 存活 + 病灶槽 165 轮全程干净 vs SB 465 崩同点 → **r63 槽中毒推断被推翻（毒不在 __DATA_DIRTY）**；反汇编定位 __DATA_CONST 三槽；r69 出件（探针 v4 三窗钉定） | 10-28 |
 | r69 | `2685ddf2` | 活读判读：三链槽活值 = 文件绑定值+slide 逐位吻合（预注册"全干净+SB 照崩"分支成立）→ 构造瞬态/写路径上游；sig11 符号化终审进 r70；re-tools 升级 read_run；r70 出件（#21 修正 + 寄存器捕获 + W0） | 10-28 |
 | r70 | `9b3a26f0` | **#21 修正实锤生效：sig11 @0x1800F5FAC 本代 0 出现（三分支①成立，r63→r69 垃圾族关账）**；换墙 = SB sig6 `NSPlaceholderSet initWithObjects:` nil ×33 同点（调用点被 unwind 撕）；**halt = 非崩溃：空闲睡眠路径（139s timer expired→SLEEP_STATE）撞 ArmCpu::haltCPU diagnosePower 诊断 panic**；W0 dirty 窗全程未 fresh（dirty 读恒败，遗留）；r71 = nil 定位 + 睡眠处置 | 刷写+判读 10-28 |
-| r71 | `89e74a92` | **SS 栈下扫描出件**（BootFaultProbe exit 时 SP 向上 48KiB 扫残留文本 VA → W1 行，cache 窗 + dyld image0 主二进制窗双窗候选）+ **上游 `noidle=1`** 拆空闲睡眠 halt（gNoIdleFlag 计时器不 arm，零补丁）+ dirty 窗半窗回退/失败码（X5 `R<code>`）+ task->active 预检；内核 75b4953d 三格式串实证，ESP 四样过，cmdline 994B；判读主菜 = W1 候选帧定 NSPlaceholderSet nil 调用者 | 出件 10-28 |
+| r71 | `89e74a92` | **noidle=1 实锤生效关账**（607s 连续写零 halt + PMRD 无 sleep timer expired，用户 10 分钟无停机实证）+ dirty 窗 R0 全窗读通 + **sig11=0 保持治愈** + 回归六项全绿（applied 21/AKS 1139/vsync/SWAP/spawn 1031）；SB sig6 ×347 原点原 REASON（dispatch_once_callout 块内）+ **PosterBoard sig6 ×167 新客**（'configuration' 断言，外层 dispatch_lane_serial_drain）；SS 扫描 266 行候选全 = 终结链帧+`<unmapped>` 数据指针 → ≤9 预算病灶 tear zone 未及 → r72 扫描器三改 | 刷写+判读 10-28 |
+| r72 | `e5ae4ca9` | **扫描器三改出件**（内核 4b6bfc38）：候选排除 CRASH bt 八帧（终结链已知）+ 真去重（r71 仅相邻去重致重复）+ bl/blr 回读门（v-4 处必为调用，数据指针全灭）+ cap 9→8（行宽）；判读主菜 = W1 新帧钉 NSPlaceholderSet nil 调用者 | 出件待刷 10-28 |
