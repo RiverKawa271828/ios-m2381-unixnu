@@ -183,7 +183,7 @@ def build(ctx, kernel=None):
         for name in ('forensic-kernel.efi', 'forensic-initrd.img', 'forensic.dtb'):
             if not (fdir / name).is_file():
                 raise Error(f'forensic reader file missing: {fdir / name} '
-                            '(build it with devices/m2381/unixnu-m2381/forensic/build-forensic-reader.py)')
+                            '(build it in the device repository: forensic/build-forensic-reader.py)')
         shutil.copyfile(fdir / 'forensic-kernel.efi', payloads / 'forensic-kernel.efi')
         shutil.copyfile(fdir / 'forensic-initrd.img', payloads / 'forensic-initrd.img')
         shutil.copyfile(fdir / 'forensic.dtb', payloads / 'forensic.dtb')

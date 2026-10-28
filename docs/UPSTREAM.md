@@ -5,6 +5,7 @@
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
 | **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `f85b5a6` (2026-10-27) |
+| **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `/home/ri/work/UniXNU-m2381`（`../UniXNU-m2381`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
 | **设备模板（UniXNU 设备仓）** | https://github.com/hanzi123-bilp/unixnu-fuxi | `reference/unixnu-fuxi` | `59a91fb` |
 | DarwinBoot（boot manager driver） | https://github.com/UniXNU/DarwinBoot | `reference/darwinboot` | `3325e352` |
@@ -30,8 +31,9 @@
   探针 Font.h + P2 基座）、unixnu-sheng（v2 参考设备）、UniXNU-nx729j（静态
   绑定先例）、darwinboot、uefi-m2381-nura。
 - 不要向 `upstream` push（push URL = `no_push`）。上游 = 机制/驱动/补丁的
-  来源；设备模板 = 板级值的来源。设备工作落在 `devices/m2381/`，不直接改
-  上游文件（`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
+  来源；设备模板 = 板级值的来源。设备工作落在独立设备仓
+  `../UniXNU-m2381`（2026-10-29 拆出），本仓不直接改上游文件
+  （`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
 
 ### 1.1 同步记录
 
@@ -181,7 +183,9 @@ git push --force-with-lease origin m2381
 upstream  https://github.com/UniXNU/UniXNU.git                   (fetch only; push = no_push)
 origin    https://github.com/RiverKawa271828/ios-m2381-unixnu.git（GitHub fork of UniXNU/UniXNU，默认分支 = m2381）
           m2381 = 本工作区 = upstream/main f85b5a6 + 工作区提交
-          device-m2381 = 设备仓 orphan 镜像（CI dispatch 的 device_ref，独立演进）
+          device-m2381 = 设备仓 orphan 镜像（已冻结回退；2026-10-29 设备仓
+                         拆出独立仓 UniXNU-m2381 = ../UniXNU-m2381，新
+                         dispatch 直指新仓 main，orphan 首绿后可删）
           （origin 上没有 main——2026-10-26 删除，见下）
 ```
 
