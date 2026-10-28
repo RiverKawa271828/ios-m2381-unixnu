@@ -139,17 +139,28 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r69 已出件 `2685ddf2` 待刷（2026-10-28）**：探针 v4 =
-钉 SpringBoard 三窗扫描（DIRTY+DATA+__DATA_CONST）。r68 判读定谳：
-①v3 存活（k1→272 f=0）；②**病灶槽全程干净 vs SB 465 崩 = r63
-"槽中毒"推断被推翻，毒不在 __DATA_DIRTY**；③反汇编 bt1 调用点指令
-级闭环 = 接收者槽 0x1f049f1c8 / IMP 槽 0x1f00eb808 / SEL 槽
-0x1f046e1d8 全在 UIKitCore __DATA_CONST（LC 精确解析
-0x1f00e6440+0x3d34e0，r64-r68 从未扫过），文件态干净 = 毒若真在
-运行时绑定值；④r68 bug#4 = 100 轮熔断器被 k7 一次读失败触发自盲
-200s（修 = 3 轮）；⑤kernel snprintf 无 % 格式不写 NUL = "D - k…"
-尾巴 artifact（ cosmetic）。r69 判读 = X4 三槽活值定毒源；工作单 =
-`docs/STATE.md` §7）
+## 7. 下一步（**r70 已出件 `9b3a26f0` 待刷（2026-10-28 深夜）**：内核
+`2799e328`。**0x1800F5FAC 墙根因终审闭环**（r69 活读判读 + DeepSeek
+三轮协作 + fixup-aware 复核）：①崩点真身 = objc_retain 谓词
+0x1800F5FA4（`ldr x8,[x0]`，x0=FAR=0xF1），"+initialize 派发"是最近
+符号噪声；②毒源 = **r60 的 fixup14（.03,3261c50，commit 618811a）删
+掉了 `mov x0,x20`**——页缓存支路（0xdbf0，槽 0x1F48D59F8 非零）把
+gate 调用（0x1AC062BD0 = dyld4::gDyld API 快派发，返回 0xF1）的残留
+x0 当 receiver 送进 bgTC；三槽无辜（SEL/classref/thunk 管道，r61-r69
+六轮扫描对象选错）；H2 排除（worker 唯一出口过 objc_retain(x8)）；
+时间线闭合（r60 出件→r61 墙首现，r59 nil-traitCollection 墙正是 #21
+想治的）。③修正 = 只换 bl 字 `e00314aafbe06094 → e00314aac5bbff97`
+（保留 mov x0,x20；0xdc58 原生 mov x19,x0 承接），已入 profile +
+ADT 验证。r70 同轮带：探针 W0 宽行（S=0x1F48D59F8 / G1=0x1F48CE5F0 /
+G2=0x1F48CE5F8）+ CRASH 行 X0/X1/X16/X17/SP/R(来源标记)。**判读三分
+支**：崩消失 = r63→r69 整族 sig11 关账，重心转 display 机制三件套
+（假 UIScreen + displayConfiguration +
+_UIScreenInitialDisplayConfigurationLoader）；崩保留且 FAR == S 槽值
+= 槽垃圾实锤；FAR 仍 0xF1 = 第四入口（回找 DeepSeek，F 清单四样在
+记忆）。**取证双铁律已工具化**：日志环先过 read-m2381-ufs-log.py
+header 分代（slots_written 截残影）；反汇编必走 re-tools read_run
+（temp/read-va-fixups.py 仅 shim）。r71 备件 = 0xdc3c cbnz x0→b
+0xdc40（a0 00 00 b5→01 00 00 14）。工作单 = `docs/STATE.md` §7）
 
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
