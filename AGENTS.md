@@ -139,30 +139,31 @@ devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + r
                           + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
 ```
 
-## 7. 下一步（**r71 已出件待刷（2026-10-28）**：payload `89e74a92`
-（内核 `75b4953d`）。r70 判读 = **三分支①成立：sig11 @0x1800F5FAC
-本代 0 出现（残影 605 行 = r69 代对照），#21 修正实锤生效，
-r63→r69 垃圾族关账**；换墙 = SB sig6 ×33 全同点 `NSPlaceholderSet
-initWithObjects:` objects[0]=nil（非预注 trait 断言；调用点被
-C++ unwind 撕掉）；**halt = 非崩溃**：SB 反复死→PMRD 3s 空闲计时
-器 139.4s 到期→SLEEP_STATE→IOCPUSleepKernel→ArmCpu::haltCPU
-quiesceCPU diagnosePower 诊断 panic（ArmCpu.cpp:732 故意哨）→
-停机 = 用户所见文本页。**r71 三件**：A = BootFaultProbe 栈下扫描
-（exit 时 SP 向上 48KiB，cache 窗 + dyld image0 主二进制窗，
-W1 `SS b<main> <帧…>`）；B = **上游 `noidle=1`**（gNoIdleFlag，
-零补丁根除 halt 链）；C = dirty 窗半窗回退 + 失败码（X5
-`B- M- R<code>`）+ task->active 预检。**刷写卡 = 只刷
-recovery_a**（sha 门 89e74a92…00a9a62；跑 8–15 分硬断电，noidle
-生效后不再停机）。判读主菜 = W1 候选帧定 nil 调用者（已知终结链
-之上的帧 = 抛点路径）；noidle 判据 = 无 139s 停写 + PMRD 无
-`sleep timer expired`。探针正源 = devices/.../package/*.c（tree
-kits/sheng ← device package 镜像；UIKitCacheProbe ← root
-package），两份镜像保持同步；payload 配方勿带 --skip-setup
-（Linux 无 hdiutil）。r70 出件背景 = #21 删 mov x0,x20→gate 返回
-值 0xF1 入 bgTC（修正 e00314aac5bbff97）。**取证双铁律已工具
-化**：日志环先过 read-m2381-ufs-log.py header 分代（slots_written
-截残影）；反汇编必走 re-tools read_run（temp/read-va-fixups.py
-仅 shim）。工作单 = `docs/STATE.md` §7）
+## 7. 下一步（**r73 已刷已判（2026-10-28）**：payload `a3f310d4`
+（内核 `ce34e9ae`，只刷 recovery_a，读回对拍 ✓）。**预注册分支①
+成立 = fixup #26 实锤生效**：applied 21→22（`parsed=26 applied=22`）
++ NSPlaceholderSet objects[0]=nil 断言本代 0 出现（r70–r72 三代原
+墙关账，r72 nil 调用者链被 #26 拦死）。**换墙 = SB sig6 ×266 新
+点**：REASON = `'you can't call this before [SBMainWorkspace
+start]'`（workspace-start 门，dispatch_async_and_wait 内，bt 全终
+结链）。**raiser RE 破案 = raiser 在缓存外**：REASON 串全缓存唯
+一实例 0x1d02917bc 在 SpringBoard.framework（`SBWorkspace.m` 文件
+标记串紧邻），但其 CFString 对象 0x1ea27d3c8 经三模型引用扫描
+（adrp 配对全区/绝对槽低48+tag 全缓存/i32 相对指针）全零 ⇒ 框架
+常量池 = 死拷贝，活 raiser = **SpringBoard.app 盘上主二进制**（镜
+像表实证 SB.app 不在 21H461 缓存）⇒ **现 cache text_fixups 够不
+着 r74 修点**。PB ③支路维持独立（'configuration' ×164）；chronod
+sig5 独立主题照旧。回归六项全绿 + sig11 CRASH 0 + noidle 维持
+（609s 无停写无 halt）。**r74 主菜** = 从 SystemOS DMG
+（`.cache/firmware/target-volumes/044-7603*-038.dmg`）提取
+`/Applications/SpringBoard.app/SpringBoard` → 按 REASON 串 xref 定
+断言站点 → 出件配方二选一（a: fixup 机制扩盘上 Mach-O；b: 框架侧
+等效 stub——类 dup 场景运行时绑哪份先查）。**取证双铁律照旧**：
+日志环先过 read-m2381-ufs-log.py header 分代（slots_written 截残
+影）；反汇编必走 re-tools read_run（fixup-aware）。**扫描器三坑新
+增**（STATE §4.8）：fsx needle 要 NUL 结尾 / 映射起点过滤误截区
+域 / 地址算术必须 python（r73 一天手算错两次）。工作单 =
+`docs/STATE.md` §7）
 
 2. **r64 = 缓存全局审计轮（已刷已判）**：①静态——21H461
    缓存头/slide-v2 链格式按 dyld-1241 源码破译（delta 最高 16 位 4
