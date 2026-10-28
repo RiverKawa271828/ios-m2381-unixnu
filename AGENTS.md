@@ -1,5 +1,16 @@
 # ios-m2381-unixnu — 魅族 20 Classic（m2381 / SM8550）iOS via UniXNU
 
+> **2026-10-29 设备仓拆分（用户拍板"按上游要求来拆"）**：`devices/m2381/
+> unixnu-m2381` 拆出为独立仓 **[UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)**
+> （本地 `/home/ri/work/UniXNU-m2381`，与本仓并排 `../UniXNU-m2381`）。
+> `git subtree split` 保 93 提交全史（tip `2f06128c`）；keys/*.pem 本地
+> 随迁仍不入仓；独立实跑 check-m2381 = 4 ok 0 fail。构建 = 主树
+> `./unixnu -D ../UniXNU-m2381`；CI dispatch 改指新仓
+> `device_repository=RiverKawa271828/UniXNU-m2381, device_ref=main`，
+> 旧 orphan `device-m2381` 冻结回退至新仓 CI 首绿；`devices/m2381/`
+> 仅余 `uefi/`（m2381Pkg，迁独立仓列二期）+ 指路 README。历史 docs 里
+> `devices/m2381/unixnu-m2381/…` 路径一律指新仓对应路径。
+>
 > **2026-10-29 donor 二次反转（用户拍板"不搞了，换ios16的版本"）**：=y 主屏
 > 注册链攻坚（r78a/r78b sel6 刀两轮未落地）停车道；donor 回退
 > **iPhone10,3 / iOS 16.7.16 / 20H392**（=本次换配前的原配对，资产保留
@@ -35,8 +46,9 @@
 
 ## 0. 一句话
 
-把 m2381 做成**上游原生的 UniXNU 移植**：`unixnu-m2381` 设备仓（board.toml
-驱动 unixnu 构建树，从 **iPad7,1 / iOS 17.7.11 `21H461`** 取内核与 OS 件；
+把 m2381 做成**上游原生的 UniXNU 移植**：设备仓 `UniXNU-m2381`（2026-10-29
+起为独立仓 `../UniXNU-m2381`；board.toml 驱动 unixnu 构建树，从
+**iPad7,1 / iOS 17.7.11 `21H461`** 取内核与 OS 件；
 fuxi/nx729j 同款 donor（同代配对历程见顶部换配说明））+ `m2381Pkg`（Mu-Silicium
 UEFI）。boot_b 放 UEFI 固件；payload 载体受本机 ABL 实证约束（gunzip
 ≤ ~83.5MB、忽略 boot ramdisk），**已实证走 recovery_a 的 100MiB ESP**
@@ -144,8 +156,9 @@ docs/archive/             旧 sweet 笔记、B2 评估与启动链、STATE 轮�
 reference/                UniXNU/uefi-fuxi/unixnu-fuxi 等克隆（gitignore）
 research/                 IPSW 等本地大件（gitignore；旧 iPhone X IPSW 已无用）
 artifacts/                本地回滚件 / 死库存 / vendor blobs（gitignore）
-devices/m2381/            unixnu-m2381 设备仓（porting.toml 移植记录 + records/ 实据
-                          + scripts/re-tools 符号化工具集）+ m2381Pkg 落地处
+devices/m2381/            m2381Pkg 落地处（uefi/，迁独立仓列二期）；设备仓本体
+                          = ../UniXNU-m2381（2026-10-29 拆出，含 porting.toml
+                          移植记录 + records/ 实据 + scripts/re-tools 全套）
 ```
 
 ## 7. 下一步（**r77 已刷已判 + 战略转 =y（2026-10-29 凌晨）**）：

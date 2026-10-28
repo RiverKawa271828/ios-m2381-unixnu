@@ -39,9 +39,9 @@ fastboot getvar partition-size:userdata
 菜单选 reader，shell 里定位分区并 hash（busybox sha256sum 在）：
 
 ```bash
-python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py cmd \
+python3 ../UniXNU-m2381/scripts/acm-reader.py cmd \
   'grep PARTNAME=recovery_a /sys/class/block/*/uevent'   # 找设备名（如 /dev/sde27）
-python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py cmd \
+python3 ../UniXNU-m2381/scripts/acm-reader.py cmd \
   'dd if=/dev/sde27 bs=1M count=96 2>/dev/null | sha256sum'   # == 镜像 sha 即实证
 ```
 
@@ -151,7 +151,7 @@ boot_b 不动；Mu 会重新扫描 ESP。
 > `dd if=/dev/sde27 bs=1M count=96 | sha256sum` = 刷写读回对拍
 > （recovery_a 前 96MiB sha == payload 镜像 sha，§2 纪律闭环）。
 
-### 构件（devices/m2381/unixnu-m2381/forensic/）
+### 构件（../UniXNU-m2381/forensic/）
 
 | 件 | 出处 | sha 前 8 |
 |---|---|---|
@@ -166,9 +166,9 @@ boot_b 不动；Mu 会重新扫描 ESP。
 # 信任缓存 sidecar。forensic reader 已由 payload.py 集成（board.toml
 # [payload] forensic=true），add-forensic-entry.py 仅存手术用。
 UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload \
-    -D devices/m2381/unixnu-m2381 \
+    -D ../UniXNU-m2381 \
     --trust-cache out/m2381/trust/original-trust.bundle \
-    --data-ramdisk devices/m2381/unixnu-m2381/.cache/firmware/owner-data-fixture/scratch-data.img
+    --data-ramdisk ../UniXNU-m2381/.cache/firmware/owner-data-fixture/scratch-data.img
 # 刷卡前对 ESP 验四样：scratch-data.img 在 / toml 有 initrd 行 /
 # trustcache 在 / ADT 有 PackedRAMDisk（r56 = 四缺三翻车实录）
 # 平铺出件照旧（payload-rNN-<sha8>.img）
@@ -182,7 +182,7 @@ echo 'SUBSYSTEM=="tty", ATTRS{idVendor}=="1d6b", ATTRS{idProduct}=="0104", MODE=
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
-### 读窗循环（iOS 引导断电后；工具 = devices/m2381/unixnu-m2381/scripts/acm-reader.py）
+### 读窗循环（iOS 引导断电后；工具 = ../UniXNU-m2381/scripts/acm-reader.py）
 
 1. 进 fastboot（电源+音量减；iOS 侧 `sheng-autoreset` 到点自落）；
 2. `fastboot reboot`（或直接 ABL 默认）→ UniXNU 菜单 → 选
@@ -190,16 +190,16 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 3. 宿主确认通道并拉窗（判定只看宿主，屏幕黑不阻塞）：
    ```bash
    lsusb | grep 1d6b:0104                      # 通道立起判据
-   python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py probe
+   python3 ../UniXNU-m2381/scripts/acm-reader.py probe
    #   → m2381 forensic log reader 7.3.0 / usb: acm on a600000.usb
    #   → userdata=sda22 sectors=… log=33554432 bytes magic=SHLOG001
-   python3 devices/m2381/unixnu-m2381/scripts/acm-reader.py \
+   python3 ../UniXNU-m2381/scripts/acm-reader.py \
        fetchchunk out/m2381/reader-<轮次>-log.bin
    #   设备端 sha + 分块拉（2MiB×16，每块新会话）+ 宿主对拍；
    #   r56 实测单流 fetch 在 ~13MiB 处必断（ACM gadget 长流卡死，
    #   两连复现），fetchchunk 16/16 块 + SHA MATCH 31s——断流直接换它，
    #   勿反复重试单流
-   python3 devices/m2381/unixnu-m2381/scripts/read-m2381-ufs-log.py \
+   python3 ../UniXNU-m2381/scripts/read-m2381-ufs-log.py \
        out/m2381/reader-<轮次>-log.bin --all    # parser 已守 header 计数契约
    ```
    `cmd 'CMDS' [timeout]` = 任意只读 shell（如读回对拍：先
