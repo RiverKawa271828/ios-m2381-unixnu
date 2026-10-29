@@ -92,12 +92,19 @@ def linux_env(ctx):
         if not path.exists():
             raise Error(f'{path} missing; run "sudo scripts/linux/setup-toolchain.py {toolchain}"')
     fakeroot = ctx.tree / '.cache/fakeroot'
+    # The deployment the kernel compiles target: it lands in the compile records the archive builders
+    # replay and must not contradict the -m*-version-min the OS profile adds (upstream clang errors on
+    # the override under -Werror). Falls back to the historical arm64 iOS 17.0 outside a v2 profile.
+    ios_version = (ctx.board.get('os', {}).get('ios_version') if ctx else None) or '17.0'
+    arch = 'arm64'
+    if ctx is not None and getattr(ctx, 'profile_roots', None) and 'arch' in ctx.profile_roots:
+        arch = load_toml(ctx.profile_roots['arch'] / 'profile.toml').get('arch', {}).get('name', 'arm64')
     return {'PATH': os.pathsep.join([str(clt / 'bin'), str(toolchain / 'bin'), os.environ.get('PATH', '')]),
             'LC_ALL': 'C', 'CLT_PREFIX': str(clt), 'XCTOOLCHAIN_PREFIX': str(xctoolchain),
             'XNU_TOOLCHAIN_BIN': f'{clt / "bin"} {xctoolchain / "bin"}',
-            'UNIXNU_SDKROOT': str(fakeroot), 'UNIXNU_SDK_VERSION': '17.0',
+            'UNIXNU_SDKROOT': str(fakeroot), 'UNIXNU_SDK_VERSION': ios_version,
             'UNIXNU_PLATFORM_PATH': str(fakeroot / 'Platforms/iPhoneOS.platform'),
-            'CROSS_CLANG': str(toolchain / 'llvm/bin/clang'), 'DARWIN_TRIPLE': 'arm64-apple-ios17.0',
+            'CROSS_CLANG': str(toolchain / 'llvm/bin/clang'), 'DARWIN_TRIPLE': f'{arch}-apple-ios{ios_version}',
             'CROSS_EXTRA_FLAGS': '-mllvm -disable-atexit-based-global-dtor-lowering',
             'CCC_OVERRIDE_OPTIONS': '# +-Wno-missing-designated-field-initializers +-Wno-unused-but-set-global'}
 
