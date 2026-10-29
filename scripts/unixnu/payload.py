@@ -38,11 +38,13 @@ def check_args(arguments):
     return line
 
 
-def check_native_root(kernel, arguments, vmm_present=False):
+def check_native_root(kernel, arguments, vmm_present=False, prelinked_pmgr=False):
     """Refuse the known bare-metal AMFI panic before the volume is written.
 
-    A board whose device tree declares vmm-present has no PMGR for AMFI to wait for; it needs no PMGR stand-in."""
-    if vmm_present:
+    A board whose device tree declares vmm-present has no PMGR for AMFI to wait for; it needs no PMGR stand-in.
+    A lane that prelinks the original com.apple.driver.ApplePMGR (the fileset roots) is in the same shape: AMFI
+    finds the real PMGR kext, so the sheng stand-in arg is not part of the boot line there."""
+    if vmm_present or prelinked_pmgr:
         return
     values = {}
     for argument in arguments:
@@ -101,7 +103,8 @@ def build(ctx, kernel=None):
     arguments = [item for item in spec.get('kernel_args', []) if item.split('=', 1)[0] not in names] + extra
     line = check_args(arguments)
     log(f'kernel args: {line}')
-    check_native_root(kernel, arguments, bool(ctx.board.get('adt', {}).get('defaults', {}).get('u32', {}).get('vmm-present')))
+    check_native_root(kernel, arguments, bool(ctx.board.get('adt', {}).get('defaults', {}).get('u32', {}).get('vmm-present')),
+                      'com.apple.driver.ApplePMGR' in (ctx.board.get('kernel', {}).get('prelink', {}).get('roots') or []))
     owner_trust = getattr(args, 'owner_trust_cache', None)
     trust = expand(owner_trust or args.trust_cache) if (owner_trust or getattr(args, 'trust_cache', None)) else None
     if trust:

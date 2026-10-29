@@ -140,7 +140,13 @@ def kernel_symbols(kernel):
     for line in subprocess.run([nm, '-n', kernel], capture_output=True, text=True, check=True).stdout.splitlines():
         parts = line.split()
         if len(parts) == 3:
-            table.setdefault(int(parts[0], 16), parts[2])
+            # A fileset collection's symbol listing carries per-image section
+            # headers ("Symbols from <image>:"); only hex-address rows parse.
+            try:
+                address = int(parts[0], 16)
+            except ValueError:
+                continue
+            table.setdefault(address, parts[2])
     return table
 
 

@@ -89,18 +89,28 @@ if [ "$BOOT_PROGRESS" = 1 ]; then
   python3 scripts/build-boot-progress.py
 fi
 python3 - "$BOOT_PROGRESS" <<'PY'
+import os
 from pathlib import Path
 import hashlib, sys
 mode = sys.argv[1]
-out = Path('build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837')
+config = os.environ.get('XNU_KERNEL_CONFIGS', 'DEVELOPMENT')
+# The stamp and the objects it may delete are per-config: the alternate-config
+# (reference) pass must never flip the DEVELOPMENT lane's boot-progress state
+# or it would cascade-delete the shipping objects on every reference build.
+if config == 'DEVELOPMENT':
+    out = Path('build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837')
+    kernel = 'mach.development.bcm2837.unstripped.noctf'
+else:
+    out = Path(f'build/xnu/ios-obj-{config}/{config}_ARM64_BCM2837')
+    kernel = f'mach.{config.lower()}.bcm2837.unstripped.noctf'
 stamp = out / '.boot-progress-mode'
 identity = mode + ':' + (hashlib.sha256(Path('build/boot-progress/libBootProgress.a').read_bytes()).hexdigest() if mode == '1' else 'disabled')
 if not stamp.exists() or stamp.read_text() != identity:
     for directory, names in [('osfmk', ['arm_init','startup','video_console','serial_console','sleh']),
                              ('bsd', ['bsd_init','kern_exec','kern_exit']), ('pexpert', ['pe_kprintf'])]:
         for name in names:
-            (out / directory / 'DEVELOPMENT' / (name + '.o')).unlink(missing_ok=True)
-    (out / 'mach.development.bcm2837.unstripped.noctf').unlink(missing_ok=True)
+            (out / directory / config / (name + '.o')).unlink(missing_ok=True)
+    (out / kernel).unlink(missing_ok=True)
     out.mkdir(parents=True, exist_ok=True)
     stamp.write_text(identity)
 PY
@@ -588,6 +598,33 @@ fi
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ]; then
   EXTRA_CFLAGS="$EXTRA_CFLAGS -DXNU_SOURCE_CORECRYPTO14=1"
 fi
+# XNU_KERNEL_CONFIGS=RELEASE builds the fileset prelink reference in parallel output
+# directories: the symbol-bearing comparison kernel the emitter matches the donor
+# collection against (the 27.0.1 profile's build/xnu/fileset-reference shape). The
+# DEVELOPMENT lane must not share obj/sym/dst with it.
+XNU_KERNEL_CONFIGS=${XNU_KERNEL_CONFIGS:-DEVELOPMENT}
+if [ "$XNU_KERNEL_CONFIGS" = DEVELOPMENT ]; then
+  OBJ_VARIANT=ios-obj; SYM_VARIANT=ios-sym; DST_VARIANT=ios-dst
+else
+  OBJ_VARIANT="ios-obj-$XNU_KERNEL_CONFIGS"; SYM_VARIANT="ios-sym-$XNU_KERNEL_CONFIGS"; DST_VARIANT="ios-dst-$XNU_KERNEL_CONFIGS"
+  # The reference build bypasses the RELEASE-only KPI export check (the exports
+  # live in prelinked kexts absent from the source tree); the patch gates on
+  # this exact make variable (patches/xnu/reference-build-release-export-bypass.patch).
+  EXTRA_MAKE_ARGS+=("XNU_REFERENCE_BUILD=1")
+  # The component archives replay DEVELOPMENT compile records, so their objects
+  # carry UBSan-minimal instrumentation that the RELEASE kernel does not build
+  # (the sanitizer flags are a DEVELOPMENT/DEBUG config feature). Two no-op
+  # handlers close the reference link; the reference never executes.
+  UBSAN_STUB=$ROOT/build/xnu/ubsan-minimal-stub.c
+  UBSAN_STUB_OBJ=$ROOT/build/xnu/ubsan-minimal-stub-$XNU_KERNEL_CONFIGS.o
+  cat > "$UBSAN_STUB" <<'UBSAN'
+void __ubsan_handle_add_overflow_minimal(void) {}
+void __ubsan_handle_sub_overflow_minimal(void) {}
+UBSAN
+  "$CROSS_CLANG" -target "$DARWIN_TRIPLE" -ffreestanding -fno-stack-protector \
+    -fno-stack-check -fno-omit-frame-pointer -c "$UBSAN_STUB" -o "$UBSAN_STUB_OBJ"
+fi
+
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ] && [ "$BOOTSTRAP" = 0 ]; then
   CRYPTO_ARCHIVE=$ROOT/build/corecrypto-2023/libcorecrypto_kernel_noasm-namespaced.a
   test -f "$CRYPTO_ARCHIVE"
@@ -770,10 +807,16 @@ PY_BINDINGS
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$PMGR_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $PMGR_ARCHIVE"
   fi
+
   # Optional extra link inputs (e.g. a stub for an unselected offline probe hook).
   if [ "$BOOT_PROGRESS" = 1 ]; then
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$ROOT/build/boot-progress/libBootProgress.a"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $ROOT/build/boot-progress/libBootProgress.a"
+  fi
+  if [ "$XNU_KERNEL_CONFIGS" != DEVELOPMENT ] && [ -f "$ROOT/build/xnu/ubsan-minimal-stub-$XNU_KERNEL_CONFIGS.o" ]; then
+    # UBSan-minimal residue of the DEVELOPMENT-replayed component archives; see the
+    # reference-build hook near the make invocation.
+    KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES $ROOT/build/xnu/ubsan-minimal-stub-$XNU_KERNEL_CONFIGS.o"
   fi
   KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES ${XNU_EXTRA_LD_ARCHIVES:-}"
   EXTRA_MAKE_ARGS+=("LD_KERNEL_ARCHIVES=$KERNEL_EXTRA_ARCHIVES")
@@ -818,7 +861,7 @@ if not stamp.exists() or stamp.read_text() != identity:
 PY
 EXTRA_CFLAGS="$EXTRA_CFLAGS -DXNU_BOOT_PROGRESS=$BOOT_PROGRESS"
 make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iphoneos}" ARCH_CONFIGS=ARM64 \
-  MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT \
+  MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS="$XNU_KERNEL_CONFIGS" \
   ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG="$XNU_ARCH_STRING" LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY \
   ARM64_LINK_ADDR=0xfffffff007004000 ARM64_PLKSEG_ADDR=0xfffffff004004000 \
   DEPLOYMENT_TARGET_FLAGS="-miphoneos-version-min=$IOS_VERSION -DXNU_TARGET_OS_IOS" \
@@ -826,8 +869,10 @@ make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iph
   RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" \
   BUILD_LTO=0 BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" \
   CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} \
-  OBJROOT="$ROOT/build/xnu/ios-obj" SYMROOT="$ROOT/build/xnu/ios-sym" DSTROOT="$ROOT/build/xnu/ios-dst"
+  OBJROOT="$ROOT/build/xnu/$OBJ_VARIANT" SYMROOT="$ROOT/build/xnu/$SYM_VARIANT" DSTROOT="$ROOT/build/xnu/$DST_VARIANT"
 if [ "${XNU_SOURCE_CORECRYPTO14:-0}" = 1 ] && [ "$CRYPTO_BOOTSTRAP_MODE" = source ]; then
+  # Seal the kernel of THIS pass's config; the path is derived like the make's
+  # OBJROOT above (the reference pass seals its own RELEASE kernel).
   python3 scripts/seal-source-crypto-kernel.py \
-    build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf
+    "build/xnu/$OBJ_VARIANT/${XNU_KERNEL_CONFIGS}_ARM64_BCM2837/mach.$(echo "$XNU_KERNEL_CONFIGS" | tr A-Z a-z).bcm2837.unstripped.noctf"
 fi

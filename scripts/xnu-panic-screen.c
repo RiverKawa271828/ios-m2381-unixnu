@@ -252,22 +252,11 @@ __attribute__((noreturn, used, section(".text.b_main"))) void panic_screen_main 
     g.log = (u8 *)PANIC_TEXT;
   }
   format (&g, fmt, args);
-  /* The return addresses up the frame pointer chain: the exception entry links the panic's frames to the code that faulted, so this
-   * names the callers the message leaves out. Stops at a pointer outside the kernel's range, a misaligned one or one that does not
-   * move up the stack. */
-  {
-    const u64 *fp = (const u64 *)__builtin_frame_address (0);
-    text (&g, "\nframes");
-    for (unsigned i = 0; i < 24; i++) {
-      const u64 at = (u64)fp;
-      if (at < 0xfffffff000000000UL || (at & 15)) break;
-      const u64 next = fp[0], lr = fp[1] & 0x0000007fffffffffUL;   /* the return address without its pointer authentication bits */
-      put (&g, ' ');
-      number (&g, lr | 0xffffff8000000000UL, 16, 16, 1);
-      if (next <= at) break;
-      fp = (const u64 *)next;
-    }
-  }
+  /* The fileset lane's padding cave is 7 bytes too small for the frame-chain
+   * walker this screen used to print (the arm64e-era compile plus a tighter
+   * __TEXT_EXEC gap): the walker is gone and the kernel's own serial backtrace
+   * names the callers. The pages/free counters stay (they are the wake/sleep
+   * judgment counters). 2026-10-30, first fileset payload. */
   g.log = 0;
   __asm__ volatile ("dsb sy");
   /* Resolved from this candidate's symbols by the patcher, never fixed addresses.
