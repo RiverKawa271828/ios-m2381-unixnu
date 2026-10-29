@@ -12,10 +12,10 @@ import subprocess
 import uuid
 
 ROOT = Path(__file__).resolve().parents[1]
-source = ROOT / '.cache/firmware/target-volumes/044-76040-038.dmg'
+source = ROOT / '.cache/firmware/target-volumes/087-86698-044.dmg'
 volume = ROOT / '.cache/firmware/target-volumes/os-mount'
 out = ROOT / 'build/verified-root-os'
-expected_uuid = uuid.UUID('04769D26-2CA0-4825-B443-E2E5F88300F2')
+expected_uuid = uuid.UUID('DADD93F8-DBBF-4B17-A1DF-0F11E64172F7')
 if not source.is_file():
     raise SystemExit('Require the existing exact original OS input')
 digest = hashlib.sha256()
@@ -25,7 +25,7 @@ with source.open('rb') as stream:
     stream.seek(-512, 2)
     if stream.read(4) != b'koly':
         raise SystemExit('Expected the actual original UDIF trailer')
-if digest.hexdigest() != '3f99b859c9728379110b66657c7b15285bcb1925ad8b5726542e2cdcf8b1028d':
+if digest.hexdigest() != '80f426d5b8fca8552f95be427434f1911dbb4c2c6d28aad94f2426ddd0c92483':
     raise SystemExit('The compressed image must be the exact supplied iPad7,1 OS member')
 images = plistlib.loads(subprocess.check_output(['hdiutil', 'info', '-plist']))['images']
 found = [i for i in images if Path(i['image-path']).resolve() == source.resolve() and i.get('writeable') is False]
@@ -38,7 +38,7 @@ if len(whole) != 1:
 info = plistlib.loads(subprocess.check_output(['diskutil', 'info', '-plist', whole[0]]))
 volume_info = plistlib.loads(subprocess.check_output(['diskutil', 'info', '-plist', volume]))
 if (info.get('BusProtocol') != 'Disk Image' or info.get('Writable') is not False or
-        info.get('DeviceNode') != whole[0] or info.get('TotalSize') != 6077580800 or
+        info.get('DeviceNode') != whole[0] or info.get('TotalSize') != 5635081728 or
         volume_info.get('VolumeUUID') != str(expected_uuid).upper() or volume_info.get('Writable') is not False or
         volume_info.get('DeviceNode') not in [e['dev-entry'] for e in entities]):
     raise SystemExit('Only the actual matching read-only Disk Image/OS volume is accepted')
