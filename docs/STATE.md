@@ -667,3 +667,19 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **跨代 prelink 断裂 = 本轮最大发现（"换 16 代内核源码"大坑解除）**：首跑 prelink 挂 `Kernel target 0xfffffff0077cf004 has 0 native address candidates: ['_IORPCMessageFromMach']`。侦察（temp/audit-prelink-binding-gap.py）= 全闭包 387,416 位点看似 139,576 missing，**按 selected 口径（roots 31 组件+依赖闭包）实际只有 2 个失配位点、同一符号 `_IORPCMessageFromMach`（IOStorageFamily/IOHIDFamily 各一），ambiguous=0**——16 代闭包引用的 base 形态 RPC 入口在 17 代内核（xnu-10063）里实现被删（只剩 Reply 形态，id 校验 0x4da2b68d-only + 描述符步进语义不同，重绑不可行）。修复 = **恢复 16 代函数**：下载 xnu-8796.101.5 源码（tree/.cache/sources/，profile trustcache_tag 同源），profile patch `restore-iorpc-from-mach.patch`（IOUserServer.cpp 逐字恢复 16 代函数体；kIORPCVersionCurrent 两代同为 190615 语义等价；`extern "C"` 显式标注防 C++ mangling——第一版补丁缺 extern "C" 被编成 `__Z20...` 符号名对不上，used 属性防 dead-strip）→ **prelink 65,346 位点全绑通过**。用户问"要不要下载 iOS16 内核源码"的答案：**不需要换源码**，只需要一个函数（已下载 8796.101.5 存 tree/.cache/sources 备用）。
 - **出件（全链已验）**：kernel.macho `fe8c7897…f8908`（entropy clean-apply ✓ + prelink 绑定核对 ✓ 两道门全过；`_IORPCMessageFromMach` 落 0xfffffff008931884）→ payload **`ee012043`**（96MiB，平铺 `out/m2381/payload-r83-ee012043.img`；payload.json 四样齐：ADT 86b6ced5 = d22 身份+新 root_match、trust eb1475f6 与 board pin 逐字节吻合（IPSW 重解 trustcache 对 63e01c03/9cc478fe 重新打包验证）、data seed d04a0153、skip_setup=false 红线）。
 - **首刷三件套（下会话）**：boot_b←`ec1d518b`（r81 充电段件，ABL 尾字节容忍 = 实证项）+ recovery_a←`payload-r83-ee012043` + userdata←`userdata-root.img`（8.38GB，sha 2c2aca3f）。判读门 = r11 时代证据形态（entropy 守卫日志/绿蓝条/panic screen）+ 充电栈（BATTMGR GLINK/native_adsp_stats/充电电流）+ 20H392 用户态推进。回退件 = 整组 21H461 世代（21H461 政策对备份在案）。
+
+**r84 判读工作单（2026-10-29 会话五开工；用户报"内核跑不起来"——首刷已发生，屏幕无内核迹象。纪律重申：屏幕状态从来不是判据，lsusb `1d6b:0104`（ACM）才是通道判据；黑屏不阻塞 reader）**：
+
+**第一刀 = 设备现态三查（定分流，不猜）**：
+1. `lsusb` 看 USB 枚举：fastboot（Google/18d1 形态 vendor）？ACM（1d6b:0104）？还是全静默？
+2. **分支 A：fastboot 在** → 内核没起但 ABL 活着。先 `fastboot getvar` 核对 current-slot，然后读窗（见第二刀）——boot_b 件可能根本没被 ABL 接受（**ABL 尾字节容忍 = 本轮头号嫌疑**：boot_b 件 = boot.img 1.27MB + M2381FW 段 30.5MB，若 ABL 拒 image_size 之外尾字节 → FV 没加载 → 没有 UEFI → 没有 payload 投递 → 无内核。**实证法 = 回退刷纯 boot.img（同文件前 1,279,872B？——不对，纯 boot.img = package-m2381-boot.py 不带 --adsp-* 重新出件；或 dd 取 ec1d518b 件前 1,269,760B + 头），flash boot_b 单件后 reboot 看是否进 UniXNU 菜单**。这刀同时实证"充电段是死因还是无辜"。
+3. **分支 B：ACM 在（reader 活着）** → 引导链到 payload 了，reader 菜单里选 reader 入口 → `acm-reader.py probe` → 三节点对拍（boot_b/recovery_a/userdata 前 N MiB sha，卡上已备）确认刷写落地 → `fetchchunk` 拉窗 → `read-m2381-ufs-log.py --all` 判读。注意：**reader 活着 = boot_b 的 UEFI + recovery_a 投递链全通，"内核跑不起来"的问题面收窄到内核本体/参数/投递细节**。判读点按优先级：①boot-progress=2 菊花是否画出（=y UEFI 帧缓冲路径）②entropy 守卫行（r11 形态：far 0x40 / g_crypto_funcs==NULL 崩 = 守卫失效或补丁漂移）③panic screen 文本（可诊断形态）④prelink 闭包行为（IORPC 恢复符号 @0xfffffff008931884 的运行时命脉——16 代 kext 首次调用它；崩点/REASON 行符号化按 §4 流程，re-tools 现役）⑤充电栈 BATTMGR/native_adsp_stats。
+4. **分支 C：全静默（无 fastboot 无 ACM）** → 最深层：xbl/abl 层或供电。power+vol-down 强制进 fastboot；进不去 = 硬砖面（xbl 层，红线内不可修，联系既有恢复路径）。
+5. **分支 D：设备在 nura 侧（NCM/devsh 可达）** → 用户刷完回 nura 了 → nura 侧先把分区读回对拍（三节点 dd|sha256sum，卡上 sha 表），确认刷写落地再定分流。
+
+**判读门预注册**：
+- **命中（内核起）**：窗里 entropy 干净 + 菊花/进度条出现 + 无 panic → 看 20H392 用户态推进多深（launchd/dyld/SEGV 族/REASON 行），逐项记录。
+- **未命中（kernel 早死）**：窗里 SHLOG 槽都空/只有 header → 内核没起或起在极早期。判据 = slots_written 分代纪律（memory shlog-header-discipline）+ 早期 panic 文本（panic screen 若画出来了 = ABL FB 路径通，直接读屏上文本形态）。嫌疑优先级 = boot_b 尾字节（分支 A 实证法）> entropy 守卫 > prelink 闭包 > cmdline 983B（r81 新参数集在 20H392 内核上的接受度）。
+- **特殊形态：SLEEP/halt**（r70 形态）非崩溃，别误判。
+
+**下会话开工序**：三查定分支 → 按分支走 → 全程留档（窗文件 out/m2381/reader-r84-log.bin，判读回写本节 + 记忆）。**回退链随时可用**：纯 boot.img 回退（分支 A）→ 21H461 整组回退件（政策对备份 + fd43ee70 世代 userdata + 21H461 时代 payload 件）→ nura 回退链（红线 6，只在 nura 仓）。
