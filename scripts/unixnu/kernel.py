@@ -196,7 +196,27 @@ def build(ctx, modules):
         generated.mkdir(parents=True, exist_ok=True)
         env['UNIXNU_GENERATED_DIR'] = str(generated)
     env['JOBS'] = str(ctx.jobs)
-    record = ctx.tree / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json'
+    # The alternate-config pass (XNU_KERNEL_CONFIGS=RELEASE, see build-xnu-4k-baseline.sh)
+    # produces the fileset prelink reference: a symbol-bearing comparison kernel the
+    # emitter matches the donor collection against. It never boots, and the m2381
+    # bring-up instruments are DEVELOPMENT/DEBUG-gated by their own #error guards
+    # (offline-owner series) whose RELEASE shape does not compile — and their code
+    # would only deviate from the donor build the reference must resemble. The
+    # boot-progress gate (a BOOT_PROGRESS=1 pass requires the audited owner root)
+    # forces this one off with them.
+    reference = os.environ.get('XNU_KERNEL_CONFIGS', 'DEVELOPMENT') != 'DEVELOPMENT'
+    if reference:
+        for key in ('XNU_BOOT_PROGRESS', 'XNU_OWNER_ROOT_AUDIT', 'XNU_OWNER_ROOT_TRUST',
+                    'XNU_OWNER_CACHE_MOUNT', 'XNU_OWNER_CACHE_STARTUP', 'XNU_OWNER_BOOT_MANIFEST',
+                    'XNU_OWNER_DATA_MOUNT', 'XNU_OWNER_UNION_SYSTEMOS'):
+            env[key] = '0'
+    # Compile records are per-config; the reference pass replays its own, not the
+    # DEVELOPMENT lane's.
+    if reference:
+        config, variant, directory = 'RELEASE', 'RELEASE', 'ios-obj-RELEASE'
+    else:
+        config, variant, directory = 'DEVELOPMENT', 'DEVELOPMENT', 'ios-obj'
+    record = ctx.tree / f'build/xnu/{directory}/{variant}_ARM64_BCM2837/osfmk/{config}/startup.o.json'
     object = record.with_name('startup.o')
     if not record.is_file() or not object.is_file():
         # The archive builders and the boot progress layer read compile records of the XNU build, which only an earlier
