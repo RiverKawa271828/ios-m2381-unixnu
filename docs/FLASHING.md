@@ -29,7 +29,10 @@ fastboot getvar partition-size:recovery_a
 fastboot getvar partition-size:userdata
 ```
 
-- 本机 boot_b = 96MiB；recovery_a = 100MiB；userdata = 12GB。
+- 本机 boot_b = 96MiB；recovery_a = 100MiB；userdata = 463.6 GiB（旧档"12GB"
+  是陈旧记录，2026-10-30 对照 board.toml `[userdata]` 的 [DEVICE] 双测几何
+  纠正：sda22 = 972,326,040 × 512 B；23F84 的 userdata-root 件 13.98 GB 刷入
+  无碍）。
 - 同一时刻只允许一个 fastboot 通道；本仓与 nura 侧刷写互斥。
 - `fastboot boot` 是死路（魅族 ABL 裁剪 CmdBoot），只能 flash。
 
