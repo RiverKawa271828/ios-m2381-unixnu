@@ -1,0 +1,130 @@
+# The 20H392 donor (r79 user decision, 2026-10-29): back to the original
+# iPhone10,3 / iOS 16.7.16 pairing. The r35-r77 wall chain (traitCollection /
+# avocado widget / once domain / sel6 FDR gate) was all 21H461 17-generation
+# userland+kext walls; the 16-generation pairing is internally self-consistent.
+# The cross-generation risk (xnu-10063.141.1 source vs 16-gen parts) is the
+# pre-2026-10-24 state, and that state was tamed on device: the entropy guard
+# still rides the tree, the green/blue bar and the panic screen came up, and
+# the AMFI early-init pointer below was verified on hardware at that time
+# (fingerprint +0x13f8 within AMFI __TEXT_EXEC). Classic arm64 kernelcache —
+# no fileset rebinding, configuration-level swap.
+
+["os"]
+"name" = "ios-16.7.16-20H392"
+"darwin" = "22.6.0"
+"xnu_version" = "10063.141.1"
+"xnu_revision" = "d8b80295118ef25ac3a784134bcf95cd8e88109f"
+"driverkit_tag" = "xnu-10063.121.3"
+"trustcache_tag" = "xnu-8796.101.5"
+"abi" = ["IOGPUFamily", "IOMobileGraphicsFamily"]
+
+
+["ipsw"]
+"url" = "https://updates.cdn-apple.com/2025FallFCS/fullrestores/122-77006/1158E502-D76D-4226-AA06-ED5E30CD1111/iPhone10,3,iPhone10,6_16.7.16_20H392_Restore.ipsw"
+"product" = "iPhone10,3"
+"version" = "16.7.16"
+"build" = "20H392"
+"device_class" = "d22ap"
+"chip_id" = 32789
+"board_id" = 6
+"fetch" = ["KernelCache", "DeviceTree", "StaticTrustCache", "Cryptex1,SystemTrustCache"]
+
+["ipsw"."sha256"]
+# Whole-file sha256 of the two disk-image members inside the IPSW, from the
+# v1 board pin (2026-10-23, local copy re-verified by the full-zip sha256
+# ece1194f…68fb against the archived record).
+"087-86698-044.dmg" = "80f426d5b8fca8552f95be427434f1911dbb4c2c6d28aad94f2426ddd0c92483"   # OS
+"087-86593-047.dmg" = "9cd738f3b0169055549df84ad6d8d13e50a2da39af618ce0522ca4e06df86849"   # Cryptex1,SystemOS
+
+
+
+["kernel"]
+
+["kernel"."prelink"]
+"tool" = "kits/XnuPrelink/emit_prelink.py"
+"kernel" = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf"
+"kernelcache_sha256" = "2ec297bac95bcba01046fd0148e97e7e5885c05a6c18827f39f534ba375c1221"
+"slide" = "-0x1000000"
+# Derived 2026-10-29 with the kit's own prelink-info parser: the AMFI kext's
+# __TEXT_EXEC (0xfffffff0056fb000 + 0x1d788) holds exactly one hit of the
+# six-byte early-init prologue (ff 03 04 d1 f8 5f — the same prologue the
+# 21H461 cache carries uniquely at its device-proven 0xfffffff005ab4ae0,
+# reproduced as a gold check in the same scan) at segment offset 0x13f8 —
+# the r11 on-device verified offset (STATE-history). The emit_prelink
+# pointer-binding check re-validates at every kernel relink.
+"early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffff0056fc3f8"
+"roots" = ["com.apple.AppleFSCompression.AppleFSCompressionTypeZlib", "com.apple.driver.AppleARMPlatform", "com.apple.driver.AppleARMWatchdogTimer", "com.apple.driver.AppleAudioClockLibs", "com.apple.driver.AppleEffaceableStorage", "com.apple.driver.AppleIISController", "com.apple.driver.AppleM2ScalerCSCDriver", "com.apple.driver.AppleMobileFileIntegrity", "com.apple.driver.ApplePMGR", "com.apple.driver.IODARTFamily", "com.apple.filesystems.apfs", "com.apple.iokit.CoreAnalyticsFamily", "com.apple.iokit.IOAVFamily", "com.apple.iokit.IOAudio2Family", "com.apple.iokit.IOCECFamily", "com.apple.iokit.IOCryptoAcceleratorFamily", "com.apple.iokit.IOGPUFamily", "com.apple.iokit.IOHDCPFamily", "com.apple.iokit.IOMobileGraphicsFamily", "com.apple.iokit.IOReportFamily", "com.apple.iokit.IOSlowAdaptiveClockingFamily", "com.apple.iokit.IOStorageFamily", "com.apple.iokit.IOSurface", "com.apple.kec.Libm", "com.apple.kec.corecrypto", "com.apple.kext.AppleMatch", "com.apple.kext.CoreTrust", "com.apple.security.AppleImage4", "com.apple.security.sandbox", "com.apple.iokit.IOHIDFamily", "com.apple.iokit.IOHIDEventDriver"]
+
+
+
+["payload"]
+# text_fixups: none, by design (STATE §8 step 4). The 23 displayless-kill
+# entries are 21H461 VAs and are all void on the 16-generation donor; the
+# r11-era lane ran this pairing bare through the entropy-guarded green/blue
+# bar and the panic screen. If a userland wall returns, fix it one at a time
+# with the §4.9 method (REASON line + bl-target verification + applied marker).
+"trust_cache_sha256" = ["eb1475f643f45a974ebd40596f6e2b1cdf40205d2ca3c6094d774886099399c3"]
+
+
+["adt"]
+
+["adt"."root"]
+
+["adt"."root"."string"]
+"model" = "iPhone10,3"
+"target-type" = "D22"
+# The board name first: the audio server keys its routing database and MediaExperience its per-board tables on it.
+"compatible" = "D22AP"
+
+
+
+["adt"."chosen"]
+
+["adt"."chosen"."string"]
+"osenvironment" = "main"
+"crypto-hash-method" = "sha2-384"
+
+
+["adt"."chosen"."u32"]
+"certificate-production-status" = 0
+"effective-production-status-ap" = 0
+"certificate-security-mode" = 1
+"effective-security-mode-sep" = 1
+"amfi-only-platform-code" = 1
+
+
+
+["adt"."product"]
+
+["adt"."product"."string"]
+"product-name" = "iPhone X"
+"product-description" = "iPhone X"
+"artwork-device-idiom" = "phone"
+"artwork-display-gamut" = "P3"
+"compatible-device-fallback" = "iPhone9,2"
+
+
+["adt"."product"."u32"]
+# The m2381 panel: 1080x2400 at iPhone-X-class 3x = 360 pt logical width;
+# subtype = panel height, as the real d22ap tree (2436) and nx729j (2480) do.
+"artwork-device-subtype" = 2400
+"artwork-scale-factor" = 3
+
+# The 20-byte libMobileGestalt product-table id (21H461 profile: J120's from
+# upstream 688fa88) is NOT carried yet: the d22 value needs the donor dyld
+# cache's libMobileGestalt table. Clients that switch on the product type
+# (the audio server's routing database) see an unknown device until then —
+# bring-up tolerant; derive when the audio lane returns.
+
+
+["adt"."product"."audio"]
+
+["adt"."product"."audio"."u32"]
+"wireless-splitter" = 1
+
+
+
+["adt"."defaults"]
+
+["adt"."defaults"."u32"]
+"kern.maxvnodes" = 66560
