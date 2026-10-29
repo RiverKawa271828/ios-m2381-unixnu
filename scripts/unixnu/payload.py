@@ -148,6 +148,12 @@ def build(ctx, kernel=None):
     payloads = stage / 'EFI/UniXNU/Payloads'
     payloads.mkdir(parents=True)
     shutil.copyfile(kernel, payloads / 'kernel.macho')
+    # DarwinBoot requires the com.apple.kernel member cpusubtype to equal the
+    # collection's; a kernel linked by lld (Linux) carries 0x80000002 where the
+    # donor-shaped collection says 0xC0000002.  No-op for classic kernels.
+    run(['python3', ctx.tree / 'scripts/patch-kernel-fileset-cpusub.py', payloads / 'kernel.macho'],
+        cwd=ctx.tree, env=dict(os.environ, UNIXNU_DEVICE=str(ctx.device)),
+        log_file=ctx.logs / 'payload-cpusub.log')
     # The entry probe (stage bars, optional reset) is wanted with either setting; the panic screen is only one part of it.
     if spec.get('panic_screen') or spec.get('entry_probe_reset_delay'):
         probe = (['--reset-delay', str(int(spec['entry_probe_reset_delay']))]
