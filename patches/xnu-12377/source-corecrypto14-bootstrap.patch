@@ -1,8 +1,7 @@
 diff --git a/osfmk/prng/prng_random.c b/osfmk/prng/prng_random.c
-index 504b3fa..310719a 100644
 --- a/osfmk/prng/prng_random.c
 +++ b/osfmk/prng/prng_random.c
-@@ -502,3 +502,122 @@ random_bool_gen_bits(struct bool_gen * bg, unsigned int * buffer, unsigned int c
+@@ -502,3 +502,141 @@
  	}
  	return rbits;
  }
@@ -24,6 +23,20 @@ index 504b3fa..310719a 100644
 + */
 +static SECURITY_READ_ONLY_LATE(kmod_info_t *) source_corecrypto14_original_kmod;
 +static unsigned source_corecrypto14_original_state;
++
++#if __has_feature(ptrauth_calls)
++/*
++ * The donor collection stores kmod_info.start under Apple's arm64e ABI: IA
++ * key with a 16-bit string discriminator (0xe4fe in the 23F84 collection's
++ * authenticated rebase entry for com.apple.kec.corecrypto's kmod_info),
++ * while this kernel's default convention authenticates unannotated function
++ * pointers with the IA key and a zero modifier. Cross-provider calls must
++ * authenticate through an annotated lvalue: the toolchain rejects casting a
++ * value to a qualified pointer type outright.
++ */
++typedef kern_return_t (* __ptrauth(0, 0, 0xe4fe)
++    source_corecrypto14_donor_start_t)(kmod_info_t *, void *);
++#endif
 +
 +kmod_info_t *source_corecrypto14_original(void);
 +kern_return_t source_corecrypto14_start_once(kmod_info_t *module, void *data);
@@ -89,7 +102,12 @@ index 504b3fa..310719a 100644
 +		}
 +		return source_corecrypto14_status;
 +	}
++#if __has_feature(ptrauth_calls)
++	source_corecrypto14_status =
++	    (*(source_corecrypto14_donor_start_t *)(void *)&module->start)(module, data);
++#else
 +	source_corecrypto14_status = module->start(module, data);
++#endif
 +	__atomic_store_n(&source_corecrypto14_original_state, source_corecrypto14_status == KERN_SUCCESS ? 2 : 3,
 +	    __ATOMIC_RELEASE);
 +	return source_corecrypto14_status;
