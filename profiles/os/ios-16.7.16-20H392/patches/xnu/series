@@ -1,0 +1,10 @@
+# The OS-profile patch series of the 20H392 donor lane. The first three ride
+# over from the 21H461 profile (donor-independent build machinery); the last
+# is the 16-generation entropy guard, dormant since the 2026-10-24 donor swap
+# and back in scope here — without it the 16-gen corecrypto kext installs the
+# kernel PRNG before register_crypto_functions and entropy_init's eager
+# SHA512_Init aborts (the r11 wall, far 0x40 / g_crypto_funcs == NULL).
+arch:../../../patches/xnu/zzz-boot-progress.patch
+component:XnuPrelink/patches/xnu-10063.141.1-security-init.patch
+component:XnuPrelink/patches/xnu-10063.141.1-sparse-index.patch
+arch:../../../patches/xnu/native-entropy-deferred-sha512.patch
