@@ -1,0 +1,60 @@
+--- a/iokit/Kernel/IOUserServer.cpp
++++ b/iokit/Kernel/IOUserServer.cpp
+@@ -3589,6 +3589,56 @@
+ 
+ /* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+ 
++/*
++ * Restored verbatim from xnu-8796.101.5 (iOS 16.7, IOUserServer.cpp:3549):
++ * the 20H392 donor kexts' prelink closures (IOStorageFamily, IOHIDFamily)
++ * call this base-form RPC entry point, whose definition xnu-10063 dropped —
++ * only the Reply form remains, and it checks a different message id with a
++ * different descriptor stride, so binding to it would fail every request.
++ * kIORPCVersionCurrent is identical across the two generations, which makes
++ * the 16-generation body semantically exact. The used attribute keeps the
++ * unreferenced definition out of dead-strip so the prelink closure can bind
++ * it by name.
++ */
++extern "C" __attribute__((used)) IORPCMessage *
++IORPCMessageFromMach(IORPCMessageMach * msg, bool reply)
++{
++	mach_msg_size_t              idx, count;
++	mach_msg_port_descriptor_t * desc;
++	mach_msg_port_descriptor_t * maxDesc;
++	size_t                       size, msgsize;
++	bool                         upgrade;
++
++	msgsize = msg->msgh.msgh_size;
++	count   = msg->msgh_body.msgh_descriptor_count;
++	desc    = &msg->objects[0];
++	maxDesc = (typeof(maxDesc))(((uintptr_t) msg) + msgsize);
++	upgrade = (msg->msgh.msgh_id != (reply ? kIORPCVersionCurrentReply : kIORPCVersionCurrent));
++
++	if (upgrade) {
++		OSReportWithBacktrace("obsolete message");
++		return NULL;
++	}
++
++	for (idx = 0; idx < count; idx++) {
++		if (desc >= maxDesc) {
++			return NULL;
++		}
++		switch (desc->type) {
++		case MACH_MSG_PORT_DESCRIPTOR:
++			size = sizeof(mach_msg_port_descriptor_t);
++			break;
++		case MACH_MSG_OOL_DESCRIPTOR:
++			size = sizeof(mach_msg_ool_descriptor_t);
++			break;
++		default:
++			return NULL;
++		}
++		desc = (typeof(desc))(((uintptr_t) desc) + size);
++	}
++	return (IORPCMessage *)(uintptr_t) desc;
++}
++
+ static IORPCMessage *
+ IORPCMessageFromMachReply(IORPCMessageMach * msg)
+ {
+
