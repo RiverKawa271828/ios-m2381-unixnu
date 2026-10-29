@@ -142,12 +142,15 @@ boot_b 不动；Mu 会重新扫描 ESP。
 - userdata 4K LBA（实机 GPT 三源对拍，权威值在设备仓 `board.toml`）：
   first=2,330,472 / last=123,871,226。
 
-## 7. 取证 reader 循环（**r55e 实测立通**，无需 nura-min）
+## 7. 取证 reader 循环（r55e 实测立通；**2026-10-30 分家拍板改专用 ESP**，同日再验全绿）
 
-> payload 内置 `type = "linux"` entry（forensic）：UniXNU 菜单选
-> "m2381 forensic log reader" → LoadImage 一个 Linux EFI-stub 内核 PE +
-> LoadFile2 initrd → 只读 dd 出 userdata 尾部 32MiB SHLOG 窗 → USB CDC
-> ACM serial shell → 宿主拉回。
+> **分家（用户拍板 2026-10-30）**：reader 不再 riding iOS payload——专用
+> 读者 ESP（`forensic/build-forensic-esp.py` 出件）按需刷 recovery_a：
+> 取证轮=刷读者 ESP，iOS 轮=刷 payload，各回各位。ESP toml
+> `default="forensic"`、timeout=3 → 菜单 3 秒自动进 reader，菜单保留
+> （Restart/Power off 常驻，reader 退出回菜单）。流程不变：LoadImage 一个
+> Linux EFI-stub 内核 PE + LoadFile2 initrd → 只读 dd 出 userdata 尾部
+> 32MiB SHLOG 窗 → USB CDC ACM serial shell → 宿主拉回。
 > **全程只读 UFS、不挂载任何文件系统、不刷任何分区。**
 > r55e 首验实录（2026-10-27）：lsusb 出 `1d6b:0104` → init 报
 > `userdata=sda22 … magic=SHLOG001` → 32MiB 窗拉回；同 shell 里
@@ -160,18 +163,29 @@ boot_b 不动；Mu 会重新扫描 ESP。
 |---|---|---|
 | forensic-kernel.efi | nura ESP v71 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，**m2381 实机验证过**：UART/USB/UFS/configfs 全通） | `4aad92b3` |
 | forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `402fb431`（r55e；**cpio 必须 13 字段**——newc 头 110 字节含尾部 check、namesize 含 NUL，12 字段版本内核拒包 "damaged header"，即 r55d 根因） |
+| reader-esp.img | build-forensic-esp.py 出件：64 MiB FAT32 + 专用 toml（default=forensic） | `d3e6d468`（2026-10-30 首验件） |
 
-### 出件（payload 命令，2026-10-27 r56 废轮教训入法）
+> **FAT32 下限陷阱（2026-10-30 实证）**：卷必须 ≥48 MiB——FAT32 要
+> ≥65525 个**数据簇**，32 MiB 卷扣除保留区与双 FAT 表后只剩 64,480 簇，
+> `mformat -F` 照样硬造且无告警，EDK2 Fat 驱动拒载整卷 → UniXNU 菜单跌进
+> "built-in configuration / no boot entry found"（首刷即现，64 MiB 修复）。
+>
+> **nura 最小内核（1512301a，3.79 MiB）在案未上岗**：其首崩已定谳为 FV
+> 内存图环境问题（RamManagerDxe 把 tz_stat XPU 围栏当 RAM 发配，见
+> STATE.md 2026-10-30 与 uefi-m2381 MemoryMapLib 修复），内核本体未实机
+> 跑通前 reader 轮只用 v71 完整版。
+
+### 出件（读者 ESP 命令，2026-10-30 分家版）
 
 ```bash
-# 三 flag 缺一不可：缺 --data-ramdisk = ADT 无 PackedRAMDisk 映射
-# （手术救不了）→ Data mount ENOENT panic；缺 --trust-cache = ESP 无
-# 信任缓存 sidecar。forensic reader 已由 payload.py 集成（board.toml
-# [payload] forensic=true），add-forensic-entry.py 仅存手术用。
-UNIXNU_UNIQUE_CHIP_ID=3645ad55d47e77c1 ./unixnu build payload \
-    -D ../UniXNU-m2381 \
-    --trust-cache out/m2381/trust/original-trust.bundle \
-    --data-ramdisk ../UniXNU-m2381/.cache/firmware/owner-data-fixture/scratch-data.img
+# 读者 ESP（取证轮刷卡件）。iOS payload 照常 build（board.toml
+# [payload] forensic=false，reader 不再进 ESP）；三 flag 教训只属于
+# iOS payload（缺 --data-ramdisk = ADT 无 PackedRAMDisk → Data mount
+# ENOENT panic；缺 --trust-cache = ESP 无信任缓存 sidecar）。
+python3 ../UniXNU-m2381/forensic/build-forensic-esp.py \
+    --cache-dir ../UniXNU-m2381/.cache/forensic \
+    --out ../UniXNU-m2381/.cache/forensic/reader-esp.img
+# fastboot flash recovery_a ../UniXNU-m2381/.cache/forensic/reader-esp.img
 # 刷卡前对 ESP 验四样：scratch-data.img 在 / toml 有 initrd 行 /
 # trustcache 在 / ADT 有 PackedRAMDisk（r56 = 四缺三翻车实录）
 # 平铺出件照旧（payload-rNN-<sha8>.img）
@@ -188,8 +202,9 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
 ### 读窗循环（iOS 引导断电后；工具 = ../UniXNU-m2381/scripts/acm-reader.py）
 
 1. 进 fastboot（电源+音量减；iOS 侧 `sheng-autoreset` 到点自落）；
-2. `fastboot reboot`（或直接 ABL 默认）→ UniXNU 菜单 → 选
-   **"m2381 forensic log reader"**（xnu 仍是 default，3 秒超时不动它）；
+2. `fastboot reboot`（或直接 ABL 默认）→ UniXNU 菜单 3 秒后自动进
+   **"m2381 forensic log reader"**（default=forensic；要 Restart/Power
+   off 就在倒计时内上下键，reader 退出也回菜单）；
 3. 宿主确认通道并拉窗（判定只看宿主，屏幕黑不阻塞）：
    ```bash
    lsusb | grep 1d6b:0104                      # 通道立起判据
