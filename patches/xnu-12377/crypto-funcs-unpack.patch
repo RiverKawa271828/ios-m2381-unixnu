@@ -1,0 +1,62 @@
+--- a/libkern/crypto/register_crypto.c
++++ b/libkern/crypto/register_crypto.c
+@@ -34,6 +34,46 @@
+ SECURITY_READ_ONLY_LATE(bool) crypto_init = false;
+ SECURITY_READ_ONLY_LATE(crypto_functions_t) g_crypto_funcs = NULL;
+ 
++#if defined(HAS_APPLE_PAC)
++/*
++ * The donor corecrypto component publishes function pointers in the kernel
++ * collection's packed form: a 32-bit signature above a 32-bit offset inside
++ * the collection, which that ABI authenticates with the 32-bit form of the
++ * pacia/autiza pair. This compiler emits the ordinary 64-bit form, so decode
++ * each packed entry once here and re-sign it as a normal pointer; every
++ * consumer in this kernel then branches to it with the ordinary convention.
++ * Data pointers in the table already arrive as ordinary addresses.
++ */
++static struct crypto_functions unixnu_crypto_functions;
++
++static void *
++unixnu_unpack_function_pointer(uint64_t value)
++{
++	uint64_t address = 0xfffffff000000000ULL | (value & 0xffffffffULL);
++
++	if (!value || ((value >> 32) & 0x00ffffffULL) == 0x00fffff0ULL) {
++		return (void *)(uintptr_t)value;
++	}
++	if (address < 0xfffffff008330000ULL || address >= 0xfffffff00b0c0000ULL) {
++		return (void *)(uintptr_t)value;
++	}
++	return ptrauth_sign_unauthenticated((void *)(uintptr_t)address,
++	           ptrauth_key_function_pointer, 0);
++}
++
++static void
++unixnu_unpack_crypto_functions(const crypto_functions_t funcs)
++{
++	uint64_t *slot = (uint64_t *)(void *)&unixnu_crypto_functions;
++	const uint64_t *source = (const uint64_t *)(const void *)funcs;
++
++	memcpy(&unixnu_crypto_functions, funcs, sizeof(unixnu_crypto_functions));
++	for (size_t i = 0; i < sizeof(unixnu_crypto_functions) / sizeof(*slot); i++) {
++		slot[i] = (uint64_t)(uintptr_t)unixnu_unpack_function_pointer(source[i]);
++	}
++}
++#endif /* defined(HAS_APPLE_PAC) */
++
+ int
+ register_crypto_functions(const crypto_functions_t funcs)
+ {
+@@ -41,7 +81,12 @@
+ 		return -1;
+ 	}
+ 
++#if defined(HAS_APPLE_PAC)
++	unixnu_unpack_crypto_functions(funcs);
++	g_crypto_funcs = &unixnu_crypto_functions;
++#else
+ 	g_crypto_funcs = funcs;
++#endif
+ 	crypto_init = true;
+ 
+ 	return 0;
