@@ -954,3 +954,22 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **用户已拍板（本会话执行）**：panic 屏加**校验行**——`scripts/xnu-panic-screen.c` 末尾渲染 `crc=xxxxxxxx len=nnn`（CRC32 over PANIC_TEXT 缓冲内容，zlib 口径），拍屏转录后对账杀 OCR 误读（cfd18/cdf18 教训）。约束：panic 屏代码住内核 padding 洞（PANIC_CAVE_END 0xfffffff00b9d0ff0，超限构建报错），CRC 增量 ~200B 预计塞得进；改动 = 主树脚本（b01035d 先例），只刷 recovery_a。
 - **排队项（不挡判读）**：①上游 `scripts/build-fileset-release-reference.py` 参数化到 out/m2381 接走参照件构建（消 17.6MB 树外产物债）②设备仓 bti-shape（bf1dac9）回推上游 XnuPrelink ③**二维码整线取消（用户拍板 10-31）**：上游 AdvancedLogDxe/扫传是 UEFI 阶段工具（我们 UEFI 一直正常跑，问题全在内核侧）；panic 屏全 QR 立项一并撤销，CRC 校验行保留为准 ④UART 通道已否（无串口）。
 - **基线备忘**：上游已 rebase 到 8fe2aaa（961c7da 记录）；下轮构建一律 `-j16`；刷写红线不变（只 recovery_a，boot_b d0200a6b / userdata 不动，--trust-cache/--data-ramdisk 必带）。
+
+**★会话二十一执行档（2026-10-31 凌晨，两轮屏摄判读+两堵落地+CRC 上岗）**：
+
+- **第九堵=entropy 补丁叠签自伤，已修已实测过墙**：屏摄 011739 → pc=donor corecrypto 回调 wrapper `blraa x8,x17(0xbcad)`，x8 目标=我们 `_entropy_provide`(+0x0)。根因=第八堵补丁 `ptrauth_sign_unauthenticated` 直接叠签（本机 clang 把函数引用物化成 `paciza`，(void*) 转换不剥离→`sign(sign(addr,IA,0),IA,0xbcad)`，autia 对干净址重算必败）；0xbcad 判别子本身没错，错在没 strip。修法=补丁加 `ptrauth_strip`（主树 13e2871；同 sysctl/kmod 已验证 idiom），出件二进制实证单签形态 `paciza→xpaci→pacia(0xbcad)`。上轮"批量轮生效实证"只证明 init 调用过墙，回调本体首次被调即崩——**教训：PAC 交接修法必须反汇编验证单签**。全链路账：corecrypto 自配置函数栈上 funcs 表（每项 pacia(IA,槽址|魔数)）→ 我们逐槽重签循环 → `cckprng_funcs` 六字段序 → funcs[5]=丢 x1 的 shim → cckprng_init stp arg5/6 → [ctx+24]/[ctx+32] + wrapper 注册 [ctx+0xad8]；崩溃 ctx=corecrypto 自有全局 0x0b6042a0。
+- **第十堵=AppleImage4 `_kalloc_type_impl_external` 桩，已修**：屏摄 030636 → `unmapped kernel function from 0x08d419ec (x0 0x07f64320 x1 0x4)`。三重判据定名（源序夹逼 kalloc.c:2720 + 签名 `(kalloc_type_view_t, zflags)` + 体形 0xd001000|flags/cpu<<14/尾调 zalloc_ext）。修法=设备仓 fixture 118→119（**31fa4e5**）。方法链沉淀：桩点反汇编→原始 KC 同偏移字节特征→stubbed 账本交叉→map 邻居夹逼→源码函数序。坑：fileset 条目 idsize=0 按预链接序对齐（31 条含 xnu 本体 0x0a73c000+0x980000，与 +0x346c000 全自洽）；bl 目标勿用模式首址（差 8）。
+- **CRC 校验行上岗（用户拍板项，主树 c296784）**：渲染 pages/free 后画 `crc=`=zlib crc32 over PANIC_TEXT 本轮拷贝（logn>0 才画）。**首轮实测即立功**：030636 屏 crc=0xe8dbdc06 与重建消息逐字节吻合（132B），转录被证明而非假定。**坑=本车道 panic cave 零余量**（eeedeb9a 版已吃满 0xa30，首版 +51B 构建炸）；瘦身（砍 len= 列、hex() 单调用）后 0xa0d/0xa30 余 0x23；洞后 0x13B 即真数据，不可外扩 PANIC_CAVE_END。
+- **出件**：kernel **9e47d053** → payload **5f59a2a0**（96MiB，存档 `out/m2381/payload-kallocfix-crc-5f59a2a0.img`；trust `ebeaf7fb`/seed `d04a0153` 不变）。设备现役 = recovery_a ← 5f59a2a0（用户已刷，030636 屏摄即此件在跑），boot_b d0200a6b / userdata 不动。
+
+**★会话二十二开工单（2026-10-31 凌晨收尾；用户拍板"批量处理 stubbed 墙，下会话分析和修，本轮只提取日志"）**：
+
+- **本轮提取的日志（030636 屏摄，crc=0xe8dbdc06 已验真）**：`fileset: original component called an unmapped kernel function from 0xfffffff008d3ab04 (x0 0xfffffff58bd698a8 x1 0xfffffff00b038fb8)`，pages/free=0x125b8c/0x12544c。caller=AppleImage4 exec+0x7254（站点 0x08d3ab00）；原始 KC 同偏移本尊 bl → donor 目标 **0xfffffe000ae40858** ↔ stubbed 账本 `0x0ae40858`。体形速写：`bti c; cbz x0,slow;` 包装 +8 的 pacibsp 主函数。x0=带 0xf5 tag 的签名数据指针（站点上下文有 `autda x16,x17(0xcda1)` 多样化鉴权族），x1=0x0b038fb8（xnu exec 区间指针，疑回调/cookie）——下会话定性。
+- **批量管线工作单（kalloc_type_impl_external=已验证模板，可复制）**：
+  1. **输入**：kernel.json `stubbed` 按组件账本（donor 目标 VA + 站点数；全账合计 8552 站点/1471 目标）；map.json `functions`（已配对邻居，order-based）。
+  2. **优先级=站点数×组件数**：头号大户 **0x0ae40858**（AppleARMPlatform 343 + WatchdogTimer 28 + AppleImage4 10 = 381 站点，且是多组件共享的内核核心函数）；次席 0x0afc0740（corecrypto 6+2/AMFI?/AppleImage4 6+2 等多组件）；逐表排序。
+  3. **自动夹逼**：donor VA → map 邻居（上/下最近已配对）→ 我们构建的对应 native 区间 → xnu/kext 源码函数序候选 → 体形（masked shape）+签名+arg 用法三重验证 → **批量产 fixture**（original/original_size/original_sha256 自动算，evidence 半自动人工过目）。
+  4. **无 native 对应者**（Apple-only helper）：小 shim 桥接（fileset-unmapped-call.patch 先例），逐个评估。
+  5. **验收门**：重建后 stubbed 账本站点数单调下降；boot 推进过 AppleImage4（下一组件新墙按同法）。
+  6. **风险**：fixup 勿盲改（#21 教训）；每条 fixture 必须证据行可回溯；跨组件共享目标修错代价=多组件同崩，先在小站点组件上验。
+- **排队项不变**：①build-fileset-release-reference.py 参数化接参照件 ②bti-shape 回推上游 ③UART/QR 维持取消。基线：-j16；刷写红线只 recovery_a；--trust-cache/--data-ramdisk/--unique-chip-id 必带。
