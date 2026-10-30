@@ -1004,6 +1004,16 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **判读 = B 治本、C 减税不足**：macOS 无参照已反超 Linux 带参照；pac-checked 350→1312 说明 FPAC 软检查块是 Linux 税大头（C 可把此项追平）但 body-hash ×9.7/vtable/data 差异 C 覆盖不了。**建议主攻 B**：①CI 内建 RELEASE 参照件（消最后一项输入差）②payload/userdata CI 化 ③932 残余=真 Apple-only 尾巴走 fixture/shim（上游 sheng 同款姿势）④本地 Linux 保留快迭代腿，C 作为 Linux 腿减税可选项。
 - **出件态**：本地现役 kernel = 8b60dbb4（带参照件重出，ledger 4913/654 与 f763e9e6 全同、二进制 rerun 非确定）、payload **28fe6d56**（平铺 `out/m2381/payload-batchfix-28fe6d56.img`，ESP 内核 905fb6fa=f763e9e6 派生）可刷；CI 侧 kernel 未上传（只有日志）。
 
+**★会话二十三判读 = 第十一堵定谳 = IOStorageFamily → kern_conf 设备开关族（2026-10-31 凌晨，屏摄 061501，fixture b3481fc）**：
+
+- **转录验真**：`fileset: original component called an unmapped kernel function from 0xfffffff009f84d90 (x0 0xffffffff x1 0x0)`，pages/free=0x125b8c/0x12544c，**crc=0x20c30dfb zlib 精确吻合（030636 先例复用，转录逐字节可信）**。stage #1、verifiedK=0 failures=0——root mount 前的 donor 原生组件首发。前墙（AppleImage4 kalloc，第十堵）已过 = batchfix 件全链生效实锤。
+- **钻法（新案例全程，已定型）**：拍屏 → CRC 验真 → 从 payload ESP 提 kernel.macho（mcopy，勿用本地旧 out/m2381/kernel=10-25 旧 lane）→ 站点 0x9f84d8c 反汇编 → **outer __TEXT_EXEC 定段 + donor KC 同 VA 截断空间（0xfffffe00 前缀折叠）定组件** = com.apple.iokit.IOStorageFamily → 原始 bl 目标 0xfffffe000ae3efd0 → batchid 夹逼。
+- **定谳**：站点 bl 原目标 = donor `_bdevsw_isfree`（bsd_stubs.c 源码逐字吻合：1 参、-1→从 1 起扫、反索引→-index 起扫、bdevsw[] 0x38 步长、memcmp `nobdev` 56B 模板、界 0x17、miss 返 -1）。**整族 6 函数全 stubbed（18 站点）**：0xae3efd0 isfree×3、0xae3f0b4 add×4（内联 isfree+56B 拷贝）、0xae3f248 bdevsw_remove×5、0xae3f44c cdevsw_add×2（0x70 步长+112B 拷贝）、0xae3f5c4 cdevsw_remove×2、0xae3f70c cdevsw_add_with_bdev×2（3 参、内调 cdevsw_add）。donor 侧无独立 cdevsw_isfree（被内联）→ donor 地址序=我们 bsd_stubs.c 序一一对应。caller 流程 = IOMediaBSDClient 注册标准形：isfree(-1)→bdevsw_add→cdevsw_add_with_bdev→败则 bdevsw_remove 回滚+isfree(~major) 重试。
+- **ABI 对拍全绿（未动源码）**：nblkdev 双方 24、nchrdev 双方 64（conf.c 已有 `[13 ... 63] = NO_CDEVICE`）、struct bdevsw=0x38/struct cdevsw=0x70 双方一致、NO_BDEVICE/NO_CDEVICE=eno_* 非零指针（零填槽会被 isfree 判占用——conf.c 无此问题）。**教训：grep `[N] = {` 会漏 range designator 条目，别急着改源码。**
+- **修法 = fixture 六条**（设备仓 **b3481fc**，fileset-23F84-symbols.json，全部 sha 钉+sym 自验过；matcher 漏配根因未深究——体形差异进 body-hash 都过不了，fixture 通道即定案手段）。
+- **出件态**：kernel/payload 本轮重出中（b3481fc 之后）。刷写红线不变：只 recovery_a，boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-kallocfix-crc-5f59a2a0.img。
+- **下一墙预判**：0xae3fed8（17 站点，_devsw_unlock 之后=疑似 sysctl 邻域）为本族最大残余；stubbed 总账 4913/654。
+
 **★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
 
 - **A. 判读（用户刷 28fe6d56 后）**：
