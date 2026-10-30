@@ -293,7 +293,15 @@ def prelink(ctx):
         command += ['--root', root]
     if spec.get('early_security_init'):
         command += ['--early-security-init', spec['early_security_init']]
-    command += spec.get('extra_args', [])
+    extra_args = list(spec.get('extra_args', []))
+    for index, value in enumerate(extra_args):
+        # A board may name optional inputs that only exist after a local side
+        # build (the RELEASE fileset reference); a runner without them still
+        # links, just without the naming reference.
+        if value == '--fileset-reference' and not (ctx.tree / extra_args[index + 1]).is_file():
+            extra_args[index:index + 2] = []
+            break
+    command += extra_args
     # A failed rebuild must not remove the last candidate or its record.
     with tempfile.TemporaryDirectory(dir=output.parent, prefix='.prelink-') as directory:
         candidate = Path(directory) / output.name
