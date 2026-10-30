@@ -17,7 +17,7 @@ index 67f2095..c56a830 100644
  
     view->RB_MRT_BUF_INFO =
 diff --git a/src/freedreno/vulkan/tu_clear_blit.cc b/src/freedreno/vulkan/tu_clear_blit.cc
-index ce3eca9..ad7a856 100644
+index ce3eca9..898a304 100644
 --- a/src/freedreno/vulkan/tu_clear_blit.cc
 +++ b/src/freedreno/vulkan/tu_clear_blit.cc
 @@ -206,6 +206,32 @@ format_to_ifmt(enum pipe_format format)
@@ -179,7 +179,58 @@ index ce3eca9..ad7a856 100644
        tu_cs_image_ref_2d<CHIP>(cs, blt_view->view, blt_view->layer, false);
  
        tu_cs_emit_pkt4(cs, REG_A6XX_RB_RESOLVE_SYSTEM_FLAG_BUFFER_BASE, 3);
-@@ -5523,7 +5594,7 @@ tu_emit_blit(struct tu_cmd_buffer *cmd,
+@@ -2784,6 +2855,34 @@ copy_compressed(VkFormat format,
+       *height = DIV_ROUND_UP(*height, block_height);
+ }
+ 
++/* Telemetry for the copies that need a row-by-row path (tu_copy_row_stats). [0] buffer to image copies, [1] those split into one blit per row, [2] their
++ * rows, [3] image to buffer copies, [4] those split per row, [5] their rows, [6] rows of the largest split copy, [7] its pitch in bytes,
++ * [8] its width | height << 32, [9] its VkFormat. A copy is counted per layer. */
++static uint64_t tu_copy_row_counters[16];
++static void
++tu_note_copy_rows(unsigned kind, bool split, uint32_t rows, uint32_t pitch, uint32_t width, uint32_t height, uint32_t format)
++{
++   uint64_t *c = tu_copy_row_counters + kind * 3;
++   __atomic_fetch_add(&c[0], 1, __ATOMIC_RELAXED);
++   if (!split)
++      return;
++   __atomic_fetch_add(&c[1], 1, __ATOMIC_RELAXED);
++   __atomic_fetch_add(&c[2], rows, __ATOMIC_RELAXED);
++   if (rows > tu_copy_row_counters[6]) {
++      tu_copy_row_counters[6] = rows;
++      tu_copy_row_counters[7] = pitch;
++      tu_copy_row_counters[8] = (uint64_t)height << 32 | width;
++      tu_copy_row_counters[9] = format;
++   }
++}
++extern "C" __attribute__((visibility("default"))) void tu_copy_row_stats(uint64_t out[16]);
++extern "C" void
++tu_copy_row_stats(uint64_t out[16])
++{
++   for (unsigned i = 0; i < 16; i++)
++      out[i] = __atomic_load_n(&tu_copy_row_counters[i], __ATOMIC_RELAXED);
++}
++
+ template <chip CHIP>
+ static void
+ tu_copy_buffer_to_image(struct tu_cmd_buffer *cmd,
+@@ -2841,6 +2940,7 @@ tu_copy_buffer_to_image(struct tu_cmd_buffer *cmd,
+ 
+       uint64_t src_va = vk_buffer_address(&src_buffer->vk, info->bufferOffset) + layer_size * i;
+       bool unaligned = (src_va & 63) || (pitch & 63);
++      tu_note_copy_rows(0, !has_unaligned && unaligned, extent.height, pitch, extent.width, extent.height, dst_image->vk.format);
+       if (!has_unaligned && unaligned) {
+          for (uint32_t y = 0; y < extent.height; y++) {
+             uint32_t x = (src_va & 63) / block_size;
+@@ -3064,6 +3164,7 @@ tu_copy_image_to_buffer(struct tu_cmd_buffer *cmd,
+       ops->src(cmd, cs, &src, i, VK_FILTER_NEAREST, dst_format);
+ 
+       uint64_t dst_va = vk_buffer_address(&dst_buffer->vk, info->bufferOffset) + layer_size * i;
++      tu_note_copy_rows(1, (dst_va & 63) || (pitch & 63), extent.height, pitch, extent.width, extent.height, src_image->vk.format);
+       if ((dst_va & 63) || (pitch & 63)) {
+          for (uint32_t y = 0; y < extent.height; y++) {
+             uint32_t x = (dst_va & 63) / block_size;
+@@ -5523,7 +5624,7 @@ tu_emit_blit(struct tu_cmd_buffer *cmd,
           tu6_emit_blit_scissor(cmd, cs, i, align_scissor);
        }
        event_blit_dst_view blt_view = blt_view_from_tu_view(iview, i);
@@ -188,7 +239,7 @@ index ce3eca9..ad7a856 100644
     }
  
     tu_flush_for_access(&cmd->state.cache, TU_ACCESS_BLIT_WRITE_GMEM,
-@@ -5839,7 +5910,7 @@ store_cp_blit(struct tu_cmd_buffer *cmd,
+@@ -5839,7 +5940,7 @@ store_cp_blit(struct tu_cmd_buffer *cmd,
           r2d_dst_stencil(cs, dst_iview, layer);
        }
     } else {
@@ -197,7 +248,7 @@ index ce3eca9..ad7a856 100644
     }
  
     /* Note: we compute the swap here instead of using the color_swap as
-@@ -5867,6 +5938,8 @@ store_cp_blit(struct tu_cmd_buffer *cmd,
+@@ -5867,6 +5968,8 @@ store_cp_blit(struct tu_cmd_buffer *cmd,
        src_height += tiling->tile0.height;
     }
  
@@ -206,7 +257,7 @@ index ce3eca9..ad7a856 100644
     uint64_t va = gmem_offset;
     if (CHIP < A8XX) {
        /* For gen8, address is simply gmem_offset if tile_mode is gmem
-@@ -5957,7 +6030,7 @@ store_3d_blit(struct tu_cmd_buffer *cmd,
+@@ -5957,7 +6060,7 @@ store_3d_blit(struct tu_cmd_buffer *cmd,
           r3d_dst_stencil<CHIP>(cs, dst_iview, layer);
        }
     } else {
