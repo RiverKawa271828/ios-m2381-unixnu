@@ -64,3 +64,4 @@
 ../../../../../patches/xnu-12377/native-4k-block-split.patch
 ../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
 ../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
+../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
