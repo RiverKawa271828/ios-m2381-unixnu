@@ -77,6 +77,12 @@ def main():
     if not build_id:
         parser.error('UNIXNU_IPSW_BUILD is not set; run through unixnu build kernel')
     policies = (args.policy_dir or tree / f'build/verified-root-{build_id}').resolve()
+    if not (policies / 'OS/manifest.bin').is_file():
+        # A runner has no locally built pair; the device repository carries the
+        # compact staged policies (manifest/key/verification) in its cache.
+        cached = tree / '.cache/firmware' / f'verified-root-{build_id}'
+        if (cached / 'OS/manifest.bin').is_file():
+            policies = cached
     # The resolved build tree links the device package as kits/sheng, while an
     # explicit device repository keeps package/ and drivers/ side by side.
     package_dirs = [device / 'package']
