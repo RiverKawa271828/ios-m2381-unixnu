@@ -1023,6 +1023,8 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **下一墙预判**：0xae4d098（**91 站**、AMFI/IOGPU/HID/IOSurface/apfs 五组件，OSDictionary 区，体形 = vt[0x100] 转发壳：`ldr x2,[x2]` 后 `braa` 槽 0x100 disc 0xc323）——**需 vtable 槽位法（工作单 B.2 的 `pair_family_by_vtable_slot`），勿手工硬啃**；native 侧 ZTV 槽项是打包指针（0x8011…形，div 0xc323 与 donor braa 逐位同），解码器未破。次候选 0xae45eb8×36（OSArray 区）/0xae46bbc×31/0xae8dbb4×45(apfs)。
 - **刷写红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-kallocfix-crc-5f59a2a0.img。
 
+**★会话二十三三判 = 第十三堵 = AMFI → `_os_log_create`（屏摄 074203，fixture dcffcc1）**：crc=0x88a9cb7 吻合；站点 0x8f0dfd0 = AMFI 调 `os_log_create("com.apple.MobileFileIntegrity", "library_validation_failure")`，NULL 时 csel 回退缓存句柄。donor 0xfffffe000ae8a26c（1408B，夹在 `_os_log_equ`/`__os_log_internal` 间，读 CNTVCT 类寄存器）→ native `_os_log_create`（区间唯一候选 0x7a66f78）。**12 站点五组件**。预测核对：命中"同一未配对尾区继续发"但首发是 12 站的 0xae8a26c 而非 91 站的 0xae4d098——尾巴按调用序而非站点数排序。ledger 4872→4860（−12）；kernel **c12f1711**，payload **9f4d17f3** 存 `out/m2381/payload-oslog-9f4d17f3.img`。下一墙候选不变：0xae4d098×91（vt0x100 转发壳，需 B.2 vtable 槽位通道）、0xae8dbb4×45(apfs)、0xae45eb8×36、0xae46bbc×31。刷写红线不变。
+
 **★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
 
 - **A. 判读（用户刷 28fe6d56 后）**：
