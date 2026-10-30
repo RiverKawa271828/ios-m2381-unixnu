@@ -68,3 +68,4 @@
 ../../../../../patches/xnu-12377/native-modload-lock-order.patch
 ../../../../../patches/xnu-12377/native-union-readdir-eof.patch
 ../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
+../../../../../patches/xnu-12377/crypto-funcs-probe.patch
