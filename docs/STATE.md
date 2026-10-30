@@ -982,3 +982,24 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **残余分类（temp/batch-fixtures/）**：同形家族 87 目/525 站（Dispatch 家族 15+ 全同体小 thunk，1:1 门正确弃权，需 vtable 槽位/邻居消歧——0xaea0bf8=IOUserClient::Dispatch 48 站已锁）vs 真孤儿 560 目/4354 站（TOP=0xaeb8eb0 IORegistryEntry 区 190 站（registry 递归锁+两虚调+解锁，源序无对应=疑 122.8 新增）、0xaed7e2c IOService 区 168、0xa95ca30 锁函数 127（tpidr+0x1b8 计数器+casa+wfe）、0xaf6236c IOReporter 92）；源漂移类=donor xnu-12377.**122.8** vs 源 121.6（IOSimpleReporter::setValue 多一次调用，0.97 相似）。工具=temp/batch-fixtures/{batchid,fndiff}.py。
 - **CI 定量实验（B 腿）**：run 41124044607 秒挂（**pre_build 期望 shell 命令串，`ci-owner-policy` 不是命令=127**；kernel-only 不需要 owner policy）→ 重发 **41124555115**（空 pre_build，kernel-only，xcode 26.6）；主树 m2381-ios27 force-with-lease→远端 m2381（63d7969），设备仓 main 已推 b68da7b。
 - **判读单（下会话）**：①**CI 结果=macOS 建 stubbed 计数**→量化工具链税，拍板 B（macOS 建核转正）vs C（Linux `+fpac`，实测有 FPAC 硬陷阱=历轮 donor 侧 PAC failure 同步 panic 即证，开掉 13052 处软检查块）主攻；②若刷 28fe6d56：判读门=AppleImage4 之后下一组件新墙（stubid 同法），4913 站=背景噪声逐墙消；③排队：同形家族消歧通道（vtable 槽位法）、真孤儿 TOP 手写 fixture、bti-shape+本轮三通道**回推上游**（改基线=上游欠我们的）、pre_build=ci-owner-policy 的正确喂法考证（会话三十五跑通过，当时喂法待查）。
+
+**★会话二十二续 = CI 定量实验结果（2026-10-31 凌晨；**B 腿证明可行，工具链税定谳**）**：
+
+- **喂法三坑全修**：①`pre_build` 期望 shell 命令串非脚本名（`ci-owner-policy` 127——那是 20H392 代 hdiutil 重建机制，27 车道不需要）；②政策对 CI 缺失 → 设备仓 **4b7e23f** 强制入库紧凑集（`.cache/firmware/verified-root-23F84/{OS,SystemOS}/{manifest,trusted-key,verification}` 27MB，`git add -f` 破例有档）+ 主树 `build-sheng-source-storage.py` 加 `.cache/firmware` 回退（**87acd33**）；③board.toml 无条件喂 `--fileset-reference` 而 CI 无 RELEASE 参照件 → 主树 kernel.py 文件不存在时降级去参（**9f0e4ce**；**本地 c8214f7 与远端 9f0e4ce6 同树异 sha**——git 通道 TLS 断连时经 GitHub Git Data API 推的，代理恢复后本地已 reset 对齐）。
+- **决定性 run = 41132298280 全绿（11m48s，xcode 26.6）**：macOS 全链（63 补丁系+组件+XNU+emit）一次通过；此前 41124555115 的 `clang++ linker` Error = 设计内容忍的 bootstrap（会话十三既立），非 B 腿障碍。
+- **工具链税同口径全表**（同 matcher v10/同 fixtures/同 donor 23F84/**双方都无参照件**）：
+
+  | 指标 | Linux clang-24/lld | macOS xcode 26.6 |
+  |---|---|---|
+  | functions matched | 7163/21113 | **8324/21113 (+16%)** |
+  | body-hash | 56 | **542 (×9.7)** |
+  | pac-checked-shape | 350 | **1312 (×3.7)** |
+  | vtable | 876 | **1285** |
+  | data matched | 541 | **1200 (×2.2)** |
+  | bti-checked-shape（我方新通道） | 858 | 28（macOS 无双差体=本就不欠） |
+  | kext-facing named | 1517/3094 | **1783/3094** |
+  | emit `stubbed functions`（按组件去重目标口径） | （带参照件）1234 | **932（输入更差仍反超 −25%）** |
+
+  参照件在 Linux 值 ~1900 站（4913 vs 6841 site 口径）；CI 未上传 kernel.json，site 口径精确数下轮补（workflow upload 加 kernel.json 或 CI 内建参照件）。
+- **判读 = B 治本、C 减税不足**：macOS 无参照已反超 Linux 带参照；pac-checked 350→1312 说明 FPAC 软检查块是 Linux 税大头（C 可把此项追平）但 body-hash ×9.7/vtable/data 差异 C 覆盖不了。**建议主攻 B**：①CI 内建 RELEASE 参照件（消最后一项输入差）②payload/userdata CI 化 ③932 残余=真 Apple-only 尾巴走 fixture/shim（上游 sheng 同款姿势）④本地 Linux 保留快迭代腿，C 作为 Linux 腿减税可选项。
+- **出件态**：本地现役 kernel = 8b60dbb4（带参照件重出，ledger 4913/654 与 f763e9e6 全同、二进制 rerun 非确定）、payload **28fe6d56**（平铺 `out/m2381/payload-batchfix-28fe6d56.img`，ESP 内核 905fb6fa=f763e9e6 派生）可刷；CI 侧 kernel 未上传（只有日志）。
