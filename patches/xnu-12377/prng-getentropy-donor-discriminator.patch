@@ -1,6 +1,6 @@
 --- a/osfmk/prng/prng_random.c
 +++ b/osfmk/prng/prng_random.c
-@@ -328,6 +328,25 @@
+@@ -328,6 +328,33 @@
  	read_erandom(buffer, numBytes);
  }
  
@@ -16,7 +16,15 @@
 +static cckprng_getentropy
 +unixnu_donor_getentropy(cckprng_getentropy callback)
 +{
-+	return (cckprng_getentropy)ptrauth_sign_unauthenticated((void *)callback,
++	/*
++	 * Strip first: a function reference in this kernel already arrives
++	 * signed under the zero-discriminator convention, and signing that
++	 * value again stacks a second signature the donor's blraa can never
++	 * validate (the r82 batch round proved this idiom on the sysctl and
++	 * kmod entry fixes).
++	 */
++	return (cckprng_getentropy)ptrauth_sign_unauthenticated(
++	           ptrauth_strip((void *)callback, ptrauth_key_function_pointer),
 +	           ptrauth_key_function_pointer, 0xbcad);
 +}
 +#else
@@ -26,7 +34,7 @@
  void
  register_and_init_prng(struct cckprng_ctx *ctx, const struct cckprng_funcs *funcs)
  {
-@@ -340,7 +359,7 @@
+@@ -340,7 +367,7 @@
  	prng_funcs = *funcs;
  
  	uint64_t nonce = ml_get_timebase();
