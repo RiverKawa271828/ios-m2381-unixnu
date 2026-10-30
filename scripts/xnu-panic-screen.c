@@ -264,6 +264,25 @@ __attribute__((noreturn, used, section(".text.b_main"))) void panic_screen_main 
   (void)MAX_MEM;
   hex (&g, "\npages=", *(volatile const u32 *)PAGE_TOTAL);
   hex (&g, "\nfree=", *(volatile const u32 *)PAGE_FREE);
+  /* zlib crc32 (reflected, poly 0xEDB88320) over this panic's copy of the message in
+   * PANIC_TEXT, so a photographed screen can be verified byte-for-byte: retype the
+   * message, hash it, compare against crc=. The line itself is outside the covered
+   * range and is only drawn when this panic owned the copy (logn > 0); a kept earlier
+   * banner's text is left unchecksummed. Kept byte-tight: the panic cave in this lane
+   * has no headroom (the arm64e build filled it), so no len= column. 2026-10-31, after
+   * the OCR misreads on long hex strings (0a4cfd18 vs 0a4cdf18). */
+  if (g.logn) {
+    const volatile u8 *p = (const volatile u8 *)PANIC_TEXT;
+    u32 crc = 0xFFFFFFFFu, i;
+    int k;
+    for (i = 0; i < g.logn; i++) {
+      crc ^= p[i];
+      for (k = 0; k < 8; k++) {
+        crc = (crc >> 1) ^ (0xEDB88320u & (0u - (crc & 1)));
+      }
+    }
+    hex (&g, "\ncrc=", ~crc);
+  }
   /* The raw argument slots are not dumped: the formatted message above already carries them (room for the PANIC_TEXT copy). */
   mark[0] = 0xC0FFEE11u;
   mark[1] = 0x5CEEDA7Au;
