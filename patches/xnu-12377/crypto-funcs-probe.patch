@@ -1,0 +1,24 @@
+--- a/libkern/crypto/register_crypto.c
++++ b/libkern/crypto/register_crypto.c
+@@ -41,6 +41,21 @@
+ 		return -1;
+ 	}
+ 
++#if defined(HAS_APPLE_PAC)
++	/*
++	 * One-shot bring-up probe: report the table as the donor component built
++	 * it, before any consumer authenticates one of its function pointers.
++	 */
++	{
++		const uint64_t *w = (const uint64_t *)(const void *)funcs;
++		panic("unixnu-probe crypto_functions %p "
++		    "[0]%016llx [1]%016llx [2]%016llx [3]%016llx [4]%016llx "
++		    "[5]%016llx [6]%016llx [7]%016llx [8]%016llx",
++		    (const void *)funcs, w[0], w[1], w[2], w[3], w[4],
++		    w[5], w[6], w[7], w[8]);
++	}
++#endif
++
+ 	g_crypto_funcs = funcs;
+ 	crypto_init = true;
+ 
