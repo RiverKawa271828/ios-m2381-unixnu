@@ -1,0 +1,50 @@
+--- a/libkern/c++/OSKext.cpp
++++ b/libkern/c++/OSKext.cpp
+@@ -382,6 +382,34 @@
+ 	kOSKextLoadTagCount
+ };
+ 
++#if defined(HAS_APPLE_PAC)
++/*
++ * A kernel collection built by another toolchain stores a kext entry point as a
++ * 32-bit signature over the low half of the address: the whole collection lives
++ * in one 4 GiB window, so the offset names the function while the tag was
++ * computed for a verification this kernel does not perform. Unpack the offset
++ * and sign it with the convention every caller here uses, so an authenticated
++ * branch or a direct kmod_info->start call reaches the entry point.
++ */
++static uintptr_t
++unixnu_kext_entry(uintptr_t entry)
++{
++	uint64_t value = (uint64_t)entry;
++
++	if (!value) {
++		return entry;
++	}
++	if (((value >> 32) & 0x00ffffff) != 0x00fffff0) {
++		value = 0xfffffff000000000ULL | (value & 0xffffffffULL);
++	} else {
++		value = (uintptr_t)ptrauth_strip((void *)entry,
++		    ptrauth_key_function_pointer);
++	}
++	return (uintptr_t)ptrauth_sign_unauthenticated((void *)(uintptr_t)value,
++	                  ptrauth_key_function_pointer, 0);
++}
++#endif /* defined(HAS_APPLE_PAC) */
++
+ /* Set up a fake kmod_info struct for the kernel.
+  * It's used in OSRuntime.cpp to call OSRuntimeInitializeCPP()
+  * before OSKext is initialized; that call only needs the name
+@@ -2228,6 +2256,12 @@
+ 				kmod_info->address = (uintptr_t)data;
+ 				kmod_info->size = length;
+ 			}
++#if defined(HAS_APPLE_PAC)
++			kmod_info->start = (kmod_start_func_t *)
++			    unixnu_kext_entry((uintptr_t)kmod_info->start);
++			kmod_info->stop = (kmod_stop_func_t *)
++			    unixnu_kext_entry((uintptr_t)kmod_info->stop);
++#endif /* defined(HAS_APPLE_PAC) */
+ #if KASLR_KEXT_DEBUG
+ 			IOLog("kaslr: unslid 0x%lx slid 0x%lx - kmod_info \n",
+ 			    (unsigned long)((vm_offset_t)kmod_info) - kext_slide,
