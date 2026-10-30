@@ -1014,6 +1014,15 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **出件态**：kernel/payload 本轮重出中（b3481fc 之后）。刷写红线不变：只 recovery_a，boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-kallocfix-crc-5f59a2a0.img。
 - **下一墙预判**：0xae3fed8（17 站点，_devsw_unlock 之后=疑似 sysctl 邻域）为本族最大残余；stubbed 总账 4913/654。
 
+**★会话二十三续判 = 第十二堵定谳 = AMFI → libkern OSMetaClass/OSArray 块（2026-10-31 早，屏摄 065621，fixture 079aee5）**：
+
+- **转录验真**：`unmapped kernel function from 0xfffffff008f1b150 (x0 0xfffffff00b54bfd8 x1 0xfffffff00755bbdf)`，**crc=0xbfe4144d zlib 吻合**。第十一堵（kern_conf 族）已过 = 8d3a3ca4 件全链生效。
+- **定谳**：caller = AMFI 类构造器，原目标 0xfffffe000ae411c8 = **delegating OSMetaClass 构造器**（7 参 this/className/super/size/zone/zoneName/flags；体形 = 基类 ctor 调用 + gIOKitDebug 位 6 检查 + zone_create(zoneName, size, flags|0x2000000=ZC_ZFREE_CLEARMEM, 0xffff, 0) 存 *[x4]；x5 奇地址 0x755bbee = zone 名串，谜底）。返址后 `pacda x16,x17(0xcda1)` 签 vtable 存 [x0] = AMFI 鉴权族。
+- **整块 8 目标 17 站点六组件**：0xae40a90=`checkMetaCastWithName(OSSymbol,Base)`（registry walk+vt0x128+super 链 0x10）、0xae411c8=OSMetaClass C2（AMFI×2+IOSurface×4）、0xae42a64=`allocClassWithName(OSString)`、0xae42ab4=`allocClassWithName(char*)`（孪生 0x50B，转换器=hA1 `OSSymbol::withString`/hA2 `withCStringNoCopy`，均已配对；**定名钥匙 = donor withString 源码语义**：OSDynamicCast vs gOSSymbolMetaClass→retain、flags@+0xc bit0=kOSStringNoCopy→withCStringNoCopy(strnlen 0x3fffe)）、0xae42dbc=`getSuperClass`（ldr [x0,#0x10]）、0xae43d58=`OSObject::operator new`（kalloc_type+实例计数 ldadd；donor 序紧邻 reviewed 的 typed_operator_new=native 同序）、0xae43fa4/0xae43fec=OSArray `getNextIndexOfObject`/`getLastObject`（count@0x14、PAC 数组@0x20 disc 0xfeb9、逐字节同 native）。
+- **fixture 8 条**（079aee5，sha+sym 自验全过），ledger 4895→4872（−17 精确）；kernel **cbc4c02d**，ESP 内核 793d148d，站点 bl→0xae89b3c=0x7a1db3c+0x346c000 端到端实证；payload **07d60bc1** 存 `out/m2381/payload-libkern-07d60bc1.img`。
+- **下一墙预判**：0xae4d098（**91 站**、AMFI/IOGPU/HID/IOSurface/apfs 五组件，OSDictionary 区，体形 = vt[0x100] 转发壳：`ldr x2,[x2]` 后 `braa` 槽 0x100 disc 0xc323）——**需 vtable 槽位法（工作单 B.2 的 `pair_family_by_vtable_slot`），勿手工硬啃**；native 侧 ZTV 槽项是打包指针（0x8011…形，div 0xc323 与 donor braa 逐位同），解码器未破。次候选 0xae45eb8×36（OSArray 区）/0xae46bbc×31/0xae8dbb4×45(apfs)。
+- **刷写红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-kallocfix-crc-5f59a2a0.img。
+
 **★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
 
 - **A. 判读（用户刷 28fe6d56 后）**：
