@@ -1,0 +1,25 @@
+--- a/bsd/kern/kern_newsysctl.c
++++ b/bsd/kern/kern_newsysctl.c
+@@ -236,12 +236,18 @@
+ 		 * harder to replace with an arbitrary function pointer.  Blend with
+ 		 * a hash of oid_arg1 for robustness against memory corruption.
+ 		 */
+-		oidp->oid_handler = ptrauth_auth_and_resign(oidp->oid_handler,
+-		    ptrauth_key_function_pointer,
+-		    ptrauth_function_pointer_type_discriminator(typeof(oidp->oid_handler)),
++		/*
++		 * A donor component's static handler carries the discriminator of the
++		 * build that produced it, which a non-Apple compile does not reproduce.
++		 * Strip instead of verifying, so either convention installs, and sign
++		 * with the discriminator the rest of this kernel authenticates against.
++		 */
++		oidp->oid_handler = ptrauth_nop_cast(typeof(oidp->oid_handler),
++		    ptrauth_sign_unauthenticated(
++		    ptrauth_strip(oidp->oid_handler, ptrauth_key_function_pointer),
+ 		    ptrauth_key_function_pointer,
+ 		    ptrauth_blend_discriminator(&oidp->oid_handler,
+-		    os_hash_kernel_pointer(oidp->oid_arg1)));
++		    os_hash_kernel_pointer(oidp->oid_arg1))));
+ 	}
+ #endif /* defined(HAS_APPLE_PAC) */
+ 
