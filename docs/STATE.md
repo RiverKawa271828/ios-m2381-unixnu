@@ -952,5 +952,5 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 
 - **判读门（entropy 回调修复轮）**：①`branching to x8` 墙消失（x8 低 32 位 = &entropy_provide 的那发 blraa 不再失败）②PRNG init_with_getentropy 走完（per-CPU init/generate/refresh 四个 0xbcad 消费点同约定）③corecrypto start 完成 → kext 逐个 start，首个新墙按 α 家族总表归类。回退件 = `payload-btibatch-f7432f8e.img`。
 - **用户已拍板（本会话执行）**：panic 屏加**校验行**——`scripts/xnu-panic-screen.c` 末尾渲染 `crc=xxxxxxxx len=nnn`（CRC32 over PANIC_TEXT 缓冲内容，zlib 口径），拍屏转录后对账杀 OCR 误读（cfd18/cdf18 教训）。约束：panic 屏代码住内核 padding 洞（PANIC_CAVE_END 0xfffffff00b9d0ff0，超限构建报错），CRC 增量 ~200B 预计塞得进；改动 = 主树脚本（b01035d 先例），只刷 recovery_a。
-- **排队项（不挡判读）**：①上游 `scripts/build-fileset-release-reference.py` 参数化到 out/m2381 接走参照件构建（消 17.6MB 树外产物债）②设备仓 bti-shape（bf1dac9）回推上游 XnuPrelink ③panic 屏全 QR（QrEncoderLib 移植，~2600 行在 uefi-m2381 Common/Mu/MsGraphicsPkg 现成）单独立项看洞预算——用户拍板：CRC 行先行，QR 后议 ④UART 通道已否（无串口）。
+- **排队项（不挡判读）**：①上游 `scripts/build-fileset-release-reference.py` 参数化到 out/m2381 接走参照件构建（消 17.6MB 树外产物债）②设备仓 bti-shape（bf1dac9）回推上游 XnuPrelink ③**二维码整线取消（用户拍板 10-31）**：上游 AdvancedLogDxe/扫传是 UEFI 阶段工具（我们 UEFI 一直正常跑，问题全在内核侧）；panic 屏全 QR 立项一并撤销，CRC 校验行保留为准 ④UART 通道已否（无串口）。
 - **基线备忘**：上游已 rebase 到 8fe2aaa（961c7da 记录）；下轮构建一律 `-j16`；刷写红线不变（只 recovery_a，boot_b d0200a6b / userdata 不动，--trust-cache/--data-ramdisk 必带）。
