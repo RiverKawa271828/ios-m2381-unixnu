@@ -152,7 +152,8 @@ class Context:
             if not selected or Path(selected).name != selected or selected in ('.', '..'):
                 raise Error('schema_version = 2 needs [kernel] defconfig or a selected defconfig')
             self.config_name = selected
-            self.work /= self.board['board']['os_profile']
+            from . import profiles
+            self.work /= profiles.resolve_os(self, args.os) if getattr(args, 'os', None) else self.board['board']['os_profile']
             self.work /= selected.removesuffix('_defconfig')
         self.tree = self.work / 'tree'
         self.logs = self.work / 'logs'

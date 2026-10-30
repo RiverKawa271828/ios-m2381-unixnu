@@ -16,10 +16,23 @@ def merge(base, overlay):
     return result
 
 
+def resolve_os(ctx, wanted):
+    """--os 17, 26 or 27 (the OS major version) or a full profiles/os directory name."""
+    names = sorted(path.name for path in (ctx.root / 'profiles/os').iterdir() if path.is_dir())
+    if wanted in names:
+        return wanted
+    matches = [name for name in names if name.startswith(f'ipados-{wanted}.')]
+    if len(matches) != 1:
+        raise Error(f'--os {wanted}: expected one of {", ".join(names)} or 17, 26, 27')
+    return matches[0]
+
+
 def load(ctx, allow_fetch=False):
     from . import feeds
     board = ctx.raw_board.get('board', {})
     soc_name, os_name = board.get('soc_source'), board.get('os_profile')
+    if getattr(ctx.args, 'os', None):
+        os_name = resolve_os(ctx, ctx.args.os)
     if not soc_name or not os_name:
         raise Error('schema_version = 2 requires [board] soc_source and os_profile')
     if Path(os_name).name != os_name or os_name in ('.', '..'):
