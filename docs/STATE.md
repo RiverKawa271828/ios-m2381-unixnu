@@ -877,3 +877,19 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **上游检查（用户问）**：feat 强推重写 f161cd2→9bfc45a，净新增=纯工具脚本（build-fileset-release-reference/bundle-ipsw-trust/trust-append-module/turnip-kmd-patch——把我们手搓的 RELEASE 参照件流程正名化），**无本墙修复**；rebase 收队项未做。
 
 - **开放项**：①0xE4FE 的字符串原型未破（BSD16 穷举常见命名串未中；硬编码即可，链条目本身是权威）②native 侧 (IA,0) 默认的编译开关源头未定位（makedefs 全树无 fptrauth 旗标 = llvm 23 arm64e target 默认；实测确认）——上游 sheng 同款构建必撞同墙，本修法可上游化。
+
+**★会话十八 = corecrypto 残余 7 桩全数定名并出件（2026-10-30 上午，用户刷 fed3dd74 后屏摄 IMG_20261030_090251.jpg）**：
+
+- **新墙判读**：PAC 墙与 memset 桩均未再现，首点前移到 `from 0xfffffff00a6d2848 (x0 0xfffffffae0678c20 x1 0xfffffffae0678b60)`——x0=内核栈 `sp+0x20` 上的 out 参数（调用点前一条 `add x0, sp, #0x20`），site-4 = `bl 0xa96a0c4`，正是会话十七残余表第一项。
+- **7 个身份全部定名**（判据 = native 侧同形函数 + 符号表唯一，配 `build/xnu/fileset-reference/` RELEASE 参照件与 `temp/pac-wall/stubid.py`）：
+  - 0xa96a0c4 → `_clock_timebase_info`（5 指令 getter，`*x0 = gTimebaseInfo`；与 native 仅 adrp/add 常量不同 → body-hash/shape 两通道天然漏配）
+  - 0xa7b50f8 → `_panic_active`（`(panic_state-3)<2` 的 cset lo；corecrypto 2 点）
+  - 0xae96de0 → `_register_crypto_functions`（claim-once：槽已设返 -1，否则存参 + 置 flag 字节）
+  - 0xb007294 → `_register_and_init_prng`（`entropy_init(64, entropyseed)` → prng_ctx 存 → cckprng_funcs 逐槽拷贝，ptrauth 判别子 0x6961/0xf60a/0x5d01/0x4d5f/0xedeb/0x3051 与 native 逐槽相同 → 4×cc_clear；native 多 inline boot_cpu/prng_ready assert）
+  - 0xa938124 → `_read_random`（refresh 0x4d5f + generate 0xedeb、0x100 分块 + cpu_number；native 走函数调用未内联 tpidr_el1）
+  - 0xa7f3364 → `_lck_mtx_alloc_init`（kalloc + tag `0x22000000|flags` + 锁组引用；donor 内联 lck_grp_reference，参照件中位于 `_lck_mtx_init` 前一位且同形）
+  - 0xacf9870 → `_sysctl_handle_string`（strlen+1 → oldfunc → newfunc 截断写；与参照件逐指令同，差异仅 Apple 串判别子 0x6827 与 PAC 硬化 store；donor 序夹在 handle_long/handle_opaque 之间。会话十七记其"0 点"= 非直接 bl 路径，本表按 stub 目标身份收编）
+- **落件**：设备仓 `3a7c6ef`（fixtures 111→118，每条钉 donor 字节 sha + 证据行）；kernel **171bee9d** → payload **50ea4195**（96MiB，ESP 内核副本 55e07c55；PAC 修复字节在位实证 = `source_corecrypto14_bootstrap+0x84` `mov x17,#0xe4fe; blraa x8,x17`）。存档 `out/m2381/payload-stubfix2-50ea4195.img`。
+- **刷前门（全绿）**：prelink reviewed 111→118、全函数 8294→8301、stubbed 1674→1659；**stubbed 表里 corecrypto 条目消失**（原 7 目标全绑定）；出件内核 7 个 call site 逐点反汇编 = bl 指向配套 native 函数（布局偏移 0x346c000 自洽，ESP 副本复核同）。
+- **残余（观察项）**：corecrypto `missing` 表剩 1 条数据引用 `0xfffffff007ca3910`（非函数桩）。
+- **刷写卡**：只刷 recovery_a ← `payload-stubfix2-50ea4195.img`（100,663,296B，刷前 sha 门 + 读回对拍），boot_b=d0200a6b / userdata 不动。判读门：①本 panic 消失②corecrypto start 继续（若新墙仍在 corecrypto = 间接调用/数据链路径，stubid+body/reference 对拍续办；换组件 = 新墙照流程）③pages/free 行仍在。
