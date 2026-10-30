@@ -85,6 +85,14 @@ sheng 配方把这些 kit、ArmSmmu4K 和板级投票链接到 `libAdreno740.a`�
 CPU 读取结果前完成缓存同步；fence 超时时先停止队列并确认 DMA 已停止，再释放 BO 和映射。
 在错误返回中保留失败的请求类型、句柄和 fence，便于定位分配、映射或执行阶段。
 
+### 8 位 BGRA 帧缓冲的渲染模式 {#render-mode}
+
+`sheng-fb-bgra=1` 时插件设置 `TU_DEBUG=sysmem,nocb`，所有 pass 在系统内存中渲染。tile 内存里的颜色已是渲染目标写出的字节序，
+GMEM 的加载和存储在内存侧必须用恒等 swap 搬运字节；记录的 Mesa 补丁 `turnip-gmem-mutable-swap.patch` 对 resolve、2D 与 3D 存储、
+3D 加载做了这一处理。打补丁后锁屏在 tile 内存下与 RGhA 画面一致度为 99.5 %，但每个命令缓冲区的 GPU 时间并不优于系统内存
+（均值 17.8 ms、p95 56.1 ms，系统内存为 17.1 与 52.1），主屏仍有一帧红蓝互换，因此默认保持系统内存。
+`sheng-tu-debug=` 可用于实验覆盖。
+
 ## 4. 构建并加入 Metal
 
 准备匹配的 SDK、编译器依赖和 ABI 输入后，在目标构建树执行：

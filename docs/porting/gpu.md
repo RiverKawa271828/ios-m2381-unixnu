@@ -97,6 +97,15 @@ caches before CPU readback. On fence timeout, stop the queue and confirm DMA has
 before releasing the BO and mapping. Report the failed request, handle and fence
 to distinguish allocation, mapping and execution failures.
 
+### Render mode with an 8-bit BGRA framebuffer {#render-mode}
+
+With `sheng-fb-bgra=1` the plugin sets `TU_DEBUG=sysmem,nocb`: every pass renders in system memory. Tile memory holds a colour
+in the byte order its render target writes, so a GMEM load or store must move the bytes with the identity swap on the memory
+side; the recorded Mesa patch `turnip-gmem-mutable-swap.patch` does that for resolve, 2D and 3D stores and 3D loads. With it
+the lock screen matched the RGhA picture to 99.5 % in tile memory, but the GPU time per command buffer was no better than in
+system memory (17.8 ms mean, 56.1 ms at p95, against 17.1 and 52.1) and one home screen frame still came out with red and blue
+exchanged, so system memory stays the default. `sheng-tu-debug=` overrides it for experiments.
+
 ## 4. Build and stage Metal
 
 Run these commands from the resolved target tree after preparing the matching

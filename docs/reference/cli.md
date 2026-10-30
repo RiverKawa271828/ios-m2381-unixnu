@@ -86,6 +86,7 @@ Removes `tree`, `logs`, `kernel`, `package`, `boot` and `edk2-conf` under the bo
 | Option | Meaning |
 | --- | --- |
 | `-D DIR`, `--device DIR` | Device repository |
+| `--os VERSION` | OS profile for this run: `17`, `26`, `27` or a `profiles/os` directory name. The output directory follows it |
 | `--out DIR` | Output root |
 | `-j N`, `--jobs N` | Parallel jobs |
 | `--local DIR` | Local tree with this repository's layout |
