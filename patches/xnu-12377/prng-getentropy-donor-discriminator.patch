@@ -1,0 +1,37 @@
+--- a/osfmk/prng/prng_random.c
++++ b/osfmk/prng/prng_random.c
+@@ -328,6 +328,25 @@
+ 	read_erandom(buffer, numBytes);
+ }
+ 
++#if defined(HAS_APPLE_PAC)
++/*
++ * The corecrypto provider in this collection is the donor's binary. It calls the
++ * entropy callback with the type discriminator its toolchain assigned to
++ * cckprng_getentropy (0xbcad - the value -fptrauth-function-pointer-type-
++ * discrimination gives this printf-shaped type), while this compiler signs a
++ * function-pointer argument with the zero discriminator. Sign the pointer the
++ * way the caller authenticates it.
++ */
++static cckprng_getentropy
++unixnu_donor_getentropy(cckprng_getentropy callback)
++{
++	return (cckprng_getentropy)ptrauth_sign_unauthenticated((void *)callback,
++	           ptrauth_key_function_pointer, 0xbcad);
++}
++#else
++#define unixnu_donor_getentropy(callback) (callback)
++#endif /* defined(HAS_APPLE_PAC) */
++
+ void
+ register_and_init_prng(struct cckprng_ctx *ctx, const struct cckprng_funcs *funcs)
+ {
+@@ -340,7 +359,7 @@
+ 	prng_funcs = *funcs;
+ 
+ 	uint64_t nonce = ml_get_timebase();
+-	prng_funcs.init_with_getentropy(prng_ctx, MAX_CPUS, sizeof(kprngseed), kprngseed, sizeof(nonce), &nonce, entropy_provide, NULL);
++	prng_funcs.init_with_getentropy(prng_ctx, MAX_CPUS, sizeof(kprngseed), kprngseed, sizeof(nonce), &nonce, unixnu_donor_getentropy(entropy_provide), NULL);
+ 	prng_funcs.initgen(prng_ctx, boot_cpu_id);
+ 	prng_ready = 1;
+ 
