@@ -1025,6 +1025,8 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 
 **★会话二十三三判 = 第十三堵 = AMFI → `_os_log_create`（屏摄 074203，fixture dcffcc1）**：crc=0x88a9cb7 吻合；站点 0x8f0dfd0 = AMFI 调 `os_log_create("com.apple.MobileFileIntegrity", "library_validation_failure")`，NULL 时 csel 回退缓存句柄。donor 0xfffffe000ae8a26c（1408B，夹在 `_os_log_equ`/`__os_log_internal` 间，读 CNTVCT 类寄存器）→ native `_os_log_create`（区间唯一候选 0x7a66f78）。**12 站点五组件**。预测核对：命中"同一未配对尾区继续发"但首发是 12 站的 0xae8a26c 而非 91 站的 0xae4d098——尾巴按调用序而非站点数排序。ledger 4872→4860（−12）；kernel **c12f1711**，payload **9f4d17f3** 存 `out/m2381/payload-oslog-9f4d17f3.img`。下一墙候选不变：0xae4d098×91（vt0x100 转发壳，需 B.2 vtable 槽位通道）、0xae8dbb4×45(apfs)、0xae45eb8×36、0xae46bbc×31。刷写红线不变。
 
+**★会话二十三四判 = 第十四堵 = AMFI → `_IORWLockAlloc`（屏摄 075103，fixture 93b2998）**：crc=0xc4e8e4a6 吻合；站点 0x8f18b9c（caller 无参设置，报告的 x0/x1=残留寄存器——判读注意）。donor 0xfffffe000aeadd18 = 20B 尾调壳（载锁组全局、x1=0、尾调 0xa7f4a44），与 native `_IORWLockAlloc` 形状逐位同构（尾目标都在 reviewed `_lck_rw_init` 正前方）；连带 `_lck_rw_alloc_init`（2 站）一起配。ledger 4860→4848（−10）。kernel **066a8100**，payload **9aec229f** 存 `out/m2381/payload-rwlock-9aec229f.img`。**B.2 开工判定成立**：连续四墙同区（AMFI/libkern 尾区），手钻 ~30 分钟/墙+一次刷机循环 vs 尾区 636 目标打不完；且 AMFI 尾调的下一条就是 0xae4d098（91 站 vt0x100 转发壳，手啃不可行）。B.2 第一刀 = 解 native ZTV 打包指针编码（0x8011…形，div 0xc323 与 donor braa 槽逐位同，donor kmod_info 打包先例 0x8010e4fe034c9f18 可套），第二刀 = `pair_family_by_vtable_slot` 入 matcher，验收 = 0xae4d098×91 及同族 vt 壳批量转正。刷写红线不变。
+
 **★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
 
 - **A. 判读（用户刷 28fe6d56 后）**：
