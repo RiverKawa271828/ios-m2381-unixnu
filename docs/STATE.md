@@ -911,3 +911,14 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 - **出件（unpack 修法）**：kernel **`892ebfe1`** → payload **`c3b36e61`**（96MiB，ESP 内核副本 `2b22aba1`，探针串已移除实证；trust/seed 同前）。存档 `out/m2381/payload-unpack-c3b36e61.img`；回退 = `a62f5e53`。反汇编实证 = `register_crypto_functions` 内 `mov w2,#0x1c0`（448B 表拷贝）+ 逐槽高位判定/区间判定/重签循环。
 - **五刷判读（2026-10-30 10:20 屏摄，刷 c3b36e61）**：**unpack 修法生效**（crypto 表墙消失），新墙 = `Invalid spinlock 0x…: <0x000000002200010f 0x0> @locks_arm.c:343`。锁字 = `lck_mtx` 的 tag `0x22000000|flags`，type 字（+8）=0 → **一个 mutex 被当 spinlock 锁**。**根因 = 会话十七 的三条 lck fixture 类型标错**：donor 0xa7f3548/0xa7f3fe4/0xa7f4128 的体全部操作 **[lock+8]**（`casa 0→cpu` 加锁 / try 加锁 / `casl` 解锁），而 `lck_spin_t` 是 **data@+0、type@+8**（`lck_spin_lock` 先验 `[+8]==0x11` 再锁 `[+0]`），mutex 才是 data@+8——当时按"CAS 0→cpu@+8"认成 spin 是误判。修法 = fixture 三条改名 `_lck_spin_{lock,try_lock,unlock}` → `_lck_mtx_{lock,try_lock,unlock}`（sha 钉不变，只换 native 符号名），设备仓提交。
 - **出件（lck 改名修法）**：kernel **`e6217d36`** → payload **`30c11c32`**（96MiB，ESP 内核副本 `f1c9fb0d`）。实证 = corecrypto 里 7×lock / 9×unlock / 1×try / 1×alloc_init 的 call site 全部改指 native mutex 实现（`IOLockLock/TryLock/Unlock` 与 `lck_mtx_*` 同址别名）。存档 `out/m2381/payload-mtx-30c11c32.img`；回退 = `c3b36e61`。
+
+**★会话十九开工单（2026-10-30 交界；用户拍板"安排下一轮，拍屏下会话发"）**：
+
+- **用户动作**：①只刷 recovery_a ← `out/m2381/payload-mtx-30c11c32.img`（sha256 `30c11c32…250e`，100,663,296 B），boot_b `d0200a6b` / userdata 不动；②开机后把 panic 屏整段拍全（若越过了前六堵会是新类型）；③回退件 = `payload-unpack-c3b36e61.img`（已验证能走到 crypto 表墙之后）；④**不要连续多次重启**，保持单一证据点。
+- **我这边顺序（含离线先行项，不等刷机）**：
+  1. **离线杠杆 = donor 内核导出符号**（目标：把 1659 个未配对函数里的 kext-facing 目标批量按名字绑定，替代"一堵一刷"）。已知证据：kernel entry 的 load command 表里 cmd=`0x32`（off `0x9450`，cmdsize `32`），其后六字 = `0x2 / 0x1a0500 / 0x1a0500 / 0x1 / 0x3 / 0x4f30000`；**文件偏移 `0x1a0500` 处是符号名字符串区**（首条 `AVD_RD_DMA_LVP_COLO_DMA_CONFIG`）→ 导出/符号名区就在附近。步骤：先判 `0x32` 语义（非标准 `0x80000022`；排除 LC_DYLD_EXPORTS_TRIE `0x80000033` 的普通形态），定位 trie 头（ULEB terminal/flags/address 结构），解出 name→address；再按"native 侧同名唯一函数地址"批量落 reviewed fixture（how=`export-name`），逐条写 evidence，唯一性为唯一收编判据。
+  2. 若导出表不可用：给 matcher 加**通用通道 = 去 BTI 前缀 + 忽略 adrp/add 常量后比对整函数体**（现在 body-hash 只吃逐字节相同），并把 1659 个 stub 目标按组件出清单 + 调用点数排序，先修热点。
+  3. 判读屏摄 → 归类（桩 / PAC 约定 / 32 位打包指针 / 锁类型标错 / 其他）→ 修 → 重建 kernel+payload → 出件命名 `payload-<类>-<sha8>.img`。
+  4. 每次修法回写 fixture evidence（判据必录）；映射只收唯一命中。
+- **红线**：`CONFIG_XNU_NATIVE_ADRENO` 保持 `n`（GPU 等进桌面）；payload 命令必须带 `--unique-chip-id 3645ad55d47e77c1 --trust-cache out/m2381/ipados-26.5.2-23F84/m2381/original-trust-23F84.bundle --data-ramdisk out/m2381/ci-artifacts/verified-root-grow/owner-data-fixture/scratch-data.img`（漏了会少 trustcache/initrd，r85 坑）；刷写只碰 recovery_a；**SHLOG 在 UFS 起来之前是空的**（写手要 BootProgress 监视器 tick + native_ufs_log_open），早期 panic 别白跑读者任务。
+- **判读门**：本墙消失 + corecrypto start 继续；prelink 统计（reviewed / body-hash / reference-order 配对变化，stubbed 数下降）；出件内核 call site 逐点反汇编（布局偏移 0x346c000 口径）。
