@@ -1003,3 +1003,17 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
   参照件在 Linux 值 ~1900 站（4913 vs 6841 site 口径）；CI 未上传 kernel.json，site 口径精确数下轮补（workflow upload 加 kernel.json 或 CI 内建参照件）。
 - **判读 = B 治本、C 减税不足**：macOS 无参照已反超 Linux 带参照；pac-checked 350→1312 说明 FPAC 软检查块是 Linux 税大头（C 可把此项追平）但 body-hash ×9.7/vtable/data 差异 C 覆盖不了。**建议主攻 B**：①CI 内建 RELEASE 参照件（消最后一项输入差）②payload/userdata CI 化 ③932 残余=真 Apple-only 尾巴走 fixture/shim（上游 sheng 同款姿势）④本地 Linux 保留快迭代腿，C 作为 Linux 腿减税可选项。
 - **出件态**：本地现役 kernel = 8b60dbb4（带参照件重出，ledger 4913/654 与 f763e9e6 全同、二进制 rerun 非确定）、payload **28fe6d56**（平铺 `out/m2381/payload-batchfix-28fe6d56.img`，ESP 内核 905fb6fa=f763e9e6 派生）可刷；CI 侧 kernel 未上传（只有日志）。
+
+**★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
+
+- **A. 判读（用户刷 28fe6d56 后）**：
+  0. 刷前现态核对：`current-slot=b`、`partition-size:recovery_a`、boot_b d0200a6b 未动、userdata 未动；设备现役=recovery_a 5f59a2a0。
+  1. 刷 recovery_a ← `out/m2381/payload-batchfix-28fe6d56.img`（100,663,296 B），dd 读回对拍才算证据。
+  2. 拍屏 → **CRC 行先核转录**（zlib crc32 对拍，030636 先例）→ 有墙走例行钻：`temp/batch-fixtures/stubid.py <site>` → `batchid.py <donor VA>` 夹逼 → 三重验证 → fixture/通道。
+  3. 判读门：①原 AppleImage4 kalloc 墙消②推进过 AppleImage4 进下一组件③`PAC failure` 新形态=还是"strip+对方判别子重签"那刀④无墙推进=记 boot 史新坐标。
+- **B. 预埋（不刷机并行做，把下一批墙提前填掉）**：
+  1. TOP 真孤儿预命名（按站点序，语义分析已起头）：0xaeb8eb0（IORegistryEntry 区 190 站：registry 递归锁+虚调 0x118→release 0x20+解锁，源序无对应=疑 122.8 新增——比 donor 新 tag 源码可破）、0xaed7e2c（IOService 区 168）、0xa95ca30（锁函数 127：tpidr+0x1b8 计数器+casa+wfe，会话十七 lck 先例=配我们实现自洽）、0xaf6236c（IOReporter 92）、0xae4d098（OSDictionary 尾 91）。每个 = 源序夹逼+语义定性+fixture（走 31fa4e5 模板）。
+  2. 同形家族消歧通道（525 站）：vtable 槽位法——donor 类 vtable 已配对时，槽位 i 的函数=对应 native vtable 槽位 i 的函数（0xaea0bf8=IOUserClient::Dispatch 48 站已锁，native 侧 15+ 同体 Dispatch 全靠这个消歧）；matcher 加 `pair_family_by_vtable_slot`，与 alias_thunks 同班。
+  3. 若 sheng 姿势可借：比对 sheng-27 仓 porting.toml 里对同类桩的处理记录。
+- **C. B 腿推进（战略减税）**：CI 内建 RELEASE 参照件（参数化上游 build-fileset-release-reference.py 到 out/m2381=原排队项①，workflow kernel 步前置）→ CI kernel.json 上传（补 site 口径精确数）→ payload CI 化（trusted 材料经 secrets，勿入 runner 盘）。
+- **刷写红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；回退=recovery_a ← payload-kallocfix-crc-5f59a2a0.img。基线：-j16；--trust-cache/--data-ramdisk/--unique-chip-id 必带；CRC 行为准。
