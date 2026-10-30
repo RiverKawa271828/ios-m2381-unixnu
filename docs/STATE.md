@@ -1027,6 +1027,14 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 
 **★会话二十三四判 = 第十四堵 = AMFI → `_IORWLockAlloc`（屏摄 075103，fixture 93b2998）**：crc=0xc4e8e4a6 吻合；站点 0x8f18b9c（caller 无参设置，报告的 x0/x1=残留寄存器——判读注意）。donor 0xfffffe000aeadd18 = 20B 尾调壳（载锁组全局、x1=0、尾调 0xa7f4a44），与 native `_IORWLockAlloc` 形状逐位同构（尾目标都在 reviewed `_lck_rw_init` 正前方）；连带 `_lck_rw_alloc_init`（2 站）一起配。ledger 4860→4848（−10）。kernel **066a8100**，payload **9aec229f** 存 `out/m2381/payload-rwlock-9aec229f.img`。**B.2 开工判定成立**：连续四墙同区（AMFI/libkern 尾区），手钻 ~30 分钟/墙+一次刷机循环 vs 尾区 636 目标打不完；且 AMFI 尾调的下一条就是 0xae4d098（91 站 vt0x100 转发壳，手啃不可行）。B.2 第一刀 = 解 native ZTV 打包指针编码（0x8011…形，div 0xc323 与 donor braa 槽逐位同，donor kmod_info 打包先例 0x8010e4fe034c9f18 可套），第二刀 = `pair_family_by_vtable_slot` 入 matcher，验收 = 0xae4d098×91 及同族 vt 壳批量转正。刷写红线不变。
 
+**★会话二十四开工单 = B.2 vtable 槽位通道转正（2026-10-31 定稿；用户拍板开工）**：
+
+- **第一刀 = native ZTV 打包指针解码器**：已知槽 0x100 打包值 0x8011c323_00a23738（div=0xc323 与 donor braa 槽逐位同），目标 VA 猜测 = 低 32 位 | 0x07000000（0x00a23738+0x07000000=0x07a23738 恰为 VA 低 32 位，kernel base 低位贡献）。验证法：解码 `__ZTV8OSObject`/`__ZTV12OSDictionary` 全部槽项，对拍已命名函数（taggedRetain/getMetaClass 等位置应全中）；donor kmod_info 打包先例（0x8010e4fe034c9f18 = IA/div 0xE4FE/addrDiv0，会话十九档）对照位域。解码器落 `temp/batch-fixtures/`（vtslots.py）。
+- **第二刀 = donor vtable 定位**：donor ZTV 无符号 → 用 donor 类构造函数（C2/C1）里的 vptr adrp 反查（先例：AMFI 类构造器 0x8f18b3c `adrp 0x7fac5d0+0x10; pacda x17(0x4e9b); str [x0]` 形）；建立 donor 类名→vtable 映射（类名从已配对函数/`__ZTV`-adjacent cstring 取）。
+- **第三刀 = matcher `pair_family_by_vtable_slot`**：未配对目标 f 若出现在 donor 类 C 的 vt 槽 i，且 native 类 C 的 vt 槽 i 已解析出命名函数 → 配对（与 alias_thunks 同班进 fileset_match.py）；首件验收族 = 0xaea0bf8（IOUserClient::Dispatch 48 站）与 0xae4d098（91 站 vt0x100 转发壳）。
+- **验收门**：①解码器全槽命中已知名 ②0xae4d098×91+Dispatch×48 批量转正 ③ledger 站点断崖（4848 → 预期 <4600）④CI 重发对照（B 腿口径）。
+- **并行**：判读轮若用户送新屏（rwlock 件预期 0xae4d098）按例行钻法收账（CRC 验真→batchid→若 vt 壳直接归 B.2 批次不单独 fixture）。刷写红线不变（只 recovery_a，boot_b d0200a6b / userdata 不动）。
+
 **★会话二十三开工单 = 判读轮 + 预埋轮（2026-10-31 收尾定稿；用户问"还在打地鼠吗"→ 答复=形式不变性质已变：鼠池 4913 站已全分类有底、锤子定型 30 分钟/墙、sheng 实证池打得完）**：
 
 - **A. 判读（用户刷 28fe6d56 后）**：
