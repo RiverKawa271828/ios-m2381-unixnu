@@ -38,6 +38,26 @@
 
 ### 1.1 同步记录
 
+- **2026-10-31：`upstream/feat/ipados27-gpu-parity` `310fb75` → `8fe2aaa`
+  （本 lane 窗口 +9 提交，m2381-ios27 标准 rebase 重放 269 个工作区提交；
+  3 个旧时代子模块 pin bump 因被上游超越而 skip，1 个 test 提交
+  `fc6ab72` 的脚本部分保留、gitlink 部分取上游 pin；rebase 后
+  AdrenoMetal gitlink 被旧 bump 拖回 pre-force-push 的 148698d，已修复
+  对齐上游 tip 7b885c2——46d4563。check-m2381 4 ok + XnuPrelink kit
+  测试绿 + CLI 冒烟通过）。主题 = GPU/显示诊断线：turnip GMEM mutable
+  swap patch（488 行）+ direct scanout fence wait/render mode +
+  `unixnu --os` CLI（cli/config/profiles，默认仍走 board os_profile，
+  我们零适配）+ `9bfc45a` 的 6 个打包/参照件脚本；子模块 bump
+  AdrenoMetal×3 / Adreno740 / GopFramebuffer（**上游 force-push 换血**，
+  旧 pin 7f7ae1e 已不在其新历史线上）。feat 仍未并入 main（main 只有
+  docs）。对 m2381 直接可用的两件：`scripts/build-fileset-release-
+  reference.py`（我们 `--fileset-reference` 用的 RELEASE 参照件构建
+  脚本，硬编码 sheng lane 路径，需参数化到 out/m2381 后接走，消除
+  17.6MB 树外产物的复现性债）与 `--os` 快捷切 profile。ADRENO=n 不变，
+  GPU 线内容暂不消费。kit 上游（XnuPrelink 76452c6）与 uefi-sheng
+  上游（sheng 支线）本轮零新提交；设备仓 bti-shape（bf1dac9）回推
+  上游仍欠。
+
 - **2026-10-27：`upstream/main` `16e592a` → `f85b5a6`（+22 提交，标准
   rebase 重放 147 个工作区提交零冲突；check-m2381 4 ok、XnuPrelink kit
   测试绿）。主题多为文档/设备记录（catalog 自动化 + 大批社区记录）；
