@@ -43,12 +43,11 @@ native 内联无独立符号，需 ~30 行 shim）。规矩：**关键路径上�
 
 **出件**：kernel `1a896fcd` / payload `cda26378`
 （`out/m2381/payload-batch2-cda26378.img`，含会话二十七全部 18 笔 fixture；
-ledger 4298→**3108 站**/577 目标 = 两批合计 −1190）待刷（会话二十七 =
-IOUserClient 四残余 + IOSimpleLockLock 族 + get_bsdtask_info + 侦察批
-IOReporter/IOLock/nanotime 等 9 笔，§7 工作单执行）。
+ledger 4298→**3108 站**/577 目标 = 两批合计 −1190）**已刷，开机报错待判读**
+（判读门 = §7 会话二十八工作单 A；回退 = recovery_a ←
+`payload-grpattr-font2-dd0da85b.img`）。
 刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
-userdata `fd43ee70` 不动；回退 = recovery_a ←
-`payload-grpattr-font2-dd0da85b.img`。下会话工作单 = §7。
+userdata `fd43ee70` 不动。下会话工作单 = §7。
 
 ## 2. 设备现状（2026-10-31 = **iOS 链现役**）
 
@@ -634,3 +633,28 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
   sandbox mpo_policy_init 走完 ②IOUserClient/IOSimpleLock/IOReporter 族
   不再首发 ③新墙按调用序点名（CRC 验真先行）④诊断页 scale2 维持。
   **回退 = recovery_a ← payload-grpattr-font2-dd0da85b.img**。
+
+## 7a. 工作单 = 会话二十八（2026-10-31 收队定稿）：cda26378 报错判读轮
+
+- **现态**：设备 = iOS 链，recovery_a = **cda26378**（会话二十七 18 笔
+  fixture 批量件），boot_b `d0200a6b` / userdata `fd43ee70` 不动。
+- **A. 判读（用户交报错屏后）**：
+  0. 拍屏整段（panic 屏或其它报错形态都要）→ **CRC 行先验真**（zlib
+     crc32 对拍，逐墙先例）→ 有墙走例行钻法：`kc.py wall <屏上地址>`
+     → batchid/vtslots 夹逼 → 三重验证 → fixture（走会话二十七模板：
+     size/sha 以 anchor_reviewed 的 FS 表区间为权威口径）。
+  1. 判读分支：①墙 19（0xa52e2b0 PE_parse_boot_arg_str）消失 =
+     18 笔生效，报错为新墙（按调用序点名，账本新 top10 侦察单接应）
+     ②报错形态不是 stub/PAC 墙（如 NO WINDOW / DarwinBoot 拒载 / 复位
+     循环）→ 按形态归因（固件面 vs 内核面），勿套墙钻法
+     ③同区连发卡 → 止损线照旧（停修归因回报拍板）。
+  2. 若新墙在账本 top10 内：账本余量 3108 站/577 目标，`kc.py ledger`
+     取榜 → vtable 对位/KDK shape/源序夹逼三杠杆快线定名。
+- **B. 回退项（如需立刻回到上一进度）**：recovery_a ←
+  `out/m2381/payload-grpattr-font2-dd0da85b.img`（上轮现役，墙 18 后状态）。
+- **C. 排队（不挡判读）**：①`_os_pcpu_ref_release` 无 native 导出 =
+  shim 通道待做 ②账本余量侦察批（会话二十七侦察法已定型：KDK
+  masked-word shape + vtable div + 源序 bracket）③kernel 1a896fcd 的
+  未推送件核对（STATE e5e6ee9 已推，无积压）。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；
+  --trust-cache/--data-ramdisk/--unique-chip-id 必带；-j16；CRC 行为准。
