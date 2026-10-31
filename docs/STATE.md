@@ -41,9 +41,10 @@ SecureDTGetProperty**（9 站，AMFI /chosen 属性读取；donor 独立函数�
 native 内联无独立符号，需 ~30 行 shim）。规矩：**关键路径上的坐标
 当场修，路径外一律只记坐标**。
 
-**出件**：kernel `35761550` / payload `e5e9556f`
-（`out/m2381/payload-dtgetprop-e5e9556f.img`）待刷（会话二十五 =
-bootpath 清点 + SecureDTGetProperty fixture，§7 工作单已执行）。
+**出件**：kernel `56e7a7a9` / payload `7c3c4b51`
+（`out/m2381/payload-ioclient-lockfix-7c3c4b51.img`，ledger 4298→**3575 站**
+= 单会话最大降幅 −723，会话二十六 6 笔 + 二十七 9 笔全出账）待刷（会话二十七
+= IOUserClient 四残余 + IOSimpleLockLock 族 + get_bsdtask_info，§7 工作单执行）。
 刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
 userdata `fd43ee70` 不动；回退 = recovery_a ←
 `payload-kallocfix-crc-5f59a2a0.img`。下会话工作单 = §7。
@@ -557,3 +558,51 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
 - **验证工具坑（本轮三次白扫）**：BootProgress.o 的段名是**空字符串**（非 `__TEXT`），按段名过滤的扫描全扫了空气；capstone 线性 disasm 遇填充即停，须跳 4 字节健壮扫（bootpath 同款）；cmp 立即数扫描的 Rd 位写死坑第三次复发（§4.4）。
 - **出件**：kernel **556a4efc** → payload **dd0da85b**（96MiB，平铺 `out/m2381/payload-grpattr-font2-dd0da85b.img`，sha256 dd0da85b…；trust/seed/chip-id/args 全队不变）。刷前门：sandbox 站点 0xa52e13c `bl 0xfffffff00a7a7258` = native 0x733b258+0x346c000 精确命中（ESP 副本）；map `reviewed` 139。
 - **判读门（下轮）**：①本墙消失、sandbox lock-group 初始化段走完（同函数后续 attr_setstat/alloc_init/lck_*_init 全已配对，理论上可连走）②新墙按调用序点名 ③**屏幕上诊断页字体应变大一倍**（scale 2）——刷机后顺带确认④mac policy 注册段过 = AMFI/sandbox 后续可能撞 sandbox 主体执行路径的新墙。**回退 = recovery_a ← payload-macresign-c13089a9.img**。
+
+**★会话二十七执行档 = 批量 fixture 首刷出件（2026-10-31 下午，工作单 §7 A.1–A.3 全毕，等拍屏）**：
+
+- **A.1 推送积压全毕**：主树 6 笔（184e3ad…da2b8db）推 m2381-ios27 并
+  force-with-lease 推平远端 m2381（c4367fc 异源重复 sha 线 = 会话二十二
+  TLS 断连经 GitHub API 推送的历史遗留，逐笔核有本地孪生后平掉）；
+  设备仓 3 笔（020aa2e/4cea0fe/124cb0b）推 main。
+- **A.2 定名 9 笔（设备仓 832db09 + 修正笔，fixture 145→154）**：
+  0xaf4babc=IOUserClient::getTargetAndMethodForIndex / 0xaf4bbd8=clientDied /
+  0xaf4bc40·0xaf4bd5c=initWithTask 4参/5参 / 0xaf510ac=copyClientEntitlement /
+  0xaf5b9b4=clientClose / 0xa95ca30·0xa95ca6c=IOSimpleLockLock/TryLock（会话
+  二十六 B.1 半钻单关账） / 0xa866894=_get_bsdtask_info（38 站红利，会话二十
+  五"native 无对应体"误判翻案）。**新定名杠杆 = vtable 槽位对位**（工具
+  `tools/xnu27/vtslots.py`+`vtpair.py`）：native `__ZTV12IOUserClient` 用
+  map 已配对四锚点（registerNotificationPort/exportObjectToClient/
+  getAsyncTargetAndMethodForIndex/getTargetAndTrapForIndex）定槽基，线性
+  映射 donor kext vtable 槽 → native 槽符号直接读名；语义交叉验证 =
+  getTargetAndMethodForIndex 调的槽恰是 getExternalMethodForIndex、
+  clientDied 调的槽恰是 clientClose。**坑两枚**：①native 镜像基 =
+  0xfffffff007004000（非 …07000000，会话二十四工作单猜测式未实测者）；
+  ②donor function_starts 有合并缺项（0xa95ca30/0xa866894 是 bti c 真入口
+  嵌在合并大函数内）+ make_fixture end-scan 漏 bti c（0xd503245f）致
+  吞并后续函数（0xaf4bd5c 虚胖 1276B）→ 工具已修；**fixture size/sha
+  权威口径 = anchor_reviewed 的 FS 表区间**（init() 300→284、
+  get_bsdtask_info 120→140 两笔按此修正，全表 154 条过同口径复验）。
+  0xa866894 定名链 = donor copyClientEntitlement 调用点位置 +
+  native _get_bsdtask_info（task_get_proc_raw+proc_require+同款
+  tst 0x800000/csel 尾，字段漂移 0x3f0↔0x5a8=122.8/121.6）。
+- **A.3 出件**：kernel **`56e7a7a9`** → payload **`7c3c4b51`**（96MiB
+  100,663,296B，平铺 `out/m2381/payload-ioclient-lockfix-7c3c4b51.img`，
+  sha256 7c3c4b51…；trust ebeaf7fb + seed d04a0153 + chip-id
+  3645ad55d47e77c1 + panic_screen + args 全队不变）。**ledger 4298→3575
+  站 / 601→587 目标（−723 站 = 单会话历史最大降幅）**；map 九笔全
+  how=reviewed；端到端 = ESP 副本内 native _IOSimpleLockLock 落位
+  0xa9b1e00（build+0x346c000）精确命中 + 109 个闭包站点 bl 已改指 native
+  （对照：已过墙的 wall-18 目标同口径 2/13 站改指 = 非闭包站点不改指是
+  既定行为，非回归）。kext-facing named 1736→1751。
+- **后台侦察**：账本新 top10（0xaf6236c×92/0xaf63734×65/0xaf65b14×53/
+  0xaf6898c×49/0xae8dbb4×45/0xaf0a514×44/0xaf06d34×41/0xac9bfd8×39/
+  0xaead9cc×38/0xad15560×38）已派扇出子代理走 vtable 对位+源序夹逼，
+  产物格式 = VA/候选名/三证据/置信度，回报后按纪律定谳入 spec。
+- **刷写卡**：设备现态 = iOS 链（boot_b d0200a6b / recovery_a dd0da85b /
+  userdata fd43ee70）→ **只刷 recovery_a ← payload-ioclient-lockfix-
+  7c3c4b51.img**（刷前 sha 门 + dd 读回对拍）。判读门：①墙 19
+  （0xa52e2b0 PE_parse_boot_arg_str）消失 + sandbox mpo_policy_init 走完
+  ②IOUserClient/IOSimpleLock 族不再首发 ③新墙按调用序点名（CRC 验真
+  先行）④诊断页字体 scale2 维持确认。
+- **回退** = recovery_a ← `payload-grpattr-font2-dd0da85b.img`。
