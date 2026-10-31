@@ -792,3 +792,40 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-addmatchnotif-7fac1e57.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7e. 会话三十二执行档 = 墙 24 定谳 + 批量轮第一发（2026-11-01 凌晨，b5f102ac 首发屏摄 235450）
+
+- **★墙 24 定谳 = Sandbox → `IOUserClient::registerFilterCallbacks`**：
+  CRC `0xbad103f6` zlib 一次对上；站点 `0xa52ee20 bl 0xfffffe000af5afc8`
+  （墙 23 +0x2c0，同一 sandbox 启动函数）。体 13 条逐元素吻合
+  IOUserClient.cpp:6856：`cmp x1,#0x18`（sizeof io_filter_callbacks）→
+  kIOReturnBadArgument 0xe00002c2；`casal` 认领 gIOUCFilterCallbacks
+  （0x7d71b88 文件态 NULL）→ 0 / kIOReturnBusy 0xe00002d5。x0 = sandbox
+  的 callbacks 结构指针（**sandbox 在注册 IOUserClient 方法过滤钩子**）。
+  Apple map 缺口（is_io_device_tree_entry_exists_with_name 与
+  sysctl_debug_iokit 之间）。账本 2 站/1 kext。native 具名
+  `0xfffffff007b39df4` 同常量（CAS 走 OSCompareAndSwapPtr 调用 vs donor
+  内联 casal）。fixture 169（设备仓提交）。
+- **★批量轮第一发 = 浅层带 12 目标扇出侦察全灭**：三路子代理并行
+  （会话二十七模板），**12/12 定名、零 no-native-body**；主会话抽查
+  2 笔（thread_tid 叶函数字段偏移 0x4e8↔0x5e8 布局差安全 / vsnprintf
+  逐指令同）后入仓：`IOTaskHasEntitlement`(IOKitBSDInit.cpp:1671) /
+  `smr_call`(smr.c:1449) / `thread_call_enter1`(thread_call.c:1170) /
+  `socd_client_trace` / `proc_signal`(kern_proc.c:1853) / `vsnprintf` /
+  `clock_get_calendar_microtime`(clock.c:431，scale_delta 内联差) /
+  `kernel_thread_start` / `vfs_iterate`(vfs_subr.c:7477) /
+  `vnode_open`(7807) / `VNOP_IOCTL`(kpi_vfs.c:4109) / `thread_tid`。
+  fixture 169→**181**（设备仓提交），账本 3011→**2855 站**/800 目标
+  （−156 站，含级联）。
+- **裁决（用户问单拆还是批量）= 转批量**：单墙判读链已证明 ~10 分钟/
+  墙（易类），但地鼠本质是串行暴露；批量轮 = bootpath 榜 d 序扇出
+  侦察 + 每批 10-20 笔一刷验收。本件 = 第一批（12+1 笔），预期
+  sandbox 启动函数段基本扫平，首发墙应换组件段（apfs 或 AMFI 更深处）。
+- **出件**：kernel `98b18a2b` / payload `f0713efc`
+  （`out/m2381/payload-batchrecon1-f0713efc.img`）。
+- **下会话工作单 = 批量轮第二批**：bootpath 榜复跑（2855 现势）取
+  d 序下一段 ~12-16 目标扇出；0xa8150f0（双 mul 哈希，已知无 native
+  体）留 shim 通道专项。
+- **回退**：recovery_a ← `out/m2381/payload-getmatchsvc-b5f102ac.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
