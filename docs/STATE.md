@@ -723,3 +723,38 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   状态）；更早回退见 §7a B。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7c. 会话三十执行档 = 墙 22 定谳（2026-10-31 深夜二轮，936cd505 首发屏摄 230709）
+
+- **★墙 22 定谳 = Sandbox → `IOService::addMatchingNotification`**：
+  CRC `0x4775235e` zlib 一次对上；站点 `0xa52ed24 bl
+  0xfffffe000aedcf6c`（文件态验证；与墙 19 站 0xa52e3b0 / 墙 20 站
+  0xa52e5f8 同一 sandbox 启动函数按调用序推进）。实参 x0/x1 = 两个堆
+  指针（OSSymbol*/OSDictionary* = type+matching，非内核镜像区）。
+  callee 定名 = **addMatchingNotification handler 形**（IOService.cpp:6616，
+  OSSharedPtr 返 = sret x6）：体逐元素吻合源码 6629-6658 =
+  `installNotification(...,OSIterator** existing)`（x6=&out 出参）→
+  `getNextObject` 迭代（vtable 槽 0x88 disc 0x1ac8；`[next+0x48]` bit0 =
+  kIOServiceInactiveState 位测）→ `invokeNotifier(next, notify)`
+  0xaec397c → existing release（槽 0x28 disc 0x3a87）→
+  LOCKWRITENOTIFY casa 内联 → notify release → `csel
+  gIOServiceNullNotifier`（全局 [0xb4191e0]）。**Apple map 在
+  waitQuiet(mach_timespec) 0xaedc95c 与 waitForMatchingService
+  0xaedd148 之间无名**（最近名噪声 = waitQuiet+0x610）→ map 名字通道
+  必漏；账本 key `0xfffffff00aedcf6c`，22 站/7 kext（ARMPlatform 4、
+  AMFI 2、apfs 2、IOAV 3、IOHIDFamily 3、IOMobileGraphicsFamily 3、
+  sandbox 5）。**native 具名全局在册**
+  `__ZN9IOService23addMatchingNotificationE…` `0xfffffff007abae54`，
+  70 条前奏-循环结构逐条同；系统差 = 我方 clang 每个 `autda` 后加
+  `xpacd/cmp/brk` 空签名校验块（会话二十四已知 codegen 家族）→ 直配。
+  尾部 4 参包装 0xaedd120（静态 handler 0xaece8b0）= 独立 donor 函数，
+  end-scan 于 bti c 处正确排除。fixture 第 167 笔（设备仓 `47577c2`），
+  账本 3048→**3024 站**/840 目标（比 −22 预期多降 2 站/7 目标 =
+  配对联级红利，方向全为降）。
+- **出件**：kernel `c709e182` / payload `7fac1e57`
+  （`out/m2381/payload-addmatchnotif-7fac1e57.img`）。
+- **待用户**：刷 `7fac1e57`（只 recovery_a）。预期 = 墙 22 消失、
+  sandbox 启动函数继续推进出下一堵；判读 = CRC 行先验 → kc.py wall。
+- **回退**：recovery_a ← `out/m2381/payload-strncasecmp-936cd505.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
