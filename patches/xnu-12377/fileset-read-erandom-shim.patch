@@ -1,0 +1,34 @@
+--- a/osfmk/prng/prng_random.c
++++ b/osfmk/prng/prng_random.c
+@@ -329,6 +329,21 @@
+ 	read_erandom(buffer, numBytes);
+ }
+
++/*
++ * Fileset emission: donor components (sandbox among them) call the static
++ * read_erandom directly, but this compiler inlines it into every in-tree
++ * caller, so the kernel has no out-of-line body for the rebinder to pair the
++ * donor call sites against. Provide one. The wrapper keeps the exact
++ * read_erandom semantics (defer to the kernel PRNG once prng_ready, DRBG
++ * before that) and deliberately lacks read_random's extra prng_funcs.refresh.
++ */
++__attribute__((used, noinline))
++void
++unixnu_fileset_read_erandom(void * buf, size_t nbytes)
++{
++	read_erandom(buf, nbytes);
++}
++
+ #if defined(HAS_APPLE_PAC)
+ /*
+  * The corecrypto provider in this collection is the donor's binary. It calls the
+--- a/config/Mach.exports
++++ b/config/Mach.exports
+@@ -36,6 +36,7 @@
+ _nanoseconds_to_absolutetime
+ _preemption_enabled
+ _read_random
++_unixnu_fileset_read_erandom
+ _read_frandom
+ _record_system_event
+ _semaphore_create
