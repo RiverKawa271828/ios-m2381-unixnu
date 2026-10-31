@@ -41,13 +41,12 @@ SecureDTGetProperty**（9 站，AMFI /chosen 属性读取；donor 独立函数�
 native 内联无独立符号，需 ~30 行 shim）。规矩：**关键路径上的坐标
 当场修，路径外一律只记坐标**。
 
-**出件**：kernel `1a896fcd` / payload `cda26378`
-（`out/m2381/payload-batch2-cda26378.img`，含会话二十七全部 18 笔 fixture；
-ledger 4298→**3108 站**/577 目标 = 两批合计 −1190）**已刷，开机报错待判读**
-（判读门 = §7 会话二十八工作单 A；回退 = recovery_a ←
-`payload-grpattr-font2-dd0da85b.img`）。
+**出件**：kernel `18affaa2` / payload `936cd505`
+（`out/m2381/payload-strncasecmp-936cd505.img`，fixture 166 笔；
+ledger 3082→**3048 站**/847 目标 = 墙 21 −34 精确）**待刷**。
 刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
-userdata `fd43ee70` 不动。下会话工作单 = §7。
+userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕，
+待刷后按调用序出队）。
 
 ## 2. 设备现状（2026-10-31 = **iOS 链现役**）
 
@@ -692,3 +691,35 @@ userdata `fd43ee70` 不动。下会话工作单 = §7。
   未推送件核对（STATE e5e6ee9 已推，无积压）。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；
   --trust-cache/--data-ramdisk/--unique-chip-id 必带；-j16；CRC 行为准。
+
+## 7b. 会话二十九执行档 = 墙 21 定谳（2026-10-31 深夜，91ddb680 首发屏摄 222856）
+
+- **★墙 21 定谳 = Sandbox → `_strncasecmp`**：CRC `0xfc18414e` zlib
+  一次对上（本轮转录零掉字）；站点 `0xa5472e8 bl 0xfffffe000a91f920`
+  （文件态验证）。callee 定名 = **strncasecmp**：三参体（`cbz x2` →
+  n−1 循环 → tolower csel 对 → `ccmp x9` 尾）与二参 `_strcasecmp`
+  （0xa91f8dc）是两个函数；**Apple map 在 _strcasecmp 与 _strchr
+  (0xa91fa44) 之间无名** → map 名字通道必然漏配（账本 key
+  `0xfffffff00a91f920`，34 站/4 kext：AppleARMPlatform 9、apfs 2、
+  IOMobileGraphicsFamily 20、sandbox 3）。**native `_strncasecmp`
+  存在**（全局 N_SECT `0xfffffff007506ed4`），21 条体逐条同（donor 仅
+  多头部 `bti c`）→ 直配。崩溃时实参 = x0
+  `ENTITLEMENT:com.apple.security.exception.iokit-user-client-class` /
+  x1 `ENTITLEMENT:`（sandbox 规则编译的 entitlement 前缀判别；墙 19/20
+  同一条 sandbox 启动链继续推进 = cda26378 两笔生效旁证）。
+  fixture 第 166 笔（设备仓 `f355941`），账本 3082→**3048**（−34 精确，
+  kernel.json 复核目标全消）。
+- **工具坑（已修）**：`tools/xnu27/kc.py` `_symtab` 按 value
+  `setdefault`，同址空名局部符号先到会顶掉真名 → `sym` 假阴性
+  （差点误判 native 无此函数走 shim 通道）；已改为非空名优先。
+- **出件**：kernel `18affaa2` / payload `936cd505`
+  （`out/m2381/payload-strncasecmp-936cd505.img`）。构建三坑全避开：
+  `-D` 子命令后 + `--ipsw` 本地件 + `--trust-cache/--data-ramdisk/
+  --unique-chip-id 3645ad55d47e77c1` 显式传，`-j16`。
+- **待用户**：刷 `936cd505`（只 recovery_a）。预期 = 墙 21 消失、
+  sandbox 启动链继续推进出下一堵（或过 AMFI early_security_init 进
+  下一段）；若首发不是 sandbox 链上的墙，按调用序点名。
+- **回退**：recovery_a ← `out/m2381/payload-usx-91ddb680.img`（墙 20 后
+  状态）；更早回退见 §7a B。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
