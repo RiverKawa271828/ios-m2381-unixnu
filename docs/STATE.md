@@ -1029,6 +1029,14 @@ wrappedExternal 的 sel6 分支 dump target/`[uc+0xd8]` vs
 
 **★会话二十三五判（收会话）= 第十六堵 = AMFI → `_SecureDTLookupEntry`（屏摄 075955，fixture 5d17955）**：crc=0xc8730321 吻合；站点 0x8f0d480 = AMFI 调 `SecureDTLookupEntry(0, "/chosen", &out)` 判返值==1。donor 0xfffffe000afc0740（664B，IODT 块，夹在 reference-symbol `SecureDTFindNodeWithPropertyEqualToValueHelper` / reference-order `SecureDTInitEntryIterator` 间）→ native `_SecureDTLookupEntry`（0x7babbf4 区间唯一候选）。13 站四组件。**预测 0xae4d098 未中（第三次实证：尾巴按调用序）**；donor 内联子项 helper 0xafc09d8（9 站，native 无独立符号）与 0xafc1b20（PE 小壳身份不稳）均留 B.2 批次。ledger 4848→4837（−11）。kernel **2953e2c5**，payload **9fa4809c** 存 `out/m2381/payload-dtlookup-9fa4809c.img`。**手钻腿到此收档：本会话六墙 4913→4837（−76），全部 SHA 钉 fixture+端到端 bl 实证；此后新屏一律只记坐标归 B.2 批次，不再单独 fixture**（除非 unique-candidate 级别的顺手工件）。刷写红线不变。
 
+**★会话二十三上游侦察(B.3 完成,2026-10-31)——重大叙事修正**：
+
+- **sheng 设备仓公开 = UniXNU/UniXNU-sheng**(devices.toml 实录,小米平板 6S Pro);`feat/ipados27-gpu-parity` 分支 board.toml = **ipados-27.0.1-24A446**。已浅克隆到 `/tmp/sheng-repo/sheng-27`。
+- **叙事修正(此前记忆高估)**:porting.toml arm64e-os 区 **status=planned**,limits 明写 "no fileset prelink output exists yet, so the kernel has not booted";26.5.2 证据 = "fastboot OKAY; **kernel and userspace execution remain unobserved**";24A446 显示适配器 "still requires a hardware boot result";GPU 渲染实证**全是 iOS 17 车道的**(记录自认 "historical rendering observations above remain iOS 17 evidence")。**上游在 arm64e/fileset 车道上未上电——我们在 fileset boot 路径与上游并行甚至领先**(我们有内核活体判读循环 4913→4837)。
+- **无配对账本可白拿**:设备仓 kits 空(吃 feed)、无 fixture JSON;XnuPrelink 独立仓(76452c6e=我们的 pin,main 仅多 4 docs 提交)无新配对通道。**换 24A446 的"拿他账本"论据不成立 → 留 23F84 定案**。
+- **可拿的干货**:①sheng-27 的 `zzzz-sheng-ipados27-bringup.patch`(2002 行)= **Darwin26 用户态 ABI shim 全图**(posix_spawnattr 0x100 布局逐字段:psa_sec_flags@0xac 32位/0xb0 字节/后续+8)——换 27.0.1 时的现成地图,同时反证 26.5.2 正确(我们无此层);②porting.toml 23F84 KC 侦察事实(298 entries/base 0xfffffe0007004000/585131 fixups fmt8/31 roots=1864 kernel targets/42027 branch sites——与我们账本口径互证;KC=xnu-12377.122.8,公共源 121.6 最近);③`ci/macos-workflow` 分支(未并 main;pin macos-26/Xcode 输入/token 防 rate-limit/lld 安装)= B 腿参考;④SM8550 生态玩家(fuxi-on-SM8550 Xyvern08371 等)。
+- **B.2 施工修正**:matcher 现版已有 vtable 机制族(`anchor_vtables/pair_vtables/pair_vtable_users/pair_metaclass_vtables/pair_metaclass_getters`)——**开工先读,扩展而非新造**;native ZTV 打包指针解码仍是第一刀。
+
 **★会话二十四开工单 = B.2 vtable 槽位通道转正（2026-10-31 定稿；用户拍板开工）**：
 
 - **第一刀 = native ZTV 打包指针解码器**：已知槽 0x100 打包值 0x8011c323_00a23738（div=0xc323 与 donor braa 槽逐位同），目标 VA 猜测 = 低 32 位 | 0x07000000（0x00a23738+0x07000000=0x07a23738 恰为 VA 低 32 位，kernel base 低位贡献）。验证法：解码 `__ZTV8OSObject`/`__ZTV12OSDictionary` 全部槽项，对拍已命名函数（taggedRetain/getMetaClass 等位置应全中）；donor kmod_info 打包先例（0x8010e4fe034c9f18 = IA/div 0xE4FE/addrDiv0，会话十九档）对照位域。解码器落 `temp/batch-fixtures/`（vtslots.py）。
