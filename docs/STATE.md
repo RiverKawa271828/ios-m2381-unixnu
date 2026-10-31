@@ -829,3 +829,33 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-getmatchsvc-b5f102ac.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7f. 会话三十三执行档 = 墙 25 定谳 + shim 通道开张（2026-11-01 凌晨二轮，f0713efc 首发屏摄 003850）
+
+- **★墙 25 定谳 = Sandbox → `read_erandom`（shim 类第一例）**：CRC
+  `0x18977c8a` zlib 一次对上；站点 `0xa52ee40 bl 0xfffffe000a938070`
+  （墙 24 +0x20，同一 sandbox 启动函数；x0 = sandbox buffer，x1 = 0x40
+  = 取 64 字节熵）。callee = **static `read_erandom`**
+  （prng_random.c:313）：map 无名（夹在 _read_erandom_generate
+  0xa937fb8 与 _read_random 0xa938124 的源码序位），体头读
+  `prng_ready` [0x7ca28c0] 分流 DRBG/PRNG（prng_ctx 0x7ca28b0 签名
+  0xedeb = cckprng generate 判别子，会话二十一家族）。**NO-NATIVE
+  类**：我方 clang 把 static 内联进所有调用者（symtab 只有
+  _read_erandom_generate）；`_read_random` 多一次 `prng_funcs.refresh`
+  直配有语义漂移风险 → 走 shim。
+- **★shim 通道开张**：主树新补丁
+  `patches/xnu-12377/fileset-read-erandom-shim.patch` =
+  prng_random.c 加 `unixnu_fileset_read_erandom`（used/noinline，包
+  read_erandom 同语义）+ `config/Mach.exports` 保活（内核链接
+  `-exported_symbols_list all-kpi.exp`）；series = arm64e
+  prng-getentropy 之后（补丁对 post-series 树 git apply --check 干净）。
+  native 落位 `0xfffffff00751d7bc`，体与 donor read_erandom 同构实证。
+  fixture 182（设备仓提交），账本 2855→**2852 站**/799 目标。
+- **出件**：kernel `6d8e4b26` / payload `73be0a25`
+  （`out/m2381/payload-erandom-shim-73be0a25.img`）。
+- **下会话工作单 = 批量轮第二批**：bootpath 榜复跑（2852 现势）取
+  d 序下一段 ~12-16 目标扇出侦察（会话三十二模板）；0xa8150f0 与
+  本轮同类 NO-NATIVE 的挂 shim 清单。
+- **回退**：recovery_a ← `out/m2381/payload-batchrecon1-f0713efc.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
