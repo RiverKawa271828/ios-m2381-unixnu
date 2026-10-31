@@ -636,8 +636,30 @@ userdata `fd43ee70` 不动。下会话工作单 = §7。
 
 ## 7a. 工作单 = 会话二十八（2026-10-31 收队定稿）：cda26378 报错判读轮
 
-- **现态**：设备 = iOS 链，recovery_a = **cda26378**（会话二十七 18 笔
-  fixture 批量件），boot_b `d0200a6b` / userdata `fd43ee70` 不动。
+- **★判读完成（2026-10-31 晚）= 墙 19 定谳 = Sandbox →
+  `proc_get_syscall_filter_mask_size`**：cda26378 首发墙。CRC 行验真
+  （屏摄掉 1 个 f，真址 `0xfffffff00a52e3b4`，crc=0x8e706923 zlib 吻合）；
+  站点 `0xa52e3b0 bl 0xfffffe000ace12a0`，账本 owner =
+  com.apple.security.sandbox（4 站）。定名 = kern_proc.c:5285 flavor 函数
+  （0→nsysent 558 / 1→mach_trap_count 128 / 2→mach_kobj_count）；**漏配
+  根因 = Apple 折叠 const 成立即数、我们 clang 出 load，体形全散**（native
+  存在且值全同 = 纯编译差）。fixture 第 164 笔（设备仓 `02d75a4`），
+  账本 3108→**3104**（−4 精确）；端到端实证 = 新件站点 bl → native 体
+  `0xfffffff00ad02078` 逐指令同。出件 kernel **a4f1bd89** / payload
+  **c5d05bfd**（`out/m2381/payload-sbfm-c5d05bfd.img`）。
+- **上游同步同轮完成**：feat/ipados27-gpu-parity 8fe2aaa→359d77c rebase
+  （295 提交，仅 AdrenoMetal gitlink 冲突；老坑二现已修 924877f），
+  check-m2381 4 ok + kit 7 测试绿；UPSTREAM.md §1.1 已记。**主树待推
+  （force-with-lease）**；设备仓 02d75a4 待推。
+- **判读工具坑**：本机 `./unixnu kernel` 漏喂 `--ipsw` 时回落 board.toml
+  远程 URL 分段拉 6.4GB（3KB/s 涓流 16 分钟假死）——**Linux 本机构建必带
+  `--ipsw research/ipsw/iPad17,1,iPad17,2,iPad17,3,iPad17,4_26.5.2_23F84_
+  Restore.ipsw`**（本地件全在 out/ipsw/23F84/，编译对象复用）。
+- **待用户**：刷 c5d05bfd（只 recovery_a，卡见下）。预期 = 墙 19 消失、
+  按调用序进下一墙；cda26378 的 18 笔生效判定 = 预测墙 19
+  （0xa52e2b0 PE_parse_boot_arg_str）未再首发。
+- **现态**：设备 = iOS 链，recovery_a = **cda26378**（待换 c5d05bfd），
+  boot_b `d0200a6b` / userdata `fd43ee70` 不动。
 - **A. 判读（用户交报错屏后）**：
   0. 拍屏整段（panic 屏或其它报错形态都要）→ **CRC 行先验真**（zlib
      crc32 对拍，逐墙先例）→ 有墙走例行钻法：`kc.py wall <屏上地址>`
