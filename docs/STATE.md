@@ -758,3 +758,37 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-strncasecmp-936cd505.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7d. 会话三十一执行档 = 墙 23 定谳 + 关键路径总量清点（2026-10-31 深夜三轮，7fac1e57 首发屏摄 234200）
+
+- **★墙 23 定谳 = Sandbox → `IOService::getMatchingServices`**：CRC
+  `0xcfcb40bc` zlib 一次对上；站点 `0xa52ed60 bl 0xfffffe000aedcb48`
+  （与墙 22 站差 0x3c，同一 sandbox 启动函数推进）。实参 x0 = 堆
+  OSDictionary*（matching），x1 = 调用方残留。定名 = 体逐元素吻合
+  IOService.cpp:6398：LOCKWRITENOTIFY 内联（casa，锁 = [0xb419198]）→
+  `mov w1,#4`（kIOServiceMatchedState）`mov w2,#0`（options 默认）→
+  bl copyExistingServices 0xaece088 → UNLOCK → return。Apple map 在
+  waitQuiet(mach_timespec) 与 addMatchingNotification 之间无名（噪声
+  名 waitQuiet+0x1ec）；账本 13 站/5 kext（ARMPlatform 4、IOGPUFamily 2、
+  IOHIDFamily 2、IOStorageFamily 2、sandbox 3）。native 具名全局
+  `__ZN9IOService19getMatchingServicesEP12OSDictionary`
+  `0xfffffff007aba788` 同语义（外部锁调用 vs donor 内联 casa）。
+  fixture 第 168 笔（设备仓新提交），账本 3024→**3011 站**/835 目标。
+- **★关键路径总量清点（bootpath.py BFS 复跑，现势账本）**：AMFI
+  early_security_init + init 双入口可达 3519 函数；**路径上还压
+  52 个 stubbed 目标 ≈ 536 站**（按 BFS 深度排序榜已出，d=2-6 浅层
+  ~11 目标先把 AMFI/sandbox 段扫平，中段大量 apfs，root mount 前
+  大户 = apfs 路径站 ~150）；路径外背景 520 目标/2488 站（不挡 boot，
+  按拍板不追）。52 里有已甄别硬骨头（0xa8150f0 双 mul 哈希无 native
+  体 = shim 类）。**注意账本站点数≠墙数**：只有执行到的才炸，52 是
+  上界，按 d 从浅到深批量配平。
+- **出件**：kernel `206fa427` / payload `b5f102ac`
+  （`out/m2381/payload-getmatchsvc-b5f102ac.img`）。
+- **下会话工作单（批量轮提案，待拍板）**：按 bootpath 榜 d 序扇出
+  侦察（会话二十七模板：KDK masked-word shape + vtable div + 源序
+  bracket，子代理并行定名 + 主会话抽查），分级处置 = 直配类批量
+  fixture / 无 native 体类 shim 通道 / PAC 数据面类单独钻；每批
+  10-20 笔一刷验收整段。
+- **回退**：recovery_a ← `out/m2381/payload-addmatchnotif-7fac1e57.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
