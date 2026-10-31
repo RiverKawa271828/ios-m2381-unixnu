@@ -916,6 +916,56 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
 
+## 7i. 会话三十六执行档 = 墙 27 定谳 + hit#N 计数器上岗（2026-11-01 凌晨五轮，97f091b3 首发屏摄 032610）
+
+- **★批量三发生效实证 + 墙 27**：屏摄 CRC 行先验通过（zlib 对拍
+  **0x74feb86**，132 字节重建消息逐字节吻合，转录零漂移）。
+  `fileset: original component called an unmapped kernel function from
+  0xfffffff00a52f1a8 (x0 0xfffffff14c9a0b50 x1 0x66d577f00a52f6dc)`；
+  pages/free=0x125b8f/0x12534f。`kc.py wall`：站点 bl → donor
+  **0xfffffe000ace1618** = `~_proc_set_syscall_filter_callbacks+0x104`；
+  墙 26 目标 0xace1514 已不在账本 = 13 笔生效实证，墙 27 是同启动链
+  +0x1c 的下一只。
+- **定谳三连（kern_proc.c MACF 缺口清仓，全 sandbox 名下 8 站）**：
+  donor 物理序 `0xace1514(墙26已修锚) → 0xace1578 → 0xace1618 →
+  0xace1660` 与源序 kern_proc.c `:5355 set_callbacks → :5374 set_index
+  → :5392 set_sandbox_info_callbacks → :5410 set_filter_message_flag`
+  一一对应：
+  | donor | native | 证据 |
+  |---|---|---|
+  | `0xace1618`（本轮墙） | `_proc_set_sandbox_info_callbacks` | 与 native 0x78963bc 逐指令同形；version@0==1(SANDBOX_INFO_CALLBACK_VERSION)/cbfunc@8/全局 mac_proc_get_sandbox_profile 判 NULL/str 回填；**坑=EPERM 是 1 不是 13**（BSD errno，13 是 EACCES），`mov w0,#1` 即 EPERM |
+  | `0xace1578` | `_proc_set_syscall_filter_index` | 双锚夹逼唯一；`cmp w0,#2`=SYSCALL_MASK_KOBJ(proc_private.h:262)；donor 内联 ipc_kobject_set_kobjidx（umull 常量除法 0x7f218557+kobj 表基址），native 真调用=内联决策工具链税 |
+  | `0xace1660` | `_proc_set_filter_message_flag` | 与 native 0x7896400 形状全同（cbz x0 早退/pacibsp/tst#2+csel/bl task_set_filter_msg_flag） |
+  fixture 195→**198**（设备仓 **6250404**，size 160/72/72 matcher
+  权威区间与 end-scan 双口径一致，`make_fixture.py check` 198 条全稳定）。
+  账本 2668→**2660 站**/773→**770 目标**（−8 恰为三连）。
+- **★分支②触发（工作单 A.1，待拍板）**：墙 24→25→26→27 连发全落
+  sandbox/kern_proc 段，暴露快于配平条件成立。sandbox 组件账本残余
+  **54 目标/206 站**。选项：甲=整组件清仓（批量侦察 54 目标一次性
+  扇出，模板同会话三十二/三十五）；乙=继续逐墙+小批。等用户拍板。
+- **hit#N 计数器上岗（工作单 C）**：`fileset-unmapped-call.patch`
+  panic 消息尾加 ` hit #%u`（static counter，`++n` 先增）。
+  **★新坑入册：树步 patch applier 按 hunk 头计数严格截行**——改
+  patch 增删行必须同步改 `@@` 头 old/new 行数（本次 15→18），截断
+  编译错在 panic 续行处（"expected expression"）而表象像格式串问题。
+  另：`make_fixture.py` 需带
+  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink` 才能走 matcher 权威区间
+  （kc_image/fileset_match 在 kit 目录，否则静默回退 end-scan）。
+- **出件**：kernel **`243c8bfb`** / payload **`0c6b8419`**
+  （`out/m2381/payload-wall27trio-0c6b8419.img`，96MiB；trust
+  ebeaf7fb/seed d04a0153/args 不变）。ADT sha 每轮必变=
+  make-m2381-adt.py `chosen/random-seed=os.urandom(64)` 设计如此，
+  非异常。构建插曲：prepare-xnu-source.py 网络读超时一次（30s
+  timeout，重试即过）。
+- **刷写卡**：现态 = recovery_a `97f091b3`（本轮判读件）、boot_b
+  `d0200a6b`、userdata `fd43ee70` → **只刷 recovery_a ←
+  `out/m2381/payload-wall27trio-0c6b8419.img`**。判读门：①墙 27 消失
+  （屏上可见 hit #N 行=计数器在岗）②过 sandbox 回调注册段后下一墙
+  位置（若仍 sandbox 段=分支②证据加码）③CRC 行为准。回退 =
+  recovery_a ← `out/m2381/payload-batchrecon2-97f091b3.img`。
+- **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
+  --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16。
+
 ## 8. 工作单 = 会话三十六（2026-11-01 收队定稿）：批量轮第三发 + 可视化改进
 
 - **现态**：recovery_a = **`97f091b3`（待刷，含 13 笔生效：墙 26 + 批量二批 12）**；
