@@ -187,7 +187,33 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
 - matcher v11 通道只覆盖纯转发壳族；账本 601 目标大多数未配且**不构成
   当前目标**（关键路径优先拍板）。
 
-## 7. 工作单 = 会话二十六（2026-10-31 收队定稿）：判读轮 + lck 批量预钻（关键路径优先不变）：
+## 7. 工作单 = 会话二十七（2026-10-31 会话二十六工具轮收队定稿）：批量 fixture 首刷：
+
+- **会话二十六已毕（本轮，工具+fixture，未推送未提交）**：墙19判读定谳
+  （屏 crc 0x18815d36；0xa52e2b0 = sandbox mpo_policy_init 内 PE_parse_boot_arg_str，
+  donor 0xafc17fc，36B）；**fixups 反查定名法**立杠杆（donor vtable 槽位夹逼，
+  槽序对头文件声明序零歧义）；6 笔已入设备仓 fixture（共 145 条，**未提交**）：
+  0xafc17fc=_PE_parse_boot_arg_str / 0xaeb8eb0=IORegistryEntry::copyProperty(const char*)
+  / 0xaf4e348·0xaf4e544·0xaf4e460·0xaea0bf8=IOUserClient::init(dict)/init()/free()/Dispatch(IORPC)
+  ≈ 1500/4285 账本站点。工具箱 = `/home/ri/work/tools/xnu27/`（kc.py /
+  xnuindex.py / make_fixture.py / README=流程手册；REA 已迁 `/home/ri/work/tools/rea`）。
+- **A. 开工序列**：
+  1. 推送积压（§C 收队项：主树 4 笔 + 设备仓 2 笔）。
+  2. IOUserClient 残余四目标（0xaf4babc/0xaf4bbd8/0xaf4bc40/0xaf510ac ~500 站，
+     槽位邻接 copyClientEntitlements/getAsyncTargetAndMethodForIndex，同法收尾）
+     + 账本 top10 其余（0xa95ca30=IOSimpleLockLock 候选已半钻，按会话二十六 B.1 单继续）
+     → 全部走 `kc.py slots` + `xnuindex.py nbrs` 快线，spec 攒进
+     `/home/ri/work/tools/xnu27/spec-session27.json`。
+  3. `make_fixture.py add` → commit（设备仓一笔）→ defconfig+kernel+payload
+     出件（-j16，--trust-cache/--data-ramdisk/--unique-chip-id 必带）。
+  4. 只刷 recovery_a，等拍屏；判读门 = 0xa52e2b0 墙消失 + mpo_policy_init
+     走完 + 下一段新坐标记账。回退 = recovery_a ← payload-grpattr-font2-dd0da85b.img。
+- **B. 工具面**（已就位）：判读一律 `kc.py wall <屏上地址>`；坐标三事实与
+  定名循环见 xnu27/README.md，扇出子代理产物格式已定（VA/候选名/三证据/置信度）。
+- **止损（不变）**：路径排空后 root mount 仍同区连发卡 → 停修归因回报拍板。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；CRC 行在位。
+
+### （留档）会话二十六工作单（判读轮 + lck 批量预钻）——判读已在二十七完成：
 
 - **A. 判读（用户刷 payload-grpattr-font2-dd0da85b 后）**：
   0. 刷前现态核对：current-slot=b、现役 recovery_a = dd0da85b、boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-macresign-c13089a9.img。
