@@ -41,13 +41,14 @@ SecureDTGetProperty**（9 站，AMFI /chosen 属性读取；donor 独立函数�
 native 内联无独立符号，需 ~30 行 shim）。规矩：**关键路径上的坐标
 当场修，路径外一律只记坐标**。
 
-**出件**：kernel `56e7a7a9` / payload `7c3c4b51`
-（`out/m2381/payload-ioclient-lockfix-7c3c4b51.img`，ledger 4298→**3575 站**
-= 单会话最大降幅 −723，会话二十六 6 笔 + 二十七 9 笔全出账）待刷（会话二十七
-= IOUserClient 四残余 + IOSimpleLockLock 族 + get_bsdtask_info，§7 工作单执行）。
+**出件**：kernel `1a896fcd` / payload `cda26378`
+（`out/m2381/payload-batch2-cda26378.img`，含会话二十七全部 18 笔 fixture；
+ledger 4298→**3108 站**/577 目标 = 两批合计 −1190）待刷（会话二十七 =
+IOUserClient 四残余 + IOSimpleLockLock 族 + get_bsdtask_info + 侦察批
+IOReporter/IOLock/nanotime 等 9 笔，§7 工作单执行）。
 刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
 userdata `fd43ee70` 不动；回退 = recovery_a ←
-`payload-kallocfix-crc-5f59a2a0.img`。下会话工作单 = §7。
+`payload-grpattr-font2-dd0da85b.img`。下会话工作单 = §7。
 
 ## 2. 设备现状（2026-10-31 = **iOS 链现役**）
 
@@ -606,3 +607,30 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
   ②IOUserClient/IOSimpleLock 族不再首发 ③新墙按调用序点名（CRC 验真
   先行）④诊断页字体 scale2 维持确认。
 - **回退** = recovery_a ← `payload-grpattr-font2-dd0da85b.img`。
+
+**★会话二十七续档 = 侦察批次定谳落仓 + 二次出件（2026-10-31 傍晚，payload 换防）**：
+
+- **后台侦察回报 10/10 全定名（全高置信度）**，主会话抽查两笔过（IOLockWakeup
+  体形逐字合 + map 源序锚点 `_IOLockSleep`/`_IOLockSleepDeadline` 三连；
+  kauth 六连 getter 链尾锚 `_kauth_cred_getsvgid` 吻合）后 9 笔落仓
+  （设备仓 fixture 154→163）：0xaf6236c=IOReporter::addChannel /
+  0xaf63734=IOSimpleReporter::setValue(y,x) / 0xaf65b14=IOStateReporter::setStateID /
+  0xaf6898c=IOReportLegend::addReporterLegend(rep,grp,sub) / 0xaf0a514=IOCommandGate::runActionBlock /
+  0xaf06d34=IOWorkLoop::workLoop() / 0xac9bfd8=kauth_cred_getuid /
+  0xaead9cc=IOLockWakeup / 0xad15560=nanotime。侦察法 = KDK(12377.121.10.1)
+  masked-word shape 唯一命中 + native vtable div 常数逐一对上 + 源序 bracket。
+  **0xae8dbb4=_os_pcpu_ref_release 跳过**（native 无此导出符号，仅 slow 变体；
+  12377 新增 out-of-line，留 shim 通道）。FS 口径复验修 1 笔
+  （runActionBlock 真边界 80B，trampoline 0xaf0a564 = 独立 FS 条目
+  = __ZL26IOCommandGateActionToBlock 白拿命名），全表 163 条 OK。
+- **二次出件**：kernel **`1a896fcd`** → payload **`cda26378`**（96MiB，
+  平铺 `out/m2381/payload-batch2-cda26378.img`；trust/seed/chip-id/args/
+  panic_screen 全队不变）。**ledger 3575→3108 站 / 587→577 目标**
+  （两批合计 −1190，账本从 4298 起步砍 27.7%）。5 笔抽核 map 全
+  how=reviewed。前件 7c3c4b51 已被换防删除。
+- **刷写卡更新**：**只刷 recovery_a ← `payload-batch2-cda26378.img`**
+  （sha256 cda26378…，100,663,296B，刷前 sha 门 + dd 读回对拍），boot_b
+  d0200a6b / userdata fd43ee70 不动。判读门不变：①墙 19（0xa52e2b0）消失 +
+  sandbox mpo_policy_init 走完 ②IOUserClient/IOSimpleLock/IOReporter 族
+  不再首发 ③新墙按调用序点名（CRC 验真先行）④诊断页 scale2 维持。
+  **回退 = recovery_a ← payload-grpattr-font2-dd0da85b.img**。
