@@ -636,6 +636,18 @@ userdata `fd43ee70` 不动。下会话工作单 = §7。
 
 ## 7a. 工作单 = 会话二十八（2026-10-31 收队定稿）：cda26378 报错判读轮
 
+- **★墙 20 定谳（2026-10-31 深夜，c5d05bfd 首发屏摄 221752）= Sandbox →
+  `OSUnserializeXML` 三参分发壳**：CRC 0xf1702373 吻合；站点
+  `0xa52e5f8 bl 0xfffffe000ae84130`（与墙 19 差 0x248 = 同一 Sandbox
+  启动函数按调用序推进，墙 19 生效实证）。定名 =
+  OSUnserializeXMLSharedImplementation.h:3054 KERNEL 分支
+  （len<4 拒 → strcmp "\323\0\0"/0xd4 → OSUnserializeBinary / NUL 尾查
+  → 两参 OSUnserializeXML）；漏配根因 = 我们 clang 合并空指针+len 检查
+  成 cmp+ccmp。**22 站/6 kext 大户**（IOSurface 8/IOHIDFamily 5/IOAV
+  3/AMFI 2/CoreAnalytics 2/sandbox 2）。fixture 第 165 笔（设备仓
+  `47131a4`），账本 3104→**3082**（−22 精确）；端到端 = 站点 bl →
+  native `0xaec8944` 体同。出件 kernel **132b605a** / payload
+  **91ddb680**（`out/m2381/payload-usx-91ddb680.img`）待刷。
 - **★判读完成（2026-10-31 晚）= 墙 19 定谳 = Sandbox →
   `proc_get_syscall_filter_mask_size`**：cda26378 首发墙。CRC 行验真
   （屏摄掉 1 个 f，真址 `0xfffffff00a52e3b4`，crc=0x8e706923 zlib 吻合）；
