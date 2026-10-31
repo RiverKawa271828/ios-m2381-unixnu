@@ -915,3 +915,36 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-erandom-shim-73be0a25.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 8. 工作单 = 会话三十六（2026-11-01 收队定稿）：批量轮第三发 + 可视化改进
+
+- **现态**：recovery_a = **`97f091b3`（待刷，含 13 笔生效：墙 26 + 批量二批 12）**；
+  boot_b `d0200a6b` / userdata `fd43ee70` 不动；账本 2668 站/773 目标；
+  路径上界 = 批量二发后复跑（约剩 ~30 目标/235 站）。
+- **A. 判读（用户交 97f091b3 报错屏后）**：
+  0. CRC 行先验（zlib 对拍，逐墙先例）→ `kc.py wall <屏上地址>` →
+     账本/源码定名 → fixture（make_fixture 已改 matcher 口径权威，
+     **出件前必过 `make_fixture.py check`**；emit 失败后的 payload 是
+     旧内核打的，删除重出）。
+  1. 分支：①首发墙换组件段（apfs/更后）= 批量模式兑现，继续按批推；
+     ②同 sandbox/kern_proc 段连发 ≥2 = 暴露快于配平，按拍板换整组件
+     清仓策略；③非哨兵形态 = 按形态归因（固件面 vs 内核面）。
+- **B. 批量轮第三发（不挡判读，可先行）**：bootpath 榜复跑（2668 现势）
+  取 d 序下段 12-16 目标 → 三路扇出侦察（会话三十二/三十五模板：map
+  缺口 + 源序夹逼 + KDK 形状锚 + 体比对；子代理并行，主会话抽查 2 笔）
+  → fixture → 出件。NO-NATIVE 类直接走 shim 通道（模板 =
+  `fileset-read-erandom-shim.patch`：C 包装 + Mach.exports 保活 +
+  series 挂 arm64e prng-getentropy 之后；**注意 make_fixture 对新 shim
+  符号要先出件一次带补丁的 kernel 才能过符号校验**）。
+- **C. 可视化改进（本轮拍板承诺）**：`fileset-unmapped-call.patch` 的
+  panic 消息加自增计数器（`hit #N`，static counter），拍屏直接可见
+  第几只地鼠；改完 `./unixnu defconfig` 不需要（非 defconfig 改动），
+  重跑 tree + kernel。
+- **D. 推送拍板（积压清单，等用户）**：主树 m2381-ios27（STATE 若干笔
+  + shim 补丁）force-with-lease；设备仓 UniXNU-m2381（fixture 164→195
+  + 批量提交）。
+- **E. 止损不变**：同区连发卡 → 停修归因回报拍板；账本其余路径外
+  520 目标/约 2300 站 = 背景，不挡 boot 不追。
+- **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
+  --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
+  CRC 行为准。
