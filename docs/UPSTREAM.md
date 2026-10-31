@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381` 分支直接挂在其上；remote `upstream`（fetch-only） | `f85b5a6` (2026-10-27) |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 `feat/ipados27-gpu-parity` 上；remote `upstream`（fetch-only） | lane pin `359d77c` (2026-10-31 晚)；main `67df14d`（docs-only，不并入） |
 | **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `../UniXNU-m2381`（工作区根 `/home/ri/work/unixnu-meizu`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
 | **本设备 UEFI（2026-10-29 新建）** | https://github.com/RiverKawa271828/uefi-m2381（待建仓首推） | `../uefi-m2381`（分支 main） | 基座 = 上游 uefi-sheng `sheng@0eb4514` + overlay `5297334`；实证来源 = nura 链 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
@@ -38,6 +38,23 @@
 
 ### 1.1 同步记录
 
+- **2026-10-31（晚）：`upstream/feat/ipados27-gpu-parity` `8fe2aaa` →
+  `359d77c`（本 lane 窗口 +10 提交，标准 rebase 重放 295 个工作区提交；
+  唯一冲突 = AdrenoMetal gitlink，取上游 `77cb207`，且重放旧 bump 再次
+  把 gitlink 拖回 stale `7b885c2`——老坑第二现，已修 `924877f` 对齐；
+  check-m2381 4 ok + XnuPrelink kit 7 测试全绿 + CLI 冒烟通过）。
+  主题仍纯 GPU 线（ADRENO=n 零消费）：turnip gmem mutable swap patch
+  再扩（+185）、frame path trace（runtime/driver/kernel 贯通）、
+  render pass timestamp、锁外 BoFree/异步余量/连续分配上限等 perf；
+  子模块 bump Adreno740 `7fa13d4` / AdrenoMetal `77cb207` /
+  GopFramebuffer `74ff4c4`。**kit 上游（XnuPrelink）零新提交**：main
+  仍只有 import+docs（f876e3e），feat/ipados27-gpu-parity 冻结在我们
+  matcher pin `76452c6e`；sheng 设备仓仅 +1（08cde20 WiFi 记录）。
+  `upstream/main` +12 提交全是社区设备记录 + log-capture.md 改版
+  （新增 **recovery reader 通道**：TWRP 类 rooted recovery + ADB dd 读
+  log 分区——我们 ACM reader 的备选通道，暂不消费），不在 feat 线上，
+  按既定规矩 lane 跟 feat、main docs 不并入。备份
+  `m2381-pre-sync-20261031b`。
 - **2026-10-31：`upstream/feat/ipados27-gpu-parity` `310fb75` → `8fe2aaa`
   （本 lane 窗口 +9 提交，m2381-ios27 标准 rebase 重放 269 个工作区提交；
   3 个旧时代子模块 pin bump 因被上游超越而 skip，1 个 test 提交
