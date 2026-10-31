@@ -883,3 +883,35 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-erandom-shim-73be0a25.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7h. 会话三十五执行档 = 批量轮第二发 + 判读/刷机解耦（2026-11-01 凌晨四轮，71e5d28b 待刷）
+
+- **★批量轮第二发 = 12 目标再全灭**（用户尚未刷 71e5d28b，侦察完全
+  离线先行）：复跑 bootpath 榜（2850 现势）= 路径剩 42 目标/417 站
+  上界；取 d 序下一段 12 个扇出三路侦察，**12/12 定名、零
+  NO-NATIVE**：`kauth_cred_unref`(kern_credential.c:4399) /
+  `proc_uniqueid`(kern_proc.c:2142) / `vnode_update_identity`(vfs_cache.c:1139)
+  / `vnode_recycle`(vfs_subr.c:3277) / `proc_ucred_unsafe`(KDK 26.5.2
+  形状锚定;Apple KPI 开源无) / `os_reason_create`(KDK unique-id scheme)
+  / `IORegistryIterator::iterateOver` / `mach_continuous_time`(12 字节
+  mrs 叶,config 分歧路径) / `copyinstr`(copyio.c:551) /
+  `vnode_getparent`(vfs_cache.c:1006,worker 内联差) / `vnode_authorize`
+  (vfs_subr.c:8997,KDK 形状唯一命中) / `vnode_getfromfd`(vfs_syscalls.c:4248)。
+  主会话抽查 2 笔（mrs 叶 / cred-unref zone tag #7）。fixture 183→**195**。
+- **★口径坑根治（会话二十七同款再犯）**：`_vnode_authorize` end-scan
+  停在 VBAD 快路早期 ret（24B），anchor_reviewed 权威 = matcher 自身
+  函数区间（112B，含慢路）→ 首发 emit 报 "Reviewed function bytes
+  changed"。修法 = 全量按 `Side.functions[addr]['end']` 重校 195 条
+  （仅此 1 条漂移），`make_fixture.py` donor_entry_bytes 改为
+  matcher-区间权威 + end-scan 兜底。**教训入册：新增 fixture 一律过
+  make_fixture check（现已同口径）后再出件。**
+- **出件**：kernel `07f4af0a` / payload `97f091b3`
+  （`out/m2381/payload-batchrecon2-97f091b3.img`；坏件
+  `1671a570` 已删——第一次 emit 失败后 payload 是旧内核打的）。
+  账本 2850→**2668 站**/773 目标（−182 站/−25 目标）。
+- **刷写**：**71e5d28b 作废不用，直接刷 `97f091b3`**（含 183+184-195
+  共 13 笔生效）。预期 = sandbox 启动函数 + MACF 集成链 + cred/vnode
+  段一并扫平，首发墙应深达 apfs 段或更后。
+- **回退**：recovery_a ← `out/m2381/payload-erandom-shim-73be0a25.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
