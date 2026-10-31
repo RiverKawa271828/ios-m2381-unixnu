@@ -66,3 +66,4 @@
 ../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
 ../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
+../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch

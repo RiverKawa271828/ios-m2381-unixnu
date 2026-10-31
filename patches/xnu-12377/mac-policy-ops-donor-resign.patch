@@ -1,0 +1,49 @@
+diff --git a/security/mac_base.c b/security/mac_base.c
+index 9f90247..dff9e33 100644
+--- a/security/mac_base.c
++++ b/security/mac_base.c
+@@ -603,6 +603,34 @@ mac_policy_fixup_mmd_list(struct mac_module_data *new)
+ 	new->base_addr = new;
+ }
+ 
++#if defined(HAS_APPLE_PAC)
++/*
++ * A kernel collection built by another toolchain signs the function pointer
++ * slots of a policy operation vector with its own diversifiers, while every
++ * hook call in this kernel authenticates with a zero modifier. Normalize the
++ * whole vector at registration time: strip whatever tag a slot carries and
++ * re-sign it with the convention every mac_* dispatch in this kernel uses.
++ * The per-policy init hooks run right here, and every later hook call reads
++ * the same slots through the registered configuration, so one normalization
++ * per policy covers the whole dispatch surface.
++ */
++static void
++unixnu_mac_policy_ops_resign(struct mac_policy_conf *mpc)
++{
++	void **slot = __DECONST(void **, mpc->mpc_ops);
++	void **end = slot + sizeof(*mpc->mpc_ops) / sizeof(*slot);
++
++	for (; slot < end; slot++) {
++		if (*slot == NULL) {
++			continue;
++		}
++		*slot = ptrauth_sign_unauthenticated(
++			ptrauth_strip(*slot, ptrauth_key_function_pointer),
++			ptrauth_key_function_pointer, 0);
++	}
++}
++#endif /* defined(HAS_APPLE_PAC) */
++
+ int
+ mac_policy_register(struct mac_policy_conf *mpc, mac_policy_handle_t *handlep,
+     void *xd)
+@@ -633,6 +661,9 @@ mac_policy_register(struct mac_policy_conf *mpc, mac_policy_handle_t *handlep,
+ 	if (mpc->mpc_ops == NULL) {
+ 		panic("policy's OPs field is NULL");
+ 	}
++#if defined(HAS_APPLE_PAC)
++	unixnu_mac_policy_ops_resign(mpc);
++#endif /* defined(HAS_APPLE_PAC) */
+ 
+ 	error = 0;
+ 
