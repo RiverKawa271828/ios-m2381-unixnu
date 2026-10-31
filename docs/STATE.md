@@ -859,3 +859,27 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **回退**：recovery_a ← `out/m2381/payload-batchrecon1-f0713efc.img`。
 - **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
   CRC 行为准。
+
+## 7g. 会话三十四执行档 = 墙 26 定谳（2026-11-01 凌晨三轮，73be0a25 首发屏摄 021900）
+
+- **★墙 26 定谳 = Sandbox → `proc_set_syscall_filter_callbacks`**：
+  CRC `0xd630bc81` zlib 一次对上；站点 `0xa52f18c bl
+  0xfffffe000ace1514`（墙 25 +0x34c，同一 sandbox 启动函数；x0 = cbs
+  结构，x1 = 0x80 = sizeof）。体逐元素吻合 kern_proc.c:5354：
+  `cbs->version != 1`（SYSCALL_FILTER_CALLBACK_VERSION）→ 返 0x16 =
+  EINVAL；`ldp x9,x8,[x0,#0x10] + orr + cbnz` =
+  mach/kobj_filter_cbfunc 非空判别 → 安装路径（zalloc_ro_mut +
+  panic_proc_ro_proc_backref_mismatch = mac_task_register_filter_callbacks
+  RO 机制）。**语义 = sandbox 注册 syscall filter 回调进 MACF**（墙 19
+  取 mask 尺寸 → 墙 26 注册回调，同一集成链）。map 无名（
+  _proc_get_syscall_filter_mask 与 _proc_ro_alloc 之间，噪声名
+  +0x240）。账本 2 站/1 kext。native 具名 `0xfffffff00789632c`
+  （wall-19 配对簇正后方）。fixture 183（设备仓提交），账本
+  2852→**2850 站**/798 目标。
+- **出件**：kernel `c79aa564` / payload `71e5d28b`
+  （`out/m2381/payload-sfiltercb-71e5d28b.img`）。
+- **下会话工作单 = 批量轮第二批**：bootpath 榜复跑（2850 现势）取
+  d 序下一段扇出；NO-NATIVE 挂 shim 清单。
+- **回退**：recovery_a ← `out/m2381/payload-erandom-shim-73be0a25.img`。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata fd43ee70 不动；
+  CRC 行为准。
