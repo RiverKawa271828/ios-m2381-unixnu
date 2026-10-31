@@ -41,9 +41,10 @@ SecureDTGetProperty**（9 站，AMFI /chosen 属性读取；donor 独立函数�
 native 内联无独立符号，需 ~30 行 shim）。规矩：**关键路径上的坐标
 当场修，路径外一律只记坐标**。
 
-**出件**：kernel `876a14c7` / payload `2b8b8258`
-（`out/m2381/payload-vtslot-2b8b8258.img`）已刷已判（末轮屏 = 预期内
-余数 0xafc09d8）。刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
+**出件**：kernel `35761550` / payload `e5e9556f`
+（`out/m2381/payload-dtgetprop-e5e9556f.img`）待刷（会话二十五 =
+bootpath 清点 + SecureDTGetProperty fixture，§7 工作单已执行）。
+刷写红线不变：只 recovery_a；boot_b `d0200a6b` /
 userdata `fd43ee70` 不动；回退 = recovery_a ←
 `payload-kallocfix-crc-5f59a2a0.img`。下会话工作单 = §7。
 
@@ -52,7 +53,7 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（23F84 线配套） | `d0200a6b` | **现役**（不动） |
-| recovery_a | payload vtslot | `2b8b8258` | **现役**（会话二十四已刷已判） |
+| recovery_a | payload vtslot | `2b8b8258` | **现役**（会话二十四已刷；会话二十五出件 `e5e9556f` 待刷换防） |
 | userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未动；源件 = `out/m2381/ci-artifacts/userdata-root.img` 8.8G，sha 同，勿删） |
 
 - **读窗 = forensic reader**（专用件 `payload-reader-0f1013f4.img`；
@@ -186,7 +187,7 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
 - matcher v11 通道只覆盖纯转发壳族；账本 601 目标大多数未配且**不构成
   当前目标**（关键路径优先拍板）。
 
-## 7. 下会话工作单 = 会话二十五：关键路径排空（2026-10-31 用户拍板"只想起内核→进桌面→完善驱动"）：
+## 7. 工作单 = 会话二十五（已执行，判读单见文末执行档）：关键路径排空（2026-10-31 用户拍板"只想起内核→进桌面→完善驱动"）：
 
 - **战略**：刷机从探针变回验收。离线走完 early-boot 调用图，把"到
   root mount 为止"要经过的 stubbed 目标**一次修完**，一个 payload，
@@ -489,3 +490,12 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
   3. 若 sheng 姿势可借：比对 sheng-27 仓 porting.toml 里对同类桩的处理记录。
 - **C. B 腿推进（战略减税）**：CI 内建 RELEASE 参照件（参数化上游 build-fileset-release-reference.py 到 out/m2381=原排队项①，workflow kernel 步前置）→ CI kernel.json 上传（补 site 口径精确数）→ payload CI 化（trusted 材料经 secrets，勿入 runner 盘）。
 - **刷写红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；回退=recovery_a ← payload-kallocfix-crc-5f59a2a0.img。基线：-j16；--trust-cache/--data-ramdisk/--unique-chip-id 必带；CRC 行为准。
+
+**★会话二十五执行档 = 关键路径排空第一轮：bootpath 调用图清点 + SecureDTGetProperty fixture（2026-10-31 上午，工作单 §7 全单执行）**：
+
+- **A 调用图清点（新工具 `temp/batch-fixtures/bootpath.py`，可复用）**：从 AMFI early_security_init（0x8f13c80）+ AMFI init（0x8f0d230 所在函数）双入口对 donor KC 做静态遍历（线性扫全函数体 = 条件分支双侧保守收集；跨组件 bl 合法跟进；donor function_starts 覆盖实证充足 kernel 21113 条）。坑一处：in_code 校验最初只查 caller 自组件段把跨组件 bl 全误杀（20 函数即止），改全区段后正常。**线性闭包过宽（55 墙/3501 函数）= 内核互联度本性，d≥2 静态分不出冷热**；改 BFS 带深度排序。
+- **关键判定（干净）**：**d=0 墙 = 0xafc09d8 SecureDTGetProperty = 实机末屏精确吻合（walker 有效性实证）**；且全图**活链上唯一 d=1 墙-caller = 已配对的 `_SecureDTLookupEntry` → 它的唯一墙就是 0xafc09d8**。AMFI 局部链无其他墙；其余 54 面全为内核中转（d≥2），静态不可排序——历轮教训（尾巴按调用序）下不做投机 fixture。
+- **B1 = 零 shim 定案**：donor 0xafc09d8（412B，DT 区边界读全局 [0x7da4b18]/[0x7da4b28]、entry+8 属性数组、0x24 prop 头、4 字节对齐步进、命中返 1/穷尽返 −1）与 native `_SecureDTGetProperty`（0x7bac004，24B 尾调壳，加载同类全局区对）ABI 逐参同构，`_SecureDTGetPropertyInternal`（0x7bac01c，424B）循环体逐指令同 donor。entry 来自已配对 native `_SecureDTLookupEntry`（我们的 DT 树）→ 我们的全局边界即正确值。fixture 一条（设备仓 **020aa2e**，functions 137→138，sha 钉 89831e0f…）。
+- **投机甄别记录（不配）**：d=2 墙 0xa8150f0（117 站点、thread_dispatch/sched_update 括号、双 mul 哈希 0x7fb5d329728ea185/0x81dadef4bc2dd44d + 0x18 桶表）与 0xa866894（93 站点、zdestroy/get_thread_ro 括号、页元数据 zone 索引形态）——哈希常量在 native 全文 **零命中**（h2.mid 唯一命中=__global_eventq 数据假阳性）→ native 无对应体（122.8 新增/Apple-only），不硬配。d≥2 其余留观，等实机按调用序点名。
+- **出件**：kernel **35761550**（ledger 4298→4289 站点精确 −9，AMFI 0xafc09d8 出账，map `reviewed` 138 条；`0xfffffe000afc09d8 → _SecureDTGetProperty how=reviewed`）→ payload **e5e9556f**（96MiB，100,663,296B；trust ebeaf7fb + seed d04a0153 + chip-id 3645ad55d47e77c1 + panic_screen；kernel_args 同前队）。平铺 `out/m2381/payload-dtgetprop-e5e9556f.img`（sha256 e5e9556f…768ad）。**ESP 副本端到端实证：AMFI 站点 0x8f0d4a8 bl → 0xfffffff00b018004 = native 0x7bac004 + 0x346c000 精确命中**。
+- **判读门（下会话）**：①0xafc09d8 墙消失（AMFI early init 的 DT 属性读取走通）②推进到下一墙 = 按调用序点名（bootpath 榜单 + batchid 例行钻法接应；新屏一律 CRC 验真先行）③若无墙推进 = 阶段史记新坐标（root mount 段未至）。**回退 = recovery_a ← payload-kallocfix-crc-5f59a2a0.img**。
