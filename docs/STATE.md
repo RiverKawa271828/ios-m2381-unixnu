@@ -187,7 +187,20 @@ userdata `fd43ee70` 不动；回退 = recovery_a ←
 - matcher v11 通道只覆盖纯转发壳族；账本 601 目标大多数未配且**不构成
   当前目标**（关键路径优先拍板）。
 
-## 7. 工作单 = 会话二十五（已执行，判读单见文末执行档）：关键路径排空（2026-10-31 用户拍板"只想起内核→进桌面→完善驱动"）：
+## 7. 工作单 = 会话二十六（2026-10-31 收队定稿）：判读轮 + lck 批量预钻（关键路径优先不变）：
+
+- **A. 判读（用户刷 payload-grpattr-font2-dd0da85b 后）**：
+  0. 刷前现态核对：current-slot=b、现役 recovery_a = dd0da85b、boot_b d0200a6b / userdata 不动；回退 = recovery_a ← payload-macresign-c13089a9.img。
+  1. 拍屏 → **指令级验真**（新工艺，比 CRC 重建便宜：ESP 内核 pc 处反汇编逐指令对拍，0xb01cfe8 先例）→ 判读门：①0xa52e140 墙消失（sandbox 锁初始化段走完，后续 attr_setstat/alloc_init/lck_*_init 全已配对，理论可连走）②**诊断页小字大一倍**（scale 2 视觉确认）③新墙按调用序点名 → bootpath 榜单（temp/batch-fixtures/bootpath-rank.txt）+ batchid/stubid 例行钻法。
+  2. mac policy 注册段全过后的预期下一段 = sandbox 主体执行 / AMFI 后续阶段 / apfs root-mount 逼近；新坐标先记档。
+- **B. 离线预钻（不刷机，lck 家族批量 = 下一段大概率墙源）**：
+  1. **第一刀 = 0xa95ca30（127 站点/8 组件，bootpath d=4，本会话已预钻一半）**：体形已定谳 = per-cpu 计数（tpidr_el1+0x1b8）+ `ldxr/casa [x0]`（0→tpidr 原值）+ wfe 自旋 + 慢路尾调 0xa7f960c；donor 括号 = `_lck_spin_assert` / `_IOSimpleLockUnlock` 之间 = **`_IOSimpleLockLock`**，native 0x745e00 同址双名候选。修法 = 对拍 native 0x745e00 体形（FAST 路径 CAS [x0] 同形即配）→ fixture（走 4cea0fe 模板）；同时核慢路 0xa7f960c 配对状态，未配则同批。自洽性先例 = 会话十七 lck_mtx 三条（kext 锁全经我们实现，字值约定自洽）。
+  2. 第二刀 = bootpath 榜单 d≤7 余量逐个 bracket 甄别（0xa8150f0/0xa866894 已证无 native 对应体勿再钻）；每有 unique-candidate 级身份即顺手落 fixture。
+  3. 若新屏落在别处：例行钻法优先，本单 B 项不挡判读。
+- **C. 收队项**：主树 4 笔（184e3ad/d532452/ca3bc95/05e4f97）+ 设备仓 2 笔（020aa2e/4cea0fe）未推送——会话开工先拍板推送。
+- **D. 止损（不变）**：路径排空后 root mount 仍同区连发卡 → 停修归因回报拍板。
+- **背景排队（非关键路径，阶段②前按需）**：B.2 续单（co-slot 群一致性 = 先配 IOUserClient::init 0xaf4e544 → Dispatch×48 收编）；大函数残墙放宽通道；B 腿 CI（build-fileset-release-reference 参数化 + kernel.json site 口径）。
+- **红线不变**：只 recovery_a；boot_b d0200a6b / userdata 不动；--trust-cache/--data-ramdisk/--unique-chip-id 必带；-j16；CRC 行在位、指令级验真为准。
 
 - **战略**：刷机从探针变回验收。离线走完 early-boot 调用图，把"到
   root mount 为止"要经过的 stubbed 目标**一次修完**，一个 payload，
