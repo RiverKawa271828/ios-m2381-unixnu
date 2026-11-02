@@ -998,3 +998,59 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
+
+## 9. 工作单 = 会话三十八（2026-11-01 定稿）：上游大同步 + LTO 实验 + sandbox 清仓
+
+- **现态**：recovery_a = `97f091b3` 已刷已判（墙 27）；payload **`0c6b8419`**
+  已出待刷（墙 27 三连 + hit#N，只刷 recovery_a，不挡本单可先刷）；
+  账本 **2660 站/770 目标**；fixture 198（设备仓 `6250404`）；主树头
+  `493abb3` / 设备仓头 `6250404` 未推。上游已合并 141 笔
+  （merge-base `359d77c`），研究结论与本单依据 = 会话三十七执行记录
+  （两路侦察报告：全景摘要 + GPU 栈评估）。
+- **A. rebase 大同步（第一优先，~310 笔重放）**：
+  0. 备份分支 `m2381-pre-sync-20261102` → 照 `docs/UPSTREAM.md` §2：
+     `git rebase --onto upstream/main 359d77c m2381-ios27`。
+  1. **冲突面 5 脚本人审**（其余零冲突已核）：`scripts/unixnu/kernel.py`
+     （上游 regression/runtime 挂点 vs 我方 51 行）、`payload.py`
+     （check_data_input vs 我方 50 行）、`patch-xnu-entry-probe.py`
+     （上游 5 复位参数 vs 我方 23 行，高重叠手动并）、
+     `xnu-panic-screen.c`（双方 40 行）、`build-xnu-4k-baseline.sh`
+     （上游写 CACHE UUID vs 我方 57 行）。
+  2. xnu 补丁集与上游逐字节一致零冲突；我方私有 2 补丁
+     （iorpc-message-from-mach-export / native-entropy-deferred-sha512）
+     不在 series，确认保持挂载。
+  3. kits/XnuPrelink 上游 pin 76452c6→b1888c1：评估收编 vs 维持 vendored。
+  4. 我方独有 `patch-kernel-fileset-cpusub.py` 评估是否被上游
+     `build-fileset-release-reference.py` 替代后删除。
+  5. 验收 = check-m2381 4ok + 全量构建 + 本机出件（kernel sha 新头）。
+- **B. LTO 参考件实验（同步后立即，最高杠杆/成本比）**：
+  0. 假设：我方 RELEASE 参考件 `BUILD_LTO=0`（build-xnu-4k-baseline.sh
+     写死），donor 是 LTO 建 → reference-symbol/reference-order 通道
+     配对缺口被系统性放大（上游 PR #155 明文：非 LTO 参考丢 corecrypto
+     导入匹配）。
+  1. 实验：参考件构建改 LTO（`build-fileset-release-reference.py --lto`
+     参数已在，或 baseline 脚本 RELEASE pass 改 BUILD_LTO=1；Linux lld
+     需验证 LDFLAGS_KERNEL_LTO 可用）→ 复跑 prelink/matcher → 对比
+     stubbed 计数（基线 2660 站/770 目标）。
+  2. 判定：显著降（目标 ≥15%）→ 采纳为默认并记档；链接失败或无效 →
+     记档放弃，转 macOS 建核评估（上游 CI 已证 932 vs 1234 −25%）。
+  3. 注意：fixtures 198 = donor VA→native 符号名绝对配对，LTO 不作废；
+     但 emit 后必须重过 make_fixture check 全绿 + 手核 2 笔 call site。
+- **C. sandbox 整组件清仓（用户已拍板甲；LTO 实验后跑，按新账本重取榜）**：
+  1. A 组 5 笔（`/home/ri/work/tools/xnu27/spec-sbxA.json`，全 DIRECT
+     高置信：sbuf_printf 28 站/zone_require_ro 11/vnode_getattr 10/
+     proc_isinitproc 9/vnode_lookup 8）→ `PYTHONPATH=UniXNU-m2381/
+     kits/XnuPrelink make_fixture.py add` + check + 设备仓提交。
+  2. B/C 组 49 目标按新账本重分组三路扇出（若 LTO 已自动配对大半则
+     只清残余）；NO-NATIVE 类走 shim 通道（模板
+     `fileset-read-erandom-shim.patch`，先出件再 add fixture）。
+- **D. 刷写并行项**：`0c6b8419` 随时可刷。判读门：①墙 27 消失
+  （屏上见 `hit #N` 行=计数器在岗）②下一墙位置（若仍 sandbox 段=C
+  项优先级加码）③CRC 行为准。回退 ← `97f091b3`。
+- **E. 推送积压（做完 A 后一并）**：两仓 force-with-lease（主树同步后
+  新头；设备仓 `6250404`）。
+- **止损**：rebase 冲突 2 脚本以上人审不过 → 停下改 merge 策略评估再报；
+  LTO 失败 → 记档不纠缠；清仓同段连发卡 → 归因回报拍板。
+- **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
+  --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
+  CRC 行为准。
