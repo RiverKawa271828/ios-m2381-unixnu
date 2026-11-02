@@ -1143,7 +1143,10 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
      编译器 per-type 默认）≠ donor 的槽址连通 ≠ 补丁的 disc0 ⇒
      墙 30。**删补丁不可行**（donor 值对我们的消费者同样不匹配），
      硬编码翻译是正解，参数从**我方 Mac 件消费者站点**实测收集。
-- **A. 收集 per-field disc 表（已跑通首轮，欠去污染）**：严格
+- **A. 收集 per-field disc 表（已跑通首轮，欠去污染）**：
+  资产已固化 `temp/mackernel-sym39/`（mac_auth_sites.json=14538 鉴权
+  站点切片、gcf_field_discs.json=53 站首轮结果、crypto_layout.json=
+  56 字段偏移、dump-symbols.sh=符号/反汇编再生成路径）。严格
   provenance 扫描 Mac 件原生 text（adrp 页 `0x7211000`+add
   `#0x858` → gcf 解引用 → `ldr xN,[x8,#off]` → `mov x17,#const` →
   `braa/blraa`）得 53 站 25 字段，field0=0x73d8 与墙 30 实测吻合。
@@ -1166,6 +1169,30 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   全带；预期 = entropy 站过墙推进到下一站。判读须同宿主账本。
 - **目标**：修墙 30 = `crypto-funcs-unpack.patch` v2，Mac 件重出件
   判读。**在 Mac 侧施工**（§9.F 阶段一）。
+- **E. 会话四十开工顺序（2026-11-03 收队定稿）**：
+  1. 表生成器（Fedora 即可，输入=temp/mackernel-sym39/ 已固化资产
+     或按 dump-symbols.sh 重拉）：修 provenance 去污染规则
+     （gcf 解引用寄存器必须直达 src load，中间禁止 offset 重载；
+     剔除 `+0xc0` 子结构二级解引用站、`+0x20..0x40` di 指针站、
+     表外 `+0x870`），产出 56 字段 × (kind, disc/addrdiv) 全表；
+     无消费者站点的字段标 UNCONSTRAINED（保 disc0）。
+  2. 表自检三关：field0=0x73d8 / field8=0xa0d8 必须在表；表内
+     disc 值分布与 donor fixup 槽位对照（donor=槽址连通族 +
+     常量族混合，我们=常量族为主）不许出现表外地址；冲突字段
+     （同一 offset 多常量）逐站回看反汇编人工裁决。
+  3. 补丁 v2（`patches/xnu-12377/crypto-funcs-unpack.patch` 改写，
+     单提交）：`#if defined(__apple_build_version__)` 走实测表，
+     `#elif` 保现状平翻译；unpack 循环按字段查表签名，UNCONSTRAINED
+     走 disc0；逃逸 hatch（packed 形态判定 + 范围检查）保留但范围
+     常量参数化。
+  4. Fedora 侧 check-m2381 + Linux 全量构建过回归门（表改动不得
+     影响 Linux 行为——A/B 账本比对 stubbed/missing 计数不变）。
+  5. Mac 侧重出件（defconfig→tree→kernel，GH_TOKEN 必带）→
+     A/B 快扫（Mac 账本 stubbed/missing 与 56d24922 件持平）→
+     payload → 用户首刷（只 recovery_a）。
+  6. 判读判据（会话四十一）：crc 换新；entropy 站过墙 = stages
+     推过 mapping_adjust（pages/free 应显著上穿 0x125b07）；
+     新墙记录全寄存器 + 同法符号化（账本同宿主）。
 - **红线不变**：只 recovery_a；-j8（Mac）；CRC 行为准；回退链
   = `a715395a` / `8a935155` / `0c6b8419` 均在库。
 
