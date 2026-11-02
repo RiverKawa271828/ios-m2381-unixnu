@@ -1008,12 +1008,13 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   2290 站清不完；macOS 同代码基线 stubbed 932 vs Linux 1234（−25%，
   会话二十二 CI 实测），sheng 真机无墙链 = 同因。上游 141 笔中
   f130f77 已重写 macOS build workflow = 现成车道。
-- **现态**：recovery_a = `8a935155` 待刷（sandbox 清仓件，53/54 定名
-  入账：A 组 5 + B 组 15 + C 组 33，fixture 203→251，设备仓
-  55cda1f/b26168c；账本 2660→**2290 站**/675 目标，sandbox 仅剩未决
-  0xacc1dc0 2 站）；kernel `89d80fd0`；上游 141 笔已研究未同步
-  （merge-base 359d77c）；两仓未推（主树 493abb3+b9b240c、设备仓
-  6250404+55cda1f+b26168c）。
+- **现态（2026-11-03 审核修订）**：recovery_a = `8a935155` **已刷已判**
+  （墙 29 = PAC 鉴权失败，见 §7j，本轮不修等云端）；sandbox 清仓
+  53/54 入账（A5+B15+C33，fixture **251**，设备仓 55cda1f/b26168c；
+  账本 2660→**2290 站**/675 目标，sandbox 仅剩未决 0xacc1dc0 2 站）；
+  kernel `89d80fd0`；上游 141 笔已研究未同步（merge-base `359d77c`
+  已核，重放 **314** 笔）；两仓未推（主树头 `6562ab4`、设备仓头
+  `b26168c`）。
 - **A. rebase 大同步（第一优先，不变）**：
   0. 备份分支 `m2381-pre-sync-20261103` → `git rebase --onto
      upstream/main 359d77c m2381-ios27`（~310 笔重放）。
@@ -1022,14 +1023,22 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
      我方 50 行）、patch-xnu-entry-probe.py（上游 5 复位参数 vs 我方
      23 行）、xnu-panic-screen.c（双方 40 行）、build-xnu-4k-baseline.sh
      （上游写 CACHE UUID vs 我方 57 行）。
-  2. xnu 补丁集零冲突已核；私有 2 补丁确认保持；XnuPrelink 上游 pin
+  2. xnu 补丁集与上游逐字节一致已核（zzw/zzwb/offline-owner-systemos
+     三件 = 早前 vendored，rebase 可现 "both added" 冲突，字节相同
+     任取一侧即可）；私有 2 补丁确认保持；XnuPrelink 上游 pin
      76452c6→b1888c1 评估收编；我方 patch-kernel-fileset-cpusub.py
      评估是否被上游 build-fileset-release-reference.py 替代。
   3. 验收 = check-m2381 4ok + Linux 侧全量构建通过（基线不回退）。
 - **B. macOS CI 建核转正（同步后主攻）**：
-  0. 喂法考证：上游 f130f77 重写后的 macOS workflow（只发布脱敏日志）
-     + 我们 CI dispatch（pre_build=ci-owner-policy，历史绿证 run
-     41132298280 全绿 11m48s）。
+  0. **workflow 改造（审核抓出的死路点，必做）**：上游 f130f77 新
+     macos.yml **只发脱敏文本日志、不传内核二进制**——照单全收则
+     kernel 件取不到。rebase 冲突解决 = 上游新结构（runner macos-26/
+     Xcode 26.6 输入）+ **重挂我方红线私有 upload 输入**
+     （upload_kernel/upload_userdata/upload_verified_root，7 天保留，
+     "kernelcaches/IPSW 成员永不上传"隐私行保留——fork 现版
+     .github/workflows/macos.yml 有现成实现）。dispatch 输入已核兼容
+     （device_repository/device_ref/defconfig/steps/xcode/ipsw_url/
+     pre_build/trust_cache_url 全在）。
   1. 步骤：①同步后 dispatch 一次 CI kernel 构建 → 取 kernel 件 +
      stubbed 计数②与 Linux 基线对比（stubbed 目标/站点数、账本组成）
      ③若显著降（预期 −25% 起步，配对闭合后更多）→ 建 payload 以 CI
@@ -1046,9 +1055,10 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **D. 手工清仓按需化**：只修 bootpath 实际撞到的墙（kc.py wall →
   邻近簇 3-5 笔）；已入 251 笔 fixtures = donor VA→native 符号名绝对
   配对，换工具链后依然有效，不重做。
-- **E. 刷写并行项**：`8a935155` 随时可刷。判读门：①墙 28
-  （0xa53cab0/zone_require_ro）消失 ②下一墙位置（sandbox 段应已
-  清完，53/54）③CRC 行为准。回退 ← `0c6b8419`。
+- **E. 刷写（2026-11-03 审核修订：8a935155 已刷已判 = 墙 29 PAC）**：
+  本单内不再刷 Linux 件；下一次刷 = B 的 macOS 件（判读门 = 墙 29
+  是否消失/推进 + stubbed 计数对比 + CRC 行为准）。回退链 =
+  `0c6b8419`（Linux 墙 28 件）在库。
 - **F. 推送积压**：A 完成后两仓 force-with-lease 一并清。
 - **止损**：rebase 冲突 2 脚本以上人审不过 → 停下评估 merge 策略；
   CI macOS 不绿 → 记档归因回 Linux；同段连发卡 → 归因回报拍板。
