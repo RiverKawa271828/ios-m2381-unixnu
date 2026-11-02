@@ -999,72 +999,52 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
 
-## 9. 工作单 = 会话三十八（2026-11-03 修订）：上游大同步 → macOS CI 建核转正
+## 9. 工作单 = 会话三十九（2026-11-03 收队定稿）：Mac 件首刷判读（a715395a）
 
-- **方向修订（2026-11-03 用户拍板）**：手工清仓侦察降级为按需（撞墙点
-  邻近簇小批量，kc.py wall 反推后 3-5 笔），**主力转 macOS CI 建核**——
-  Linux 建核问题 = 代码生成与 donor 系统性偏差（BTI 缺/FPAC 软检查块
-  13052 处/内联 regalloc 漂移）→ matcher 配对缺口 → 运行时墙，残账
-  2290 站清不完；macOS 同代码基线 stubbed 932 vs Linux 1234（−25%，
-  会话二十二 CI 实测），sheng 真机无墙链 = 同因。上游 141 笔中
-  f130f77 已重写 macOS build workflow = 现成车道。
-- **现态（2026-11-03 审核修订）**：recovery_a = `8a935155` **已刷已判**
-  （墙 29 = PAC 鉴权失败，见 §7j，本轮不修等云端）；sandbox 清仓
-  53/54 入账（A5+B15+C33，fixture **251**，设备仓 55cda1f/b26168c；
-  账本 2660→**2290 站**/675 目标，sandbox 仅剩未决 0xacc1dc0 2 站）；
-  kernel `89d80fd0`；上游 141 笔已研究未同步（merge-base `359d77c`
-  已核，重放 **314** 笔）；两仓未推（主树头 `6562ab4`、设备仓头
-  `b26168c`）。
-- **A. rebase 大同步（第一优先，不变）**：
-  0. 备份分支 `m2381-pre-sync-20261103` → `git rebase --onto
-     upstream/main 359d77c m2381-ios27`（~310 笔重放）。
-  1. 冲突面 5 脚本人审：scripts/unixnu/kernel.py（上游 regression/
-     runtime 挂点 vs 我方 51 行）、payload.py（check_data_input vs
-     我方 50 行）、patch-xnu-entry-probe.py（上游 5 复位参数 vs 我方
-     23 行）、xnu-panic-screen.c（双方 40 行）、build-xnu-4k-baseline.sh
-     （上游写 CACHE UUID vs 我方 57 行）。
-  2. xnu 补丁集与上游逐字节一致已核（zzw/zzwb/offline-owner-systemos
-     三件 = 早前 vendored，rebase 可现 "both added" 冲突，字节相同
-     任取一侧即可）；私有 2 补丁确认保持；XnuPrelink 上游 pin
-     76452c6→b1888c1 评估收编；我方 patch-kernel-fileset-cpusub.py
-     评估是否被上游 build-fileset-release-reference.py 替代。
-  3. 验收 = check-m2381 4ok + Linux 侧全量构建通过（基线不回退）。
-- **B. macOS CI 建核转正（同步后主攻）**：
-  0. **workflow 改造（审核抓出的死路点，必做）**：上游 f130f77 新
-     macos.yml **只发脱敏文本日志、不传内核二进制**——照单全收则
-     kernel 件取不到。rebase 冲突解决 = 上游新结构（runner macos-26/
-     Xcode 26.6 输入）+ **重挂我方红线私有 upload 输入**
-     （upload_kernel/upload_userdata/upload_verified_root，7 天保留，
-     "kernelcaches/IPSW 成员永不上传"隐私行保留——fork 现版
-     .github/workflows/macos.yml 有现成实现）。dispatch 输入已核兼容
-     （device_repository/device_ref/defconfig/steps/xcode/ipsw_url/
-     pre_build/trust_cache_url 全在）。
-  1. 步骤：①同步后 dispatch 一次 CI kernel 构建 → 取 kernel 件 +
-     stubbed 计数②与 Linux 基线对比（stubbed 目标/站点数、账本组成）
-     ③若显著降（预期 −25% 起步，配对闭合后更多）→ 建 payload 以 CI
-     kernel 为输入本地出（红线参数照旧）④首刷判读。
-  2. 判定门：macOS 件 stubbed 计数 + 首刷墙位推进 vs 同 fixture 的
-     Linux 件（8a935155）并列对照——这是一次天然 A/B 实验。
-  3. 失败处理：CI macOS 构建不绿或计数不降 → 记档归因（工具链版本/
-     参考件口径），回退 Linux 车道不纠缠。
-- **C. LTO 参考件实验（2026-11-03 用户拍板降级为条件项，主线不做）**：
-  仅当 B 失败回退 Linux 车道时才试（参考件 BUILD_LTO=1 → 复跑
-  matcher → 对比基线 2290 站，≥15% 降才采纳）。理由：macOS 转正后
-  参考件按上游标准 --lto 构建问题自动消失；账本总量已非目标（按需
-  清仓）；LTO 不改变我方内核与 donor 的字节级体形差异（税的大头）。
-- **D. 手工清仓按需化**：只修 bootpath 实际撞到的墙（kc.py wall →
-  邻近簇 3-5 笔）；已入 251 笔 fixtures = donor VA→native 符号名绝对
-  配对，换工具链后依然有效，不重做。
-- **E. 刷写（2026-11-03 审核修订：8a935155 已刷已判 = 墙 29 PAC）**：
-  本单内不再刷 Linux 件；下一次刷 = B 的 macOS 件（判读门 = 墙 29
-  是否消失/推进 + stubbed 计数对比 + CRC 行为准）。回退链 =
-  `0c6b8419`（Linux 墙 28 件）在库。
-- **F. 推送积压**：A 完成后两仓 force-with-lease 一并清。
-- **止损**：rebase 冲突 2 脚本以上人审不过 → 停下评估 merge 策略；
-  CI macOS 不绿 → 记档归因回 Linux；同段连发卡 → 归因回报拍板。
+- **现态**：Mac 建核车道已转正并完成首刷。recovery_a = `a715395a`
+  （payload = Mac kernel `56d24922` + trust `ebeaf7fb` + seed `d04a0153`
+  + panic_screen，红线参数全带；存档 `out/m2381/payload-mackernel-a715395a.img`）。
+  **首刷已发生**（用户自行刷入），首屏 = PAC 墙（见 §7k），判读留下会话。
+- **A. 判读单（第一优先）**：
+  1. 符号化：屏摄 `IMG_20261103_041436.jpg`（已入设备仓
+     `records/mackernel-a715395a-firstboot-20261103-041436.jpg`），
+     pc `0xfffffff00aeb54e4` / lr `0xfffffff00b08f4ec` / x19
+     `0xfffffff00b3df3c9`，esr `0x72000000`（EC 0x1C PAC_FAIL，同墙 29 类），
+     x16 = `0x59dfb7b00a6fa120`（签名态垃圾高位，鉴权失败目标），
+     stages = clock_service_create→sched_startup→thread_daemon_init→
+     thread_call→thread_bind→mapping_adjust（全 1s 早期），
+     pages/free `0x125b07/0x1254c7`，**crc `0x71f484be`**。
+     符号化用 Mac 版账本（`out/m2381/.../kernel/kernel.json` +
+     `kernel.map.json`，Fedora 已回传）：先从 kernel.json 的
+     collection_base/native_link_address 正推 slide（粗查 ±0x1000000
+     无命中，勿再用蛮试法），再 map 定位三寄存器。
+  2. 对拍墙 29（`8a935155`：同 esr 类，blraa x8，x8=`0xc2b5b6b0…`，
+     pc `0xfffffff00ad39c64`）：同址 = 墙未动（PAC 纪律差不是工具链
+     可修的）；新址 = 墙位推进（Mac 件症状改观，续推）。
+  3. 分支处置：①站点落 donor kext 桩区 → kc.py wall 反推邻近簇
+     3-5 笔 fixture（§D 按需清仓）；②站点落我方内核 → 查 Mac 工具链
+     paciza 叠签/单签纪律（会话二十一铁律：PAC 交接修法必须反汇编
+     验证单签；entropy 补丁 ptrauth_strip idiom 先例）。
+- **B. Mac 车道资产（已固化，下次直接复用）**：朋友 MacBook Air M1
+  （macOS 27.0.1，8 核 16G），ssh 免密 `naoniudeair@192.168.10.246`
+  （密码 123321，XDG 无关）。工作面 `~/unixnu/`（两仓 + ipsw/，清理
+  待项目全完后用户拍板）。环境 = Xcode 27.2 (27B52) + brew llvm/lld/
+  mtools/dtc/unifdef/ninja/python3.14。重出件三命令 =
+  `defconfig m2381_defconfig` → `tree --ipsw ~/unixnu/ipsw/…` →
+  `kernel --ipsw … -j8`（GH_TOKEN 必带；defconfig 必须显式 NAME）。
+- **C. 已定谳不再重查**：CI 车道死路（3 连 15min 零接机，GitHub 注释
+  = macos-26 arm64 容量不足自动取消；macos.yml=冒烟车道无人当量产）；
+  matcher 确定性（重跑 macho sha/账本逐字一致；首跑 vtable raise =
+  半成品参照件中间态残留）；A/B 账本（missing 目标 344→190 −45%，
+  总目标 1019→920 −10%，stubbed 站点=脏口径不作判读依据）；
+  llvm 436MB 走 Fedora 中转法（ghcr blob+token，11.4MB/s vs brew
+  直连 350KB/s）。
+- **D. 按需清仓不变**：撞墙点邻近簇 3-5 笔，双车道（Linux+Fedora/
+  Mac 账本）可交叉定位。回退链 = `0c6b8419` / `8a935155` 均在库。
 - **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
+
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
 - **★墙类切换**：`8a935155`（sandbox 清仓件）不再报 unmapped-call——
@@ -1085,3 +1065,40 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - 判读正面：sandbox 段启动走通到 kext 深处（unmapped-call 类在本组件
   绝迹），pages/free=0x125b8d/0x12534d 连续三轮缓步推进。回退 ←
   `0c6b8419`。下一墙处置归 §9.B（macOS 件 A/B 对照再判）。
+
+
+## 7k. 会话三十八执行档 = 上游大同步 + Mac 建核转正 + 首刷（2026-11-03~04）
+
+- **A. rebase 大同步**：315/315 笔重放到 upstream/main `bd3e947`
+  （merge-base `359d77c` 核对）；冲突仅 3 处（AdrenoMetal gitlink 忠实
+  落 7b885c2；payload.py 并集 check_data_input+prelinked_pmgr；
+  baseline.sh ×2 hunk 取我方 XNU_KERNEL_CONFIGS 参数化；
+  build-sheng-source-storage.py 双 fallback 通道并存）。XnuPrelink
+  pin 已是 b1888c1（早前收编）；patch-kernel-fileset-cpusub.py 保留
+  （上游 build-fileset-release-reference.py 是参照件构建器，不替代；
+  payload.py 在调用）。验收 = check-m2381 4ok + Linux 全量构建出件
+  `0967bf72`（上游新 check_prelink_regressions 回归门在位通过）。
+  推送 = 主树 `13e9372`（forced）/设备仓 `b26168c`。
+- **B. CI 车道死路定谳**：3 连 dispatch（41492845452/41495544378/
+  41499247407）均排队 ~15min 零接机后 GitHub 自动取消（check-run
+  注释 = "not acquired by Runner…capacity constraints"，macos-26
+  arm64 池饱和；非配额非标签错——10-30 同标签 4 秒接机先例在）。
+  结论：macos.yml = 冒烟车道，无人当量产（sheng/fuxi/nx729j 设备仓
+  零内核 CI；上游全史 8 笔 6 取消）。**转本地 Mac 真机路线**。
+- **C. M1 真机车道**（环境档案全录 §9.B）：ssh 打通（key-auth），
+  两仓 + IPSW（sha `f7f55fa3` 金标对拍）+ Xcode 27.2 + 全依赖就位
+  （llvm 436MB 走 Fedora ghcr 中转，brew 直连 350KB/s 不可用；
+  verified-root-23F84 政策件拷组装树 build/ = fallback 第一分支）。
+  坑三条：defconfig 必须显式 NAME；首跑 prelink vtable raise =
+  半成品参照件中间态（完整重跑零矛盾，matcher 插桩验证后已还原）；
+  matcher 确定性 = 重跑 macho sha/账本逐字一致。
+- **D. 出件与 A/B**：kernel `56d24922`（89.9MB，Xcode 27.2，口径
+  注记 26/27 差异用户拍板忽略）；A/B = missing 目标 344→190（−45%
+  实锤），总目标 1019→920（−10%；CI 时代 −25% 预期被 Linux 侧
+  fixture 251+清仓进步吃掉），stubbed 站点 2290→3116（脏口径：混入
+  我方内核重编译调用点变化，弃用）。payload `a715395a`（红线全带，
+  Linux 件备份 kernel.linux-0967bf72）。
+- **E. 首刷**（用户自行刷入，判读留下会话 = §9）：PAC 墙再现但寄存器
+  面全变（x16 非 x8，0x59df 签名态；stages 早期 1s mapping_adjust
+  邻域；crc `0x71f484be`）。屏摄入设备仓 records/。pc/lr 粗查
+  ±0x1000000 无命中，判读须正推 slide。
