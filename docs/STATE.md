@@ -1044,6 +1044,13 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
+- **E+. Mac 全链冒烟（2026-11-04 补）**：payload 步在 Mac 跑通
+  （trust/seed 已传 `~/unixnu/`），出件 sha `28164f42` ≠ Fedora
+  `a715395a`——**payload 不跨宿主机逐字节复现**（宿主 dtc→DTB、
+  panic-screen 宿主编译器差异），一件一线：刷写件必须与判读账本
+  同源同宿主。Mac 全链可用（defconfig/tree/kernel/payload；userdata
+  的 hdiutil 是 Mac 原生优势），开发可整体搬 Mac；Fedora 留刷写/
+  取证 reader（USB 物理连接）与 gh 推送。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
