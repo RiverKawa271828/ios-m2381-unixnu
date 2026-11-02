@@ -1099,6 +1099,22 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   trust cache）。
 - **D. 两阶段战略首战报**：Mac 开路第一刷即暴露一笔 Linux 侧掩盖
   的约定债——战略价值兑现（Linux 件永远看不清这笔）。
+- **D+. "Mac 更少 bug"实证（三份原生内核同口径指纹扫描）**：
+  donor 23F84 金标（仅其段 12MB）/ Mac 件原生（Xcode 27.2）/
+  Linux 件原生（llvm.org clang），统计工具链惯例特征指令数：
+  | 特征 | donor | Mac | Linux |
+  |---|---|---|---|
+  | disc-0 鉴权分支（braaz+blraaz） | 8 | 10 | **3959** |
+  | `bti c` | 6658 | 20374 | **1** |
+  | braa 带鉴权尾调 | 772 | 957 | 672 |
+  判读：**disc-0 鉴权分支是决定性指标**——donor/Mac ≈ 0，Linux 有
+  3959 处（每处 = 与 donor ABI 永久分歧的消费者站点，墙 29/30 家族
+  的潜在墙面）；BTI 上 Linux = 零（会话 22 matcher bti-shape 通道
+  就是给这个还债的），Mac 与 donor 同族有 BTI。⇒ **Mac 件代码惯例
+  = donor 惯例（修一次就收敛），Linux 件 = 永久分歧（3959 站逐站
+  谈判）**。附注：FPAC 软检查数（donor native 54 / Mac 5937 /
+  Linux 4894）受 build 变体影响（donor RELEASE vs 我方 DEVELOPMENT）
+  不作判读依据；lane 账本面已有 missing 344→190（−45%）。
 - **回退链**：Mac 件无新出件（纯判读轮，零改动）；现役 payload
   `a715395a` 不动。
 
