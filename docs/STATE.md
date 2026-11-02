@@ -1060,6 +1060,80 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   补丁）从会话三十九起在 Mac 侧进行；Fedora = 刷写/取证 reader/
   验证站。payload 不跨宿主复现，一件一线。
 
+## 9G. 会话三十九执行档 = Mac 件首刷墙 30 判读定谳（2026-11-03）
+
+- **A. 符号化全落位（slide=0，无需蛮试）**：Mac 件账本
+  `kernel.json` 的 `statistics.segment_layout` 给出 collection 新布局
+  （native_base `0x716c000`），panic VA 直接命中段表 ⇒ 运行时 slide=0。
+  map.json 里的 `native` 字段是**旧布局**（我方原始 build 空间），查表
+  前须做段映射（`new = base + (va − native_base)` 逐段）。符号源 =
+  Mac 侧未剥符号内核（`mach.development.bcm2837.unstripped.noctf`，
+  sha `3dcf0907` 与账本 `native_sha256` 吻合；ssh 拉回本地 llvm-nm）。
+  判定链：**pc = `SHA512_Init+0x40`（braa 站点）/ lr =
+  `_entropy_init+0x30` / x19 = `_entropyseed`（精确偏移 0）**；x16
+  `0x59dfb7b00a6fa120` 按本项目已知格式（签名覆盖 `0xfffffff0` 前缀
+  32 位）还原目标 = `0xfffffff00a6fa120`（corecrypto kext
+  `__TEXT_EXEC` 内，entry 文件偏移 0xc5d040）。stages（clock→…
+  →mapping_adjust，1s）与 entropy_init 早期语义吻合。crc
+  `0x71f484be`。
+- **B. 墙 30 机制定谳 = crypto-funcs-unpack 补丁的 discriminator
+  约定债（§9.A.3 分支②，非工具链 bug）**：pc 处指令 =
+  `braa x16, x17`（带鉴权间接尾调），x17 = **逐类型常量**（本站
+  `0x73d8`；邻站 field1 = `0xa0d8`；第三站 = 槽址|`0x1bda<<48`——
+  Apple Xcode clang 的类型多样性 discriminator）。槽链 =
+  `_g_crypto_funcs`（运行时由 corecrypto kext
+  `register_crypto_functions` 注册）→ field0 = `ccdigest_init_fn`。
+  我方补丁 `patches/xnu-12377/crypto-funcs-unpack.patch`
+  （`unixnu_unpack_function_pointer`，23182b1，10-30）把 donor
+  packed 指针 unpack 后用 **`(IA, disc=0)`** 重签——与 llvm.org
+  clang 的惯例互锁，与 Apple clang 的 per-type disc 不匹配 ⇒ 首个
+  consumer（entropy_init→SHA512_Init，开机最早 crypto 用户）必炸。
+- **C. 墙 29 对拍（§9.A.2）= 同类不同站，墙位推进**：Linux 件
+  （8a935155）pc 符号化 = `_load_static_trust_cache` 邻域（**trust
+  cache 域**），槽 = **`_amfi`** 表 field288，消费者 = `blraaz`
+  （ctx=0）；x8 目标 `0x08f1e92c` ∈ 我方 kext 区 = donor packed
+  形态**未经 unpack 漏网**（amfi 表无 unpack 补丁）。同 root 家族
+  （kext 接口表 PAC 交接）、不同站点。Linux 件过 crypto 站的直接
+  反汇编实证 = Linux SHA512_Init 同位 = **`braaz x2`（disc 0）**——
+  与补丁约定精确互锁，"巧合过墙"。Mac 件墙位更早（entropy 先于
+  trust cache）。
+- **D. 两阶段战略首战报**：Mac 开路第一刷即暴露一笔 Linux 侧掩盖
+  的约定债——战略价值兑现（Linux 件永远看不清这笔）。
+- **回退链**：Mac 件无新出件（纯判读轮，零改动）；现役 payload
+  `a715395a` 不动。
+
+## 10. 工作单 = 会话四十：crypto-funcs-unpack v2（per-field discriminator 表）
+
+- **目标**：修墙 30 = `crypto-funcs-unpack.patch` v2，Mac 件重出件
+  判读。**在 Mac 侧施工**（§9.F 阶段一）。
+- **A. 收集 per-field disc 表（第一刀，实证法）**：扫 Mac 件原生
+  `__TEXT_EXEC`，识别全部 `_g_crypto_funcs` 消费者站点（adrp 页
+  `0x7cf1000` + add `#0x858` 族 + `ldr xN,[x8,#off]` +
+  `movz/movk x17` + `braa x16,x17`），抽 (field offset → ctx 常量)
+  映射；地址连通型站点（ctx = 槽址|高 tag）单独归类（运行时用槽址
+  重算 ctx）。已知种子：field0=0x73d8、field8=0xa0d8、
+  di-struct 内 `#56` 站 = 槽址|0x1bda<<48。
+- **B. 补丁 v2**：unpack 重签改 per-field
+  `ptrauth_sign_unauthenticated(addr, ptrauth_key_function_pointer,
+  disc[field])`；地址连通型传槽址合成 ctx。host 条件化：llvm.org
+  车道保 disc=0（wall29 时代行为），Apple clang 车道用实测表
+  （编译器宏或 builder `-D` 区分）。顺带复核硬编码范围
+  `0x8330000–0xb0c0000`（Linux 布局口径）对 Mac 布局
+  （kext 区 0x8334000–0xa73c000，native TEXT_EXEC 到 0xb118000）
+  的逃逸误伤。
+- **C. 同族预警（不过早修）**：`_amfi`/`_img4if`/`_coretrust`/
+  `__dlxk`/`_libCoreEntitlements` 等接口表在 Mac 件上同样吃 per-type
+  disc（墙 29 家族）；di-struct 内部 CC_SPTR 指针（DA key + 槽址
+  连通 + 字符串 disc）由 kext 数据供链，loader 侧重签口径是**下一
+  墙**候选。修完 crypto 表先刷先判，勿一次铺开。
+- **D. 出件与判读**：Mac 重出件（§9.B 三命令 + GH_TOKEN），红线全带
+  （trust/seed/chip-id）；预期 = entropy 站过墙后推进到下一站
+  （候选：RNG 路径 or di-struct 站 or 接口表族）。**判读须用同宿主
+  账本**（payload 不跨宿主复现，§9.E）。
+- **红线不变**：只 recovery_a；-j8（Mac）；CRC 行为准；回退链
+  = `a715395a` / `8a935155` / `0c6b8419` 均在库。
+
+
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
 - **★墙类切换**：`8a935155`（sandbox 清仓件）不再报 unmapped-call——
