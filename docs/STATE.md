@@ -1053,3 +1053,23 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
+## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
+
+- **★墙类切换**：`8a935155`（sandbox 清仓件）不再报 unmapped-call——
+  **stubbed 墙类被 251 笔 fixtures 压到换类**，新墙 = **PAC 鉴权失败**
+  （`PAC failure from kernel with IA key while branching to x8`，
+  `blraa x8` 打在签名指针上，esr 0x72000000 = EC 0x1C PAC_FAIL + IL，
+  ESR_EC_PAC_FAIL=0x1C 常量已核）。
+- 关键值（屏摄转录，**CRC 重建未完成，转录未验真**——消息 = sleh.c
+  panic_with_thread_kernel_state 全寄存器转储，格式串已提取、tab/换行
+  已按 emit 口径折算，仍差一位转录，用户拍板停手不追）：pc
+  0xfffffff00ad39c64（我方内核 __TEXT_EXEC 内）；lr 0x5aef94700ad39c18
+  （PAC 签名 LR，低位 = pc-0x4c 同函数内）；x8 = 0xc2b5b6b008f1e92c
+  （鉴权失败目标，低位不落内核 text，疑 kext 区签名指针）；上下文
+  x3/x9/x19/x24 = 0xc642xxx 簇（kext 数据区结构体）。
+- **定性**：PAC 类 = 工具链税第二面向（我方内核无 FPAC 软检查块 13052
+  处 + PAC 签名纪律与 donor 不匹配）→ **macOS 建核的对症面**（Apple
+  clang 与 donor 同族 PAC 纪律）。不修，等云端构建（§9 修订版照旧）。
+- 判读正面：sandbox 段启动走通到 kext 深处（unmapped-call 类在本组件
+  绝迹），pages/free=0x125b8d/0x12534d 连续三轮缓步推进。回退 ←
+  `0c6b8419`。下一墙处置归 §9.B（macOS 件 A/B 对照再判）。
