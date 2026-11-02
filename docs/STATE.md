@@ -1051,6 +1051,10 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   同源同宿主。Mac 全链可用（defconfig/tree/kernel/payload；userdata
   的 hdiutil 是 Mac 原生优势），开发可整体搬 Mac；Fedora 留刷写/
   取证 reader（USB 物理连接）与 gh 推送。
+- **F. 主力搬迁拍板（2026-11-04 用户定）**：**开发主力 = Mac**
+  （ssh 远程操控，模式已验证），Fedora = 刷写/取证 reader/验证站
+  （修完后回 Linux 侧验证）；判读修墙工作（符号化/fixture/补丁）
+  从会话三十九起在 Mac 侧进行，Fedora 只接收成件与跑判读脚本。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
