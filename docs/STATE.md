@@ -1196,6 +1196,59 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 - **红线不变**：只 recovery_a；-j8（Mac）；CRC 行为准；回退链
   = `a715395a` / `8a935155` / `0c6b8419` 均在库。
 
+## 10.X 会话四十执行档 = crypto-funcs-unpack v2 出件（2026-11-03，待刷 `24f0a941`）
+
+- **①表生成器**（`temp/mackernel-sym39/gen-gcf-table-v2.py`，Fedora 可复跑）：
+  严格 provenance（adrp+add 精确到 `_g_crypto_funcs`@0x7211858 符号 → gcf
+  解引用 → **直达** field load → braa/blraa；二级解引用剔 SUBSTRUCT；表外
+  offset 剔除）+ 正向符号数据流（writeback/寄存器变址建模）。修四坑：
+  add 杀自身物化 / retab 不停致跨函数泄漏 / mem_operand 逗号切分 /
+  **AUTH 正则漏 braa（只配了 blraa）——补上后 15 字段全出**。
+  产出：15 常量字段 × 28 直达站 + 27 子结构站（0xc0 chacha 8 站 0x8550、
+  di 0x20..0x40 五站、xts 0x90/0x98 四站、des 0xc8/0xe8 两站 = CC_SPTR
+  槽址连通族 = C 预警家族，正确隔离）。**首轮 53 站大半是假阳性**
+  （kdp `[kdp_packet+0xe98]` 等无关结构 disc 撞值）。
+- **②三关自检**：field0=0x73d8✓ field8=0xa0d8✓；冲突字段=0；
+  donor 对照 = **donor 23F84 KC 与 Mac 件 56d24922 的 56 槽元数据逐位全同**
+  （temp/mackernel-sym39/donor-vs-mac-crypto56.json；表在 donor
+  0xfffffe0007face40，Mac 件 0xfffffff007face40，同 low32）；donor 槽 disc
+  = 源码注解族（逐声明），我方 = 编译器 per-type 默认——不等=预期。
+  我方受约束集 {0x73d8,0x1810,0x423,0x50c7,0x2abe,0xbcad} 与 donor 集同现。
+- **③补丁 v2**（主树 `a903a20`）：`__apple_build_version__` 门（Mac=Xcode
+  27.2 Apple clang 实锤，kernel-bootstrap.log ExecuteExternalTool）→ 15 字段
+  实测表；llvm 车道 `#else` 保平翻译。范围 hatch 常量两侧同值
+  （donor corecrypto text Mac 落位 0x08f1f800-0x08f22488 在范围内，无逃逸）。
+  运行时形态链定谳：KC fixup 应用后内存 = donor 注解签名指针
+  （bootstrap `__ptrauth(0,0,0xe4fe)` 实证），v1/v2 解码重签。
+- **④Linux 回归门**：check-m2381 4ok；Linux 全量构建过；**__TEXT_EXEC
+  逐字节一致**（新 08b5c73c vs 旧 1be282e9 同 text sha e201037f，表在
+  llvm 车道整体编译消失；`paciza x13` 平签名不变）。
+- **⑤Mac 重出件**：kernel `14f7e7aa`（payload 内 `40b7dd55`）；
+  **A/B 账本九项全零差**（kext_pointers_rebound 47473 / closure_unmapped
+  334 / branches_rebound 42024 / kext_chain_sites_kept 82701 等逐项持平
+  56d24922）；payload **`24f0a941939fe381…e4bc`**（96MiB，
+  /tmp/m2381-sym39/payload-v2-24f0a941.img，Mac 侧
+  out/m2381/.../payload/payload.img）。
+- **⑥新雷 + 拆除（Mac 车道第一颗 fresh-matcher 雷）**：native 一变 →
+  kernel.map.json 缓存 pairing（v1 时代，validate 比 native sha）失效 →
+  Mac 车道**第一次真正跑 fresh matcher** → `anchor_vtables` reviewed
+  矛盾 @0xaf5b9b4。定谳：投票错（donor IOUserClient vtable 0x7d72508 被
+  错配到 native 派生类 `__ZTV22IOKitDiagnosticsClient`，同构 186/186 +
+  覆写函数体形巧合），reviewed 对（slot[172]=clientClose 双侧核验）。
+  修 = 设备仓 `9e5b51b` fixture reviewed data 锚
+  （donor 0x7d72508 ↔ `__ZTV12IOUserClient`），bind 守卫掐断错连；
+  prelink 复跑 5 个 vtable-correction 自愈、无 raise。
+  坑档：①tree 的 kit = **device repo vendor 副本**（主树 kits/ 是冻结
+  v8 死副本，本地重放必须 PYTHONPATH=device repo kit）；②本地 `-I` 吞
+  PYTHONPATH；③非交互 ssh 无 homebrew PATH（export PATH 前置）；
+  ④Mac python3.13；payload 需 `--data-ramdisk ~/unixnu/scratch-data.img
+  --unique-chip-id 3645ad55d47e77c1`。
+- **判读（会话四十一）**：crc 换新；entropy 站过墙 = stages 推过
+  mapping_adjust（pages/free 上穿 0x125b07）；下一墙候选 = di 字段
+  （v1/v2 对 in-range 数据槽仍按 fn 重签 = 潜在 PAC 位污染，_sha1_init
+  的 `ldp [x20,#8]` 类）与 chacha 子结构 CC_SPTR 链。回退 = 刷回
+  `a715395a`（payload）。
+
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
