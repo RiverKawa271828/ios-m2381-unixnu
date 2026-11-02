@@ -1248,6 +1248,30 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   （v1/v2 对 in-range 数据槽仍按 fn 重签 = 潜在 PAC 位污染，_sha1_init
   的 `ldp [x20,#8]` 类）与 chacha 子结构 CC_SPTR 链。回退 = 刷回
   `a715395a`（payload）。
+## 10.Y 会话四十一开工单 = 墙 31 判读与修（donor 内部消费者面，2026-11-03 首刷定谳）
+
+- **墙 30 已过（payload `24f0a941` 首刷，屏摄
+  设备仓 records/mackernel-v2-24f0a941-firstboot-20261103-075316.jpg）**：
+  crc=`0x13dac5e7` 换新；stages 推过 `mapping_adjust`；pages=0x125b1c
+  上穿判据线（>0x125b07）、free=0x1254dc。v2 逐字段重签真机生效。
+- **新墙 31 = donor 自己的消费者 PAC 失败**：`PAC failure from kernel
+  with IA key while authing x16 at pc 0xfffffff00a97af90, lr 0x…a97af60`，
+  x16=x17=`0xf9aec470_0a97bba4`（donor text 指针带签名位），x8=
+  `0x90ff94f0_0a70995c`（=会话二十一 cckprng funcs[5] 丢 x1 的 shim，
+  高位签名垃圾），x0=`0xfffffff00b6042a0`（=会话二十一 cckprng ctx
+  全局 [ctx+24]回调/[ctx+32]arg）。pc 在 donor text 区（0x8330000 内）。
+  = 墙 29 家族的 Mac 面 / C 预警兑现。
+- **会话四十一工作单**：
+  1. donor 侧符号化：对 23F84 kernelcache 反汇编 0x0a97af90（pc）与
+     0x0a97bba4（x16 低 32 位目标），判 signer 与惯例（槽址连通 vs
+     常量 vs 我们重签过被二次鉴权）。工具 = kc_image.py + donor
+     反汇编（注意 donor 文件态 vs 运行态差异，套 fixups）。
+  2. 判定 x8 shim 签名垃圾来源：谁签的 0x0a70995c（donor 自签?
+     我们 unpack 重签后又经 donor 槽址 autia？）。
+  3. 修法定性后单提交落件（候选：donor 链专用 hatch / shims 表补签 /
+     funcs 表逐槽三元组翻译），先刷先判。
+  4. 回退 = 刷回 `a715395a`。
+
 
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
