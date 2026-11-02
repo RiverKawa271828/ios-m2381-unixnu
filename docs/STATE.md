@@ -1120,32 +1120,52 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 
 ## 10. 工作单 = 会话四十：crypto-funcs-unpack v2（per-field discriminator 表）
 
+- **★10.0 查证定谳（2026-11-03 补，"查证后再修"轮）**：完整证据链
+  闭合，**翻译补丁在 Mac 车道是必需的，但必须逐字段定参**：
+  1. 装配层无分歧：上游 profiles 的 prelink roots **同样**含
+     `com.apple.kec.corecrypto`（三份 OS profile 全含）；我们的
+     集合 entry[30] = donor corecrypto（kmod_info 与 donor 字节级
+     同偏移），源码重建 corecrypto 在**内核侧**（"xnu early
+     random" 串在 native `__TEXT`，`CRYPTO_ARCHIVE` force_load），
+     `XNU_SOURCE_CORECRYPTO14=y` 已在 defconfig。bootstrap
+     `source_corecrypto14_original()` 扫到 entry[30] → **donor 件
+     赢注册**——上游同样如此，sheng 也吃 donor 表。
+  2. **donor 表的签名参数就编在 fixup 条目里**（我们的
+     `kc_image.py fixups()` 口径）：撞墙槽位 = `0x80110000036f6120`
+     = **(key=IA, disc=0, 地址连通=1)**——donor 自己的消费者用
+     **槽址连通**约定；同一 donor entry 里另有 68 处 (IA,
+     disc=0x73d8 等, 非地址连通) 槽——**逐槽 (key,disc,addrdiv)
+     三元组，donor 内部自洽**。
+  3. **三方消费者惯例实测**：我方 Linux 件 = 平翻译后 (IA, disc0,
+     无地址连通)（`braaz`）——**unpack 补丁的 (IA,0) 平翻译恰好
+     匹配 Linux 消费者 = Linux 过墙的真正原因**；我方 Mac 件 =
+     逐字段常量（field0=0x73d8 等，源码版无 ptrauth 注解 →
+     编译器 per-type 默认）≠ donor 的槽址连通 ≠ 补丁的 disc0 ⇒
+     墙 30。**删补丁不可行**（donor 值对我们的消费者同样不匹配），
+     硬编码翻译是正解，参数从**我方 Mac 件消费者站点**实测收集。
+- **A. 收集 per-field disc 表（已跑通首轮，欠去污染）**：严格
+  provenance 扫描 Mac 件原生 text（adrp 页 `0x7211000`+add
+  `#0x858` → gcf 解引用 → `ldr xN,[x8,#off]` → `mov x17,#const` →
+  `braa/blraa`）得 53 站 25 字段，field0=0x73d8 与墙 30 实测吻合。
+  **已知污染**：`+0xc0 ccchacha20poly1305_fns` 子结构站点
+  （`ldr x8,[x8,#0xc0]` 二级解引用，disc 0x8550）被误归入 field0
+  ——表生成器须要求 gcf 解引用后寄存器直达 src load（中间不得
+  有 offset 重载）；`+0x20..0x40` di 指针字段与 `+0x870` 表外
+  站点剔除。地址连通型站点（`mov x17,xK; movk #tag<<48`）单独
+  归类（运行时用 unpacked 槽址重算 ctx）。
+- **B. 补丁 v2**：unpack 重签改逐字段
+  `ptrauth_sign_unauthenticated(addr, key, disc[field])`；host
+  条件化：llvm.org 车道保 disc0 平翻译（Linux 行为不变），Apple
+  clang 车道（`__apple_build_version__`）用实测表；顺带复核硬编码
+  范围 `0x8330000–0xb0c0000` 对 Mac 布局的逃逸误伤。
+- **C. 同族预警（不过早修）**：`_amfi`/`_img4if`/`_coretrust`/
+  `__dlxk`/`_libCoreEntitlements` 接口表同吃逐字段翻译（墙 29 家族
+  的 Mac 面尚未爆）；di-struct 内部 CC_SPTR 指针链 = 下一墙候选。
+  修完 crypto 表先刷先判，勿一次铺开。
+- **D. 出件与判读**：Mac 重出件（§9.B 三命令 + GH_TOKEN），红线
+  全带；预期 = entropy 站过墙推进到下一站。判读须同宿主账本。
 - **目标**：修墙 30 = `crypto-funcs-unpack.patch` v2，Mac 件重出件
   判读。**在 Mac 侧施工**（§9.F 阶段一）。
-- **A. 收集 per-field disc 表（第一刀，实证法）**：扫 Mac 件原生
-  `__TEXT_EXEC`，识别全部 `_g_crypto_funcs` 消费者站点（adrp 页
-  `0x7cf1000` + add `#0x858` 族 + `ldr xN,[x8,#off]` +
-  `movz/movk x17` + `braa x16,x17`），抽 (field offset → ctx 常量)
-  映射；地址连通型站点（ctx = 槽址|高 tag）单独归类（运行时用槽址
-  重算 ctx）。已知种子：field0=0x73d8、field8=0xa0d8、
-  di-struct 内 `#56` 站 = 槽址|0x1bda<<48。
-- **B. 补丁 v2**：unpack 重签改 per-field
-  `ptrauth_sign_unauthenticated(addr, ptrauth_key_function_pointer,
-  disc[field])`；地址连通型传槽址合成 ctx。host 条件化：llvm.org
-  车道保 disc=0（wall29 时代行为），Apple clang 车道用实测表
-  （编译器宏或 builder `-D` 区分）。顺带复核硬编码范围
-  `0x8330000–0xb0c0000`（Linux 布局口径）对 Mac 布局
-  （kext 区 0x8334000–0xa73c000，native TEXT_EXEC 到 0xb118000）
-  的逃逸误伤。
-- **C. 同族预警（不过早修）**：`_amfi`/`_img4if`/`_coretrust`/
-  `__dlxk`/`_libCoreEntitlements` 等接口表在 Mac 件上同样吃 per-type
-  disc（墙 29 家族）；di-struct 内部 CC_SPTR 指针（DA key + 槽址
-  连通 + 字符串 disc）由 kext 数据供链，loader 侧重签口径是**下一
-  墙**候选。修完 crypto 表先刷先判，勿一次铺开。
-- **D. 出件与判读**：Mac 重出件（§9.B 三命令 + GH_TOKEN），红线全带
-  （trust/seed/chip-id）；预期 = entropy 站过墙后推进到下一站
-  （候选：RNG 路径 or di-struct 站 or 接口表族）。**判读须用同宿主
-  账本**（payload 不跨宿主复现，§9.E）。
 - **红线不变**：只 recovery_a；-j8（Mac）；CRC 行为准；回退链
   = `a715395a` / `8a935155` / `0c6b8419` 均在库。
 
