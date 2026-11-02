@@ -1,6 +1,6 @@
 --- a/libkern/crypto/register_crypto.c
 +++ b/libkern/crypto/register_crypto.c
-@@ -34,6 +34,46 @@
+@@ -34,6 +34,109 @@
  SECURITY_READ_ONLY_LATE(bool) crypto_init = false;
  SECURITY_READ_ONLY_LATE(crypto_functions_t) g_crypto_funcs = NULL;
  
@@ -13,11 +13,67 @@
 + * each packed entry once here and re-sign it as a normal pointer; every
 + * consumer in this kernel then branches to it with the ordinary convention.
 + * Data pointers in the table already arrive as ordinary addresses.
++ *
++ * The re-sign discriminator must match what our own call sites authenticate
++ * with. The donor's per-slot constants come from ptrauth annotations in the
++ * donor's corecrypto sources, while our consumers are unannotated and use
++ * the compiler's per-type defaults; the two disagree, which is why a single
++ * flat zero discriminator fails on this lane. The measured per-field values
++ * below come from scanning the native call sites that dereference
++ * g_crypto_funcs (adrp/add 0x7211858 -> field load -> braa/blraa):
++ * field 0 ccdigest_init_fn 0x73d8, 1 ccdigest_update_fn 0xa0d8,
++ * 9 cchmac_init_fn 0xa0d8, 10 cchmac_update_fn 0xa0d8,
++ * 11 cchmac_final_fn 0x1810, 22 ccgcm_init_with_iv_fn 0xac0,
++ * 23 ccgcm_inc_iv_fn 0xbcad, 33 ccdes_key_is_weak_fn 0x50c7,
++ * 37 ccrng_fn 0x423, 38 ccrsa_make_pub_fn 0xb240,
++ * 39 ccrsa_verify_pkcs1v15_fn 0x55e5, 40 random_generate_fn 0x12f7,
++ * 41 random_uniform_fn 0xc231, 42 random_kmem_ctx_size_fn 0xa51f,
++ * 43 random_kmem_init_fn 0x2abe. Fields without a measured consumer keep
++ * the flat zero discriminator of the llvm.org lane. Second-level uses
++ * (the digest di structs, the chacha20poly1305 sub-structure, xts/des
++ * key-schedule pointers) authenticate pointers inside those structures
++ * against the storage address and are out of scope here.
 + */
++#if defined(__apple_build_version__)
++static const uint16_t unixnu_crypto_discs[] = {
++	[0] = 0x73d8,
++	[1] = 0xa0d8,
++	[9] = 0xa0d8,
++	[10] = 0xa0d8,
++	[11] = 0x1810,
++	[22] = 0xac0,
++	[23] = 0xbcad,
++	[33] = 0x50c7,
++	[37] = 0x423,
++	[38] = 0xb240,
++	[39] = 0x55e5,
++	[40] = 0x12f7,
++	[41] = 0xc231,
++	[42] = 0xa51f,
++	[43] = 0x2abe,
++};
++
++static uint16_t
++unixnu_crypto_disc(size_t index)
++{
++	if (index >= sizeof(unixnu_crypto_discs) / sizeof(unixnu_crypto_discs[0])) {
++		return 0;
++	}
++	return unixnu_crypto_discs[index];
++}
++#else
++static uint16_t
++unixnu_crypto_disc(size_t index)
++{
++#pragma unused(index)
++	return 0;
++}
++#endif /* defined(__apple_build_version__) */
++
 +static struct crypto_functions unixnu_crypto_functions;
 +
 +static void *
-+unixnu_unpack_function_pointer(uint64_t value)
++unixnu_unpack_function_pointer(uint64_t value, size_t index)
 +{
 +	uint64_t address = 0xfffffff000000000ULL | (value & 0xffffffffULL);
 +
@@ -27,8 +83,15 @@
 +	if (address < 0xfffffff008330000ULL || address >= 0xfffffff00b0c0000ULL) {
 +		return (void *)(uintptr_t)value;
 +	}
++	/*
++	 * The range gate keeps the decode away from anything the packed form
++	 * does not cover. Both lanes place the donor corecrypto text inside
++	 * it: the 23F84 collection maps it at 0x08f1f800-0x08f22488 on this
++	 * kernel, comfortably within 0x08330000-0x0b0c0000.
++	 */
 +	return ptrauth_sign_unauthenticated((void *)(uintptr_t)address,
-+	           ptrauth_key_function_pointer, 0);
++	           ptrauth_key_function_pointer,
++	           (ptrauth_extra_data_t)(uintptr_t)unixnu_crypto_disc(index));
 +}
 +
 +static void
@@ -39,7 +102,7 @@
 +
 +	memcpy(&unixnu_crypto_functions, funcs, sizeof(unixnu_crypto_functions));
 +	for (size_t i = 0; i < sizeof(unixnu_crypto_functions) / sizeof(*slot); i++) {
-+		slot[i] = (uint64_t)(uintptr_t)unixnu_unpack_function_pointer(source[i]);
++		slot[i] = (uint64_t)(uintptr_t)unixnu_unpack_function_pointer(source[i], i);
 +	}
 +}
 +#endif /* defined(HAS_APPLE_PAC) */
@@ -47,7 +110,7 @@
  int
  register_crypto_functions(const crypto_functions_t funcs)
  {
-@@ -41,7 +81,12 @@
+@@ -41,7 +144,12 @@
  		return -1;
  	}
  
