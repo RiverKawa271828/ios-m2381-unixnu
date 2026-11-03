@@ -1462,24 +1462,47 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
     collection slide `0x1f000000000` 全局匀滑）；调用形态 = once-init CAS：
     x0=0、x1=x19（前一条已配 callee `0x0a7f3548` 返回的 tag 指针）、
     x2=&com.apple.kernel 全局槽 `0x0b54bf98`，返回 `tbz w0,#0` 判布尔。
-  - callee = donor **`0x0ae3fe94` = `OSCompareAndSwap64`**（bti c;
-    mov x8,x0; **casal x8,x1,[x2]**; cmp; cset w0,eq; ret = 64 位 LSE CAS）；
-    邻居 `_OSCompareAndSwap`(32b, 0x0ae3fe64)/`_OSAddAtomic8/16` 均已配
-    （pac-checked-shape），**唯独 64 位变体漏配**。native 符号 =
-    `_OSCompareAndSwap64`（Mac native 0x…079eb94c，唯一全局）。
+  - callee = donor **`0x0ae3fe94` = `_OSCompareAndSwapPtr`**（Linux 配对图
+    定名；bti c; mov x8,x0; **casal x8,x1,[x2]**; cmp; cset w0,eq; ret =
+    64 位 LSE CAS，与 OSCompareAndSwap64 同体形，once-init 指针发布语义
+    = Ptr 版；初勘误名 OSCompareAndSwap64 已纠）。邻居
+    `_OSCompareAndSwap`(32b, 0x0ae3fe64) 已配（pac-checked-shape），
+    未配对二连 = `0x0ae3fe7c`(_OSCompareAndSwap64) + `0x0ae3fe94`(Ptr)。
+    native 符号 = `_OSCompareAndSwapPtr`（Mac native 0x…079eb964，
+    唯一全局；勿用 0x…079eb94c=OSCompareAndSwap64）。
   - 红利面 = donor 全镜像 **38 站** bl→0x0ae3fe94（跨组件 + kernel 内）。
 - **进步判读**：墙 32 四站连通过；stub 站点前进 +0x1D15C4
   （0x08d41f6c → 0x08f13530）；同族墙延续 = stubbed 长尾下一笔
   （mac stubbed 账本 3099 站/24 组件 + kernel 成员走 allow-missing 通道
   不入账本）。
 - **★下轮工作单（判读已备好，直接进修）**：fixture 钉 donor
-  `0x0ae3fe94` ↔ native `_OSCompareAndSwap64`（通道 =
+  `0x0ae3fe94` ↔ native `_OSCompareAndSwapPtr`（通道 =
   temp/w32-fixture/{compute,verify}.py；original_sha256 待算）→ 双车道
   anchor_reviewed + no-fix 重放 diff 门 → Mac 重出件（kernel→payload）→
   刷只 recovery_a → 判读。回退 = 刷回 `2273bd09`
-  （payload-w31fix-efbdd999.img）。注意：native 侧原子族
-  （OSAddAtomic64/OSAddAtomicLong 等，0x…079eb9a8 起）可能同批漏配，
-  fixture 只钉本笔勿铺开，撞了再修。
+  （payload-w31fix-efbdd999.img）。注意：`0x0ae3fe7c`
+  (_OSCompareAndSwap64) 与 Ptr 同批未配，fixture 只钉本笔勿铺开，
+  撞了再修。
+- **★墙存量总账（10.Y.4 追加，用户问"还剩多少墙"的账本口径）**：
+  - 墙宇宙三层：①kext→kernel 未名 imports = **1225 个 kext-facing 未名
+    目标**（3094 named 1869；墙 32/33 类，走 allow-missing 不入账本；
+    **至今撞过的全是 Linux 已配 = 系统性可回收**）②kext 自身 stubbed =
+    **675 fn / 2290 站**（apfs 640 站/148 fn 为大户，ARMPlatform 301、
+    IOHIDFamily 295；root mount 前必清）③data/missing = 603 指针。
+  - 会话三十一 bootpath 清点（Linux 车道同 donor 同机制）= **关键路径剩
+    52 目标 / 536 站**（d 序榜在，apfs 大户在后）——到 root mount 的存量
+    量级。
+  - 速率：Mac 车道 4 刷 4 墙（30→33），fixture 清族 4→38 站。推算：
+    **一次一判 ≈ 20-40 刷到 root mount；按族批处理 ≈ 10-20 刷**。
+  - **战略杠杆 = reference 换件**：Mac 独缺 1750 对里 1586 对 =
+    reference 通道系统性失效（Mac 参照件 LTO 序位移）。把 Mac 车道
+    `--fileset-reference` 换成 **Linux 建的参照件**（同 donor、只借
+    名字+序，跨 native 构建合法）→ 大规模回填 → 未点燃的墙多数不炸，
+    可能压到个位数刷。 工作单"评估批量"的量化版；上桌前先小验
+    （reference 换件重放 matcher，看 named 覆盖升幅与 no-fix diff）。
+  - root mount 之后 = BSD/launchd 段一批；再之后 = 用户态战役
+    （dyld/SpringBoard，y-lane 死地，sheng arm64 有进桌面先例面）。
+    到 root mount 和到桌面是两个量级。
 - **未推**：主树 10.Y.3+10.Y.4 + 设备仓 `ff4a5d4` + records 两笔屏摄；
   push 留用户拍板。
 
