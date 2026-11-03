@@ -1,56 +1,40 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
 
-## 0. 现势指针（每轮首更，2026-11-03）
+## 0. 现势指针（每轮首更，2026-11-03 会话四十三）
 
-- **现役件**：payload `d7fd50cb`（kernel `4970bf21`）已刷真机 = **墙 32 过**；
-  现墙 = 墙 33（AMFI → donor `0x0ae3fe94` = `_OSCompareAndSwapPtr`，38 站
-  红利面，判读已前置，见 §10.Y.4）。
-- **下轮工作单**：§10.Y.4 四步序（2026-11-03 用户批准 + 同日审计修订，
-  前两步零上机）。**开工第一动作 = push 拍板 + Mac git pull 对齐**
-  （fixture 目前 scp 塞在 Mac 工作树）：
-  ①**reference 换件小验**：Linux 建参照件 scp 到 Mac，`--fileset-reference`
-  传**绝对路径**（kernel.py 相对 tree 解析；reference_sha256 入缓存键，
-  换件自动失效缓存 = 全新配对）。**门 ≠ no-fix diff**（本实验无
-  fixture 变更），门 = 新参照图 vs 旧参照图 diff 三计数审计：
-  新增配对数（预期 +千级）/ 共配对改靶数（抽查合理性）/ 已配对丢失数
-  （预期 ≈0）+ kext-facing named 升幅 + 254 reviewed 锚不变 +
-  CASPtr/top-10 候选转已配 + 账本方向核验（branches_rebound↑
-  stubbed/missing↓）。换前先备份旧 kernel.map.json。
-  ②**墙序列静态预测器**（在换件后的新图上跑）：枚举 donor bl→unpaired
-  全集 = 候选站；**三色 + 一类分拣**：Linux 已配（钉名即修）/ 两车道
-  皆未配（要体形功夫）/ **结构类单独列**（kext 自身 stubbed 675 fn，
-  无 native 对手不可 fixture，处置 = 容忍或选件，不进施工单）；
-  排序 = 实证墙序 + 成员序 + 入度。输出「下 5 墙预测 + top-K 批量
-  fixture 施工单（置信度标注）」。
-  ③按施工单批修——**第一笔 = 墙 33 CASPtr**（donor `0x0ae3fe94` ↔
-  native `_OSCompareAndSwapPtr` Mac 0x…079eb964，证据已齐 = Linux 图
-  定名 + 邻居夹逼 + 38 站红利），后续按预测单。
-  ④上机一次验收 K 堵（判读单按预测清单勾验；**回退链更新 = 本次刷写
-  回退 ← `payload-w32fix-4970bf21.img`（d7fd50cb，现役在机），
-  2273bd09 退为二级回退**）。
-  **追加 harvest 线（2026-11-03 上游情报刷新，10.Y.5）**：⑤读
-  `reports/ipados27-startup-repair-2026-11-02.md`（sheng 仓克隆
-  /tmp/sheng-probe）+ diff 他们 27 堆栈（build-gop-legacy-display-27.py、
-  make-nosetup-seed27.py、cycle27.sh、run-sheng-unattended.sh）⑥查他们
-  配对覆盖优势根源（统一 Apple clang 参照+native → 序一致 →
-  reference-order 通吃？）——直接喂给①；⑦存疑待验：他们 arm64e
-  完成标准写「prelink the 23F84 kexts」——若他们的 arm64e 车道同为
-  23F84 fileset，其覆盖数字**直接适用我们的 donor**，harvest 价值再上
-  一档，下轮核。
-- **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
+- **现役件**：recovery_a 在机 = `d7fd50cb`（kernel `4970bf21`，墙 32 已
+  过）。**待刷 = payload `abe3ec85`**（kernel `0b607b2a`）= reference
+  换件 + 墙 34 fixture 双变量件，存档
+  `out/m2381/payload-refswap-0b607b2a.img`。
+- **本会话定谳（10.Y.6）**：Mac 车道从未挂过 reference（kernel.py 静默
+  丢弃 + 参照件未侧建）——"LTO 序位移"机制说作废。换件后离线图
+  +1828 对 / kext 面 0 丢失 / **墙 33 CASPtr reference-order 自动配对
+  （零 fixture）**；产线图 9894 对（+1506），账本 closure_unmapped
+  603→314、stubbed 2290→1954。预测器：钉名即修 1（已修 = 墙 34
+  fixture `eb32f7b`）/ 名缺 0 / 结构类 1193（两车道皆未配真残，
+  下墙候选 d=2 `0xa7f3f6c`、`0xa841220`）。
+- **下轮工作单 = 会话四十四首刷判读（10.Y.6 刷写卡）**：只刷
+  recovery_a ← `payload-refswap-0b607b2a.img` → 判读单 = 墙 33 消 +
+  墙 34 消（mach_memory_entry_port_release）+ 结构类 d 序候选点名 +
+  若大墙清推进段位 = 换件红利兑现。判读后按残墙走：结构类不可
+  fixture（容忍或选件，§0 旧账 675 fn/2290 站即此类有站子集）。
+- **回退链**：本次刷写回退 ← `d7fd50cb`（payload-w32fix-4970bf21.img，
+  现役在机）；`2273bd09` 二级；更早逐级在 out/m2381/ 存档。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
-  `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
-- **未推**：主树 `c1558cb..9ebbf4b`（7 笔：10.Y.3/10.Y.4/总账/§0 指针/
-  四步序/10.Y.5/fastboot 勘误）/ 设备仓 `ff4a5d4+5f7a906`（push 留拍板；
-  推后 Mac 侧 **git pull 对齐**，勿 scp 粗同步）。
+  `~/unixnu/`；**reference 已接线** = 参照件常驻 Mac 树
+  `tree/build/xnu/fileset-reference/` sha `5a794da8`，以后建核自动带上；
+  payload 三红线输入已验明并常驻 `~/unixnu/`）；Linux = 参照件供给 +
+  回归门 + 离线重放（`temp/refswap/` 工具族）。
+- **未推**：设备仓 `eb32f7b` 已推 ✓；主树本节 + 10.Y.6 待推（收队推）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
-  ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
-  ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（脚本/JSON
-  留）⑤记忆索引超 24KB 即剪钩子（详情在主题档）。**红线：docs/ 的上游
-  文档站树（concepts/guide/zh/reference/public）不清理不改动。**
-- **参考链状态（2026-11-03 硬校验）**：donor KC sha 合 ✓；fixtures
-  254/254 字节验真 ✓；24A446 policy 休眠 + KC sha 硬护栏 ✓；唯一病灶 =
-  Mac 参照件 LTO 序位移（上单修）。
+  ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针；
+  本轮 §9/§9G/§10/§10.X 已移）③未推清单与回退链核对 ④`temp/` 内
+  >10MB 二进制隔轮即清（本轮清 `efbdd999-kernel.macho`；脚本/JSON 留）
+  ⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游文档站树
+  （concepts/guide/zh/reference/public）不清理不改动。**
+- **参考链状态（2026-11-03 会话四十三刷新）**：donor KC sha ✓；
+  fixtures 253/253 字节验真 ✓（252 + 墙 34）；reference 换件生效
+  （Linux/Mac 双侧同 sha `5a794da8`）；24A446 policy 休眠 + KC 护栏 ✓。
 
 > **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
 > 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
@@ -1051,255 +1035,10 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
   CRC 行为准。
 
-## 9. 工作单 = 会话三十九（2026-11-03 收队定稿）：Mac 件首刷判读（a715395a）
+## 9. 工作单 = 会话三十九（Mac 件首刷判读）+ §10 工作单 = 会话四十（crypto-funcs-unpack v2）——均已执行，全文移 `docs/archive/STATE-history.md`（2026-11-03 会话四十三按文档卫生常规移档）。
 
-- **现态**：Mac 建核车道已转正并完成首刷。recovery_a = `a715395a`
-  （payload = Mac kernel `56d24922` + trust `ebeaf7fb` + seed `d04a0153`
-  + panic_screen，红线参数全带；存档 `out/m2381/payload-mackernel-a715395a.img`）。
-  **首刷已发生**（用户自行刷入），首屏 = PAC 墙（见 §7k），判读留下会话。
-- **A. 判读单（第一优先）**：
-  1. 符号化：屏摄 `IMG_20261103_041436.jpg`（已入设备仓
-     `records/mackernel-a715395a-firstboot-20261103-041436.jpg`），
-     pc `0xfffffff00aeb54e4` / lr `0xfffffff00b08f4ec` / x19
-     `0xfffffff00b3df3c9`，esr `0x72000000`（EC 0x1C PAC_FAIL，同墙 29 类），
-     x16 = `0x59dfb7b00a6fa120`（签名态垃圾高位，鉴权失败目标），
-     stages = clock_service_create→sched_startup→thread_daemon_init→
-     thread_call→thread_bind→mapping_adjust（全 1s 早期），
-     pages/free `0x125b07/0x1254c7`，**crc `0x71f484be`**。
-     符号化用 Mac 版账本（`out/m2381/.../kernel/kernel.json` +
-     `kernel.map.json`，Fedora 已回传）：先从 kernel.json 的
-     collection_base/native_link_address 正推 slide（粗查 ±0x1000000
-     无命中，勿再用蛮试法），再 map 定位三寄存器。
-  2. 对拍墙 29（`8a935155`：同 esr 类，blraa x8，x8=`0xc2b5b6b0…`，
-     pc `0xfffffff00ad39c64`）：同址 = 墙未动（PAC 纪律差不是工具链
-     可修的）；新址 = 墙位推进（Mac 件症状改观，续推）。
-  3. 分支处置：①站点落 donor kext 桩区 → kc.py wall 反推邻近簇
-     3-5 笔 fixture（§D 按需清仓）；②站点落我方内核 → 查 Mac 工具链
-     paciza 叠签/单签纪律（会话二十一铁律：PAC 交接修法必须反汇编
-     验证单签；entropy 补丁 ptrauth_strip idiom 先例）。
-- **B. Mac 车道资产（已固化，下次直接复用）**：朋友 MacBook Air M1
-  （macOS 27.0.1，8 核 16G），ssh 免密 `naoniudeair@192.168.10.246`
-  （密码 123321，XDG 无关）。工作面 `~/unixnu/`（两仓 + ipsw/，清理
-  待项目全完后用户拍板）。环境 = Xcode 27.2 (27B52) + brew llvm/lld/
-  mtools/dtc/unifdef/ninja/python3.14。重出件三命令 =
-  `defconfig m2381_defconfig` → `tree --ipsw ~/unixnu/ipsw/…` →
-  `kernel --ipsw … -j8`（GH_TOKEN 必带；defconfig 必须显式 NAME）。
-- **C. 已定谳不再重查**：CI 车道死路（3 连 15min 零接机，GitHub 注释
-  = macos-26 arm64 容量不足自动取消；macos.yml=冒烟车道无人当量产）；
-  matcher 确定性（重跑 macho sha/账本逐字一致；首跑 vtable raise =
-  半成品参照件中间态残留）；A/B 账本（missing 目标 344→190 −45%，
-  总目标 1019→920 −10%，stubbed 站点=脏口径不作判读依据）；
-  llvm 436MB 走 Fedora 中转法（ghcr blob+token，11.4MB/s vs brew
-  直连 350KB/s）。
-- **D. 按需清仓不变**：撞墙点邻近簇 3-5 笔，双车道（Linux+Fedora/
-  Mac 账本）可交叉定位。回退链 = `0c6b8419` / `8a935155` 均在库。
-- **红线不变**：只 recovery_a；--trust-cache/--data-ramdisk/
-  --unique-chip-id 3645ad55d47e77c1 必带；--ipsw 本地件必带；-j16；
-  CRC 行为准。
-- **E+. Mac 全链冒烟（2026-11-04 补）**：payload 步在 Mac 跑通
-  （trust/seed 已传 `~/unixnu/`），出件 sha `28164f42` ≠ Fedora
-  `a715395a`——**payload 不跨宿主机逐字节复现**（宿主 dtc→DTB、
-  panic-screen 宿主编译器差异），一件一线：刷写件必须与判读账本
-  同源同宿主。Mac 全链可用（defconfig/tree/kernel/payload；userdata
-  的 hdiutil 是 Mac 原生优势），开发可整体搬 Mac；Fedora 留刷写/
-  取证 reader（USB 物理连接）与 gh 推送。
-- **F. 两阶段战略（2026-11-04 用户定，修正"主力搬迁"误记）**：
-  **阶段一 = Mac 开路**：用最平滑工具链把移植打穿到进桌面，排除
-  工具链税干扰——若 Mac 件仍进不了桌面 = 存在非工具链的根本性
-  移植 bug（本身即关键信息）；**阶段二 = 回 Linux 复现**：通了之后
-  对着 Mac 件账本差（stubbed/missing 差集 + PAC 惯用法）逐项追平，
-  验证 Linux 编译能否达到同样效果。判读/修墙工作（符号化/fixture/
-  补丁）从会话三十九起在 Mac 侧进行；Fedora = 刷写/取证 reader/
-  验证站。payload 不跨宿主复现，一件一线。
+执行档副本：§9G = Mac 件首刷墙 30 判读（判读全文在 archive + git commit）；§10.X = crypto-funcs-unpack v2 出件（payload 24f0a941，已刷已判 = 墙 30 过，见 10.Y）。
 
-## 9G. 会话三十九执行档 = Mac 件首刷墙 30 判读定谳（2026-11-03）
-
-- **A. 符号化全落位（slide=0，无需蛮试）**：Mac 件账本
-  `kernel.json` 的 `statistics.segment_layout` 给出 collection 新布局
-  （native_base `0x716c000`），panic VA 直接命中段表 ⇒ 运行时 slide=0。
-  map.json 里的 `native` 字段是**旧布局**（我方原始 build 空间），查表
-  前须做段映射（`new = base + (va − native_base)` 逐段）。符号源 =
-  Mac 侧未剥符号内核（`mach.development.bcm2837.unstripped.noctf`，
-  sha `3dcf0907` 与账本 `native_sha256` 吻合；ssh 拉回本地 llvm-nm）。
-  判定链：**pc = `SHA512_Init+0x40`（braa 站点）/ lr =
-  `_entropy_init+0x30` / x19 = `_entropyseed`（精确偏移 0）**；x16
-  `0x59dfb7b00a6fa120` 按本项目已知格式（签名覆盖 `0xfffffff0` 前缀
-  32 位）还原目标 = `0xfffffff00a6fa120`（corecrypto kext
-  `__TEXT_EXEC` 内，entry 文件偏移 0xc5d040）。stages（clock→…
-  →mapping_adjust，1s）与 entropy_init 早期语义吻合。crc
-  `0x71f484be`。
-- **B. 墙 30 机制定谳 = crypto-funcs-unpack 补丁的 discriminator
-  约定债（§9.A.3 分支②，非工具链 bug）**：pc 处指令 =
-  `braa x16, x17`（带鉴权间接尾调），x17 = **逐类型常量**（本站
-  `0x73d8`；邻站 field1 = `0xa0d8`；第三站 = 槽址|`0x1bda<<48`——
-  Apple Xcode clang 的类型多样性 discriminator）。槽链 =
-  `_g_crypto_funcs`（运行时由 corecrypto kext
-  `register_crypto_functions` 注册）→ field0 = `ccdigest_init_fn`。
-  我方补丁 `patches/xnu-12377/crypto-funcs-unpack.patch`
-  （`unixnu_unpack_function_pointer`，23182b1，10-30）把 donor
-  packed 指针 unpack 后用 **`(IA, disc=0)`** 重签——与 llvm.org
-  clang 的惯例互锁，与 Apple clang 的 per-type disc 不匹配 ⇒ 首个
-  consumer（entropy_init→SHA512_Init，开机最早 crypto 用户）必炸。
-- **C. 墙 29 对拍（§9.A.2）= 同类不同站，墙位推进**：Linux 件
-  （8a935155）pc 符号化 = `_load_static_trust_cache` 邻域（**trust
-  cache 域**），槽 = **`_amfi`** 表 field288，消费者 = `blraaz`
-  （ctx=0）；x8 目标 `0x08f1e92c` ∈ 我方 kext 区 = donor packed
-  形态**未经 unpack 漏网**（amfi 表无 unpack 补丁）。同 root 家族
-  （kext 接口表 PAC 交接）、不同站点。Linux 件过 crypto 站的直接
-  反汇编实证 = Linux SHA512_Init 同位 = **`braaz x2`（disc 0）**——
-  与补丁约定精确互锁，"巧合过墙"。Mac 件墙位更早（entropy 先于
-  trust cache）。
-- **D. 两阶段战略首战报**：Mac 开路第一刷即暴露一笔 Linux 侧掩盖
-  的约定债——战略价值兑现（Linux 件永远看不清这笔）。
-- **D+. "Mac 更少 bug"实证（三份原生内核同口径指纹扫描）**：
-  donor 23F84 金标（仅其段 12MB）/ Mac 件原生（Xcode 27.2）/
-  Linux 件原生（llvm.org clang），统计工具链惯例特征指令数：
-  | 特征 | donor | Mac | Linux |
-  |---|---|---|---|
-  | disc-0 鉴权分支（braaz+blraaz） | 8 | 10 | **3959** |
-  | `bti c` | 6658 | 20374 | **1** |
-  | braa 带鉴权尾调 | 772 | 957 | 672 |
-  判读：**disc-0 鉴权分支是决定性指标**——donor/Mac ≈ 0，Linux 有
-  3959 处（每处 = 与 donor ABI 永久分歧的消费者站点，墙 29/30 家族
-  的潜在墙面）；BTI 上 Linux = 零（会话 22 matcher bti-shape 通道
-  就是给这个还债的），Mac 与 donor 同族有 BTI。⇒ **Mac 件代码惯例
-  = donor 惯例（修一次就收敛），Linux 件 = 永久分歧（3959 站逐站
-  谈判）**。附注：FPAC 软检查数（donor native 54 / Mac 5937 /
-  Linux 4894）受 build 变体影响（donor RELEASE vs 我方 DEVELOPMENT）
-  不作判读依据；lane 账本面已有 missing 344→190（−45%）。
-- **回退链**：Mac 件无新出件（纯判读轮，零改动）；现役 payload
-  `a715395a` 不动。
-
-## 10. 工作单 = 会话四十：crypto-funcs-unpack v2（per-field discriminator 表）
-
-- **★10.0 查证定谳（2026-11-03 补，"查证后再修"轮）**：完整证据链
-  闭合，**翻译补丁在 Mac 车道是必需的，但必须逐字段定参**：
-  1. 装配层无分歧：上游 profiles 的 prelink roots **同样**含
-     `com.apple.kec.corecrypto`（三份 OS profile 全含）；我们的
-     集合 entry[30] = donor corecrypto（kmod_info 与 donor 字节级
-     同偏移），源码重建 corecrypto 在**内核侧**（"xnu early
-     random" 串在 native `__TEXT`，`CRYPTO_ARCHIVE` force_load），
-     `XNU_SOURCE_CORECRYPTO14=y` 已在 defconfig。bootstrap
-     `source_corecrypto14_original()` 扫到 entry[30] → **donor 件
-     赢注册**——上游同样如此，sheng 也吃 donor 表。
-  2. **donor 表的签名参数就编在 fixup 条目里**（我们的
-     `kc_image.py fixups()` 口径）：撞墙槽位 = `0x80110000036f6120`
-     = **(key=IA, disc=0, 地址连通=1)**——donor 自己的消费者用
-     **槽址连通**约定；同一 donor entry 里另有 68 处 (IA,
-     disc=0x73d8 等, 非地址连通) 槽——**逐槽 (key,disc,addrdiv)
-     三元组，donor 内部自洽**。
-  3. **三方消费者惯例实测**：我方 Linux 件 = 平翻译后 (IA, disc0,
-     无地址连通)（`braaz`）——**unpack 补丁的 (IA,0) 平翻译恰好
-     匹配 Linux 消费者 = Linux 过墙的真正原因**；我方 Mac 件 =
-     逐字段常量（field0=0x73d8 等，源码版无 ptrauth 注解 →
-     编译器 per-type 默认）≠ donor 的槽址连通 ≠ 补丁的 disc0 ⇒
-     墙 30。**删补丁不可行**（donor 值对我们的消费者同样不匹配），
-     硬编码翻译是正解，参数从**我方 Mac 件消费者站点**实测收集。
-- **A. 收集 per-field disc 表（已跑通首轮，欠去污染）**：
-  资产已固化 `temp/mackernel-sym39/`（mac_auth_sites.json=14538 鉴权
-  站点切片、gcf_field_discs.json=53 站首轮结果、crypto_layout.json=
-  56 字段偏移、dump-symbols.sh=符号/反汇编再生成路径）。严格
-  provenance 扫描 Mac 件原生 text（adrp 页 `0x7211000`+add
-  `#0x858` → gcf 解引用 → `ldr xN,[x8,#off]` → `mov x17,#const` →
-  `braa/blraa`）得 53 站 25 字段，field0=0x73d8 与墙 30 实测吻合。
-  **已知污染**：`+0xc0 ccchacha20poly1305_fns` 子结构站点
-  （`ldr x8,[x8,#0xc0]` 二级解引用，disc 0x8550）被误归入 field0
-  ——表生成器须要求 gcf 解引用后寄存器直达 src load（中间不得
-  有 offset 重载）；`+0x20..0x40` di 指针字段与 `+0x870` 表外
-  站点剔除。地址连通型站点（`mov x17,xK; movk #tag<<48`）单独
-  归类（运行时用 unpacked 槽址重算 ctx）。
-- **B. 补丁 v2**：unpack 重签改逐字段
-  `ptrauth_sign_unauthenticated(addr, key, disc[field])`；host
-  条件化：llvm.org 车道保 disc0 平翻译（Linux 行为不变），Apple
-  clang 车道（`__apple_build_version__`）用实测表；顺带复核硬编码
-  范围 `0x8330000–0xb0c0000` 对 Mac 布局的逃逸误伤。
-- **C. 同族预警（不过早修）**：`_amfi`/`_img4if`/`_coretrust`/
-  `__dlxk`/`_libCoreEntitlements` 接口表同吃逐字段翻译（墙 29 家族
-  的 Mac 面尚未爆）；di-struct 内部 CC_SPTR 指针链 = 下一墙候选。
-  修完 crypto 表先刷先判，勿一次铺开。
-- **D. 出件与判读**：Mac 重出件（§9.B 三命令 + GH_TOKEN），红线
-  全带；预期 = entropy 站过墙推进到下一站。判读须同宿主账本。
-- **目标**：修墙 30 = `crypto-funcs-unpack.patch` v2，Mac 件重出件
-  判读。**在 Mac 侧施工**（§9.F 阶段一）。
-- **E. 会话四十开工顺序（2026-11-03 收队定稿）**：
-  1. 表生成器（Fedora 即可，输入=temp/mackernel-sym39/ 已固化资产
-     或按 dump-symbols.sh 重拉）：修 provenance 去污染规则
-     （gcf 解引用寄存器必须直达 src load，中间禁止 offset 重载；
-     剔除 `+0xc0` 子结构二级解引用站、`+0x20..0x40` di 指针站、
-     表外 `+0x870`），产出 56 字段 × (kind, disc/addrdiv) 全表；
-     无消费者站点的字段标 UNCONSTRAINED（保 disc0）。
-  2. 表自检三关：field0=0x73d8 / field8=0xa0d8 必须在表；表内
-     disc 值分布与 donor fixup 槽位对照（donor=槽址连通族 +
-     常量族混合，我们=常量族为主）不许出现表外地址；冲突字段
-     （同一 offset 多常量）逐站回看反汇编人工裁决。
-  3. 补丁 v2（`patches/xnu-12377/crypto-funcs-unpack.patch` 改写，
-     单提交）：`#if defined(__apple_build_version__)` 走实测表，
-     `#elif` 保现状平翻译；unpack 循环按字段查表签名，UNCONSTRAINED
-     走 disc0；逃逸 hatch（packed 形态判定 + 范围检查）保留但范围
-     常量参数化。
-  4. Fedora 侧 check-m2381 + Linux 全量构建过回归门（表改动不得
-     影响 Linux 行为——A/B 账本比对 stubbed/missing 计数不变）。
-  5. Mac 侧重出件（defconfig→tree→kernel，GH_TOKEN 必带）→
-     A/B 快扫（Mac 账本 stubbed/missing 与 56d24922 件持平）→
-     payload → 用户首刷（只 recovery_a）。
-  6. 判读判据（会话四十一）：crc 换新；entropy 站过墙 = stages
-     推过 mapping_adjust（pages/free 应显著上穿 0x125b07）；
-     新墙记录全寄存器 + 同法符号化（账本同宿主）。
-- **红线不变**：只 recovery_a；-j8（Mac）；CRC 行为准；回退链
-  = `a715395a` / `8a935155` / `0c6b8419` 均在库。
-
-## 10.X 会话四十执行档 = crypto-funcs-unpack v2 出件（2026-11-03，待刷 `24f0a941`）
-
-- **①表生成器**（`temp/mackernel-sym39/gen-gcf-table-v2.py`，Fedora 可复跑）：
-  严格 provenance（adrp+add 精确到 `_g_crypto_funcs`@0x7211858 符号 → gcf
-  解引用 → **直达** field load → braa/blraa；二级解引用剔 SUBSTRUCT；表外
-  offset 剔除）+ 正向符号数据流（writeback/寄存器变址建模）。修四坑：
-  add 杀自身物化 / retab 不停致跨函数泄漏 / mem_operand 逗号切分 /
-  **AUTH 正则漏 braa（只配了 blraa）——补上后 15 字段全出**。
-  产出：15 常量字段 × 28 直达站 + 27 子结构站（0xc0 chacha 8 站 0x8550、
-  di 0x20..0x40 五站、xts 0x90/0x98 四站、des 0xc8/0xe8 两站 = CC_SPTR
-  槽址连通族 = C 预警家族，正确隔离）。**首轮 53 站大半是假阳性**
-  （kdp `[kdp_packet+0xe98]` 等无关结构 disc 撞值）。
-- **②三关自检**：field0=0x73d8✓ field8=0xa0d8✓；冲突字段=0；
-  donor 对照 = **donor 23F84 KC 与 Mac 件 56d24922 的 56 槽元数据逐位全同**
-  （temp/mackernel-sym39/donor-vs-mac-crypto56.json；表在 donor
-  0xfffffe0007face40，Mac 件 0xfffffff007face40，同 low32）；donor 槽 disc
-  = 源码注解族（逐声明），我方 = 编译器 per-type 默认——不等=预期。
-  我方受约束集 {0x73d8,0x1810,0x423,0x50c7,0x2abe,0xbcad} 与 donor 集同现。
-- **③补丁 v2**（主树 `a903a20`）：`__apple_build_version__` 门（Mac=Xcode
-  27.2 Apple clang 实锤，kernel-bootstrap.log ExecuteExternalTool）→ 15 字段
-  实测表；llvm 车道 `#else` 保平翻译。范围 hatch 常量两侧同值
-  （donor corecrypto text Mac 落位 0x08f1f800-0x08f22488 在范围内，无逃逸）。
-  运行时形态链定谳：KC fixup 应用后内存 = donor 注解签名指针
-  （bootstrap `__ptrauth(0,0,0xe4fe)` 实证），v1/v2 解码重签。
-- **④Linux 回归门**：check-m2381 4ok；Linux 全量构建过；**__TEXT_EXEC
-  逐字节一致**（新 08b5c73c vs 旧 1be282e9 同 text sha e201037f，表在
-  llvm 车道整体编译消失；`paciza x13` 平签名不变）。
-- **⑤Mac 重出件**：kernel `14f7e7aa`（payload 内 `40b7dd55`）；
-  **A/B 账本九项全零差**（kext_pointers_rebound 47473 / closure_unmapped
-  334 / branches_rebound 42024 / kext_chain_sites_kept 82701 等逐项持平
-  56d24922）；payload **`24f0a941939fe381…e4bc`**（96MiB，
-  /tmp/m2381-sym39/payload-v2-24f0a941.img，Mac 侧
-  out/m2381/.../payload/payload.img）。
-- **⑥新雷 + 拆除（Mac 车道第一颗 fresh-matcher 雷）**：native 一变 →
-  kernel.map.json 缓存 pairing（v1 时代，validate 比 native sha）失效 →
-  Mac 车道**第一次真正跑 fresh matcher** → `anchor_vtables` reviewed
-  矛盾 @0xaf5b9b4。定谳：投票错（donor IOUserClient vtable 0x7d72508 被
-  错配到 native 派生类 `__ZTV22IOKitDiagnosticsClient`，同构 186/186 +
-  覆写函数体形巧合），reviewed 对（slot[172]=clientClose 双侧核验）。
-  修 = 设备仓 `9e5b51b` fixture reviewed data 锚
-  （donor 0x7d72508 ↔ `__ZTV12IOUserClient`），bind 守卫掐断错连；
-  prelink 复跑 5 个 vtable-correction 自愈、无 raise。
-  坑档：①tree 的 kit = **device repo vendor 副本**（主树 kits/ 是冻结
-  v8 死副本，本地重放必须 PYTHONPATH=device repo kit）；②本地 `-I` 吞
-  PYTHONPATH；③非交互 ssh 无 homebrew PATH（export PATH 前置）；
-  ④Mac python3.13；payload 需 `--data-ramdisk ~/unixnu/scratch-data.img
-  --unique-chip-id 3645ad55d47e77c1`。
-- **判读（会话四十一）**：crc 换新；entropy 站过墙 = stages 推过
-  mapping_adjust（pages/free 上穿 0x125b07）；下一墙候选 = di 字段
-  （v1/v2 对 in-range 数据槽仍按 fn 重签 = 潜在 PAC 位污染，_sha1_init
-  的 `ldp [x20,#8]` 类）与 chacha 子结构 CC_SPTR 链。回退 = 刷回
-  `a715395a`（payload）。
 ## 10.Y 会话四十一开工单 = 墙 31 判读与修（donor 内部消费者面，2026-11-03 首刷定谳）
 
 - **墙 30 已过（payload `24f0a941` 首刷，屏摄
@@ -1606,6 +1345,87 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   series 与我们逐条相同（同源，无差可 harvest）。
 - sheng 仓克隆留 `/tmp/sheng-probe`（depth 12）。
 
+
+## 10.Y.6 会话四十三执行档 = reference 换件大捷 + 墙序预测器 + 墙 34 fixture（2026-11-03，payload `abe3ec85` 待刷）
+
+- **开工三件套**：push 两仓（主树 `c1558cb..775a89c` 21 笔 / 设备仓
+  `718a533..5f7a906` 2 笔，用户拍板）+ Mac 两仓 `git pull` 对齐（Mac 侧
+  scp 版 fixtures 与 `ff4a5d4` 逐字节同 → restore 后 ff-only 干净落位）。
+- **★根因定谳（推翻 10.Y.3 的"Mac 参照件 LTO 序位移"机制说）= Mac 车道
+  从未挂过 reference**：board.toml:168 extra_args 本就带
+  `--fileset-reference`，但 kernel.py 对它有**静默丢弃逻辑**（"a runner
+  without them still links, just without the naming reference"），而参照件
+  是**手工侧建产物**（管线不自动建）——Linux 树在（10-30 建，sha
+  `5a794da8`），Mac 树从未建 → 每次 Mac 建核无声剪掉。实测对账：Linux 图
+  8742 对中 reference 通道 5909（symbol 1457+order 4452）；Mac 图
+  （`mac-map-new.json`，native 4672ced7）8388 对中 reference 通道 = **0**。
+- **①换件小验（零上机，全在 Linux 本地，`temp/refswap/mapB.py` = 产线
+  match_images 口径：同 donor + 同 Mac native 4672ced7 + Linux 参照件）**：
+  - 三计数：新增 **1828**（order 1327 + symbol 261 + vtable 101 + …）；
+    已配丢失 320 **但 kext-facing = 0**（全为 kernel 成员内部对，不产生
+    stub 面 → 墙安全，丢失门按安全子集判过）；共配改靶 86（抽查 =
+    pure-leaf 歧义被 reference 纠正的 A 图真错，如
+    `mig_get_reply_port` ↔ `lck_spin_sleep_block_invoke` 交叉错配摆正）。
+  - reviewed 252 锚全不变（含墙 32 IOLogv）；kext named 1869 → 2046；
+    functions_matched 8388 → 9896；data_matched 1166 → 1228
+    （reference-data +97）；double-bind 174 → 318（通道竞争，预期内）。
+  - **墙 33 callee `0xfffffe000ae3fe94` 自动转已配 → `0x…079eb964`
+    _OSCompareAndSwapPtr [reference-order]——与 10.Y.4 预测地址逐字一致，
+    墙 33 无需 fixture 即清**；CAS64 邻居 `0x…0ae3fe7c` 同批配上
+    （→ `0x079eb94c` = 正确的 OSCompareAndSwap64）。
+- **②预测器 v2（`temp/refswap/predict.py`：bootpath 行走器吃 map-B，
+  AMFI 根 BFS，墙集 = fixup kext→kernel 未配目标，与 emit 账本口径对齐
+  {kext: {内核VA: 站}}）**：到达 3434 fn / 路径 bl 墙 61 / 未配 1194。
+  **三色 = 钉名即修 1 / 名缺面 0 / 结构类 1193**（两车道皆未配真残 =
+  donor 有而我方 xnu 没有；emit 账本 675 fn/2290 站 = 其有 kept-site
+  子集）。**top-K 施工单仅 1 笔**：`0xfffffe000a7985bc` →
+  `_mach_memory_entry_port_release`（Linux call-sites 配对 + ipc_port
+  邻域夹逼；d=6 / path 75 站 / ledger 5 站）。下墙候选（结构类深度序）：
+  `0xa7f3f6c`（d=2，path 20/ledger 5）、`0xa841220`（d=2，path 15）、
+  `0xad1d378`、`0xaf69628`（d=3）、`0xa7f8990`（d=4）。坑：行走器 v1
+  BFS 快照迭代 bug（只走 2 fn）；bl 度按 fixup 站址读指令字全 0（kext bl
+  过本地 stub/veneer，fixup 站 = 指针槽非 bl 指令）→ 入度用 ledger/path。
+- **③墙 34 fixture**：donor `0xfffffe000a7985bc`（mach_memory_entry_
+  port_release，size 0x214，sha `a7d37a03…`）↔ native 同名（Mac
+  `0x0745860c` = 56B 壳 `cmp #0x24` 类字节门 / Linux `0x07469be4`）；
+  双车道 anchor_reviewed 过（253rd reviewed anchor）+ donor 体 sha 现场
+  重验（`temp/refswap/{fixture-w34,verify-w34}.py`）。设备仓 **`eb32f7b`**
+  已推，Mac pull 落位（kit = 符号链接 tree.py:77 直指设备仓）。
+- **④Mac 产线出件（reference 首次进 emit 命令行 + 墙 34 fixture）**：
+  - 产线图 = **9894 对**（+1506 vs 旧 8388；native 漂移 `4672ced7` →
+    `f1eefc43` 无碍），reference 通道 symbol 1250 + order 4390，named
+    **2047**；**墙 33 CASPtr → reference-order ✓ / 墙 32、34 fixture 均
+    reviewed ✓**（map 拉回 `temp/refswap/mac-map-refswap.json`）。
+  - **账本方向门实测**：branches_rebound 42024（平）/ kept 82701（平）/
+    **closure_unmapped 603 → 314（−289）/ stubbed 2290 → 1954
+    （−336 站）**——stubbed/missing↓ 实证达成。
+  - kernel **`0b607b2a`** → payload **`abe3ec85`**（96MiB；
+    trust `ebeaf7fb` + seed `d04a0153` + chip `3645ad55d47e77c1` +
+    panic_screen；已拉回存档 `out/m2381/payload-refswap-0b607b2a.img`
+    逐字节对拍 `abe3ec85` ✓）。
+  - **Mac 构建三坑**：①unixnu 的 `-D` 只在子命令级（`./unixnu kernel
+    -D DIR` 合法，前置报 invalid choice；device 有 remembered 态可省）
+    ②ssh 非交互 PATH 须 `PATH=/opt/homebrew/bin:$PATH` 前缀（homebrew
+    python3.14 有 tomllib，系统 3.9 没有，登录 shell 同样不行）③payload
+    三红线输入必须显式传（`--trust-cache ~/unixnu/original-trust-23F84.bundle`
+    + `--data-ramdisk ~/unixnu/scratch-data.img` + `--unique-chip-id
+    3645ad55d47e77c1`；裸跑报错缺件，两件已常驻 `~/unixnu/`）。
+- **harvest 线收账（10.Y.5 ⑤⑥⑦）**：sheng 报告 + board.toml 全读——
+  他们的 27 车道 = **donor 24A446** + archives 显式含
+  `build-fileset-release-reference.py --lto`（参照件 = LTO 版 release
+  构建）；我们 23F84 donor 的覆盖数字**不直接平移**（donor 不同源），
+  但机制平移（参照件通道）；他们 root = 23F84 卷 + 27 内核**跨代仍到
+  SpringBoard** = 工具链统一论再佐证。
+- **★刷写卡（会话四十四）**：设备现态核对（boot_b 不动 / recovery_a
+  现役 = d7fd50cb / userdata 不动）→ **只刷
+  `fastboot flash recovery_a out/m2381/payload-refswap-0b607b2a.img`**
+  → 判读：crc 换新；**墙 33（AMFI→CASPtr unmapped-call @lr 0x…8f13530）
+  应消**；**墙 34 候选（mach_memory_entry_port_release，path 75 站）应消**；
+  stages 应推过 AMFI 段；新墙按预测单结构类 d 序点名（首候选
+  `0xa7f3f6c` / `0xa841220`，d=2）；若墙量骤减推进到 sandbox/apfs 段
+  （会话三十一 d 序榜后段）= 换件红利兑现。**回退 = recovery_a ←
+  payload-w32fix-4970bf21.img（d7fd50cb，现役在机），2273bd09 二级**。
+- **未推**：主树本节 + §0；设备仓 `eb32f7b` 已推。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
