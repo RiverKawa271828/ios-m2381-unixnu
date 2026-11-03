@@ -2,40 +2,31 @@
 
 ## 0. 现势指针（每轮首更，2026-11-03 会话四十三）
 
-- **现役件**：recovery_a 在机 = payload `abe3ec85`（kernel `0b607b2a`，
-  reference 换件 + 墙 34 fixture 件，10.Y.7 首刷已判读提取）。存档
-  `out/m2381/payload-refswap-0b607b2a.img`。**现墙 = 墙 35 已定谳已修
-  待刷**（PAC 类：`_mac_policy_register+0x520` 调 Sandbox
-  `mpo_policy_init`，blraa x8,x17 (0x2abe) 鉴权失败；根因 = 墙 17
-  resign 补丁零修饰符重签 vs Apple clang 类型 disc，10.Y.8 全链实证，
-  v2 条件化补丁在役）。**修复件 = payload `b63ad26e`**（kernel
-  `9de04b76`，`out/m2381/payload-w35fix-9de04b76.img` 96 MiB，静态门
-  PASS：resign 指纹老 1 新 0，ESP 副本 `e6b37730` 同过，账本平）。
-- **本会话定谳（10.Y.6）**：Mac 车道从未挂过 reference（kernel.py 静默
-  丢弃 + 参照件未侧建）——"LTO 序位移"机制说作废。换件后离线图
-  +1828 对 / kext 面 0 丢失 / **墙 33 CASPtr reference-order 自动配对
-  （零 fixture）**；产线图 9894 对（+1506），账本 closure_unmapped
-  603→314、stubbed 2290→1954。预测器：钉名即修 1（已修 = 墙 34
-  fixture `eb32f7b`）/ 名缺 0 / 结构类 1193（两车道皆未配真残，
-  下墙候选 d=2 `0xa7f3f6c`、`0xa841220`）。
-- **下轮工作单 = 会话四十五墙 35 修复件首刷判读**（10.Y.8 定谳已毕、
-  v2 补丁在役、修复件已出）：**刷写 = 仓库根 `fastboot flash recovery_a
-  out/m2381/payload-w35fix-9de04b76.img`**（只刷 recovery_a，卡带刷前
-  sha 门 + dd 读回对拍）；判读 = 墙 35 消（mac_policy_register 过
-  sandbox mpo_policy_init (IA,0x2abe) 验签）；下一崩点按 10.Y.8 预测单
-  （sandbox policy_init 体内 IOService 族 / 结构类 d=2 榜
-  `0xa7f3f6c`/`0xa841220`）。回退 = recovery_a ←
-  `payload-refswap-0b607b2a.img`（abe3ec85，现役在机）。
+- **现役件**：recovery_a 在机 = payload `b63ad26e`（kernel `9de04b76`，
+  墙 35 修复件，10.Y.9 首刷已判读提取）。存档
+  `out/m2381/payload-w35fix-9de04b76.img`。**现墙 = 墙 36**
+  （unmapped-call 类：caller donor kext `0x0977dd00`，target donor
+  `0x0af07900` = `OSObject::OSObject()` 构造漏配；**判读已前置到修面**
+  = fixture donor `0x0af07900` ↔ native `__ZN8OSObjectC2Ev`，红利 188
+  直调站 + 31 fixup 槽，10.Y.9 全案）。
+- **下轮工作单 = 会话四十五墙 36 fixture 施工**（钉名即修类）：①按
+  标准 fixture 管线钉 `0xfffffe000af07900` ↔ `__ZN8OSObjectC2Ev`
+  （Mac fresh map 拿 native 地址；四门验真 + 设备仓提交）②Mac 重建
+  kernel+payload（三红线输入）③静态门（w35-gate.py 复用）④只刷
+  recovery_a ⑤判读 = 墙 36 消 + 188 站红利 + stages 推进 bsd_init/root
+  mount 方向。回退 = recovery_a ←
+  `payload-refswap-0b607b2a.img`（abe3ec85）。
 - **回退链**：本次刷写回退 ← `abe3ec85`（payload-refswap-0b607b2a.img，
-  现役在机）；`d7fd50cb` 二级；更早逐级在 out/m2381/ 存档。
+  上一轮在机）；`d7fd50cb` 二级；更早逐级在 out/m2381/ 存档。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`；**reference 已接线** = 参照件常驻 Mac 树
   `tree/build/xnu/fileset-reference/` sha `5a794da8`，以后建核自动带上；
   payload 三红线输入已验明并常驻 `~/unixnu/`）；Linux = 参照件供给 +
   回归门 + 离线重放（`temp/refswap/` 工具族）。
-- **未推**：主树 `dea78c8`+`7061a05`（墙 35 v2 补丁）+ 本节；设备仓
-  `091ca03` records 已提交未推。Mac 树 = scp 脏态（补丁 sha 同
-  d1cdfa96…），收队 push 后 Mac pull 前先 checkout 该补丁再 ff-only。
+- **未推**：主树 `7061a05`（墙 35 v2 补丁）+ `830893e`/`2c3371c`/本节
+  docs；设备仓 `091ca03` records + 本节 records。Mac 树 = scp 脏态
+  （补丁 sha 同 d1cdfa96…），收队 push 后 Mac pull 前先 checkout 该
+  补丁再 ff-only。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针；
   本轮 §9/§9G/§10/§10.X 已移）③未推清单与回退链核对 ④`temp/` 内
@@ -1536,6 +1527,47 @@ records/mackernel-refswap-abe3ec85-firstboot-20261103-224055.jpg）
   已逐个清点。**
 - **回退**：recovery_a ← `payload-refswap-0b607b2a.img`（abe3ec85，
   现役在机）。
+
+## 10.Y.9 会话四十四首刷提取+核验档（2026-11-04，payload `b63ad26e`，屏摄设备仓
+records/mackernel-w35fix-b63ad26e-firstboot-20261104-010612.jpg）
+
+- **墙 35 修复真机生效**：屏上零 PAC failure，`mac_policy_register` 带着sandbox
+  mpo_policy_init (IA,0x2abe) 验签过 = v2 条件化补丁按设计工作。
+- **★boot 史诗级推进**：stage 轨迹首次全程点亮——`PE_lockdown_iokit →
+  dtrace_early_init → trust_cache_init → OSKextRemoveKextBootstrap →
+  machine_lockdown → kernel do post - done`（2s 内全过）= **整个
+  kernel_bootstrap 尾段收官**；此前墙 32/33（AMFI 段）与墙 35（sandbox
+  注册）全部成为历史。pages=0x125b06（恒）/ free=0x1251c6（vs 墙 35 boot
+  0x1253c6 = −0x200 pages 消耗 = 更深）。
+- **新墙 = 墙 36，回 unmapped-call 类**（reference 时代墙 32/33 同族，
+  fixture 可修，非 PAC/工具链病）：
+  `fileset: original component called an unmapped kernel function from
+  0xfffffff00977dd00 (x0 0xfffffff8565e5500 x1 0xfffffff00b5a4158) hit #1`。
+  - **crc=0xee584f8d 验真一次命中（139B）**——照片转录 x0/x1 各掉一个
+    f，CRC 纠错定稿；x1 = 0xb5a4158 = 我方 native `__DATA`（donor kext
+    拿到了指向我方内核数据的指针）；x0 = heap（0xfffffff8 前缀）。
+  - **target = donor `0x0af07900` = `__ZN8OSObjectC2Ev`（OSObject 构造
+    体）**：体 = `bti c; [x0+8]=1; [x0]=pacda(vtable 0x7d9e2d0, disc=
+    this|0xcda1<<48); ret`（vptr+refcount 内联形态，忽略 x1）。** donor
+    有两个基类构造分身：`0x0ae40a00` = OSMetaClassBase ctor（仅 vptr，
+    vtable 0x7d62608）已配（pac-checked-shape）；`0x0af07900` = OSObject
+    ctor（vtable 0x7d9e2d0 + refcount）漏配 = 墙 36**。
+  - **native 侧两符号都独立存在**（Linux noctf nm：`__ZN8OSObjectC2Ev`
+    @0x07a205a4 / `__ZN15OSMetaClassBaseC2Ev` @0x07a1d254）= **钉名即修
+    类（与墙 34 同类），fixture 按名绑**。
+  - **红利面 = donor 全镜像 188 直调 bl（首簇 0x841xxxx）+ 31 fixup 槽**
+    （每个 kext 的 OSObject 子类构造链：caller 形态 = operator new → bl
+    OSObject ctor → 覆写 vptr → instanceConstructed() → IOLock/IOMallocType
+    族；caller fn bounds 0x0977dcb0..0x0977dd9c）——一针清一整类。
+  - 调用时序自洽：bl 0x0af07900 设基类 vptr → 返回到 0x0977dd00 → caller
+    覆写自己的 vptr（adrp 0x80d3dd0 同款 pacda 形态）= 标准 C++ 构造链。
+- **判读已前置到修面（下轮 = 会话四十五施工）**：fixture
+  donor `0xfffffe000af07900` ↔ native `__ZN8OSObjectC2Ev`（Mac fresh map
+  拿 native 地址；标准 fixture 管线 temp/w32-fixture/verify.py 四门 +
+  make_fixture），Mac 重建出件只刷 recovery_a。工具 = `temp/refswap/`
+  （w35-gate.py 静态门可复用）。
+- **回退**：recovery_a ← `payload-refswap-0b607b2a.img`（abe3ec85）；
+  `payload-w32fix-4970bf21.img`（d7fd50cb）二级。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
