@@ -5,10 +5,13 @@
 - **现役件**：payload `d7fd50cb`（kernel `4970bf21`）已刷真机 = **墙 32 过**；
   现墙 = 墙 33（AMFI → donor `0x0ae3fe94` = `_OSCompareAndSwapPtr`，38 站
   红利面，判读已前置，见 §10.Y.4）。
-- **下轮工作单**：§10.Y.4 = ①fixture 钉 `0x0ae3fe94` ↔
-  `_OSCompareAndSwapPtr` ②**reference 换件小验**（Mac 车道
-  `--fileset-reference` 指向 Linux 建参照件，回填 1586 对，先看 named
-  升幅 + no-fix diff 门）。
+- **下轮工作单**：§10.Y.4 四步序（2026-11-03 用户批准，前两步零上机）：
+  ①**reference 换件小验**（Mac 车道 `--fileset-reference` 指向 Linux 建
+  参照件；重放 matcher 看 named 升幅 + no-fix diff 门）→ ②**墙序列静态
+  预测器**（枚举 donor bl→unpaired 全集 = 候选站；按 Linux-已配三色分拣
+  + 实证墙序/成员序/入度排可达序；输出「下 5 墙预测 + top-K 批量
+  fixture 施工单」）→ ③按预测单修一批（fixture 族批）→ ④上机一次验收
+  K 堵（判读单按预测清单勾验）。目标 = 1 墙/刷 → K 墙/刷。
 - **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
