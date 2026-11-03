@@ -1318,6 +1318,19 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   才出 payload → 刷 recovery_a 先判。判读门 = 墙 31 消（stages 推过
   entropy/prng 段，pages/free 上穿 0x125b1c）；回退 = 刷回 `24f0a941`。
   工具留 temp/s41-w31/（出厂件提取件+门+dis23.py/scan-21h461-crypto.py）。
+- **Mac 车道已毕（同日）**：Mac pull c4337a9 → kernel `efbdd999` →
+  **反汇编门过**（getentropy 块 = `paciza→xpaci→pacia1716(0xbcad)→
+  mov x6→blraa 0x3051`，与 Linux 同构；全 TEXT_EXEC 14 处 pacia1716
+  站点 0 坏指纹）→ A/B 账本四项全平（47473/334/42024/82701）→
+  **payload `2273bd09`** = out/m2381/payload-w31fix-efbdd999.img
+  （96MiB；ESP 副本 fe181246 = cpusub/probe/seal 后，指纹终验同样全过）。
+- **★刷写卡（会话四十一）**：设备现态核对（boot_b 不动 / recovery_a
+  现役 = 24f0a941 / userdata 不动）→ **只刷
+  `fastboot flash recovery_a out/m2381/payload-w31fix-efbdd999.img`**
+  → 判读：crc 换新；墙 31（cckprng autiza）应消，stages 推过
+  entropy/prng 段；新墙按调用序点名（候选 = §10.X 判读注记的 di 字段
+  与 chacha 子结构 CC_SPTR 链）。回退 = recovery_a ←
+  payload-v2-24f0a941.img。
 - **〔原 10.Z 开工单文本存档（已执行完毕，定谳见上 10.Y.1）〕**
 - **★10.Z 专项查（下会话第一刀，2026-11-03 用户拍板立项）：上游/sheng 为什么无 crypto 翻译税**
   事实基线：上游 61 条 xnu 补丁（patches/xnu/）**没有 crypto unpack/翻译
