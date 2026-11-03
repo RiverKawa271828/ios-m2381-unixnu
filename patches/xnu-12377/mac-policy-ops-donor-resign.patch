@@ -2,11 +2,11 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 index 9f90247..dff9e33 100644
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -603,6 +603,34 @@ mac_policy_fixup_mmd_list(struct mac_module_data *new)
+@@ -603,6 +603,42 @@ mac_policy_fixup_mmd_list(struct mac_module_data *new)
  	new->base_addr = new;
  }
  
-+#if defined(HAS_APPLE_PAC)
++#if defined(HAS_APPLE_PAC) && !defined(__apple_build_version__)
 +/*
 + * A kernel collection built by another toolchain signs the function pointer
 + * slots of a policy operation vector with its own diversifiers, while every
@@ -16,6 +16,14 @@ index 9f90247..dff9e33 100644
 + * The per-policy init hooks run right here, and every later hook call reads
 + * the same slots through the registered configuration, so one normalization
 + * per policy covers the whole dispatch surface.
++ *
++ * Apple clang builds must skip this: their mac_* dispatch sites authenticate
++ * with the ABI type discriminator (mac_policy_register reaches mpo_policy_init
++ * via mov x17,#0x2abe; blraa x8,x17), and kernel_collection_slide already
++ * re-signs every donor slot from its chained-fixup metadata with that same
++ * converged diversifier, so a zero-modifier re-sign here only corrupts a
++ * correct signature (wall 35: PAC failure at mac_policy_register+0x520,
++ * Seatbelt mpo_policy_init slot, fixup metadata key=IA div=0x2abe).
 + */
 +static void
 +unixnu_mac_policy_ops_resign(struct mac_policy_conf *mpc)
@@ -32,18 +40,18 @@ index 9f90247..dff9e33 100644
 +			ptrauth_key_function_pointer, 0);
 +	}
 +}
-+#endif /* defined(HAS_APPLE_PAC) */
++#endif /* defined(HAS_APPLE_PAC) && !defined(__apple_build_version__) */
 +
  int
  mac_policy_register(struct mac_policy_conf *mpc, mac_policy_handle_t *handlep,
      void *xd)
-@@ -633,6 +661,9 @@ mac_policy_register(struct mac_policy_conf *mpc, mac_policy_handle_t *handlep,
+@@ -633,6 +669,9 @@ mac_policy_register(struct mac_policy_conf *mpc, mac_policy_handle_t *handlep,
  	if (mpc->mpc_ops == NULL) {
  		panic("policy's OPs field is NULL");
  	}
-+#if defined(HAS_APPLE_PAC)
++#if defined(HAS_APPLE_PAC) && !defined(__apple_build_version__)
 +	unixnu_mac_policy_ops_resign(mpc);
-+#endif /* defined(HAS_APPLE_PAC) */
++#endif /* defined(HAS_APPLE_PAC) && !defined(__apple_build_version__) */
  
  	error = 0;
  
