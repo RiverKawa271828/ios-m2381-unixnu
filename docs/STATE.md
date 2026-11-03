@@ -1,42 +1,39 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
 
-## 0. 现势指针（每轮首更，2026-11-04 会话四十五）
+## 0. 现势指针（每轮首更，2026-11-04 会话四十五续）
 
-- **现役件（待刷）**：payload `ce3df35f` =
-  `out/m2381/payload-w36fix-b9e733be.img`（kernel `b9e733be`，墙 36
-  fixture 件，10.Y.10 全链验讫）。在机 recovery_a = `b63ad26e`
-  （w35fix，wall-35 修复件）。**现墙 = 墙 36**（fixture 已钉
-  `0x0af07900` ↔ `__ZN8OSObjectC2Ev`，静态门全过，待首刷判读）。
-- **下轮工作单 = 会话四十五首刷判读**（用户自刷，只刷 recovery_a）：
-  ①屏摄/取证按惯例 ②判读 = 墙 36 消（不再报
-  `unmapped kernel function from 0xfffffff00977dd00`，该站点已实证
-  换靶 native ctor 0x0ae63098）+ stages 推进（kernel_bootstrap 尾段
-  已收官，下一程 = bsd_init / root mount 方向）③新墙按类分流：
-  unmapped-call 类→现场定名走 fixture 管线；PAC 类→10.Y 案卷流程。
-  回退 = recovery_a ← `payload-w35fix-9de04b76.img`（b63ad26e，现役
-  在机件）；`payload-refswap-0b607b2a.img`（abe3ec85）二级；
-  `payload-w32fix-4970bf21.img`（d7fd50cb）三级。
+- **现役件（待刷）**：payload `e6b06399` =
+  `out/m2381/payload-w37fix-6d4a9f19.img`（kernel `6d4a9f19`，墙 37
+  fixture 件，10.Y.11 全链验讫）。在机 recovery_a = `ce3df35f`
+  （w36fix，墙 36 已真机通关）。**现墙 = 墙 37**（fixture 已钉
+  `0x0af0f77c` ↔ `IOTimerEventSource::timerEventSource`，静态门全过
+  待首刷）。
+- **下轮工作单 = 会话四十六首刷判读**（只刷 recovery_a）：①判读 =
+  墙 37 消（不再报 `from 0xfffffff00977fefc`）+ 同 caller 内两后续站
+  （0x977ff40/0x977ff88 同 target 已配应直过）+ 红利兑现（26 直调站
+  + 3 closure 指针已在本轮静态对账）+ stages 推进 ②新墙按类分流
+  （unmapped-call→fixture 管线；PAC→案卷流程）。回退 = recovery_a ←
+  `payload-w36fix-b9e733be.img`（ce3df35f 在机件）；b63ad26e 二级；
+  abe3ec85 三级。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
-  `~/unixnu/`；**reference 已接线** = 参照件常驻 Mac 树
-  `tree/build/xnu/fileset-reference/` sha `5a794da8`；payload 三红线
-  输入常驻 `~/unixnu/`；防休眠管线 = `temp/refswap/w36-pipeline.sh`
-  ——注意 `TREE` 等变量**必须用 Mac 绝对路径**，`~/` 会被本机展开成
-  Fedora $HOME，w36 轮已踩）；Linux = 参照件供给 + 回归门 + 离线重放。
-- **未推**：主树 `7061a05`（墙 35 v2 补丁）+ `830893e`/`2c3371c`/
-  `8ba8336` + 本节 docs；设备仓 `155d3c3` records + `6156dd4`（墙 36
-  fixture）+ 本节 records。Mac 树 = scp 脏态（fixture sha 同
-  `6a6a9bbc`），收队 push 后 Mac pull 前先 checkout 该 fixture 再
-  ff-only。
+  `~/unixnu/`；reference 已接线 sha `5a794da8`；payload 三红线输入
+  常驻；防休眠管线 = `temp/refswap/w36-pipeline.sh`——**变量必须用
+  Mac 绝对路径**，`~/` 会被本机展开成 Fedora $HOME）；Linux = 参照件
+  供给 + 回归门 + 离线重放。
+- **未推**：主树 `7061a05`+`830893e`+`2c3371c`+`8ba8336`+`58dec46`+
+  本节 docs；设备仓 `155d3c3`+`6156dd4`（墙 36 fixture）+`beef9fe`
+  records+`bdd72fd`（墙 37 fixture）+ 本节 records。Mac 树 = scp 脏态
+  （fixture sha 同 `0ed34313`）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
   ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（本轮清
   `w36-fixture/mac-native-noctf.macho` 24MB 与 /tmp 出件中间件；
   脚本/JSON/map 留）⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游
   文档站树（concepts/guide/zh/reference/public）不清理不改动。**
-- **参考链状态（2026-11-04 会话四十五刷新）**：donor KC sha ✓；
-  fixtures 254/254 字节验真 ✓（253 + 墙 36，make_fixture check 全绿）；
-  reference 换件生效（Mac map reference sha `5a794da8` ✓）；24A446
-  policy 休眠 + KC 护栏 ✓。
+- **参考链状态（2026-11-04 会话四十五续刷新）**：donor KC sha ✓；
+  fixtures 255/255 字节验真 ✓（254 + 墙 37）；reference 换件生效
+  （Mac map reference sha `5a794da8` ✓）；24A446 policy 休眠 + KC
+  护栏 ✓。
 
 > **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
 > 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
@@ -1610,6 +1607,53 @@ payload `ce3df35f` 待刷）
   `kernel.json` statistics（日志 grep 不出）。
 - **回退**：recovery_a ← `payload-w35fix-9de04b76.img`（b63ad26e）；
   abe3ec85 二级；d7fd50cb 三级。
+
+## 10.Y.11 会话四十五续 = 墙 36 首刷判读 + 墙 37 施工档（2026-11-04，
+kernel `6d4a9f19`/payload `e6b06399` 待刷，屏摄设备仓
+records/mackernel-w36fix-b9e733be-firstboot-20261104-020733.jpg）
+
+- **墙 36 修复真机生效（fixture 判读通过）**：旧报点
+  `0x…977dd00` 不再报；stage 轨迹保持全亮（PE_lockdown_iokit → … →
+  kernel do post - done）；pages=0x125b07 / free=0x1251c7（+1 同水位
+  = 走过旧墙后即刻撞下一站）；hit #1。
+- **消息定稿**：crc `0x1fa14f06` 一次精确命中（591,872 候选唯一命中，
+  **零纠正**；配方先复现上轮 0xee584f8d 自校通过）。x0 =
+  `0xfffffff7863fe090`（f7 前缀，非上轮 f8 heap 段）；x1 =
+  `0xf5db14b0097807a0`（PAC tag 指针）。
+- **新墙 37 = 同族 unmapped-call**：报点 LR `0x…977fefc`（bl 站
+  donor `0x977fef8`）；caller = **CoreAnalyticsFamily** start 装配
+  大函数（`0x977fd14..0x97802ac`，1432B；与旧墙 36 caller 同 kext
+  不同函数且更晚）；target = donor **`0x0af0f77c` =
+  `IOTimerEventSource::timerEventSource(OSObject*, Action)`**（二参
+  工厂重载；j 重载已排除：常量 1 作 init timeout + caller 只传 2 参）；
+  构造链叙事完整：基类 ctor（墙 36 已修）→ workLoop → commandGate →
+  timer 工厂（墙 37）。未配成因 = donor 体内联差异致 body-hash 失败
+  且无字符串/vtable 证据 = matcher 正常漏网（非"已配却报"）。
+- **红利面 = 321 直调 bl + 100 fixup 槽（约 100 entry，
+  **最大单笔 fixture**；榜：IOAccessoryManager 26/AppleHPM 19/
+  ApplePearlSEPDriver 19/AppleSPU 10…）；CoreAnalyticsFamily 自身
+  4 站，同 caller 内还有 0x977ff40/0x977ff88 两站（钉名后同函数继续
+  推进，预期行为）。
+- **墙 37 fixture 落位**（设备仓 `bdd72fd`）：↔ native
+  `__ZN18IOTimerEventSource16timerEventSourceEP8OSObjectPFvS1_PS_E`；
+  native 地址 = Mac noctf（7307aecf）`0xfffffff007aab9e0` / Linux
+  `0x07aeedbc`；四门双车道全过（donor 区间 size=284 sha 一致；双
+  reviewed；make_fixture check 255/255）。native 形态逐项同构（0x60
+  typed alloc/vptr 0xcda1/instanceConstructed 内联/vtable[+0x140]
+  PAC key 0x5f4/失败路 0x3a87）。
+- **Mac 重建 + 静态门**（增量重编 ~4min，ninja 热缓存；**本轮零锚
+  漂移**：native 未变，reviewed 0 drift）：kernel `6d4a9f19`/payload
+  `e6b06399`，存档 `out/m2381/payload-w37fix-6d4a9f19.img` + kernel
+  同名存档。w35-gate 双件 PASS（resign 0/dispatch 371）；map 9896 对
+  （+6：reviewed +1 + auto 回收 5；kext_targets_named 2048→2051）。
+- **站点重定向 + 红利静态对账**：新件 bl `0x…977fef8` →
+  `0x0af1f9e0` = native timerEventSource 终局地址（noctf 原体骨架
+  0x60B 归一化逐位同）；直调 bl 实换靶 26 站（哨兵 1228→1203）；
+  closure_pointers_unmapped 314→**311**（−3）、kext_pointers_rebound
+  47493→47496（+3）；branches/kept 持平 = 零附带漂移。其余 321−26
+  直调站在被 drop 的 entry 内。
+- **回退**：recovery_a ← `payload-w36fix-b9e733be.img`（ce3df35f）；
+  b63ad26e 二级；abe3ec85 三级。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
