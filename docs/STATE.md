@@ -2,10 +2,11 @@
 
 ## 0. 现势指针（每轮首更，2026-11-03 会话四十三）
 
-- **现役件**：recovery_a 在机 = `d7fd50cb`（kernel `4970bf21`，墙 32 已
-  过）。**待刷 = payload `abe3ec85`**（kernel `0b607b2a`）= reference
-  换件 + 墙 34 fixture 双变量件，存档
-  `out/m2381/payload-refswap-0b607b2a.img`。
+- **现役件**：recovery_a 在机 = payload `abe3ec85`（kernel `0b607b2a`，
+  reference 换件 + 墙 34 fixture 件，10.Y.7 首刷已判读提取）。存档
+  `out/m2381/payload-refswap-0b607b2a.img`。**现墙 = 墙 35**（PAC 类：
+  `_mac_policy_register+0x520` 调 Sandbox `mpo_policy_init`，blraa x8,x17
+  (0x2abe) 鉴权失败；提取+结构验证全毕见 10.Y.7，判读留下会话）。
 - **本会话定谳（10.Y.6）**：Mac 车道从未挂过 reference（kernel.py 静默
   丢弃 + 参照件未侧建）——"LTO 序位移"机制说作废。换件后离线图
   +1828 对 / kext 面 0 丢失 / **墙 33 CASPtr reference-order 自动配对
@@ -13,11 +14,12 @@
   603→314、stubbed 2290→1954。预测器：钉名即修 1（已修 = 墙 34
   fixture `eb32f7b`）/ 名缺 0 / 结构类 1193（两车道皆未配真残，
   下墙候选 d=2 `0xa7f3f6c`、`0xa841220`）。
-- **下轮工作单 = 会话四十四首刷判读（10.Y.6 刷写卡）**：只刷
-  recovery_a ← `payload-refswap-0b607b2a.img` → 判读单 = 墙 33 消 +
-  墙 34 消（mach_memory_entry_port_release）+ 结构类 d 序候选点名 +
-  若大墙清推进段位 = 换件红利兑现。判读后按残墙走：结构类不可
-  fixture（容忍或选件，§0 旧账 675 fn/2290 站即此类有站子集）。
+- **下轮工作单 = 会话四十四墙 35 判读**（10.Y.7 判读输入已备）：①验证
+  机制候选（运行时 auth 链签名步缺失 vs 盐值差）——查我方 boot 通道
+  谁消费 LC_DYLD_CHAINED_FIXUPS auth 条目（donor 靠 collection loader
+  签名；我方老式 prelink 通道是否漏 pacia 步）②定修法（运行时补签 vs
+  emit 侧通道改换）③单点修复单刷。回退 = recovery_a ←
+  `payload-w32fix-4970bf21.img`（d7fd50cb）。
 - **回退链**：本次刷写回退 ← `d7fd50cb`（payload-w32fix-4970bf21.img，
   现役在机）；`2273bd09` 二级；更早逐级在 out/m2381/ 存档。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
@@ -1426,6 +1428,52 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   （会话三十一 d 序榜后段）= 换件红利兑现。**回退 = recovery_a ←
   payload-w32fix-4970bf21.img（d7fd50cb，现役在机），2273bd09 二级**。
 - **未推**：主树本节 + §0；设备仓 `eb32f7b` 已推。
+
+## 10.Y.7 会话四十三首刷提取+核验档（2026-11-03 晚，payload `abe3ec85`，屏摄设备仓
+records/mackernel-refswap-abe3ec85-firstboot-20261103-224055.jpg）
+
+- **换件红利立竿见影**：墙 33（AMFI→CASPtr unmapped-call）**消**；全段
+  **无任何 unmapped-call 墙**——wall 32/33 时代的墙类被 reference 换件
+  清场（251-fixture 时代"压类"现象的换件版）。pages/free =
+  0x125b06/0x1253c6 与墙 33 boot 逐字同 = 崩点紧接 AMFI 段之后的下一步
+  （sandbox 政策注册）。墙 34（mach_memory_entry_port_release）无从判定
+  （未到 IPC 段），挂账。
+- **新墙 = 墙 35，PAC 鉴权失败类**（esr 0x72000000 = EC 0x1C PAC_FAIL，
+  同墙 29 族）：
+  - pc 0xfffffff00afcde0c = 出厂件 `__TEXT_EXEC` → native eq 0x07b59e0c
+    = **`_mac_policy_register + 0x520`**（Mac noctf `f1eefc43` 符号化；
+    下界符号 `mac_policy_unregister` 夹逼）；lr 低位 = pc-0x14 = 前一条
+    `bl 0xa7be288` 返回址（同函数，链路自洽）。
+  - **反汇编直读 pc 处 = `blraa x8, x17` 且 x17=0x2abe——与屏摄 x17
+    逐字吻合（结构交叉验证替代 crc，四重命中：pc 指令/lr 链/x0=x19
+    `mov x0,x19`/x17 常量）。crc 全量验真不收敛**（9 行寄存器照片转录
+    差一位，墙 29 同款，按用户 10-31 拍板口径挂档不追）。
+  - **目标三级归属**：x8 = 0xfebd5ff00a52e104（签名指针）低 36 位
+    0x0a52e104 → 出厂件 `__TEXT_EXEC` donor kext 区（emitted VA ≡ donor
+    VA，老式 prelink 保址）→ **donor sandbox 成员代码**（会话三十墙 22
+    站点 0xa52ed24 同邻域）。
+  - **回调源三级归属**：x19/x0 = 0x082d1950 = `__DATA_CONST` → chained
+    fixup 解码直读 = **"Seatbelt sandbox" 的 `mac_policy_conf`**
+    （mpc_name → "Sandbox"、mpc_full_name → "Seatbelt sandbox"）；
+    [conf+0x20]=mpc_ops → **ops+0x398 = `mpo_policy_init`**
+    （逐行条件感知偏移行走；先前按 `;` 切分的解析把字段序打散误读成
+    system_check_sysctlbyname，已纠——policy_init 取 `(mpc)` 参数与
+    x0=x19 完全吻合）。
+  - **槽位 auth fixup 元数据 = key=0(IA) / div=0x2ABE / adiv=0**——div
+    与我方 dispatch 站 x17 逐字相同 = **元数据已收敛**（同源代码系 +
+    两侧 Apple clang），**非墙 30 型约定债**。
+- **判读输入（下轮）**：签名值为何验证失败——机制候选：①出厂件容器 =
+  老式 prelink，其运行时 fixup 通道（kxld 系）不执行 auth 链的 pacia
+  签名步（donor 系统由 collection loader 在本 boot 签名；我方通道漏签
+  → 槽内高位 = 陈旧/垃圾签名）②签名目标盐值差（重定位前后值）③
+  resolver 用 adiv 变体签名。倾向 ①（元数据全收敛后唯一剩余自由度 =
+  签名执行步本身）。修法方向 = 出厂/运行时链路补 auth 条目 pacia 签名
+  步（离线不可签，键为 per-boot 随机）。Linux 车道从未撞此墙 = arm64
+  零 PAC（未签名裸指针照用）自洽。
+- **记账**：未知墙存量口径换类后沿用预测单（结构类 1193 不变，但墙类
+  切换点 = sandbox 注册段早于预测单 d 序的 apfs 段——实证墙序再次
+  教预测器：注册回调链是 AMFI 后第一跳）。
+- **未推**：主树本节 + §0；设备仓 records 单提交。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
