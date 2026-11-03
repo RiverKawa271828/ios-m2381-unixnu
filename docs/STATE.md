@@ -4,9 +4,11 @@
 
 - **现役件**：recovery_a 在机 = payload `abe3ec85`（kernel `0b607b2a`，
   reference 换件 + 墙 34 fixture 件，10.Y.7 首刷已判读提取）。存档
-  `out/m2381/payload-refswap-0b607b2a.img`。**现墙 = 墙 35**（PAC 类：
-  `_mac_policy_register+0x520` 调 Sandbox `mpo_policy_init`，blraa x8,x17
-  (0x2abe) 鉴权失败；提取+结构验证全毕见 10.Y.7，判读留下会话）。
+  `out/m2381/payload-refswap-0b607b2a.img`。**现墙 = 墙 35 已定谳已修
+  待刷**（PAC 类：`_mac_policy_register+0x520` 调 Sandbox
+  `mpo_policy_init`，blraa x8,x17 (0x2abe) 鉴权失败；根因 = 墙 17
+  resign 补丁零修饰符重签 vs Apple clang 类型 disc，10.Y.8 全链实证，
+  v2 条件化补丁在役，修复件待出）。
 - **本会话定谳（10.Y.6）**：Mac 车道从未挂过 reference（kernel.py 静默
   丢弃 + 参照件未侧建）——"LTO 序位移"机制说作废。换件后离线图
   +1828 对 / kext 面 0 丢失 / **墙 33 CASPtr reference-order 自动配对
@@ -14,12 +16,12 @@
   603→314、stubbed 2290→1954。预测器：钉名即修 1（已修 = 墙 34
   fixture `eb32f7b`）/ 名缺 0 / 结构类 1193（两车道皆未配真残，
   下墙候选 d=2 `0xa7f3f6c`、`0xa841220`）。
-- **下轮工作单 = 会话四十四墙 35 判读**（10.Y.7 判读输入已备）：①验证
-  机制候选（运行时 auth 链签名步缺失 vs 盐值差）——查我方 boot 通道
-  谁消费 LC_DYLD_CHAINED_FIXUPS auth 条目（donor 靠 collection loader
-  签名；我方老式 prelink 通道是否漏 pacia 步）②定修法（运行时补签 vs
-  emit 侧通道改换）③单点修复单刷。回退 = recovery_a ←
-  `payload-w32fix-4970bf21.img`（d7fd50cb）。
+- **下轮工作单 = 会话四十五墙 35 修复件首刷判读**（10.Y.8 定谳已毕、
+  v2 补丁在役）：判读 = 墙 35 消（mac_policy_register 过 sandbox
+  mpo_policy_init (IA,0x2abe) 验签）；下一崩点按 10.Y.8 预测单
+  （sandbox policy_init 体内 IOService 族 / 结构类 d=2 榜
+  `0xa7f3f6c`/`0xa841220`）。回退 = recovery_a ←
+  `payload-refswap-0b607b2a.img`（abe3ec85，现役在机）。
 - **回退链**：本次刷写回退 ← `d7fd50cb`（payload-w32fix-4970bf21.img，
   现役在机）；`2273bd09` 二级；更早逐级在 out/m2381/ 存档。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
@@ -27,7 +29,9 @@
   `tree/build/xnu/fileset-reference/` sha `5a794da8`，以后建核自动带上；
   payload 三红线输入已验明并常驻 `~/unixnu/`）；Linux = 参照件供给 +
   回归门 + 离线重放（`temp/refswap/` 工具族）。
-- **未推**：设备仓 `eb32f7b` 已推 ✓；主树本节 + 10.Y.6 待推（收队推）。
+- **未推**：主树 `dea78c8`+`7061a05`（墙 35 v2 补丁）+ 本节；设备仓
+  `091ca03` records 已提交未推。Mac 树 = scp 脏态（补丁 sha 同
+  d1cdfa96…），收队 push 后 Mac pull 前先 checkout 该补丁再 ff-only。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针；
   本轮 §9/§9G/§10/§10.X 已移）③未推清单与回退链核对 ④`temp/` 内
@@ -1474,6 +1478,53 @@ records/mackernel-refswap-abe3ec85-firstboot-20261103-224055.jpg）
   切换点 = sandbox 注册段早于预测单 d 序的 apfs 段——实证墙序再次
   教预测器：注册回调链是 AMFI 后第一跳）。
 - **未推**：主树本节 + §0；设备仓 records 单提交。
+
+## 10.Y.8 会话四十四执行档 = 墙 35 定谳与修（2026-11-04，payload 待出）
+
+- **判读输入复核（屏摄自读）**：x8=0xfebd5ff00a52e104 / x17=0x2abe /
+  x0=x19=…082d1950 与 10.Y.7 一致；新证据 = x2/x9/x26/x27 均为
+  "高位签名+低位 VA"形态寄存器残值（boot 早期确有签名类值被生产）。
+- **★机制链定谳（推翻 10.Y.7 三候选：非"漏 pacia 步"、非盐值差、非
+  adiv 变体——是重复签名用错约定）**，每一环实证：
+  1. 文件 slot = 原始 packed：在机 kernel `0b607b2a` ops+0x398 =
+     `0x80102abe0352a104`（target_rel 0x0352a104、div=0x2abe、key=IA、
+     adiv=0）；容器带 LC_DYLD_CHAINED_FIXUPS（186842 站 / auth 99573）、
+     filetype=12 MH_FILESET（`temp/refswap/w35-file.py`，fixups 缓存
+     `w35-fixups.pkl`）。
+  2. 运行时 applier = stock `kernel_collection_slide`（arm_init.c
+     MH_FILESET 路径；DarwinBoot.c:189 明示 firmware 只拷贝不签）：
+     `dyld_kernel_fixups.h` sign_pointer 按元数据
+     sign(target, IA, div=0x2abe)（adiv=0 不混合）——与派发约定逐字
+     一致 = **签的是对的**。
+  3. 破坏者 = 墙 17 resign 补丁（3115d15，10-31 Linux 车道产物）：
+     在机件反汇编 mac_policy_register 函数头 = `xpaci` strip →
+     `mov x16,#0` → `pacia1716` **零修饰符重签全 335 槽**；运行时
+     x8 高位 0x0febd5ff = sign(stripped target, IA, 0)。
+  4. Apple 派发站 = `mov x17,#0x2abe; blraa x8,x17`（ABI 类型 disc，
+     pc 0x0afcde0c 指令级核验）→ (IA,0) vs (IA,0x2abe) 必败 = 墙 35。
+- **时序自洽**：补丁为 Linux clang（blraaz 零修饰符约定，墙 17）所写；
+  Apple clang 发类型 disc；墙 30~33 Mac boot 崩点全在首个非空
+  mpo_policy_init 派发之前（AMFI 段），reference 换件清场后 sandbox
+  注册 = 第一次踩中。**同族清点**：kext-entry-donor-pptr 同形但实测
+  自洽（AMFI kext start 已跑通）不动；sysctl-handler-donor-resign
+  重签到运行时 blend 公式（其派发站同式）自洽不动。
+- **★修法 = 补丁 host 条件化**（crypto-funcs-unpack v2 前例同款）：
+  resign 仅在 `!defined(__apple_build_version__)` 编译——Linux 车道保
+  零修饰符归一，Apple 车道保留 collection loader 元数据签名。补丁
+  `git apply --check` 过（pristine feed）；主树 **`7061a05`**；scp Mac
+  sha256 逐字节同（d1cdfa96…）。
+- **出件（Mac 产线，抗休眠管线 `temp/refswap/w35-pipeline.sh`）**：Mac
+  中途休眠断连一次（构建 ssh 死、树安全），看门狗 00:34 自动 nohup
+  续跑（PID 86649）；kernel/payload sha 待出后补。
+- **判读预测（首刷）**：墙 35 消（sandbox mpo_policy_init (IA,0x2abe)
+  验签过 = mac_policy_register 推进）；下一崩点预测 = sandbox
+  policy_init 体内（Linux 时代墙 22 同段：IOService 调用族，reference
+  换件后 kext-facing named 2047 应配）或预测单结构类 d=2 榜
+  （`0xa7f3f6c` / `0xa841220`）。**新经验：工具链约定差可让"正确的
+  旧修"变"新病灶"——resign-to-zero 类补丁在 Apple clang 车道全部存疑，
+  已逐个清点。**
+- **回退**：recovery_a ← `payload-refswap-0b607b2a.img`（abe3ec85，
+  现役在机）。
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
