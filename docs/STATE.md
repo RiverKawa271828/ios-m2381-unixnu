@@ -1261,6 +1261,27 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   高位签名垃圾），x0=`0xfffffff00b6042a0`（=会话二十一 cckprng ctx
   全局 [ctx+24]回调/[ctx+32]arg）。pc 在 donor text 区（0x8330000 内）。
   = 墙 29 家族的 Mac 面 / C 预警兑现。
+- **★10.Z 专项查（下会话第一刀，2026-11-03 用户拍板立项）：上游/sheng 为什么无 crypto 翻译税**
+  事实基线：上游 61 条 xnu 补丁（patches/xnu/）**没有 crypto unpack/翻译
+  等价物**（本会话已 grep 穷尽：ptrauth/donor/resign/cckprng 仅 3 文件、
+  无表处理）；但 21H461 车道跑进过 SpringBoard（entropy/digest 全过）。
+  三个假说，对 21H461 donor KC 直接检验：
+  - H1（注解==默认）：21H461 donor 槽 disc 恰好等于 Apple clang per-type
+    默认（17.7 代 Apple 内部注解与编译器行为一致，26 代分叉）→ 检验 =
+    对 `out/ipsw/21H461/kernelcache.decompressed` 跑会话四十同款流程
+    （kc_image fixups → corecrypto 56 槽 run 扫描 ad=0 key0 → 对比
+    temp/mackernel-sym39/gcf_field_table_v2.json 的 15 字段值）。
+  - H2（无税可交）：21H461 donor crypto 表根本非 auth 打包（平 rebase
+    指针）→ 检验同上，看槽是 auth 还是普通 fixup。
+  - H3（管道内交税）：上游 fileset rebinder 在 rebind 时按消费者惯例
+    重签（kext_pointers_rebound 47166 那条通道）→ 检验 = 读
+    fileset_emit.py/fileset_match.py 的 rebase_collection 对 auth 槽的
+    处理，再对照 21H461 运行态值。
+  - 判定后的行动：H1/H2 成立 → 墙 31 的修法应优先考虑"注册权换手"
+    （gcf 指向源码 corecrypto 件、donor 件留场供 donor kext 符号调用）
+    或沿用 v2 表扩展 donor ctx 族；H3 成立 → 把上游的重签惯例抄过来。
+  - 并行：wall 31 donor 符号化（0x0a97af90/0x0a97bba4，23F84 KC 套
+    fixups 运行态反汇编）+ x8 shim `0x0a70995c` 签名来源判定。
 - **会话四十一工作单**：
   1. donor 侧符号化：对 23F84 kernelcache 反汇编 0x0a97af90（pc）与
      0x0a97bba4（x16 低 32 位目标），判 signer 与惯例（槽址连通 vs
