@@ -1261,6 +1261,64 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   高位签名垃圾），x0=`0xfffffff00b6042a0`（=会话二十一 cckprng ctx
   全局 [ctx+24]回调/[ctx+32]arg）。pc 在 donor text 区（0x8330000 内）。
   = 墙 29 家族的 Mac 面 / C 预警兑现。
+
+## 10.Y.1 会话四十一执行档 = 10.Z 定谳 + 墙 31 根因定谳与修（2026-11-03）
+
+- **10.Z 三假说全闭环（对 21H461 donor KC 实测）**：21H461 KC =
+  `cputype 0x100000c/cpusub 0/filetype 2` = **arm64 非 arm64e 且全镜像无
+  LC_DYLD_CHAINED_FIXUPS**；21H461 profile 无 `[os] arch` 键 →
+  profiles.py:42 默认 arm64。**整条 21H461 车道从 donor 到 native 零 PAC
+  状态 → H2 成立（税面根本不存在）**；H1 vacuous（无 auth 槽可比）；H3
+  前提不成立。旁证闭环：上游 sheng 真机无税 = Apple clang 建核 per-type
+  惯例与 donor 天然同族。**结论：翻译税 = 本车道独有组合（arm64e donor ×
+  非 Apple 惯例 native），上游无可抄**。另证：rebinder
+  （fileset_emit.py:169-335）逐位保留链词 auth/key/diversity 只重算
+  target_offset——不存在"按消费者惯例重签"的通道。
+- **上游情报刷新（fetch 至 fb0ec4a，11-02/03 合 main）**：a3faa4a **弃
+  26 profile**，目标表 = iOS 16.7.16 + iPadOS 17.7.11（均 arm64 共享
+  arm64 series）+ **iOS/iPadOS 27.0.1（arm64e）**；arm64e.md 重写
+  （sheng/SM8550/24A446 = 唯一 arm64e 支持设备，"In development"）；全部
+  sheng 系设备记录 arm64e 证据仍停在 2026-10-26 "fastboot download and
+  boot returned OKAY; **kernel and userspace execution remain
+  unobserved**"——**上游 arm64e fileset 车道零执行实绩，墙 29-31 为
+  无人区**（"ipados27 跑起来"= xnu-12377（26 代内核）+ Darwin26 补丁跑
+  27 用户态的**设计**叙述，我们同构）。注意：换 donor 23F84→24A446 会
+  作废全部 donor 侧 fixtures（字节钉），另立决策勿顺带。
+- **墙 31 归属修正 + 根因定谳（出厂件 24f0a941 内 sha 40b7dd55 逐 member
+  归位）**：pc 0x0a97af90 **不在 donor text**——在 **com.apple.kernel
+  成员 __TEXT_EXEC**（0x8330000 hatch 范围同时罩住 donor kext 与我方
+  kernel 成员，初判误归）；shim 0x0a70995c 在 corecrypto 成员。反汇编
+  出厂件 = `register_and_init_prng`（prng_random.c，entropy 链）：参数
+  编排逐项对上（x0=ctx 0x…42a0/w1=8/w2=0x40/x3=seed/x4=8/x5=&nonce/
+  x7=0，lr=af5c bl ml_get_timebase 返回点）。**根因 = prng-getentropy
+  补丁在 Xcode 27.2 下的坏 lowering**：wrapper 参数/返回值标注为
+  cckprng_getentropy（注解类型）→ Apple clang 把"未注解函数引用→注解
+  类型"转换降低成 `paciza→xpaci→pacia1716(0xbcad)→cbz→**autiza(disc 0)**
+  →cmp/brk→pacia(0xbcad)`——签 0xbcad 后按 disc 0 回验，**必失败**：
+  FPAC（SM8550 X3/A710）在 autiza 同步异常 = 墙面（x16=x17 tag
+  0xf9aec470 全合）；soft-fail 硬件也会走 brk #0xc470。Linux clang 同源
+  码只出 `paciza→xpaci→pacia(0xbcad)` 无回验（对拍
+  unstripped register_and_init_prng 逐指令，本会话铁证）→ Linux 车道
+  entropy 过墙真因。x8=0x90ff94f0_0a70995c 定谳 = **donor 栈建 funcs 表
+  槽签名 tag（尚未鉴权的原值）**，非二次签名事故，donor 侧无责。
+- **修法（主树 `01d6cdd` 单提交）**：wrapper 边界去类型化
+  （`static void *unixnu_donor_getentropy(void *)`）+ 结果经
+  `__builtin_memcpy` 洗进注解局部变量——注解类型转换不再物化，显式
+  strip/sign 内建即全部变换。**Linux 回归门过**：新件
+  （kernel 77990531）getentropy 块 = `mov #0xbcad→pacia x6` 无
+  autiza/cmp/brk，blraa disc 0x3051 参数编排不变；prelink 账本持平
+  （closure_unmapped 603/branches_rebound 42024/chain_sites_kept
+  82701）。同款构造排查 = 全树仅本处（kext-entry/sysctl/mac-policy 三
+  补丁已是 uintptr_t/槽存储惯用法，bootstrap 0xe4fe 惯用法 Mac 件已
+  实证）。
+- **下轮 = Mac 重出件 + 反汇编门**：Mac git pull → kernel 重建 → 对新
+  kernel.macho 的 register_and_init_prng 跑
+  `temp/s41-w31/gate-register-and-init-prng.py`（指纹检测器已在出厂件
+  验证：能精确抓 `pacia1716(0xbcad)@af84→autiza@af90`）→ autiza_after=0
+  才出 payload → 刷 recovery_a 先判。判读门 = 墙 31 消（stages 推过
+  entropy/prng 段，pages/free 上穿 0x125b1c）；回退 = 刷回 `24f0a941`。
+  工具留 temp/s41-w31/（出厂件提取件+门+dis23.py/scan-21h461-crypto.py）。
+- **〔原 10.Z 开工单文本存档（已执行完毕，定谳见上 10.Y.1）〕**
 - **★10.Z 专项查（下会话第一刀，2026-11-03 用户拍板立项）：上游/sheng 为什么无 crypto 翻译税**
   事实基线：上游 61 条 xnu 补丁（patches/xnu/）**没有 crypto unpack/翻译
   等价物**（本会话已 grep 穷尽：ptrauth/donor/resign/cckprng 仅 3 文件、
