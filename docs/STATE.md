@@ -12,6 +12,12 @@
   + 实证墙序/成员序/入度排可达序；输出「下 5 墙预测 + top-K 批量
   fixture 施工单」）→ ③按预测单修一批（fixture 族批）→ ④上机一次验收
   K 堵（判读单按预测清单勾验）。目标 = 1 墙/刷 → K 墙/刷。
+  **追加 harvest 线（2026-11-03 上游情报刷新，10.Y.5）**：⑤读
+  `reports/ipados27-startup-repair-2026-11-02.md`（sheng 仓克隆
+  /tmp/sheng-probe）+ diff 他们 27 堆栈（build-gop-legacy-display-27.py、
+  make-nosetup-seed27.py、cycle27.sh、run-sheng-unattended.sh）⑥查他们
+  配对覆盖优势根源（统一 Apple clang 参照+native → 序一致 →
+  reference-order 通吃？）——直接喂给①。
 - **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
@@ -1532,6 +1538,52 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
     到 root mount 和到桌面是两个量级。
 - **未推**：主树 10.Y.3+10.Y.4 + 设备仓 `ff4a5d4` + records 两笔屏摄；
   push 留用户拍板。
+
+
+## 10.Y.5 上游情报刷新 = sheng arm64e 执行实证实锤（2026-11-03，fetch upstream/main 3fa5ff5 + 克隆 UniXNU-sheng 深度 12）
+
+- **★10.Z 结论部分作废**：「上游 arm64e 零执行实绩」是 **10-26 时点真、
+  11-02 已过时**。sheng `porting.toml` + `reports/
+  ipados27-startup-repair-2026-11-02.md` 记录：**24A446（iPadOS 27.0.1，
+  arm64e）boot 到 SpringBoard PID 30 / backboardd PID 61 / wifid PID 49，
+  120s autoreset 无 panic**；「当前 sheng iPadOS 27 image boots and
+  accepts touch interaction，shader priming 280/280」；arm64e completion
+  标准 = 「reaches launchd from the 23F84 root volume, then
+  SpringBoard」。**上游不但真的在用 arm64e，还跑到我们前面**
+  （我们墙 33 = pre-root-mount）。
+- **开发者宣布三连核实**：①27 补丁/profiles/scripts 合入 main = 真
+  （4ed86f6 profiles + 7b02190 xnu-12377 series + ab11a8c scripts——
+  就是我们自会话十一起消费的基础设施）；②Metal GPU 优化合入 = 真
+  （PR #160 GPU 调度 + turnip GMEM + Metal translator 修复 + 七发延迟
+  捕获 + a366379 组件 pin，11-01~02 新落）；③机型仓出包脚本 =
+  真（`templates/package.sh` + `unixnu release` + package.yml，
+  porting.toml 明文「fork 里跑、下载后删 run」；**但上游自己
+  macos.yml 运行史 = 唯一绿是 10-21 qualify 7m36s，11-01
+  fix/sheng-ipados27-startup-pipeline 5m14s 取消**——fork 自跑是
+  预期用法，与我们会话三十三 CI 容量结论一致）。
+- **他们墙序（11-02 一天内修穿）**：①instruction fetch abort @
+  native_legacy_display_allocate（Corecrypto/SourceStorage 已过）→
+  修显示；②APFS 挂 root+Cryptex 后 load_init_program 死（payload 缺
+  initrd/PackedRAMDisk）→ 补运行时输入（seed/trust/GPU addon/ADT/args
+  870B）；③v4 修完 → SpringBoard 活。**残余 = 2 个未解析 data import
+  + 24 trap references（带账上岗，不阻 boot）**——对比我们 Mac 图
+  1225 kext-facing 未名 + 2290 stubbed 站：**他们的配对近乎全收敛**
+  （统一 Apple clang 参照+native = 序一致 → reference 通道通吃），
+  这是速度差的根源，也是①reference 换件实验的直接佐证。
+- **他们的 debug 武库（回答「上游怎么 debug」）**：USB 串行日志通道
+  （`read-sheng-log.py --port /dev/cu.usbmodemshenglog1 --no-reboot`，
+  免刷机读日志）；`fastboot boot` RAM 驻留诊断件（不刷分区）；
+  `sheng-autoreset=120` 泡测模式；每件静态审计（unittest kits/
+  XnuPrelink + audit-startup.py 266 分支核验 + verification.json
+  清单）；内核内 LAT1 观测环（32768 fault + 491519 事件、IPC 按
+  cookie 配对、backboardd 帧迹）+ 宿主分析脚本
+  （sheng-latency-report.py）。**先仪器后调参**。
+- **harvest 清单**：①reference 换件佐证已得 ②build-gop-legacy-
+  display-27.py / make-nosetup-seed27.py / cycle27.sh /
+  run-sheng-unattended.sh 待 diff ③他们的 SM8550 组件栈（GPU/充电/
+  音频/触控/WiFi）与 m2381 同 SoC 直接可移植（进桌面后）④arch/arm64e
+  series 与我们逐条相同（同源，无差可 harvest）。
+- sheng 仓克隆留 `/tmp/sheng-probe`（depth 12）。
 
 
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
