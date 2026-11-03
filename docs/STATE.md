@@ -1393,6 +1393,60 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 
 
 
+## 10.Y.3 会话四十二执行档 = 墙 32 定谳与修（2026-11-03，payload `d7fd50cb` 待刷）
+
+- **墙 32 修毕**（10.Y.2 工作单①）：设备仓 `ff4a5d4` = fixture 单条
+  （donor `0xfffffe000aead3e0` ↔ native `_IOLogv`；original_size 0x10c，
+  字节 sha `2d1919ea…a321d` 按 matcher fn['end'] 口径；evidence 全链）。
+- **站点定谳补全**：donor 0x0aead3e0 体形 = varargs logging worker
+  （pacibsp + 0x160 帧带栈金丝雀、`mov x4,x30`+xpaci 抓调用方返回址做
+  前缀、256B 栈 scratch 清零、格式串拷贝 bl 0x0ae8b0bc、console 门字节
+  0x07da4c5a tbnz、pacia 签名 handler 0x0a92a0c0(div 0xae56) 传
+  bl 0x0a800184 emit、retab）；IOLib.cpp 源序夹逼 `_IOLog`(0x2c8) ..
+  `_IOFindValueForName`(0x568)。
+- **Mac 漏配机制**：Mac LTO 参照件序位移 → Mac 图**整个 0x0aead log
+  邻域全空**（不止 4 站目标函数，邻域配对全灭）；native 两侧 `_IOLogv`
+  均为小壳尾调静态 worker `__ZL7_IOLogvPKcPcPv`（Mac 0x…7a59b6c 0x10 /
+  Linux 0x…7a92a3c 0xc；worker 0x134/0x154），Linux 车道当年配壳过墙。
+- **验证链四门**：①双车道 anchor_reviewed 直跑 = Mac→0x…7a59b6c、
+  Linux→0x…7a92a3c，how=reviewed；②Linux no-fix 离线重放（同 native
+  b9b2aaad、临时 kit 去 fixture 条目）内容 diff **0 条**、how-only 恰
+  1 条 = 纯 relabel 零内容漂移；③Mac 落件级：`4970bf21` 内 panic 站
+  bl@0x…8d41f68 → **0x…0aecdb6c = emit 符号表 `_IOLogv` 真身**
+  （capstone 逐指令 = native 壳 `bti c; mov x2,x30; xpaci x2;
+  b worker`，stub `_unixnu_fileset_unmapped` @0x…b057e04 另址已不在
+  环上）；④账本四项平（47473/334/42024/82701）vs `efbdd999`。
+- **★新知 a（构建面）**：`./unixnu kernel` 每次重编 xnu（noctf 漂移：
+  本地 b876efcd→b9b2aaad、Mac 8f8c0765→4672ced7）→ **fresh matcher
+  收敛对数随 native 漂移摆动 ±1500 对**（8386 基线 / 8388 现建 /
+  9896 no-fix-on-drifted-native 三点实测）→ 跨建整件 sha 不可比、
+  fixture 影响隔离只能靠 no-fix 同 native 重放内容 diff + 头牌账本，
+  不再可能做整件 byte-identical 门。
+- **★新知 b（emit 面上一号）**：emit 件内 native 文本整体重定位
+  +0x3474000（native `_IOLogv` 0x…07a59b6c → 件内 0x…0aecdb6c），
+  **件内 nm 符号表即权威**（`_IOLogv`/`__ZL7_IOLogvPKcPcPv` 相对布局
+  0x134 与 standalone native 同构）；判读落件站址先 nm 后反汇编，
+  勿手拆 word 猜 stub（mov x2,x30 是壳传 LR 惯用法非 stub 特征）。
+- **出件**：payload **`d7fd50cb`** = out/m2381/payload-w32fix-4970bf21.img
+  （96MiB；kernel 4970bf21；trust ebeaf7fb + seed d04a0153 +
+  panic_screen；Mac 建本地拉回逐字节对拍 d7fd50cb）。
+- **★刷写卡（会话四十三）**：设备现态核对（boot_b 不动 / recovery_a
+  现役 = 2273bd09 / userdata 不动）→ **只刷
+  `fastboot flash recovery_a out/m2381/payload-w32fix-4970bf21.img`**
+  → 判读：crc 换新；墙 32（unmapped-call @ lr 0x…8d41f6c
+  "no legacy blob present"）应消，4 站连消，stages 推过
+  AppleImage4/EffaceableStorage 段（Linux 车道会话二十一走过处）；
+  新墙按调用序点名（候选 = 会话四十判读注记 di 字段与 chacha 子结构
+  CC_SPTR 链，或 EffaceableStorage 后续 ADT/NVRAM 链）。回退 =
+  recovery_a ← payload-w31fix-efbdd999.img（`2273bd09`）。
+- **未推**：主树本节 + 设备仓 `ff4a5d4`；push 留用户拍板。
+- **下阶段工作单**：①首刷判读（如上卡）②若后续站点同因（Mac 参照件
+  序位移系统性漏配面）→ 统计 Mac 账本 Linux how=reference-order 集的
+  漏配数，评估批量（勿铺开，先修一刷一判）③工具沉淀：temp/
+  w32-fixture/{compute,verify}.py（fixture 前置计算 + 双车道验证，
+  可复用为 fixture 通道标准门）。回退链 = `2273bd09`。
+
+
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
 - **★墙类切换**：`8a935155`（sandbox 清仓件）不再报 unmapped-call——
