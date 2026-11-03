@@ -8,7 +8,9 @@
   待刷**（PAC 类：`_mac_policy_register+0x520` 调 Sandbox
   `mpo_policy_init`，blraa x8,x17 (0x2abe) 鉴权失败；根因 = 墙 17
   resign 补丁零修饰符重签 vs Apple clang 类型 disc，10.Y.8 全链实证，
-  v2 条件化补丁在役，修复件待出）。
+  v2 条件化补丁在役）。**修复件 = payload `b63ad26e`**（kernel
+  `9de04b76`，`out/m2381/payload-w35fix-9de04b76.img` 96 MiB，静态门
+  PASS：resign 指纹老 1 新 0，ESP 副本 `e6b37730` 同过，账本平）。
 - **本会话定谳（10.Y.6）**：Mac 车道从未挂过 reference（kernel.py 静默
   丢弃 + 参照件未侧建）——"LTO 序位移"机制说作废。换件后离线图
   +1828 对 / kext 面 0 丢失 / **墙 33 CASPtr reference-order 自动配对
@@ -17,13 +19,15 @@
   fixture `eb32f7b`）/ 名缺 0 / 结构类 1193（两车道皆未配真残，
   下墙候选 d=2 `0xa7f3f6c`、`0xa841220`）。
 - **下轮工作单 = 会话四十五墙 35 修复件首刷判读**（10.Y.8 定谳已毕、
-  v2 补丁在役）：判读 = 墙 35 消（mac_policy_register 过 sandbox
-  mpo_policy_init (IA,0x2abe) 验签）；下一崩点按 10.Y.8 预测单
+  v2 补丁在役、修复件已出）：**刷写 = 仓库根 `fastboot flash recovery_a
+  out/m2381/payload-w35fix-9de04b76.img`**（只刷 recovery_a，卡带刷前
+  sha 门 + dd 读回对拍）；判读 = 墙 35 消（mac_policy_register 过
+  sandbox mpo_policy_init (IA,0x2abe) 验签）；下一崩点按 10.Y.8 预测单
   （sandbox policy_init 体内 IOService 族 / 结构类 d=2 榜
   `0xa7f3f6c`/`0xa841220`）。回退 = recovery_a ←
   `payload-refswap-0b607b2a.img`（abe3ec85，现役在机）。
-- **回退链**：本次刷写回退 ← `d7fd50cb`（payload-w32fix-4970bf21.img，
-  现役在机）；`2273bd09` 二级；更早逐级在 out/m2381/ 存档。
+- **回退链**：本次刷写回退 ← `abe3ec85`（payload-refswap-0b607b2a.img，
+  现役在机）；`d7fd50cb` 二级；更早逐级在 out/m2381/ 存档。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`；**reference 已接线** = 参照件常驻 Mac 树
   `tree/build/xnu/fileset-reference/` sha `5a794da8`，以后建核自动带上；
@@ -1515,7 +1519,14 @@ records/mackernel-refswap-abe3ec85-firstboot-20261103-224055.jpg）
   sha256 逐字节同（d1cdfa96…）。
 - **出件（Mac 产线，抗休眠管线 `temp/refswap/w35-pipeline.sh`）**：Mac
   中途休眠断连一次（构建 ssh 死、树安全），看门狗 00:34 自动 nohup
-  续跑（PID 86649）；kernel/payload sha 待出后补。
+  续跑；**kernel `9de04b76`**（sha 9de04b767fae8…，增量编译只重排
+  mac_base.c）→ **payload `b63ad26e`**（96 MiB，已拉回存档
+  `out/m2381/payload-w35fix-9de04b76.img` 逐字节对拍 ✓）。**★静态门
+  `w35-gate.py`（指纹字级快扫，指纹自 0b607b2a 现场提取）**：resign
+  循环指纹（xpaci+mov x16,#0+pacia1716）老件 1 / **新件 0**；派发对
+  （movz x17,#0x2abe+blraa x8,x17）两侧同 371 = codegen 未动；
+  **ESP 内嵌副本 `e6b37730` 同 PASS**。账本平：branches 42024 /
+  kept 82701 / closure_unmapped 314（全持平会话四十三）= 零附带漂移。
 - **判读预测（首刷）**：墙 35 消（sandbox mpo_policy_init (IA,0x2abe)
   验签过 = mac_policy_register 推进）；下一崩点预测 = sandbox
   policy_init 体内（Linux 时代墙 22 同段：IOService 调用族，reference
