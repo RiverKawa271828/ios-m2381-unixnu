@@ -21,9 +21,9 @@
 - **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
-- **未推**：主树 `9b6907e+69981a8+8c8e20d` / 设备仓
-  `ff4a5d4+5f7a906`（push 留拍板；推后 Mac 侧 **git pull 对齐**，
-  勿 scp 粗同步）。
+- **未推**：主树 `c1558cb..9ebbf4b`（7 笔：10.Y.3/10.Y.4/总账/§0 指针/
+  四步序/10.Y.5/fastboot 勘误）/ 设备仓 `ff4a5d4+5f7a906`（push 留拍板；
+  推后 Mac 侧 **git pull 对齐**，勿 scp 粗同步）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
   ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（脚本/JSON
@@ -1572,7 +1572,9 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   这是速度差的根源，也是①reference 换件实验的直接佐证。
 - **他们的 debug 武库（回答「上游怎么 debug」）**：USB 串行日志通道
   （`read-sheng-log.py --port /dev/cu.usbmodemshenglog1 --no-reboot`，
-  免刷机读日志）；`fastboot boot` RAM 驻留诊断件（不刷分区）；
+  免刷机读日志）；`fastboot boot` RAM 驻留诊断件（不刷分区；
+  **⚠ sheng 可用，m2381 靴子不支持 `fastboot boot`——用户 2026-11-03
+  拍板确认，我们诊断路径仍 = 只刷 recovery_a**）；
   `sheng-autoreset=120` 泡测模式；每件静态审计（unittest kits/
   XnuPrelink + audit-startup.py 266 分支核验 + verification.json
   清单）；内核内 LAT1 观测环（32768 fault + 491519 事件、IPC 按
