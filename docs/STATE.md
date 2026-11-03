@@ -1447,6 +1447,43 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   可复用为 fixture 通道标准门）。回退链 = `2273bd09`。
 
 
+## 10.Y.4 会话四十二首刷提取+核验档（2026-11-03，payload `d7fd50cb`，屏摄设备仓 records/mackernel-w32fix-d7fd50cb-firstboot-20261103-110042.jpg）
+
+- **墙 32 已过（修复真机生效）**：旧站（lr 0x…8d41f6c "no legacy blob
+  present"）消失，IOLogv 链路解锁（artifact 级已验 bl→真 `_IOLogv`）。
+- **新墙 = 同族 unmapped-call stub**：`fileset: original component called an
+  unmapped kernel function from 0xfffffff008f13530 (x0 0x0 x1
+  0xfffffff71f65e170) hit #1`，pages=0x125b06 / free=0x1253c6（vs 墙 31 boot
+  0x125b1c/0x1253dc = 件间漂移量级持平），**crc=0xcae97f1 = 124B 消息行
+  zlib 一次命中（零掉字，转录全验真）**。
+- **★初勘判读已前置到修面**（指纹法：3-word 非重定位窗口 donor 全镜像
+  唯一搜索）：
+  - caller = donor `0x08f1352c` = **AMFI 成员** __TEXT_EXEC（delta =
+    collection slide `0x1f000000000` 全局匀滑）；调用形态 = once-init CAS：
+    x0=0、x1=x19（前一条已配 callee `0x0a7f3548` 返回的 tag 指针）、
+    x2=&com.apple.kernel 全局槽 `0x0b54bf98`，返回 `tbz w0,#0` 判布尔。
+  - callee = donor **`0x0ae3fe94` = `OSCompareAndSwap64`**（bti c;
+    mov x8,x0; **casal x8,x1,[x2]**; cmp; cset w0,eq; ret = 64 位 LSE CAS）；
+    邻居 `_OSCompareAndSwap`(32b, 0x0ae3fe64)/`_OSAddAtomic8/16` 均已配
+    （pac-checked-shape），**唯独 64 位变体漏配**。native 符号 =
+    `_OSCompareAndSwap64`（Mac native 0x…079eb94c，唯一全局）。
+  - 红利面 = donor 全镜像 **38 站** bl→0x0ae3fe94（跨组件 + kernel 内）。
+- **进步判读**：墙 32 四站连通过；stub 站点前进 +0x1D15C4
+  （0x08d41f6c → 0x08f13530）；同族墙延续 = stubbed 长尾下一笔
+  （mac stubbed 账本 3099 站/24 组件 + kernel 成员走 allow-missing 通道
+  不入账本）。
+- **★下轮工作单（判读已备好，直接进修）**：fixture 钉 donor
+  `0x0ae3fe94` ↔ native `_OSCompareAndSwap64`（通道 =
+  temp/w32-fixture/{compute,verify}.py；original_sha256 待算）→ 双车道
+  anchor_reviewed + no-fix 重放 diff 门 → Mac 重出件（kernel→payload）→
+  刷只 recovery_a → 判读。回退 = 刷回 `2273bd09`
+  （payload-w31fix-efbdd999.img）。注意：native 侧原子族
+  （OSAddAtomic64/OSAddAtomicLong 等，0x…079eb9a8 起）可能同批漏配，
+  fixture 只钉本笔勿铺开，撞了再修。
+- **未推**：主树 10.Y.3+10.Y.4 + 设备仓 `ff4a5d4` + records 两笔屏摄；
+  push 留用户拍板。
+
+
 ## 7j. 会话三十七执行档补 = 墙 29 定性（2026-11-03 凌晨，8a935155 首发屏摄 010532）
 
 - **★墙类切换**：`8a935155`（sandbox 清仓件）不再报 unmapped-call——
