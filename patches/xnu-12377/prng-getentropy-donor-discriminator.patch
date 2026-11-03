@@ -1,9 +1,9 @@
 --- a/osfmk/prng/prng_random.c
 +++ b/osfmk/prng/prng_random.c
-@@ -328,6 +328,33 @@
+@@ -328,6 +328,44 @@
  	read_erandom(buffer, numBytes);
  }
- 
+
 +#if defined(HAS_APPLE_PAC)
 +/*
 + * The corecrypto provider in this collection is the donor's binary. It calls the
@@ -12,9 +12,20 @@
 + * discrimination gives this printf-shaped type), while this compiler signs a
 + * function-pointer argument with the zero discriminator. Sign the pointer the
 + * way the caller authenticates it.
++ *
++ * Wall 31 (Mac lane, Xcode 27.2): typing the wrapper parameter and return as
++ * cckprng_getentropy made Apple clang lower the unannotated function
++ * reference -> annotated type conversion as pacia(0xbcad) followed by an
++ * autia with the zero discriminator, a "validation" that always fails and
++ * traps on FPAC hardware (panic "PAC failure ... while authing x16" at
++ * register_and_init_prng; the Linux clang build of the same source emits
++ * only strip + sign and boots). Keep the wrapper boundary untyped and
++ * launder the result into the annotated slot through memcpy, so no
++ * annotated conversion is ever materialized; the explicit strip and sign
++ * builtins are the whole transformation.
 + */
-+static cckprng_getentropy
-+unixnu_donor_getentropy(cckprng_getentropy callback)
++static void *
++unixnu_donor_getentropy(void *callback)
 +{
 +	/*
 +	 * Strip first: a function reference in this kernel already arrives
@@ -23,8 +34,8 @@
 +	 * validate (the r82 batch round proved this idiom on the sysctl and
 +	 * kmod entry fixes).
 +	 */
-+	return (cckprng_getentropy)ptrauth_sign_unauthenticated(
-+	           ptrauth_strip((void *)callback, ptrauth_key_function_pointer),
++	return ptrauth_sign_unauthenticated(
++	           ptrauth_strip(callback, ptrauth_key_function_pointer),
 +	           ptrauth_key_function_pointer, 0xbcad);
 +}
 +#else
@@ -34,12 +45,15 @@
  void
  register_and_init_prng(struct cckprng_ctx *ctx, const struct cckprng_funcs *funcs)
  {
-@@ -340,7 +367,7 @@
+@@ -340,7 +377,10 @@
  	prng_funcs = *funcs;
- 
+
  	uint64_t nonce = ml_get_timebase();
 -	prng_funcs.init_with_getentropy(prng_ctx, MAX_CPUS, sizeof(kprngseed), kprngseed, sizeof(nonce), &nonce, entropy_provide, NULL);
-+	prng_funcs.init_with_getentropy(prng_ctx, MAX_CPUS, sizeof(kprngseed), kprngseed, sizeof(nonce), &nonce, unixnu_donor_getentropy(entropy_provide), NULL);
++	void *donor_getentropy_value = unixnu_donor_getentropy((void *)entropy_provide);
++	cckprng_getentropy donor_getentropy;
++	__builtin_memcpy(&donor_getentropy, &donor_getentropy_value, sizeof(donor_getentropy));
++	prng_funcs.init_with_getentropy(prng_ctx, MAX_CPUS, sizeof(kprngseed), kprngseed, sizeof(nonce), &nonce, donor_getentropy, NULL);
  	prng_funcs.initgen(prng_ctx, boot_cpu_id);
  	prng_ready = 1;
- 
+
