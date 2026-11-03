@@ -6,24 +6,50 @@
   `426ae6ce`，kernel `2f31a6bd`，**墙 39 + 池批量 18 笔 fixture 件**，
   10.Y.13 全门验讫）**用户已刷 recovery_a，待首刷屏摄判读**。在机 =
   w39fix。
-- **下轮工作单 = 会话四十八：首刷判读 + ApplePMGR 侦察**：
-  ①判读 = 墙 39 消（不再报 `from 0xfffffff0084ca524`）+ ml 三连站
-  灭（cluster_number 2 站 / max_cpu_number 4 站 / WatchdogTimer 5 站）
-  + `AppleARMCPU::start` 推进（`new IOCPUInterruptController` 双连
-  0x84ca818/820 应过；其 4 站亦本件覆盖）+ 新墙按类分流。
-  **已知候选墙 = `0xaedab0c`**（last-CPU 屏障包装器 0xbc 字节：
-  `gObj->vt+0xb8(arg0, arg1?:[g0xb376cf0])` + 跨 CPU 计数 + 尾调
-  `vt+0x2a0(0)`；native 全镜像 csel 扫描零孪生，10.Y.13 挂账——
-  下轮墙照带 x0/x1 运行态值即可定名，x0 = AppleARMPlatform kext
-  全局 gObjA `[0xb4afe80]`）。SMP 全核起来才触发。
-  ②批量续 = **ApplePMGR 21 targets**（关键路径下一个侦察对象）；
-  IOHIDFamily 46 / apfs 137 targets 在后（apfs = root 挂载大户）。
-  ③**工具坑备忘（本轮实证）**：`make_fixture.py` 必须带
+- **下轮工作单 = 会话四十八：w39fix 首刷判读（判读工具已全部入仓，
+  照单执行即可）**：
+  ①屏摄转录 → `python3 ../UniXNU-m2381/scripts/verify-panic-crc.py
+  --from <报点> --x0 <x0> --x1 <x1> --crc <屏上crc> --autofix`
+  （w38/w39 双校准对写在 docstring；照片掉 f 自动复原；x0/x1 =
+  %llx 无补零、报点 = %p 16 位补齐——工具已处理）。
+  ②若报点仍是 `0x…84ca524` = fixture 未生效（不该发生：重定向已
+  字节级验真），查构建/刷写。
+  ③新墙照常分流：`kc.py wall <报点>` → 三证定名 → spec 写
+  `UniXNU-m2381/kits/XnuPrelink/fixtures/specs/spec-s48.json` →
+  `PYTHONPATH=../UniXNU-m2381/kits/XnuPrelink python3
+  /home/ri/work/tools/xnu27/make_fixture.py add …` → check → 同步
+  Mac → **一次重建一刷**。
+  **头号候选墙 = `0xaedab0c`**（last-CPU 屏障包装器 0xbc 字节，
+  10.Y.13 挂账全析在案：`gObj->vt+0xb8(arg0, arg1?:[g0xb376cf0])`
+  + tpidr 跨 CPU 计数 + 尾调 `vt+0x2a0(0)`；native 全镜像 csel
+  扫描零孪生 = donor 122.8 版本增量；start() 尾 0x84cad54/6c 双
+  bl 夹 `sched_cpu_init_completed`，SMP 全核起来才触发）。定名
+  输入 = 墙照 x0（= AppleARMPlatform kext 全局 gObjA
+  `[0xb4afe80]`）/x1（= `[[x21]]`）运行态值 +
+  `blscan-donor.py 0xfffffe000aedab0c` 清点全部调用方。
+  ④判读通过部分 = 墙 39 消 + ml 三连站灭（cluster_number 2 站 /
+  max_cpu_number 4 站 / WatchdogTimer 5 站）+ start() 推进
+  （`new IOCPUInterruptController` 双连 0x84ca818/820 应过）。
+  ⑤若过 start() → 批量续 = **ApplePMGR 21 targets**（关键路径
+  下一个侦察对象）；IOHIDFamily 46 / apfs 137 targets 在后
+  （apfs = root 挂载大户）。
+  ⑥红利对账：`blscan-donor.py <新靶…>` + 账本 kernel.json
+  stubbed 对拼（本轮口径：直调 bl + GOT/fixup 槽）。
+  **工具坑（本轮实证）**：`make_fixture.py` 必须带
   `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink` 跑（`kc_image` 权威
   函数区间）；否则 end-scan 兜底会算错 interval（`0xaf32af8`
   60→48 实证），Mac `anchor_reviewed` 会当场拒件（fail-fast 有效）。
   回退 = recovery_a ← `payload-w38fix-b6bfe74b.img`（`c4cb22fb`，
   已证通关墙 36~38）；e6b06399 二级；ce3df35f 三级。
+- **★文件纪律（2026-11-04 用户拍板：重要文件入项目，不进 temp
+  散放）**：spec 证据 = `UniXNU-m2381/kits/XnuPrelink/fixtures/
+  specs/`（26 份已迁入，spec-session26~38 + s47 四批）；
+  门禁/判读/清点工具 = `UniXNU-m2381/scripts/{emit-static-gate,
+  verify-panic-crc,blscan-donor}.py`（emit-static-gate 双件校准 =
+  w37/w39 均 resign 0 / dispatch 371；verify-panic-crc 双校准对
+  全过含 autofix；blscan-donor 抽验 = 墙 38 靶 5 站精确）；
+  `tools/xnu27` 只留通用执行器（kc/make_fixture/xnuindex/kdk/
+  natfn/vtslots/vtpair + README）。temp/ >10MB 隔轮清照旧。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`；reference 已接线 sha `5a794da8`；payload 三红线输入
   常驻 = `~/unixnu/original-trust-23F84.bundle` +
@@ -34,13 +60,11 @@
   …`，**变量必须 Mac 绝对路径 + `PATH=/opt/homebrew/bin:$PATH`**；
   旧 temp/refswap 管线脚本已被清理，以上即全套）；Linux = 参照件
   供给 + 回归门 + 离线重放。
-- **未推**：主树 `9678be3` + 本节 docs（§0+§10.Y.12 移档+§10.Y.13）；
-  设备仓 `155d3c3`+`6156dd4`+`beef9fe`+`bdd72fd`+`4706e64`+
-  `899bfae` + 本轮 fixture commit。Mac 树 = scp 新态（fixture
-  `bc48611d` 已同步 + 出件双存档在 Mac `out/m2381/`）。
-- **静态门脚本**：`tools/xnu27/gate-s47.py`（resign 指纹 + 2abe
-  派发对计数；w37 件校准 = resign 0 / dispatch 371，w39 件同值
-  PASS）。旧 w35-gate 已随 temp 清理退役。
+- **未推**：主树 `9678be3`+`6f5794c` + 本节 docs（§0 文件纪律 +
+  s48 判读单）；设备仓 `155d3c3`+`6156dd4`+`beef9fe`+`bdd72fd`+
+  `4706e64`+`899bfae`+`1b9921f`（fixture）+ 本轮入仓 commit。
+  Mac 树 = scp 新态（fixture `bc48611d` 已同步 + 出件双存档在
+  Mac `out/m2381/`）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
   ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（本轮清
