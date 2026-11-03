@@ -1324,6 +1324,33 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
   站点 0 坏指纹）→ A/B 账本四项全平（47473/334/42024/82701）→
   **payload `2273bd09`** = out/m2381/payload-w31fix-efbdd999.img
   （96MiB；ESP 副本 fe181246 = cpusub/probe/seal 后，指纹终验同样全过）。
+
+## 10.Y.2 会话四十一首刷提取+核验档（2026-11-03，payload `2273bd09`，屏摄设备仓 records/mackernel-w31fix-2273bd09-firstboot-20261103-084514.jpg）
+
+- **墙 31 已过（修复真机生效）**：cckprng autiza 墙消失，entropy/prng 链全通（墙 29→30→31 三连穿墙）。
+- **新墙 = 换类回 unmapped-call stub 族**（墙 10 家族，非 PAC 类）：`fileset: original
+  component called an unmapped kernel function from 0xfffffff008d41f6c (x0
+  0xfffffff00749b2b6 x1 0xfffffffa124b8490) hit #1`，pages=0x125b1c（与墙 31 boot
+  同水位）/free=0x1253dc，**crc=0x4be0eb86 = 139B 转录 zlib 一次命中（零掉字）**。
+- **站点定谳**：报的是 lr（0x…f6c=0x08d41f68 bl 返回址）；owner =
+  AppleImage4 __TEXT_EXEC；未映射目标 = donor **0xfffffe000aead3e0**（前一条 bl
+  0x0aead2c8 = 已配 `_IOLog`，邻居锚）；账本 = AppleEffaceableStorage 组件名下
+  **4 站**（跨组件调用）。邻居夹逼 = `_IOLog`(0x…2c8)..`_IOFindValueForName`
+  (0x…568) 间隙（IOLib.cpp 源序：IOLogv/_IOLogv/IOPanic/IOKitKernelLogBuffer/
+  IOFindNameForValue）；x0 = C 串 "no legacy blob present"（AppleImage4 域），
+  x1 = tag 0xfffffffa 签名数据指针。**Linux 件已配 = `_IOLogv`
+  （how=reference-order）→ Mac 件漏配 = Mac LTO 参照件序位移致 reference-order
+  失效**（body/shape 通道也未见配）= **Mac 车道特有配对缺口，单 fixture 级**。
+- **下轮工作单**：①按 fixture 通道钉 donor 0x0aead3e0 ↔ native `_IOLogv`
+  （Mac native VA 从 Mac 件符号/map 取，fixture 格式参照 9e5b51b reviewed 锚；
+  donor 字节 sha 钉从 23F84 KC 截取）→ check → Linux 件重建不受影响验证 →
+  Mac 重出件（kernel→payload）→ 刷；②预期 4 站连消；③若后续站点同因
+  （reference-order 在 Mac 参照件上的系统性失效面）→ 统计 Mac 账本里
+  Linux how=reference-order 集的漏配数，评估批量（勿铺开，先修一刷一判）。
+  回退 = 刷回 `24f0a941`。
+- **战略读数**：Mac 车道已并线到 Linux 车道当年的调用序（entropy 链后的
+  AppleImage4/EffaceableStorage 段 = Linux 车道会话二十一走过的地方），剩余
+  墙面 = 存量 fixture 级缺口，通道现成。两阶段阶段一（Mac 开路）持续推进。
 - **★刷写卡（会话四十一）**：设备现态核对（boot_b 不动 / recovery_a
   现役 = 24f0a941 / userdata 不动）→ **只刷
   `fastboot flash recovery_a out/m2381/payload-w31fix-efbdd999.img`**
