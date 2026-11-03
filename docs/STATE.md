@@ -5,19 +5,38 @@
 - **现役件**：payload `d7fd50cb`（kernel `4970bf21`）已刷真机 = **墙 32 过**；
   现墙 = 墙 33（AMFI → donor `0x0ae3fe94` = `_OSCompareAndSwapPtr`，38 站
   红利面，判读已前置，见 §10.Y.4）。
-- **下轮工作单**：§10.Y.4 四步序（2026-11-03 用户批准，前两步零上机）：
-  ①**reference 换件小验**（Mac 车道 `--fileset-reference` 指向 Linux 建
-  参照件；重放 matcher 看 named 升幅 + no-fix diff 门）→ ②**墙序列静态
-  预测器**（枚举 donor bl→unpaired 全集 = 候选站；按 Linux-已配三色分拣
-  + 实证墙序/成员序/入度排可达序；输出「下 5 墙预测 + top-K 批量
-  fixture 施工单」）→ ③按预测单修一批（fixture 族批）→ ④上机一次验收
-  K 堵（判读单按预测清单勾验）。目标 = 1 墙/刷 → K 墙/刷。
+- **下轮工作单**：§10.Y.4 四步序（2026-11-03 用户批准 + 同日审计修订，
+  前两步零上机）。**开工第一动作 = push 拍板 + Mac git pull 对齐**
+  （fixture 目前 scp 塞在 Mac 工作树）：
+  ①**reference 换件小验**：Linux 建参照件 scp 到 Mac，`--fileset-reference`
+  传**绝对路径**（kernel.py 相对 tree 解析；reference_sha256 入缓存键，
+  换件自动失效缓存 = 全新配对）。**门 ≠ no-fix diff**（本实验无
+  fixture 变更），门 = 新参照图 vs 旧参照图 diff 三计数审计：
+  新增配对数（预期 +千级）/ 共配对改靶数（抽查合理性）/ 已配对丢失数
+  （预期 ≈0）+ kext-facing named 升幅 + 254 reviewed 锚不变 +
+  CASPtr/top-10 候选转已配 + 账本方向核验（branches_rebound↑
+  stubbed/missing↓）。换前先备份旧 kernel.map.json。
+  ②**墙序列静态预测器**（在换件后的新图上跑）：枚举 donor bl→unpaired
+  全集 = 候选站；**三色 + 一类分拣**：Linux 已配（钉名即修）/ 两车道
+  皆未配（要体形功夫）/ **结构类单独列**（kext 自身 stubbed 675 fn，
+  无 native 对手不可 fixture，处置 = 容忍或选件，不进施工单）；
+  排序 = 实证墙序 + 成员序 + 入度。输出「下 5 墙预测 + top-K 批量
+  fixture 施工单（置信度标注）」。
+  ③按施工单批修——**第一笔 = 墙 33 CASPtr**（donor `0x0ae3fe94` ↔
+  native `_OSCompareAndSwapPtr` Mac 0x…079eb964，证据已齐 = Linux 图
+  定名 + 邻居夹逼 + 38 站红利），后续按预测单。
+  ④上机一次验收 K 堵（判读单按预测清单勾验；**回退链更新 = 本次刷写
+  回退 ← `payload-w32fix-4970bf21.img`（d7fd50cb，现役在机），
+  2273bd09 退为二级回退**）。
   **追加 harvest 线（2026-11-03 上游情报刷新，10.Y.5）**：⑤读
   `reports/ipados27-startup-repair-2026-11-02.md`（sheng 仓克隆
   /tmp/sheng-probe）+ diff 他们 27 堆栈（build-gop-legacy-display-27.py、
   make-nosetup-seed27.py、cycle27.sh、run-sheng-unattended.sh）⑥查他们
   配对覆盖优势根源（统一 Apple clang 参照+native → 序一致 →
-  reference-order 通吃？）——直接喂给①。
+  reference-order 通吃？）——直接喂给①；⑦存疑待验：他们 arm64e
+  完成标准写「prelink the 23F84 kexts」——若他们的 arm64e 车道同为
+  23F84 fileset，其覆盖数字**直接适用我们的 donor**，harvest 价值再上
+  一档，下轮核。
 - **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
