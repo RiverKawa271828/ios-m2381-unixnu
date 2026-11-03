@@ -2,28 +2,49 @@
 
 ## 0. 现势指针（每轮首更，2026-11-04 会话四十五续）
 
-- **现役件（待刷）**：payload `e6b06399` =
-  `out/m2381/payload-w37fix-6d4a9f19.img`（kernel `6d4a9f19`，墙 37
-  fixture 件，10.Y.11 全链验讫）。在机 recovery_a = `ce3df35f`
-  （w36fix，墙 36 已真机通关）。**现墙 = 墙 37**（fixture 已钉
-  `0x0af0f77c` ↔ `IOTimerEventSource::timerEventSource`，静态门全过
-  待首刷）。
-- **下轮工作单 = 会话四十六首刷判读**（只刷 recovery_a）：①判读 =
-  墙 37 消（不再报 `from 0xfffffff00977fefc`）+ 同 caller 内两后续站
-  （0x977ff40/0x977ff88 同 target 已配应直过）+ 红利兑现（26 直调站
-  + 3 closure 指针已在本轮静态对账）+ stages 推进 ②新墙按类分流
-  （unmapped-call→fixture 管线；PAC→案卷流程）。回退 = recovery_a ←
-  `payload-w36fix-b9e733be.img`（ce3df35f 在机件）；b63ad26e 二级；
-  abe3ec85 三级。
+- **现役件（已刷待判读）**：`payload-w38fix-b6bfe74b.img`（payload
+  `c4cb22fb`，kernel `b6bfe74b`，墙 38 fixture 件，10.Y.12 全门验
+  讫）**用户已刷 recovery_a，待首刷屏摄判读**。在机 = w38fix。
+- **下轮工作单 = 会话四十七：①首刷判读 + ②恢复批量修复（用户
+  2026-11-04 拍板）**：
+  ①判读 = 墙 38 消（不再报 `from 0xfffffff0084ca3bc`）+ 同簇 4 站
+  （0x84ca268/29c/424/47c 同靶直过）+ stages 推进 + 新墙按类分流。
+  ②**批量 = AppleARMPlatform 池 15 key/32 站**（B 普查地图在
+  10.Y.12），两种已验证机械定名法：
+  - **vtable 槽位对位法（本轮已验证 4/4 EXACT）**：donor
+    `__ZTV<Class>` 槽 N ↔ native 同名 vtable 槽 N → native 符号；
+    override 簇四站已得靶：`0xaf32ddc`↔`IOCPU::setProperty(OSSymbol*,OSObject*)`、
+    `0xaf32dc8`↔`IOCPU::getProperty(OSSymbol*)const`、
+    `0xaf32d0c`↔`IOCPU::serializeProperties(Serialize*)const`、
+    `0xaf32bdc`↔`IOCPU::setProperties(OSObject*)`（native 槽序 =
+    noctf `__ZTV5IOCPU`+0x10，chained-fixup 低 32 位 = 镜像内偏移，
+    donor 基 `0x7004000`/native 基 `0x7004000` 同式解码）。
+  - **ctor 克隆法（墙 36~38 三连验证）**：`0xaf329cc`（IOPlatformIO
+    实例 ctor 克隆，3 站）↔ native `__ZN12IOPlatformIOC2EPK11OSMetaClass`
+    （Linux noctf `0x07b1135c`，Mac 待查）；`0xaf3435c`（4 站）=
+    donor IOCPU canonical，**C1 vs D2 判别待做**（看调用方构造/析构
+    上下文；native C1/C2 已合并则同靶 C2）；`0xaf329f8`（IOPlatformIO
+    canonical 16B，4 站）；`0xaf31f80`（IODTPlatformExpert ctor 克隆，
+    5 站，池边）；`0xaf32aec/af8/b28` + `0xaf34670/6e0/770/7f8`
+    （IOCPUInterruptController 簇大概率，同法）。
+  - 批量纪律：每 entry 走 spec→make_fixture add→check；evidence
+    三证（槽位/体形/调用上下文）；双车道 noctf 对照；**一次重建
+    一刷**（w38 已证同类条目真机行为）。
+  ③延伸簇：ApplePMGR 21 targets（关键路径）= 池清后下一个侦察
+  对象；IOHIDFamily 46 / apfs 137 targets 在后（apfs = root 挂载
+  大户）。
+  回退 = recovery_a ← `payload-w37fix-6d4a9f19.img`（e6b06399）；
+  ce3df35f 二级；b63ad26e 三级。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
   `~/unixnu/`；reference 已接线 sha `5a794da8`；payload 三红线输入
   常驻；防休眠管线 = `temp/refswap/w36-pipeline.sh`——**变量必须用
   Mac 绝对路径**，`~/` 会被本机展开成 Fedora $HOME）；Linux = 参照件
   供给 + 回归门 + 离线重放。
 - **未推**：主树 `7061a05`+`830893e`+`2c3371c`+`8ba8336`+`58dec46`+
-  本节 docs；设备仓 `155d3c3`+`6156dd4`（墙 36 fixture）+`beef9fe`
-  records+`bdd72fd`（墙 37 fixture）+ 本节 records。Mac 树 = scp 脏态
-  （fixture sha 同 `0ed34313`）。
+  本节 docs（§0+§10.Y.12）；设备仓 `155d3c3`+`6156dd4`+`beef9fe`+
+  `bdd72fd`+`4706e64`（墙 38 records）+`899bfae`（墙 38 fixture）。
+  Mac 树 = scp 新态（fixture `de0ea7af` 已同步 + 出件双存档在
+  Mac `out/m2381/`）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
   ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（本轮清
@@ -31,7 +52,7 @@
   脚本/JSON/map 留）⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游
   文档站树（concepts/guide/zh/reference/public）不清理不改动。**
 - **参考链状态（2026-11-04 会话四十五续刷新）**：donor KC sha ✓；
-  fixtures 255/255 字节验真 ✓（254 + 墙 37）；reference 换件生效
+  fixtures 256/256 字节验真 ✓（255 + 墙 38）；reference 换件生效
   （Mac map reference sha `5a794da8` ✓）；24A446 policy 休眠 + KC
   护栏 ✓。
 
@@ -279,4 +300,77 @@ records/mackernel-w36fix-b9e733be-firstboot-20261104-020733.jpg）
   直调站在被 drop 的 entry 内。
 - **回退**：recovery_a ← `payload-w36fix-b9e733be.img`（ce3df35f）；
   b63ad26e 二级；abe3ec85 三级。
+
+## 10.Y.12 会话四十六 = 墙 37 首刷判读 + 墙 38 施工档（2026-11-04，
+payload `e6b06399` 首刷判读毕，屏摄设备仓
+records/mackernel-w37fix-6d4a9f19-firstboot-20261104-023838.jpg，
+records `4706e64`）
+
+- **墙 36 + 墙 37 双墙真机通关（fixture 判读通过）**：旧报点
+  `0x…977dd00`（墙 36，OSObject ctor 克隆）与 `0x…977fef8`
+  （墙 37，timerEventSource）均未复现；stage 轨迹全亮收官
+  （PE_lockdown_iokit → … → kernel do post - done）；pages=
+  0x125b05 / free=0x1251c5（wired 2368 页 = 前沿深入新区域，非同
+  点 +1 水位）；hit #1。
+- **消息定稿**：crc `0x8a2bf81e` 一次精确命中（139B，**零纠正**；
+  格式串 = `fileset-unmapped-call.patch` 的 panic
+  `from %p (x0 0x%llx x1 0x%llx) hit #%u`，照片 x0 掉一个 f 由
+  crc 命中裁定）。x0 = `0xfffffff2d947bb00`（正构造中的
+  AppleARMCPU 堆对象）；x1 = `0xfffffff00b4afe88`（= AppleARMCPU
+  gMetaClass，与 ctor 语义自洽）。
+- **新墙 38 = 同族 unmapped-call**：报点 LR `0x…84ca3bc`（bl 站
+  donor `0x84ca3b8`）；caller = **AppleARMCPU::AppleARMCPU()**
+  构造器（donor `0x84ca388..`）；target = donor **`0x0af3432c` =
+  `IOCPU::IOCPU()`**（更准确 = `__ZN5IOCPUC2EPK11OSMetaClass` 的
+  meta 特化 ICF 克隆，meta 常量折叠后 12 条指令零调用）。定名
+  三证：①调用方拼图：`mov w1,#0xf8`（instanceSize 0xf8）→
+  `_OSObject_typed_operator_new` → 基类 ctor → 立即自写 vptr
+  覆写 → instanceConstructed(`0xb4afe88`)；0xf8 与 AppleARMCPU
+  metactr `mov w3,#0xf8` 精确对拼；②V1 = IOCPU vtable
+  `0x7d6cde0`：getMetaClass 槽（vt+0x38 @`0x7d6ce18`）→
+  `0xaf32df0` 返回 `0xb375cc8` = "IOCPU" metactr（`0xaf34258`）
+  的 this；③克隆体形态 refcount=1 + vptr（pacda 0xcda1）+
+  reserved 0x88=0，区别于墙 36 OSObject 克隆 `0x0af07900`（无
+  str xzr、vtable `0x7d9e2d0`）。
+- **修法 = fixture 重定向**（设备仓 `899bfae`）：↔ native
+  `__ZN5IOCPUC2EPK11OSMetaClass` @ noctf `0xfffffff007b11c8c`；
+  native 链 = IOCPU→IOService→IORegistryEntry→OSObject(C2 带
+  meta)→OSMetaClassBase 五层，终态 {[x0]=vtable, [x0+8]=1,
+  [x0+0x88]=0} 与克隆逐字段同（refcount 在 OSObject 层写 1，
+  reserved 在 IOCPU 层清 0）；**x1 全链零使用**（调用方传
+  AppleARMCPU meta 无副作用）；native 无 C1/C2Ev 重载（C1/C2 已
+  ICF 合并，与 donor 克隆同源互证）；native vtable 值瞬态无害
+  （调用方 ctor 即覆写）。fixture size=48 sha `59f22f9a…`，
+  256/256 check 全稳；spec = `tools/xnu27/spec-session38.json`。
+- **红利面（终数，A/B 双代理 + 账本三方一致）= 5 直调 bl + 1 fixup 槽
+  = 6 站**：bl `0x84ca268/29c/3b8/424/47c` 全在 AppleARMCPU ctor 簇
+  （C2/C1/alloc 路径×3）+ GOT 槽 `0x7e07bd8`；账本 key
+  `0xfffffff00af3432c` sites=6 精确对拼（kext =
+  com.apple.driver.AppleARMPlatform）。**克隆族全景（全 donor 结构
+  扫描）**：48B 带 str-xzr 形态全镜像唯一 = 本条目，零兄弟；112 个
+  44B 无-xzr C 族克隆散布全池（0x0af07900 = 已配 OSObject 成员）。
+  邻近池 `0xaf32000..0xaf35000` 余 15 key/32 站未清（IOCPU canonical
+  `0xaf3435c` 4 站、IOPlatformIO ctor 克隆 `0xaf329cc` 3 站、
+  IODTPlatformExpert 克隆 `0xaf31f80` 5 站…）= 后续墙候选，本轮
+  按需清仓纪律**不批量**。修正：IOPlatformIO（0x88）与 IOCPU（0xb8）
+  同根（共同 super = OSObject 级 gMetaClass `0xb3771e8`）**非父子**；
+  donor map 无 IOCPU/IOPlatformIO canonical 符号（匿名池块）；我们
+  native 有 `__ZN12IOPlatformIOC2EPK11OSMetaClass`（Linux noctf
+  `0x07b1135c`）= 后续池墙的现成靶。
+- **Mac 重建 + 静态门**（增量 ~4min：kernel 3.5min + payload 34s；
+  **native 未变零锚漂移**）：kernel `b6bfe74b`/payload `c4cb22fb`，
+  存档 `out/m2381/payload-w38fix-b6bfe74b.img` + kernel 同名（本地
+  已拉回同 sha）。map reviewed **255→256**（墙 38 配对落位 → noctf
+  `0xfffffff007acbf10`）；**crash 站点 bl 字节实测** → `0x0af3ff14`
+  = native 终局 `0xaf3ff10`（= noctf + `__TEXT_EXEC` 段移位
+  0x3474000）**+4**——+4 = 跨过拷贝体 pacibsp 的 emit 既有约定，
+  墙 36（bl→0x0ae6309c）与墙 37（bl→0x0af1f9e4）同款且**双前例
+  真机通关实证**（档案所记 +0 系引 map 终局地址之误，本轮字节级
+  复核三例约定一致）；GOT 槽 → `0x0af3ff10`（pacibsp 头）本体
+  正确。w35-gate PASS（resign 指纹 0 / dispatch 对 371 持平）；
+  statistics 全平（branches 42024 / kept 82701 / closure 311）=
+  零附带漂移；make_fixture check 256/256。
+- **回退**：recovery_a ← `payload-w37fix-6d4a9f19.img`
+  （e6b06399，在机 = 已证通关墙 36+37）；ce3df35f 二级；
+  b63ad26e 三级。
 
