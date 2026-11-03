@@ -1,5 +1,29 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
 
+## 0. 现势指针（每轮首更，2026-11-03）
+
+- **现役件**：payload `d7fd50cb`（kernel `4970bf21`）已刷真机 = **墙 32 过**；
+  现墙 = 墙 33（AMFI → donor `0x0ae3fe94` = `_OSCompareAndSwapPtr`，38 站
+  红利面，判读已前置，见 §10.Y.4）。
+- **下轮工作单**：§10.Y.4 = ①fixture 钉 `0x0ae3fe94` ↔
+  `_OSCompareAndSwapPtr` ②**reference 换件小验**（Mac 车道
+  `--fileset-reference` 指向 Linux 建参照件，回填 1586 对，先看 named
+  升幅 + no-fix diff 门）。
+- **回退链**：recovery_a ← `payload-w31fix-efbdd999.img`（`2273bd09`）。
+- **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
+  `~/unixnu/`）；Linux = 回归门 + 参照件供给 + 两阶段 phase 2。
+- **未推**：主树 `9b6907e+69981a8+8c8e20d` / 设备仓
+  `ff4a5d4+5f7a906`（push 留拍板；推后 Mac 侧 **git pull 对齐**，
+  勿 scp 粗同步）。
+- **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
+  ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
+  ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（脚本/JSON
+  留）⑤记忆索引超 24KB 即剪钩子（详情在主题档）。**红线：docs/ 的上游
+  文档站树（concepts/guide/zh/reference/public）不清理不改动。**
+- **参考链状态（2026-11-03 硬校验）**：donor KC sha 合 ✓；fixtures
+  254/254 字节验真 ✓；24A446 policy 休眠 + KC sha 硬护栏 ✓；唯一病灶 =
+  Mac 参照件 LTO 序位移（上单修）。
+
 > **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
 > 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
 > git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
