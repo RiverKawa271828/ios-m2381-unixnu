@@ -1,109 +1,95 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十一·换道拍板版）
 
-## 0. 现势指针（每轮首更，2026-11-04 会话四十九）
-
-- **现役件（待刷）**：`payload-w41fix-93eabd51.img`（payload sha8
-  `b46e768a`，kernel `93eabd51`，**墙 41 双保险修复件**）。刷法 =
-  recovery_a only。**回退链**：一级 = recovery_a ←
-  `payload-w40fix-96422b08.img`（`a9bf924f`，已证通关墙 40、
-  史最长 31s）；二级 `payload-w39fix-2f31a6bd.img`；三级
-  e6b06399。
-- **会话四十九已毕 = 墙 41 判读 + 双保险修复出件**：
-  新墙 = **assert 硬陷阱**（esr `0xf200bffc` = brk #0xBFFC =
-  `MACH_ASSERT_TRAP_CODE`；`machine_routines.c:3379 Assertion
-  failed: _unsafe_kernel_text_initialized`），崩于 bsd_init
-  IOKitInitializeTime 段（Time=31s = **史最长运行**，墙 40 一字
-  补丁真机生效实锤）。**结构验证四重命中**（对已刷
-  kernel-w40fix-96422b08.macho 实测）：①pc `0xb097854` = 断言
-  thunk（bti c; adrp/add x8=__desc; brk #0xbffc）位 exact；
-  ②x8 `0x7d6646c` = `ml_unsafe_kernel_text.__desc`（type=0 +
-  lineno:24=0xd33=3379 + filename/expr 指向 native __TEXT 池
-  `machine_routines.c`/`_unsafe_kernel_text_initialized` 逐字验
-  证，chained-fixup 编码低24位=镜像偏移）；③lr `0xa9ae7f8` =
-  `ml_unsafe_kernel_text`（composite `0xa9ae7c4`）自身 assert-bl
-  的返回点；④标志字节 `0x7caf718/9` 文件里即 0。
-  **机制 = iBoot DT intent 缺失**：`ml_unsafe_kernel_text_init`
-  （STARTUP TUNABLES RANK_FIRST）只在 /chosen 有
-  `kernel-ctrr-to-be-enabled` 时置位；我们 ADT（payload 侧
-  devicetree.py 生成）没有该属性 → 标志恒 false → 首个调用者
-  必炸。静态调用面 = 两个 `!ml_unsafe_kernel_text()` 包装
-  （composite `0xa9de36c/388`）← dtrace 限制谓词族六站
-  （dtrace_ioctl×2 / fbt_provide_module / sdt_init /
-  systrace_init）；bsd_init 在 dtrace_postinit（:935）前跑
-  provider init，与 31s 时序自洽；精确运行态入口屏上无栈不可证
-  （s30 起帧链行走器已删），修法与调用方无关。
-  **修 = 双保险**：①内核侧 BCM2837 门控 fallback（设备仓
-  `50d67ba`，属性缺失时置 initialized+unsafe = SM8550 无 CTRR
-  的真值；noctf 实测 init 两路径都存 1 到标志位）；②上游正路
-  = profile.toml `["adt"."chosen"."u32"]` 加
-  `kernel-ctrr-to-be-enabled = 0`（主树 `33f4580`；**ADT 实物
-  字节验证** = 成品 payload 提取 kernel.macho.adt 13400B，属性
-  name+len=4+value=0 与本地复现逐位一致）。门禁双件过
-  （resign 0 / dispatch 371）；map 对账平（functions_matched
-  9914 / reviewed 274）。
-- **★判读工具账（本轮新增两条坑）**：①**屏地址归属必须先对
-  `kernel-w4Xfix.macho` LC 段表判 native/donor**——「donor+slide
-  低36位恒等」只对 composite 里的 donor 内容成立；composite
-  native 区间（0x8334000..0xb0c0000 __TEXT_EXEC）与 donor 空间
-  **不恒等**，kc.py fn 对 native 区间会误答 donor（本轮 namei
-  红鲱鱼即此故）；noctf↔composite __DATA_CONST 实测平移
-  +0xAE0000。②**断言类 panic 判读路径** = sleh 断言 thunk 表
-  （bti/adrp/add/brk 0xbffc 模式）+ `__desc` 解码（type u8 +
-  lineno:24 + filename* + expr*，指针槽 = chained-fixup 编码，
-  低24位 = 镜像内偏移）+ panic-screen `put()` 语义（<32 字节全
-  映射空格 → **PANIC_TEXT 无换行**，屏上折行 = 宽度折行，寄存器
-  值可被硬切两行）。
-- **开放问题：CRC 辅证连续第二例 MISS**：本次按 sleh.c:647 格式
-  精确重建 PANIC_TEXT（单点替换/删除/插入/换位 + 双点全扫 +
-  x16 专项，x16 转录 17 位超宽必错也不中）——原因未明（疑
-  mini-printf 的 va_list 槽位/展开模型细节差）。结构验证不受影
-  响；下轮屏摄若再现 MISS，把 verify-panic-crc.py 扩一个
-  assert-格式配方并做 3 行定宽扫描。
-- **时间线红利**：30s `IOService::waitForService("IORTC")` 超时
-  完整呈现（stage 卡 29s + idle=29s 谜底）——**每开机 +30s 固定
-  税**，IORTC provider（PM8550 RTC 驱动）= 驱动阶段任务挂账；
-  修复后 boot 预期 ~31s 起推进 vfsinit/native probe 段。
-- **下轮工作单 = 会话五十**：①首刷判读（recovery_a only）：
-  墙 41 消 = 不再报 machine_routines.c:3379；预期推进 bsd_init
-  后段（vfsinit → native apfs/graphics/iogpu/adreno/smmu/
-  constants probes → dtrace/provider init 段直过）→ 新墙照旧
-  分流（定名三证 → spec → make_fixture → scp Mac → 一次重建
-  一刷）。②ApplePMGR 21 靶 85 站三路扇出批量（清单在档 s48
-  §0④；方法卡 = fn/slots/KDK 三证不硬凑；make_fixture 带
-  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`）。③0xaedab0c
-  last-CPU 屏障定名（10 站清单在档；输入 = 新墙 x0/x1 + 调用
-  方上下文）。④红利对账 `blscan-donor.py` + CRC-MISS 二例取证。
-  ⑤清理项（不急）：内核 fallback 与 ADT 属性双保险已过墙后，
-  可评估把 fallback 补丁撤出 series（上游正路已通时的纯化）。
-- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+`8b09187`+
-  `33f4580`（本节 docs + profile）+ 本节；设备仓
-  `155d3c3`…`1b9921f` + `2d168e8` + `7742803`/`cc7c062` +
-  `50d67ba`（墙 41 补丁）。Mac 树 = scp 新态（kit/补丁/profile
-  三类均已同步，出件双存档 Mac `out/m2381/payload-w41fix-*`）。
-- **★文件纪律（2026-11-04 用户拍板：重要文件入项目，不进 temp
-  散放）**：spec 证据 = `UniXNU-m2381/kits/XnuPrelink/fixtures/
-  specs/`；门禁/判读/清点工具 = `UniXNU-m2381/scripts/{emit-
-  static-gate,verify-panic-crc,blscan-donor}.py`（本轮 gate 双
-  件校准含 w41 = resign 0 / dispatch 371）；
-  `tools/xnu27` 只留通用执行器。temp/ >10MB 隔轮清照旧。
-- **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
-  `~/unixnu/`，主树 = `~/unixnu/ios-m2381-unixnu`；reference
-  已接线 sha `5a794da8`；payload 三红线输入常驻 =
-  `~/unixnu/original-trust-23F84.bundle` +
-  `~/unixnu/scratch-data.img` + `--unique-chip-id
-  3645ad55d47e77c1`；kernel 步自动按 patch-sha 签名重暂存
-  （patches.py prepare 签名对比），**soc 补丁变更 = scp 后直接
-  kernel 步即可**；profile 变更 = scp 主树 profile.toml 后直接
-  payload 步）；Linux = 参照件供给 + 回归门 + 离线重放 +
-  ADT 本地复现验证（devicetree.generate 确定性可用）。
-- **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
-  ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
-  ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清
-  ⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游文档站树
-  （concepts/guide/zh/reference/public）不清理不改动。**
-- **参考链状态（2026-11-04 会话四十七刷新）**：donor KC sha ✓；
-  fixtures 274/274 字节验真 ✓；reference 换件生效（Mac map
-  reference sha `5a794da8` ✓）；24A446 policy 休眠 + KC 护栏 ✓。
+- **★换道拍板（2026-11-05，用户令）**：os_profile →
+  `ipados-27.0.1-24A446`（上游实证 donor：SpringBoard PID30/触控/WiFi
+  device-verified；23F84 = 上游明确停测的踏脚石，arm64e-os 区块从未
+  boot）。对账侦察定谳 ≥4/6 墙类有现成解（板级假 ApplePMGRNub nub /
+  kit startup 修复 / BCM2837 / shared-region；侦察档 =
+  `sheng-24a446-recon-ledger` 记忆）。IPSW 已到货复验（§11）。**现役
+  w42fix 件冻结为换道回退一级**；换道施工单 = §11，开工令待用户下。
+- **现役件（已冻结，回退一级）**：`out/m2381/payload-w42fix-3fe101ba.img`
+  （payload sha8 `6436442d`，kernel `3fe101ba`，墙 42 修复件，屏摄 =
+  fileset 墙 hit #1@0xa5b8db4，判读随换道作废或降级参考）。二级
+  `payload-w41fix-93eabd51.img`（`b46e768a`）；三级 `payload-w40fix-96422b08.img`
+  （`a9bf924f`）；四级 `payload-w39fix-2f31a6bd.img`。
+- **★墙 42 修复施工纪要（AMFI "No PMGR?" 三站 bl→shim）**：
+  - **native shim** = `patches/xnu-12377/fileset-amfi-devmode-shim.patch`：
+    `security/mac_base.c` 尾部加 `unixnu_amfi_devmode_config()`（
+    `__attribute__((used, noinline)) int { return 0; }`，语义 = dev-mode
+    缺席路径 = donor `_disable_developer_mode` 同终态）+ `config/Mach.exports`
+    登记；arch series 末尾登记（erandom shim 同款双件套路）。
+  - **三站补丁** = `kits/XnuPrelink/fileset_emit.py`：新增
+    `_bl_to_native(symbol)` callable 补丁形态（emit 时经
+    `layout.translate` 算位移，**保持 bl 语义**——改函数头会毁调用方 LR，
+    不可用）+ `TEXT_WORD_PATCHES` 三条目：`0xf0d560`(0x9400000D) /
+    `0xf0dce8`(0x97FFFE2B) / `0xf0dd24`(0x97FFFE1C) → bl shim；
+    `apply_text_word_patches` 支持 callable。
+  - **机制链（donor 实证）**：AMFI dev-mode 配置函数 `0xf0d594`（984B，
+    com.apple.driver.AppleMobileFileIntegrity 条目）：查
+    `/arm-io/soc-misc`（AppleSoCMisc meta）→ 无 → fallback
+    `serviceMatching("ApplePMGRNub")` + `waitForMatchingService(30.0s 整
+    0x6FC23AC00)` → NULL → panic `"AMFI: No PMGR?\n" @388`（thunk
+    `0xf2d318`）；同函数 367/372 = BPR query/set fail panic；成功路径 =
+    "latched BPR" + `_disable_developer_mode`。
+  - **★管线两事实（本轮定谳，后续 kext 侧目标通用）**：①站点机制
+    （mapped/rebind/stub/ledger）**只对 com.apple.kernel 条目内的目标
+    生效**（`mapped()` = `inside(old_ranges)` = kernel 条目自有段范围；
+    40426 条成功站全是"kext→内核目标"；kext→kext 内部分支 = 全程不可
+    见，不进账本）→ **kext 条目函数目标一律走 TEXT_WORD_PATCHES/shim
+    通道**（墙 40 同款，外层段表寻址）；②matcher 函数表 =
+    外层 LC_FUNCTION_STARTS = 内核条目函数起点 → fixture functions
+    条目也只能配内核条目目标（AMFI 侧 anchor_reviewed 拒收实证）；
+    fixture sites 条目对 kext 内部站同样惰性（mapped 门在 rebind 之前），
+    已撤（净内容回到 274 条不变）。
+  - **验证**：本地全链 emit harness 三站 bl→`0xfffffff00afcfccc`（= noctf
+    `0x7b5bccc` + `__TEXT_EXEC` 移位 `0x3474000`，s47 约定吻合）+ 墙 40
+    词完好 + text_word_patches=4；Mac 出件后**逐字节复核三站** ✓；
+    静态门 **resign=0 / dispatch=371**（基线持平，零附带漂移）。
+- **★教训（两条，判读工具账）**：①A64 分支目标 = `pc + imm26*4`（无
+  +4；+4 是返回地址 LR 的属性）——本轮手搓解码器多加 +4 引出"fast
+  entry"假象，capstone 一直是对的，**手搓解码必须对拍 capstone**；②
+  linear disasm 会在数据池静默截断（capstone `.disasm` 生成器特性），
+  扫全段调用站要用 emitter 同款 `inline_data_ranges` 分池扫描。
+- **判读预期（下一刷，recovery_a only）**：AMFI 三站生效 → dev-mode 配置
+  静默（不再 30s 等待、不再 388 panic）→ **t≈32s IORTC 30s 税到点后推进
+  vfsinit → native apfs/graphics/iogpu/adreno/smmu/constants probes →
+  dtrace/provider 段 = 墙 41 站点终受验** → 新墙照旧分流（定名三证 →
+  通道选择【内核目标=fixture / kext 目标=word-patch+shim】→ spec →
+  一重建一刷）。预判候选：caller sibling 读 config-done 旗标
+  `[donor 0xb54c000+0x40]`（shim 未置位，缺席路径应可容忍）；若炸 =
+  ConfigurationSettings.cpp 邻座 assert 行号 34/575/580/625/1150/1155/
+  1482 之一（thunk 簇 0xf2d2xx..0xf2d3xx 同款解剖即快）。
+- **Mac 车道新增纪律（本轮踩坑三条）**：①payload 三红线 = **显式旗标**：
+  `--data-ramdisk ~/unixnu/scratch-data.img --owner-trust-cache
+  ~/unixnu/original-trust-23F84.bundle --unique-chip-id 3645ad55d47e77c1`；
+  ②`UNIXNU_IPSW=/Users/naoniudeair/unixnu/ipsw/iPad17-23F84.ipsw`（本地
+  10.4GB 缓存；管线默认按 range-read 啃远程 CDN，经系统代理 Clash:7890
+  会抽风挂死/IncompleteRead，fetch 无超时）；③python = `/opt/homebrew/bin`
+  （3.14 有 tomllib；非交互 ssh PATH 落到 /usr/bin/python3 3.9 直接挂）。
+  kernel/payload 步参考耗时：prepare 后全量 ~17min（xnu 编译 ~14min +
+  matcher/emit ~8min）；补丁不变时 prepare 跳过、xnu 增量。
+- **判读辅证在档**：晨版判读屏（crc=0x9ad2304，CRC-MISS 第三例；
+  PANIC_TEXT 全文已由 donor fmt 实证 → `verify-panic-crc.py` 可扩
+  assert 配方 `"MSG" @%s:%d`）；水位 pages=0x125b08 / free=0x1246c8。
+- **下轮工作单 = 会话五十一**：①首刷判读（见上预期）②0xaedab0c 定名
+  照旧 ③PMGR 21 靶 85 站扇出**改道**：清单里 kext 条目目标（ApplePMGR
+  族）不进 fixture functions，按①两事实选通道 ④CRC assert 配方扩充
+  ⑤设备仓/主树提交（见未推）。
+- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+`8b09187`+`33f4580` +
+  本轮 `patches/xnu-12377/fileset-amfi-devmode-shim.patch` + arch series
+  登记 + 本节 docs；设备仓 `155d3c3`…`1b9921f` + `2d168e8` + `7742803`/
+  `cc7c062` + `50d67ba` + 本轮
+  `kits/XnuPrelink/fileset_emit.py`（callable 补丁形态）+
+  `fixtures/specs/spec-s51-amfi-devmode.json`；Mac = scp 新态全量
+  （kit/补丁/series/fixture/spec + `out/m2381/payload-w42fix-3fe101ba.img`
+  双存档）。
+- **车道**（不变 + 上三条）：Mac 主攻（`naoniudeair@192.168.10.246`，
+  `~/unixnu/`，reference `5a794da8`）；Linux = 参照件 + 回归门 + ADT 本地
+  复现 + **本地 emit harness 可全链复刻（本轮新增判读/验证手段）**。
+- **文档卫生/参考链**：照旧（§0 首更 ②晨版判读段已归档 archive ③未推
+  核对 ④temp >10MB 清 ⑤记忆剪钩子）；donor KC sha ✓ fixtures 274/274 ✓
+  reference `5a794da8` ✓。
 
 > **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
 > 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
@@ -482,3 +468,68 @@ payload `2f31a6bd` 全门验讫待刷；屏摄判读现场 = 本节判读部分�
   校准）：resign **0** / dispatch 对 **371** 持平 PASS。
 - **回退**：recovery_a ← `payload-w38fix-b6bfe74b.img`（c4cb22fb，
   已证通关墙 36~38）；e6b06399 二级；ce3df35f 三级。
+
+## 11. 换道工作单 = 会话五十一：os_profile → ipados-27.0.1-24A446
+（2026-11-05 用户拍板；侦察对账档 = 记忆 `sheng-24a446-recon-ledger`；
+上游实证实录 = sheng porting.toml：SpringBoard PID 30 / backboardd 61 /
+wifid 49 / 触控 / WiFi device-verified，视觉呈现未验）
+
+**会话五十二排程（2026-11-05 定）**：本单步 0~7 一次跑完（换道施工全链
+出件，payload-r52 待刷）；首刷+判读 = 会话五十三。**步 0（可选，
+不阻塞）**：w42fix 屏摄轻判读——decode `0xa5b8db4` 站 bl → 目标 →
+23F84 map 定名被调内核函数；donor→内核按名绑定，该函数名大概率 =
+24A446 首刷第一面同型墙，提前备 fixture/spec 省 one round。**Mac 侧
+准备**：24A446 IPSW 需上 Mac（`scp` 过 LAN 或 Mac 直接下载同 CDN URL），
+替换/并存 `UNIXNU_IPSW` 指向（23F84 件保留勿覆盖，回退车道要用）。
+
+**IPSW 到货复验（已毕 2026-11-05）**：
+`research/ipsw/iPad17,1,iPad17,2,iPad17,3,iPad17,4_27.0.1_24A446_Restore.ipsw`
+—— 字节数 11,654,176,243 与 CDN Content-Length 逐位同；Restore.plist =
+24A446/27.0.1 ✓；`kernelcache.release.ipad17`（24 MB）在位，raw 成员
+`802b495b…`，profile pin `38e6d9fa…` = 解码后 sha（由
+`scripts/unixnu/kernel.py:334` 在 fetch/kernel 步硬门验）；整包 sha256
+`fa93b653cc03c80ee5009302545479cb3b0f7bbaaa43f43a25e70cc328575b7a` 存档。
+
+**步骤**：
+
+1. **profile 切换**：设备仓 `board.toml` `os_profile = "ipados-27.0.1-24A446"`；
+   IPSW 本地喂 `--ipsw research/ipsw/…ipsw` 或 `UNIXNU_IPSW`。铁律：改
+   board 必重跑 `./unixnu defconfig m2381_defconfig`。
+2. **fetch + sha 门**：`./unixnu fetch`（KernelCache / DeviceTree /
+   StaticTrustCache / Cryptex1,SystemTrustCache；`kernelcache_sha256`
+   硬门必过，不过即停）。
+3. **we-only 8 patch 逐条 24A446 重验**（对 24A446 donor kernelcache 找
+   同站/同病灶，结论 = 保留/改站/退役，逐条入 porting.toml）：
+   `fileset-amfi-devmode-shim`（预计退役换步 4 板级方案）、
+   `prng-getentropy-donor-discriminator`、`crypto-funcs-probe`、
+   `crypto-funcs-unpack`、`mac-policy-ops-donor-resign`、
+   `sysctl-handler-donor-resign`、`kext-entry-donor-pptr`、
+   `fileset-read-erandom-shim`。
+4. **板级 PMGR 包（m2381 PlatformPower，第一版）**：抄 sheng
+   `package/ShengPlatformPower.cpp` 模式——`lookup("ApplePMGR")` /
+   `lookup("ApplePMGRNub")` 注册仿制 metaclass + `serviceMatching`
+   personality 发布 nub 面（AMFI `waitForMatchingService` 命中即安）；
+   PMIC/Rpmh 实质功率管理后续轮补。放设备仓 `package/` + 构建登记。
+5. **kit**：gitlink 保持 `b1888c12`（= sheng startup-pipeline tip，含
+   fileset emitter function/data maps + 24A446 startup import/abs-branch
+   修复）+ 本地 matcher/TEXT_WORD_PATCHES 提交；RELEASE 参照件必须
+   `--lto`（sheng 教训：packaging success ≠ boot compatibility；
+   corecrypto kprintf rebind 即此翻车）。
+6. **ADT/identity 平移**：iPad17,3/J820AP 不变；`/chosen`
+   `kernel-ctrr-to-be-enabled=0` 双保险属性随迁（墙 41 对策）；24A446
+   ADT 结构差异由 payload 步自检报。
+7. **构建链**：defconfig → fetch → tree → kernel（xnu-12377.121.6，
+   darwin26 系列 4 条 OS patch 自动进 series）→ firmware → payload
+   （三红线显式旗标）→ 刷 recovery_a only（boot_b/userdata 不动）→
+   `set_active b` → reboot。
+8. **首刷判读预期**：AMFI 静默（板级 nub 或 shim 命中）→ t≈32s IORTC
+   税 → vfsinit → root/cryptex mount → **SHLOG 窗若 state=2 开始写 =
+   大捷旗标**（落盘通道 root mount 后才开）→ launchd/SpringBoard 站。
+   判读 = 屏摄；新墙照旧分流（定名三证 → 通道选择 → spec → 一重建一刷）。
+9. **回退链**：recovery_a ← `payload-w42fix-3fe101ba.img`（`6436442d`）
+   一级；w41fix 二级；w40fix 三级。
+10. **风险**：①23F84 地址簿 fixture（311 closure）全量作废重做，新
+    emitter 吸收大头；②`--allow-missing` 语义仅限 sheng 已容忍面
+    （2 data refs + 24 trap refs 级别），超出即按墙处理不放过；③24A446
+    的 `early_security_init` AMFI wrapper 地址与 `roots` 清单以 profile
+    pin 为准（`0xfffffe00092551ac`），若 mismatch 先查 profile 再查件。

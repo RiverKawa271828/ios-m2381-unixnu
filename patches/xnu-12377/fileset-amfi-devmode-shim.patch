@@ -1,0 +1,41 @@
+diff --git a/config/Mach.exports b/config/Mach.exports
+index e21358d..e53b769 100644
+--- a/config/Mach.exports
++++ b/config/Mach.exports
+@@ -39,6 +39,7 @@ _read_frandom
+ _record_system_event
+ _semaphore_create
+ _semaphore_dereference
++_unixnu_amfi_devmode_config
+ _semaphore_destroy
+ _semaphore_reference
+ _semaphore_signal
+diff --git a/security/mac_base.c b/security/mac_base.c
+index 9f90247..aed0425 100644
+--- a/security/mac_base.c
++++ b/security/mac_base.c
+@@ -1827,3 +1827,24 @@ mac_vnode_check_trigger_resolve(vfs_context_t ctx __unused, struct vnode *dvp __
+ }
+ 
+ #endif /* !MAC */
++
++/*
++ * Fileset emission: donor AppleMobileFileIntegrity's developer-mode
++ * configuration (ConfigurationSettings.cpp) probes /arm-io/soc-misc and,
++ * failing that, waits 30 seconds for an ApplePMGRNub service before it
++ * latches the boot policy register. This platform has neither the Apple
++ * SoC-misc node nor a PMGR provider, and IOKit matching never publishes
++ * one, so the donor path always expires and trips the "AMFI: No PMGR?"
++ * assert (ConfigurationSettings.cpp:388; the BPR query/set siblings at
++ * :367/:372 panic the same way when the SoC-misc service exists but
++ * refuses). Provide the benign absence path: report the configuration as
++ * complete and leave developer-mode state at its power-on defaults
++ * (disabled), which is what the donor achieves by calling
++ * disable_developer_mode here on the same outcome.
++ */
++__attribute__((used, noinline))
++int
++unixnu_amfi_devmode_config(void)
++{
++	return 0;
++}
