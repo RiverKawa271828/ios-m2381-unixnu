@@ -57,6 +57,12 @@
 "certificate-security-mode" = 1
 "effective-security-mode-sep" = 1
 "amfi-only-platform-code" = 1
+# wall-41 (2026-11-04): ml_unsafe_kernel_text_init (machine_routines.c:3385) only
+# initializes its flags when iBoot provides this intent; without it the first
+# caller asserts (brk 0xbffc) at bsd_init IOKitInitializeTime. 0 = CTRR will not
+# be enabled = kernel text genuinely unprotected on SM8550; also pairs with the
+# BCM2837-gated source fallback (device repo native-ctrr-intent-fallback.patch).
+"kernel-ctrr-to-be-enabled" = 0
 
 
 # Apple sources of the macOS 26.5 release that pairs with xnu-12377.121.6.
