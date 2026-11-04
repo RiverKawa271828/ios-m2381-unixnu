@@ -1,113 +1,55 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-05 会话五十一·换道拍板版）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十二·24A446 换道出件版）
 
-- **★换道拍板（2026-11-05，用户令）**：os_profile →
-  `ipados-27.0.1-24A446`（上游实证 donor：SpringBoard PID30/触控/WiFi
-  device-verified；23F84 = 上游明确停测的踏脚石，arm64e-os 区块从未
-  boot）。对账侦察定谳 ≥4/6 墙类有现成解（板级假 ApplePMGRNub nub /
-  kit startup 修复 / BCM2837 / shared-region；侦察档 =
-  `sheng-24a446-recon-ledger` 记忆）。IPSW 已到货复验（§11）。**现役
-  w42fix 件冻结为换道回退一级**；换道施工单 = §11，开工令待用户下。
-- **现役件（已冻结，回退一级）**：`out/m2381/payload-w42fix-3fe101ba.img`
-  （payload sha8 `6436442d`，kernel `3fe101ba`，墙 42 修复件，屏摄 =
-  fileset 墙 hit #1@0xa5b8db4，判读随换道作废或降级参考）。二级
-  `payload-w41fix-93eabd51.img`（`b46e768a`）；三级 `payload-w40fix-96422b08.img`
-  （`a9bf924f`）；四级 `payload-w39fix-2f31a6bd.img`。
-- **★墙 42 修复施工纪要（AMFI "No PMGR?" 三站 bl→shim）**：
-  - **native shim** = `patches/xnu-12377/fileset-amfi-devmode-shim.patch`：
-    `security/mac_base.c` 尾部加 `unixnu_amfi_devmode_config()`（
-    `__attribute__((used, noinline)) int { return 0; }`，语义 = dev-mode
-    缺席路径 = donor `_disable_developer_mode` 同终态）+ `config/Mach.exports`
-    登记；arch series 末尾登记（erandom shim 同款双件套路）。
-  - **三站补丁** = `kits/XnuPrelink/fileset_emit.py`：新增
-    `_bl_to_native(symbol)` callable 补丁形态（emit 时经
-    `layout.translate` 算位移，**保持 bl 语义**——改函数头会毁调用方 LR，
-    不可用）+ `TEXT_WORD_PATCHES` 三条目：`0xf0d560`(0x9400000D) /
-    `0xf0dce8`(0x97FFFE2B) / `0xf0dd24`(0x97FFFE1C) → bl shim；
-    `apply_text_word_patches` 支持 callable。
-  - **机制链（donor 实证）**：AMFI dev-mode 配置函数 `0xf0d594`（984B，
-    com.apple.driver.AppleMobileFileIntegrity 条目）：查
-    `/arm-io/soc-misc`（AppleSoCMisc meta）→ 无 → fallback
-    `serviceMatching("ApplePMGRNub")` + `waitForMatchingService(30.0s 整
-    0x6FC23AC00)` → NULL → panic `"AMFI: No PMGR?\n" @388`（thunk
-    `0xf2d318`）；同函数 367/372 = BPR query/set fail panic；成功路径 =
-    "latched BPR" + `_disable_developer_mode`。
-  - **★管线两事实（本轮定谳，后续 kext 侧目标通用）**：①站点机制
-    （mapped/rebind/stub/ledger）**只对 com.apple.kernel 条目内的目标
-    生效**（`mapped()` = `inside(old_ranges)` = kernel 条目自有段范围；
-    40426 条成功站全是"kext→内核目标"；kext→kext 内部分支 = 全程不可
-    见，不进账本）→ **kext 条目函数目标一律走 TEXT_WORD_PATCHES/shim
-    通道**（墙 40 同款，外层段表寻址）；②matcher 函数表 =
-    外层 LC_FUNCTION_STARTS = 内核条目函数起点 → fixture functions
-    条目也只能配内核条目目标（AMFI 侧 anchor_reviewed 拒收实证）；
-    fixture sites 条目对 kext 内部站同样惰性（mapped 门在 rebind 之前），
-    已撤（净内容回到 274 条不变）。
-  - **验证**：本地全链 emit harness 三站 bl→`0xfffffff00afcfccc`（= noctf
-    `0x7b5bccc` + `__TEXT_EXEC` 移位 `0x3474000`，s47 约定吻合）+ 墙 40
-    词完好 + text_word_patches=4；Mac 出件后**逐字节复核三站** ✓；
-    静态门 **resign=0 / dispatch=371**（基线持平，零附带漂移）。
-- **★教训（两条，判读工具账）**：①A64 分支目标 = `pc + imm26*4`（无
-  +4；+4 是返回地址 LR 的属性）——本轮手搓解码器多加 +4 引出"fast
-  entry"假象，capstone 一直是对的，**手搓解码必须对拍 capstone**；②
-  linear disasm 会在数据池静默截断（capstone `.disasm` 生成器特性），
-  扫全段调用站要用 emitter 同款 `inline_data_ranges` 分池扫描。
-- **判读预期（下一刷，recovery_a only）**：AMFI 三站生效 → dev-mode 配置
-  静默（不再 30s 等待、不再 388 panic）→ **t≈32s IORTC 30s 税到点后推进
-  vfsinit → native apfs/graphics/iogpu/adreno/smmu/constants probes →
-  dtrace/provider 段 = 墙 41 站点终受验** → 新墙照旧分流（定名三证 →
-  通道选择【内核目标=fixture / kext 目标=word-patch+shim】→ spec →
-  一重建一刷）。预判候选：caller sibling 读 config-done 旗标
-  `[donor 0xb54c000+0x40]`（shim 未置位，缺席路径应可容忍）；若炸 =
-  ConfigurationSettings.cpp 邻座 assert 行号 34/575/580/625/1150/1155/
-  1482 之一（thunk 簇 0xf2d2xx..0xf2d3xx 同款解剖即快）。
-- **Mac 车道新增纪律（本轮踩坑三条）**：①payload 三红线 = **显式旗标**：
-  `--data-ramdisk ~/unixnu/scratch-data.img --owner-trust-cache
-  ~/unixnu/original-trust-23F84.bundle --unique-chip-id 3645ad55d47e77c1`；
-  ②`UNIXNU_IPSW=/Users/naoniudeair/unixnu/ipsw/iPad17-23F84.ipsw`（本地
-  10.4GB 缓存；管线默认按 range-read 啃远程 CDN，经系统代理 Clash:7890
-  会抽风挂死/IncompleteRead，fetch 无超时）；③python = `/opt/homebrew/bin`
-  （3.14 有 tomllib；非交互 ssh PATH 落到 /usr/bin/python3 3.9 直接挂）。
-  kernel/payload 步参考耗时：prepare 后全量 ~17min（xnu 编译 ~14min +
-  matcher/emit ~8min）；补丁不变时 prepare 跳过、xnu 增量。
-- **判读辅证在档**：晨版判读屏（crc=0x9ad2304，CRC-MISS 第三例；
-  PANIC_TEXT 全文已由 donor fmt 实证 → `verify-panic-crc.py` 可扩
-  assert 配方 `"MSG" @%s:%d`）；水位 pages=0x125b08 / free=0x1246c8。
-- **下轮工作单 = 会话五十一**：①首刷判读（见上预期）②0xaedab0c 定名
-  照旧 ③PMGR 21 靶 85 站扇出**改道**：清单里 kext 条目目标（ApplePMGR
-  族）不进 fixture functions，按①两事实选通道 ④CRC assert 配方扩充
-  ⑤设备仓/主树提交（见未推）。
-- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+`8b09187`+`33f4580` +
-  本轮 `patches/xnu-12377/fileset-amfi-devmode-shim.patch` + arch series
-  登记 + 本节 docs；设备仓 `155d3c3`…`1b9921f` + `2d168e8` + `7742803`/
-  `cc7c062` + `50d67ba` + 本轮
-  `kits/XnuPrelink/fileset_emit.py`（callable 补丁形态）+
-  `fixtures/specs/spec-s51-amfi-devmode.json`；Mac = scp 新态全量
-  （kit/补丁/series/fixture/spec + `out/m2381/payload-w42fix-3fe101ba.img`
-  双存档）。
-- **车道**（不变 + 上三条）：Mac 主攻（`naoniudeair@192.168.10.246`，
-  `~/unixnu/`，reference `5a794da8`）；Linux = 参照件 + 回归门 + ADT 本地
-  复现 + **本地 emit harness 可全链复刻（本轮新增判读/验证手段）**。
-- **文档卫生/参考链**：照旧（§0 首更 ②晨版判读段已归档 archive ③未推
-  核对 ④temp >10MB 清 ⑤记忆剪钩子）；donor KC sha ✓ fixtures 274/274 ✓
-  reference `5a794da8` ✓。
-
-> **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
-> 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
-> git commit message 里。本文档 = 精简现势版：现状 / 资产 / 方法 / 开放
-> 问题 / 下一步 / 轮次索引。
-
-> **2026-10-29 结构变更：设备仓拆出独立仓**
-> [UniXNU-m2381](https://github.com/RiverKawa271828/UniXNU-m2381)（本地
-> `../UniXNU-m2381`；`git subtree split` 保 93 提交全史，独立实跑
-> check-m2381 = 4 ok 0 fail）。本文与历史档中所有
-> `devices/m2381/unixnu-m2381/…` 路径现指该仓对应路径；构建/取证命令
-> 改为 `-D ../UniXNU-m2381` 与 `../UniXNU-m2381/scripts/…`；CI dispatch
-> 改指新仓（见 `docs/CI.md`）。**同日续**：m2381Pkg 收编新 UEFI 仓
-> `../uefi-m2381`（= 上游 uefi-sheng `sheng@0eb4514` 完整克隆 + overlay
-> 提交 `5297334`；实证来源 = nura 链；Binaries pin `036ba9f7` mars；旧
-> Mu-Silicium fork 封存；sync.sh 与 devices/m2381/uefi 退役）；三仓收拢于
-> 工作区根 `/home/ri/work/unixnu-meizu`（老主树路径留 shim 符号链接）；固
-> 件构建 = `--uefi ../uefi-m2381`。
+- **★换道出件完成（2026-11-05，会话五十二）**：os_profile →
+  `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
+  `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
+  `cfbe9b25`，99 MiB ESP，Mac 出件后 Linux 拉回 sha 逐位同）；
+  check-m2381 **4 ok 0 fail**；emit 报告 missing 320 / stubbed 1262 =
+  政策基线吻合，adapter branches 0。首刷判读 = **会话五十三**（recovery_a
+  only + `set_active b`；回退一级 = `payload-w42fix-3fe101ba.img`
+  `6436442d`）。
+- **★对账重大修正（板级层）**：上游实证 24A446 车道 = **arch series +
+  UniXNU-sheng 板级 kernel patches（10 条）+ 板级 package capture 面**——
+  侦察档"arch 68 条全有/零 we-only"口径漏了板级层。**已收编 4 条自洽件**
+  （source-storage-runtime + latency-trace/exit-latency/unnest-trace 三
+  hooks，定义 sheng_user_fault/exit/unnest_hook 指针）；**bringup 主件
+  (2006 行) 未收编**：其 kern_exec 面在 sheng 24A446 树上重写
+  （AGXMetalG17G/壁纸 27 变体），与我们 23F84 时代 zzy-* patch 同功能区
+  fork 分歧，patch 级不可落（git apply/-3/patch --fuzz=3 三级 fallback 全
+  试，kern_exec hunks #4-8/#11 真冲突）——**fork merge 挂账首刷证据后做**。
+  prepare 新增 `git apply -3` → `patch -p1 --fuzz=3` 两级 fallback
+  （3e6b3ca/378a922）。
+- **步 3 终版结论（7 条 we-only）**：六条退役维持（23F84 墙修 ≠ sheng
+  板级修），**prng 保留**（Xcode 27.2 转换税 + 0xbcad 24A446 三站同构实证
+  donor-va ≈ 0xaf73560/0xaf74ef8/0xaf75868）。TEXT_WORD_PATCHES 清空（4 条
+  23F84 钉全失效）。
+- **verified-root-24A446 政策对（换 donor 隐性硬前置）**：Mac userdata 出
+  件（AEA 链 = blacktop `ipsw fw aea --key` + `/usr/bin/aea decrypt`；ipsw
+  CLI 3.1.741 已 brew 装机），OS 9,613,344,768B sha `8a12cdad` ✓ /
+  SystemOS 6,016,729,088B sha `d5b4873d` ✓ = profile [root] pins 逐位同；
+  政策对 = 通用化 build-owner-policies-local.py（窗口/pins 自
+  userdata-root.json + profile 读），RSA 全块 **OS 586,752 + SystemOS
+  367,232 全 PASS**。
+- **emit 布局定谳**：24A446 kernel-entry __DATA 窗 0x1e8000（23F84 =
+  0x22c000），native __DATA 放置其内；越界 0x1c000（撞 Libm 等四条
+  retained __DATA @0xba1c000）→ **bp 采样环 4096→1024**（省 120KB）。
+  ESP volume 96→99 MiB（24A446 payload 92 MiB 顶 95% 门）。
+- **iOS27 源码面补齐**：BootProcessProbe/Worker/BootUiTraceProbe +
+  BootLatencyTrace 家族 verbatim 收编；BootWatchdogPolicy/BootDiagExport
+  双载 → build-boot-progress.py 门扩展 + TelemetryDefs 预处理门；
+  ShengLatencyHooks.c 只留 native_gpu_role_thread（sheng 车道也无定义 =
+  Apple ld 绑零；我们 ld64 拒 weak-undefined）。
+- **参考链**：kit gitlink `b1888c12` ✓；RELEASE 参照件 Mac `5a794da8` ✓；
+  trust bundle `dc655bcb` 双端 ✓；IPSW `fa93b653` 双端 ✓；kernelcache
+  `38e6d9fa` ✓（profile 硬门）。
+- **未推**：主树 `139c7c5` `beebdd8` `c97e6a2` `556b847` `d4766d1`
+  `3e6b3ca` `378a922` `886eeee`；设备仓 `1464ec1`…`52d8e01`（12 笔）。
+  Mac = rsync/scp 全量同步 ✓。
+- **下轮工作单 = 会话五十三首刷判读**：新墙照旧分流（定名三证 → 通道
+  选择 → spec → 一重建一刷）；**板级 bringup fork-merge** 按首刷缺失面
+  证据立项；步 0 特征档案（0xac8f594 = 范围门[0xa,0x12]+注册表+EINVAL22）
+  备同型墙匹配。
 
 ## 1. 一句话现状（**2026-10-31 会话二十四收档：23F84 fileset 车道，matcher v11 判别子通道落地，战略拍板 = 关键路径优先**）：
 
