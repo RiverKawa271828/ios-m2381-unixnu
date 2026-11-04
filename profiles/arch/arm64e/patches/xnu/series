@@ -74,3 +74,7 @@
 ../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
 ../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
 ../../../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
+../../../../../patches/xnu-12377/zzzz-sheng-ipados27-bringup.patch
+../../../../../patches/xnu-12377/zzzzzz-sheng-latency-trace.patch
+../../../../../patches/xnu-12377/zzzzzzzz-sheng-exit-latency.patch
+../../../../../patches/xnu-12377/zzzzzzzzz-sheng-unnest-trace.patch
