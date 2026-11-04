@@ -1,90 +1,109 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
 
-## 0. 现势指针（每轮首更，2026-11-04 会话四十八）
+## 0. 现势指针（每轮首更，2026-11-04 会话四十九）
 
-- **现役件（已刷在机）**：`payload-w40fix-96422b08.img`（payload
-  sha8 `a9bf924f`，kernel `96422b08`，**墙 40 一字补丁件**）用户
-  已刷 recovery_a 并开机：**用户报 = 史最长运行**（墙 40 修复真机
-  生效；口头报告，屏摄正式判读待补）。**新墙坐标未知，屏摄待收
-  ——会话四十九第一件事 = 收新屏。**
-- **会话四十八已毕 = 墙 40 定谳 + 修复出件**（全档 10.Y.14）：
-  新墙 = PAC failure from kernel with IA key branching to x8 @donor
-  `0x84ca4fc`（AppleARMCPU::start +0x48），esr `0x72000000`。机制 =
-  **混合内核 ptrauth 标签漂移**：kernel entry 的 __DATA_CONST 已是
-  我们 native 件（0x120000 vs donor 0x670000），donor 读者
-  `movk x17,#0x3c68` 鉴权我们的表槽（div `0x4529`，target =
-  `IOService::open` twin noctf `0x7a7385c`，donor `0xaec90cc`）。
-  修 = 读者一字补丁 `movk 0x3c68→0x4529`（donor `0x84ca4f8`，旧字
-  `0xF2E78D11` 钉死）。**整表移位方案已论证并否决**（我们的读者用
-  我们的标签/偏移，移位会自断）；per-slot 语义重配对挂账。
-  **判读结论：墙 39 + 池批量 18 笔真机全效**（stage 全亮维持，
-  pages 0x125b08/free 0x1249c8 前沿再推进，崩点 = start() 内
-  ml 调用之前的间接调用站）。
-- **下轮工作单 = 会话四十九：新墙屏摄判读 + PMGR 批量**：
-  ①收新屏摄 → 判读流程 = **结构验证法定坐标**（`kc.py fn <pc>`
-  见 `blraa/相关指令` 即证转录；PAC 多行格式 CRC 转录验真仍挂账
-  ——wall-40 屏摄转录 3 位全扫仍 MISS 原因未明，CRC 只作辅证）。
-  新墙分流照旧：定名三证 → spec → make_fixture（带
-  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`）→ scp Mac → 一次重建
-  一刷（tree 自动重暂存 kit，无需手动 tree）。
-  ②**标签漂移家族已清仓（s48 收队审计，事实记录）**：donor 全镜像
-  （内核 + 298 kext 全段）gTable `0x7e07fd8` 读者唯一 = 0x84ca4f8
-  站（已补）。审计器已入仓 = 设备仓
-  `scripts/scan-donor-table-readers.py`（含 LDR imm12 按 8 缩放 /
-  BRAA≠BLR 掩码两坑注释；审计时 SKEW 需对照 kit 已补清单）。**下
-  轮墙不会是该家族。**
-  ③**头号候选 = `0xaedab0c` last-CPU 屏障**（blscan 实测 **10 站**
-  = start() 双 bl `0x84cad54/6c` + `0x9bb71ec/200/580/adc` 四连 +
-  `0x89986b4`/`0x92a550c`/`0xafaaed8`/`0xafbf640` 四散站；10.Y.13
-  全析在案。定名输入 = 新墙照 x0/x1 运行态值 + 10 调用方上下文）。
-  ④**ApplePMGR 21 targets 清单已枚举**（85 站；donor 低36位 =
-  `0xa81b688/a81b954/a9593a4/a961fd0/a962760/a963b54/aeaddcc/
-  aed9a64/aef6714/af041b4/af041e0/af16f08/af51d90/af61c78/af61fa8/
-  af63824/af6391c/af65b98/af671e8/af672ac/af68200`）：三路子代理
-  扇出定名（方法卡 = fn/slots/KDK 三证、不硬凑）→ 高置信度批次
-  fixture。IOHIDFamily 46 / apfs 137 targets 在后。
-  ⑤红利对账：`blscan-donor.py <新靶…>` + 账本对拼；回退链核对。
-  **工具坑**：①`make_fixture.py` 必须
-  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`（权威区间）；②OCR 丢
-  f + 位误读有前科——pc 转录以反汇编结构验证为准；③Mac `tree`
-  自动重暂存 kit（改 kit 只需 scp + kernel 步）。
-  回退 = recovery_a ← `payload-w39fix-2f31a6bd.img`（`426ae6ce`，
-  已证通关墙 39）；b6bfe74b 二级；e6b06399 三级。
+- **现役件（待刷）**：`payload-w41fix-93eabd51.img`（payload sha8
+  `b46e768a`，kernel `93eabd51`，**墙 41 双保险修复件**）。刷法 =
+  recovery_a only。**回退链**：一级 = recovery_a ←
+  `payload-w40fix-96422b08.img`（`a9bf924f`，已证通关墙 40、
+  史最长 31s）；二级 `payload-w39fix-2f31a6bd.img`；三级
+  e6b06399。
+- **会话四十九已毕 = 墙 41 判读 + 双保险修复出件**：
+  新墙 = **assert 硬陷阱**（esr `0xf200bffc` = brk #0xBFFC =
+  `MACH_ASSERT_TRAP_CODE`；`machine_routines.c:3379 Assertion
+  failed: _unsafe_kernel_text_initialized`），崩于 bsd_init
+  IOKitInitializeTime 段（Time=31s = **史最长运行**，墙 40 一字
+  补丁真机生效实锤）。**结构验证四重命中**（对已刷
+  kernel-w40fix-96422b08.macho 实测）：①pc `0xb097854` = 断言
+  thunk（bti c; adrp/add x8=__desc; brk #0xbffc）位 exact；
+  ②x8 `0x7d6646c` = `ml_unsafe_kernel_text.__desc`（type=0 +
+  lineno:24=0xd33=3379 + filename/expr 指向 native __TEXT 池
+  `machine_routines.c`/`_unsafe_kernel_text_initialized` 逐字验
+  证，chained-fixup 编码低24位=镜像偏移）；③lr `0xa9ae7f8` =
+  `ml_unsafe_kernel_text`（composite `0xa9ae7c4`）自身 assert-bl
+  的返回点；④标志字节 `0x7caf718/9` 文件里即 0。
+  **机制 = iBoot DT intent 缺失**：`ml_unsafe_kernel_text_init`
+  （STARTUP TUNABLES RANK_FIRST）只在 /chosen 有
+  `kernel-ctrr-to-be-enabled` 时置位；我们 ADT（payload 侧
+  devicetree.py 生成）没有该属性 → 标志恒 false → 首个调用者
+  必炸。静态调用面 = 两个 `!ml_unsafe_kernel_text()` 包装
+  （composite `0xa9de36c/388`）← dtrace 限制谓词族六站
+  （dtrace_ioctl×2 / fbt_provide_module / sdt_init /
+  systrace_init）；bsd_init 在 dtrace_postinit（:935）前跑
+  provider init，与 31s 时序自洽；精确运行态入口屏上无栈不可证
+  （s30 起帧链行走器已删），修法与调用方无关。
+  **修 = 双保险**：①内核侧 BCM2837 门控 fallback（设备仓
+  `50d67ba`，属性缺失时置 initialized+unsafe = SM8550 无 CTRR
+  的真值；noctf 实测 init 两路径都存 1 到标志位）；②上游正路
+  = profile.toml `["adt"."chosen"."u32"]` 加
+  `kernel-ctrr-to-be-enabled = 0`（主树 `33f4580`；**ADT 实物
+  字节验证** = 成品 payload 提取 kernel.macho.adt 13400B，属性
+  name+len=4+value=0 与本地复现逐位一致）。门禁双件过
+  （resign 0 / dispatch 371）；map 对账平（functions_matched
+  9914 / reviewed 274）。
+- **★判读工具账（本轮新增两条坑）**：①**屏地址归属必须先对
+  `kernel-w4Xfix.macho` LC 段表判 native/donor**——「donor+slide
+  低36位恒等」只对 composite 里的 donor 内容成立；composite
+  native 区间（0x8334000..0xb0c0000 __TEXT_EXEC）与 donor 空间
+  **不恒等**，kc.py fn 对 native 区间会误答 donor（本轮 namei
+  红鲱鱼即此故）；noctf↔composite __DATA_CONST 实测平移
+  +0xAE0000。②**断言类 panic 判读路径** = sleh 断言 thunk 表
+  （bti/adrp/add/brk 0xbffc 模式）+ `__desc` 解码（type u8 +
+  lineno:24 + filename* + expr*，指针槽 = chained-fixup 编码，
+  低24位 = 镜像内偏移）+ panic-screen `put()` 语义（<32 字节全
+  映射空格 → **PANIC_TEXT 无换行**，屏上折行 = 宽度折行，寄存器
+  值可被硬切两行）。
+- **开放问题：CRC 辅证连续第二例 MISS**：本次按 sleh.c:647 格式
+  精确重建 PANIC_TEXT（单点替换/删除/插入/换位 + 双点全扫 +
+  x16 专项，x16 转录 17 位超宽必错也不中）——原因未明（疑
+  mini-printf 的 va_list 槽位/展开模型细节差）。结构验证不受影
+  响；下轮屏摄若再现 MISS，把 verify-panic-crc.py 扩一个
+  assert-格式配方并做 3 行定宽扫描。
+- **时间线红利**：30s `IOService::waitForService("IORTC")` 超时
+  完整呈现（stage 卡 29s + idle=29s 谜底）——**每开机 +30s 固定
+  税**，IORTC provider（PM8550 RTC 驱动）= 驱动阶段任务挂账；
+  修复后 boot 预期 ~31s 起推进 vfsinit/native probe 段。
+- **下轮工作单 = 会话五十**：①首刷判读（recovery_a only）：
+  墙 41 消 = 不再报 machine_routines.c:3379；预期推进 bsd_init
+  后段（vfsinit → native apfs/graphics/iogpu/adreno/smmu/
+  constants probes → dtrace/provider init 段直过）→ 新墙照旧
+  分流（定名三证 → spec → make_fixture → scp Mac → 一次重建
+  一刷）。②ApplePMGR 21 靶 85 站三路扇出批量（清单在档 s48
+  §0④；方法卡 = fn/slots/KDK 三证不硬凑；make_fixture 带
+  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`）。③0xaedab0c
+  last-CPU 屏障定名（10 站清单在档；输入 = 新墙 x0/x1 + 调用
+  方上下文）。④红利对账 `blscan-donor.py` + CRC-MISS 二例取证。
+  ⑤清理项（不急）：内核 fallback 与 ADT 属性双保险已过墙后，
+  可评估把 fallback 补丁撤出 series（上游正路已通时的纯化）。
+- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+`8b09187`+
+  `33f4580`（本节 docs + profile）+ 本节；设备仓
+  `155d3c3`…`1b9921f` + `2d168e8` + `7742803`/`cc7c062` +
+  `50d67ba`（墙 41 补丁）。Mac 树 = scp 新态（kit/补丁/profile
+  三类均已同步，出件双存档 Mac `out/m2381/payload-w41fix-*`）。
 - **★文件纪律（2026-11-04 用户拍板：重要文件入项目，不进 temp
   散放）**：spec 证据 = `UniXNU-m2381/kits/XnuPrelink/fixtures/
-  specs/`（26 份已迁入，spec-session26~38 + s47 四批）；
-  门禁/判读/清点工具 = `UniXNU-m2381/scripts/{emit-static-gate,
-  verify-panic-crc,blscan-donor}.py`（emit-static-gate 双件校准 =
-  w37/w39 均 resign 0 / dispatch 371；verify-panic-crc 双校准对
-  全过含 autofix；blscan-donor 抽验 = 墙 38 靶 5 站精确）；
-  `tools/xnu27` 只留通用执行器（kc/make_fixture/xnuindex/kdk/
-  natfn/vtslots/vtpair + README）。temp/ >10MB 隔轮清照旧。
+  specs/`；门禁/判读/清点工具 = `UniXNU-m2381/scripts/{emit-
+  static-gate,verify-panic-crc,blscan-donor}.py`（本轮 gate 双
+  件校准含 w41 = resign 0 / dispatch 371）；
+  `tools/xnu27` 只留通用执行器。temp/ >10MB 隔轮清照旧。
 - **车道**：Mac 主攻（ssh `naoniudeair@192.168.10.246`，工作面
-  `~/unixnu/`；reference 已接线 sha `5a794da8`；payload 三红线输入
-  常驻 = `~/unixnu/original-trust-23F84.bundle` +
+  `~/unixnu/`，主树 = `~/unixnu/ios-m2381-unixnu`；reference
+  已接线 sha `5a794da8`；payload 三红线输入常驻 =
+  `~/unixnu/original-trust-23F84.bundle` +
   `~/unixnu/scratch-data.img` + `--unique-chip-id
-  3645ad55d47e77c1`；构建命令 = `caffeinate -i ./unixnu kernel -D
-  /Users/naoniudeair/unixnu/UniXNU-m2381 -j16` 然后
-  `./unixnu payload -D … --trust-cache … --data-ramdisk … --unique-chip-id
-  …`，**变量必须 Mac 绝对路径 + `PATH=/opt/homebrew/bin:$PATH`**；
-  旧 temp/refswap 管线脚本已被清理，以上即全套）；Linux = 参照件
-  供给 + 回归门 + 离线重放。
-- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+ 本节 docs（s49
-  开工单）；设备仓 `155d3c3`…`1b9921f`（fixture 批）+`2d168e8`
-  （kit TEXT_WORD_PATCHES）+ 扫描器入仓 commit。
-  Mac 树 = scp 新态（kit `2d168e8` 态已同步 + 出件双存档在
-  Mac `out/m2381/`）。
+  3645ad55d47e77c1`；kernel 步自动按 patch-sha 签名重暂存
+  （patches.py prepare 签名对比），**soc 补丁变更 = scp 后直接
+  kernel 步即可**；profile 变更 = scp 主树 profile.toml 后直接
+  payload 步）；Linux = 参照件供给 + 回归门 + 离线重放 +
+  ADT 本地复现验证（devicetree.generate 确定性可用）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
-  ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清（本轮清
-  `w36-fixture/mac-native-noctf.macho` 24MB 与 /tmp 出件中间件；
-  脚本/JSON/map 留）⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游
-  文档站树（concepts/guide/zh/reference/public）不清理不改动。**
+  ③未推清单与回退链核对 ④`temp/` 内 >10MB 二进制隔轮即清
+  ⑤记忆索引超 24KB 即剪钩子。**红线：docs/ 的上游文档站树
+  （concepts/guide/zh/reference/public）不清理不改动。**
 - **参考链状态（2026-11-04 会话四十七刷新）**：donor KC sha ✓；
-  fixtures 274/274 字节验真 ✓（256 + 本轮 18，全部权威区间重算）；
-  reference 换件生效
-  （Mac map reference sha `5a794da8` ✓）；24A446 policy 休眠 + KC
-  护栏 ✓。
+  fixtures 274/274 字节验真 ✓；reference 换件生效（Mac map
+  reference sha `5a794da8` ✓）；24A446 policy 休眠 + KC 护栏 ✓。
 
 > **历史全档**：2026-10-24 → 2026-10-27 全部轮次（§0.0–0.34）与当时静态区
 > 在 `docs/archive/STATE-history.md`（原样快照）；每轮定谳同时完整活在
