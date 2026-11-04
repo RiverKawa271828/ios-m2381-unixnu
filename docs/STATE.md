@@ -16,28 +16,32 @@
   .apple.kernel entry 的 exec 文本 = `__TEXT_EXEC` 尾段
   **[0xacb4000,0xb5be908]**（LC_FUNCTION_STARTS 21792 函数），8 站 callee
   全是 kernel entry 函数。
-- **★会话五十三修复出件完成（2026-11-05）= payload-r53 已出待刷**：
-  `out/m2381/payload-r53-47859083.img`（99 MiB，sha256
-  `47859083b27028d7…` 双端逐位同；内嵌 kernel sha `ab06853b…`，emit 件
-  kernel `238862eb…`）。修法两笔：①kprintf reviewed record（144 条 =
-  117+26 主树件合并+kprintf，native `_kprintf`）→ 全部 66 个 kprintf
-  auth-GOT 槽转绑 native，**基线移动：stubbed 1262→1236 / missing
-  320→179**（新基线以此为准）；②TWP 一字：`0xfffffe000ac726e8`
-  `0x94003CE6→0xD503201F`（corecrypto_kext_start 的 kpis-publish bl→NOP；
-  27 代 kernel-entry 接收器 0xb42b4a0 被 native 整体替换、无孪生、混合件
-  内 0x7ec5178 零读者、返回值忽略 = 语义空洞）。字节复核全绿：NOP 在位
-  + 槽 0x84ac948→镜像 0xb514cb8（=noctf `_kprintf` 0x7b58cb8 平移
-  0x3CBC00，逐指令同构）。stubbed[corecrypto] 余 7 站 = 27 代专有函数
-  无 26.5 孪生且 kext exec 内零调用点（死链遗产），留桩报站。提交：设备
-  仓 `fb8af03`、kit `a028840`、主树 `41d1d0a`（均未推）。
-- **★下刷预期（r53 首刷判读 = 会话五十四）**：①`PE_parse_boot_argn`
-  bind 槽 0x84ac8d0 = 首个实证点（boot 期按名绑，绑不上 = hit#2 报站）；
-  ②FIPS POST 应过（donor 算法自洽）→ "corecrypto_kext_start completed
-  successfully" 可见性不保证（屏帧有限）；③6 死桩若被间接触发 = hit#N
-  报站（0xad43134/0xad43db4/0xae9bd20/0xaecef24/0xb441a24/0xb441b54）；
-  ④然后 = **AMFI No-PMGR 第一预期墙**（PENDING 站表
-  0x924e77c/0x924ef1c/0x924ef5c 预案不变，t≈32s IORTC 税面）；⑤成功旗
-  标不变 = SHLOG state=2。
+- **★会话五十三对齐完成 = payload-r54 已出待刷（2026-11-05）**：
+  `out/m2381/payload-r54-df033828.img`（99 MiB，sha256 `df033828fd9fec1f…`
+  双端同；内嵌 kernel sha `2221b0d2…`）。本轮 = "跟着上游对齐"落地：
+  上游 24A446 = **同源 xnu-12377.121.6**（Darwin 26 源码未发布，谁都无法
+  源码换代）+ series 逐字同 + kit 同 commit b1888c1；**真缺口 = Mac 从未
+  构建 RELEASE fileset reference**（26.5 车道 session 43 同坑重演，参照件
+  一直是 Linux 建的）。修复链：①正确通道 = `XNU_KERNEL_CONFIGS=RELEASE
+  ./unixnu kernel --skip-prelink`（builder 带 defconfig 环境，我两次绕过
+  builder 手搓 = 丢 `XNU_KERNEL_CHAINED_FIXUPS`=1 → ld-classic 缺失假象）
+  ②baseline UBSan stub 缺 `__ubsan_handle_negate_overflow_minimal`（nm 扫
+  组件档实测三缺一，已补）③CROSS_CLANG/DARWIN_TRIPLE 两个 Linux 专属变量
+  Mac 上需显式补（homebrew llvm + arm64e-apple-ios27.0）。
+  **r54 emit 基线（reference 元素首秀）**：reference-symbol 1489 +
+  reference-order 4334 anchors，functions 8215→**9468**，stubbed
+  1262→**1024**，missing 320→**286**；regression policy 已按新观测面重生成
+  （missing 149/stubbed 1024 sites，IOAVFamily 0xb92ab20 = reference 重配
+  后如实缺失，旧面疑似误配）。字节复核：NOP 0xac726e8 在位 + kprintf 槽
+  0x84ac948→0xb514cb8（reviewed 绑定在 reference 重配下幸存）。提交：主
+  树 baseline+policy+STATE，设备仓 kit 本轮未动（fb8af03 仍为头）。
+- **r53（无 reference 过渡件）**：payload-r53-47859083 已出已验证，被
+  r54 取代，留档不刷。
+- **★下刷预期（r54 首刷判读 = 会话五十四）**：①`PE_parse_boot_argn`
+  bind 槽 0x84ac8d0 = 首个实证点；②FIPS POST 应过；③stubbed 1024 池中
+  若有被间接触发 = hit#N 报站；④**AMFI No-PMGR 第一预期墙**（站表
+  0x924e77c/0x924ef1c/0x924ef5c 预案不变）；⑤SHLOG state=2 = 大捷旗标。
+  回退一级 = r52 `773d5578`（或 w42fix `3fe101ba`）。
 - **换道出件完成（2026-11-05，会话五十二）**：os_profile →
   `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
   `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
