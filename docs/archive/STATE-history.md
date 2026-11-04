@@ -4561,3 +4561,12 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
 - **文档卫生/参考链**：§0 首更 ②旧段落归档 archive ③未推核对 ④temp
   >10MB 隔轮清 ⑤记忆超 24KB 剪钩子，照旧；donor KC sha ✓ fixtures
   274/274 ✓ reference `5a794da8` ✓。
+
+## 会话五十三 = r52 首刷判读 + 对齐收官 + r53/r54 双出件（2026-11-05，执行完移档）
+
+- **墙 53 定谳**：r52 首刷 t=1s 死 = fileset unmapped-call 哨兵墙首站（runbook 2d 分流，非 AMFI）。donor com.apple.kec.corecrypto kext exec（0xac72428）首调 `kprintf("corecrypto_kext_start (tracing disabled)\n")` → auth-GOT 槽 0x84ac948（rebase 压缩指针无符号名）matcher 未配 → 出件槽重绑镜像内 `_unixnu_fileset_unmapped`（0xb5a9c4c）→ braa 尾跳 LR=0xac72460 = 屏值。桩语义 = 报返回地址（bl 在 −4）+ x0/x1 原参。
+- **架构定谳（修正）**：donor kernel entry 在混合件里被 native 整体替换（native_base 0x7184000）；kept kext = identity。com.apple.kernel entry exec = `__TEXT_EXEC` 尾段 [0xacb4000,0xb5be908]（LC_FUNCTION_STARTS 21792 函数，`Image(data,at=0x8000)`）。auth-GOT 压缩指针 = `PAC16<<48|(VA−0x7004000)`；槽 0 = boot bind（按名绑）。
+- **r53 修法两笔**：kprintf reviewed record（144 条=117+主树 26 合并+kprintf→`_kprintf`，66 槽全修，stubbed 1262→1236/missing 320→179）+ TWP NOP `0xfffffe000ac726e8 0x94003CE6→0xD503201F`（kpis-publish bl；接收器 0xb42b4a0 被 native 替换、0x7ec5178 混合件零读者、返回值忽略）。payload-r53-47859083（sha 47859083b27028d7，内嵌 kernel ab06853b）留档不刷。
+- **对齐收官（用户拍板"先对齐"）**：上游 24A446 同源 xnu-12377.121.6（Darwin 26 源码未发布）+ os series 逐字同 + kit 同 commit；真缺口 = Mac 从未建 RELEASE fileset reference（session 43 同坑，23F84 参照件系 Linux 建）。修通链：`XNU_KERNEL_CONFIGS=RELEASE ./unixnu kernel --skip-prelink`（builder 携 defconfig 的 `CONFIG_XNU_KERNEL_CHAINED_FIXUPS=y`，绕过 builder 手搓 = 丢环境 → MakeInc.def else 分支要 ld-classic → Xcode 27.2 无的假象）+ Mac 补 `CROSS_CLANG`/`DARWIN_TRIPLE`（UBSan stub 块 linux_env 专属）+ stub 三缺一 negate_overflow（nm 扫组件档实测）补进 baseline.sh + reference 17.2MB 手动 stage `tree/build/xnu/fileset-reference/`。
+- **r54 emit 基线（reference 元素首秀）**：reference-symbol 1489 + reference-order 4334，functions 8215→9468，stubbed 1262→1024，missing 320→286；regression policy 按新面重生成（IOAVFamily 0xb92ab20 = 旧面疑似误配改如实缺失）。payload-r54-df033828（内嵌 kernel 2221b0d2，NOP+kprintf 槽复核存活）待刷。
+- **提交**：设备仓 fb8af03、kit a028840、主树 41d1d0a+93f5903+9e0225f（均未推）。判读工具 temp/s53-*.py + temp/s53-noctf-syms.json 可复用。
