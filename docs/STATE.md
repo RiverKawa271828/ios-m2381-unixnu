@@ -1,7 +1,34 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-05 会话五十二·24A446 换道出件版）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十三·r52 首刷判读版）
 
-- **★换道出件完成（2026-11-05，会话五十二）**：os_profile →
+- **★r52 首刷判读定谳 = fileset unmapped-call 哨兵墙首执行站（2026-11-05
+  会话五十三，runbook 2d 分流命中，非 2c AMFI）**：屏摄（crc
+  `0xd3edecbb`，t=1s，stage 走到 mapping adjust 后）死因 = donor
+  **com.apple.kec.corecrypto kext 自己的 exec 文本**（`__TEXT_EXEC`
+  0xac72428，bti c+pacibsp，出件字节复核逐位在位）首调
+  `kprintf("corecrypto_kext_start (tracing disabled)\n")`（feeds
+  `corecrypto_kext.c:332` 逐字同串，x0=fmt@0x7dcbe3b 屏值吻合）→ kprintf
+  走 donor auth-GOT 槽 **0x84ac948**（rebase 压缩指针 `0x8011|0x45583e8`，
+  无符号名）→ matcher v11 未配对（kernel.json `stubbed[corecrypto]` 8 站
+  含 **0xb55c3e8=kprintf 本尊**）→ 出件槽已重绑 `0x8011|0x45a5c4c` =
+  镜像内 `_unixnu_fileset_unmapped` 桩（0xb5a9c4c，panic 串 0x71d9b11
+  实测）→ braa 尾跳 LR=0xac72460 = 屏面 from 值分毫不差。布局修正：com
+  .apple.kernel entry 的 exec 文本 = `__TEXT_EXEC` 尾段
+  **[0xacb4000,0xb5be908]**（LC_FUNCTION_STARTS 21792 函数），8 站 callee
+  全是 kernel entry 函数。
+- **★会话五十三工作单（r53 修复）**：通道 = `kits/XnuPrelink/fixtures/
+  fileset-24A446-symbols.json`（kc_sha `38e6d9fa` 已钉，现有 143 条）补
+  reviewed 记录：①kprintf 记录字段已备（original `0xfffffe000b55c3e8`
+  size 400 sha256 `588972dc…f3997`，native `_kprintf` 0x7b58cb8，evidence
+  三证齐）；②`stubbed[corecrypto]` 其余 7 站（0xad43134/0xad43db4/
+  0xae9bd20/0xaecef24/0xb42b4a0/0xb441a24/0xb441b54，形状 = atomic-cas/
+  percpu-reg-loop/once-gate/ldadd/log-wrapper 族）逐站三证定名（自动
+  masked-twin >0.85 零命中，必须手工源序+caller-xref）；③
+  PE_parse_boot_argn 槽 0x84ac8d0 = bind 零槽，boot 期绑定归留下轮实证。
+  之后 map 重生成 → Mac 重建出件 r53 → 只刷 recovery_a（回退一级不变 =
+  w42fix `3fe101ba`/`6436442d`）。判读三件已 scp 回 Linux（kernel.json/
+  kernel.map.json/kernel.macho + tree-noctf）。
+- **换道出件完成（2026-11-05，会话五十二）**：os_profile →
   `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
   `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
   `cfbe9b25`，99 MiB ESP，Mac 出件后 Linux 拉回 sha 逐位同）；
