@@ -60,9 +60,35 @@
   行），patch 级不可落；**series 保持 r52 基线**（bringup-core 两次摘除，
   6bd09d3）；merge = 首 刷证据后按缺失面逐文件手工工程（设备仓
   e479869 普查账）。
-- **下轮工作单 = 会话五十三首刷判读**：新墙照旧分流（定名三证 → 通道
-  选择 → spec → 一重建一刷）；**板级 bringup fork-merge** 按首刷缺失面
-  证据立项。
+- **★下轮工作单 = 会话五十三 r52 首刷判读（runbook，2026-11-05 定稿）**：
+  0. **工具前置**（判读开始前一次）：`scp` Mac 侧 24A446 三件回 Linux
+     判读工作区（`out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho`
+     + `tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.
+     bcm2837.unstripped.noctf` + `kernel/kernel.json`）；`tools/xnu27/kc.py`
+     路径参数化（DON/OUR/NAT 现钉 23F84，SLIDE `0x1f000000000` 不变——
+     13 跑 record 验证同值），判读站坐标 = donor 空间口径。
+  1. **收屏**：刷机结果屏摄（挂 = panic 屏；进 = 启动面/黑屏，黑屏不阻塞
+     ——屏态永非判决）。
+  2. **判读主线（分流）**：
+     a. `verify-panic-crc.py` 对拍（assert 配方 `"MSG" @%s:%d` 已校准；
+        24A446 PANIC_TEXT 布局/映射若变 = 会话 49 屏映射法重对 LC）；
+     b. panic 站解码 `kc.py wall SITE`（donor 空间；屏地址归属先对 LC
+        判 native/donor——49 课）；
+     c. **AMFI "No PMGR?"（第一预期，预案已备）**：ConfigurationSettings
+        :388 同族 → 启用 PENDING 站表 `0x924e77c/0x924ef1c/0x924ef5c` →
+        `_bl_to_native('unixnu_amfi_devmode_config')` 三条目入
+        TEXT_WORD_PATCHES → 一重建一刷（r53b）；
+     d. unmapped-call 哨兵墙 → 对号 kernel.json missing 面（320 站基线
+        已录）定名分流；
+     e. 新墙 → 三证定名 → 通道选择（内核目标=fixture / kext 站=TWP）
+        → spec → 一重建一刷。
+  3. **成功分支旗标**：native pac-keys → IORTC 税（t≈32s，clock_initialize
+        _calendar 面 = 23F84 墙 41 后继形态待验）→ vfsinit → root/cryptex
+        mount → **SHLOG 窗 state=2 = 大捷旗标**（24A446 root layout 才
+        开窗）→ launchd/SpringBoard 站。
+  4. **判读后工程**：AMFI 站表启用出件；bringup fork-merge 按缺失面
+     证据逐文件立项（设备仓 e479869 普查账）；PMGR 包重取证（仅当
+     AMFI 等待面实锤需要 nub 路径）。
 
 ## 1. 一句话现状（**2026-10-31 会话二十四收档：23F84 fileset 车道，matcher v11 判别子通道落地，战略拍板 = 关键路径优先**）：
 
