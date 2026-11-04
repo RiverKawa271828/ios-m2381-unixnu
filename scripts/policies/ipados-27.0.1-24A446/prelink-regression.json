@@ -1,5 +1,5 @@
 {
- "description": "Session-52 (2026-11-05) observed baseline of our 24A446 lane in ORIGINAL (donor) coordinates: the upstream baseline plus the sheng board-layer sites we have not adopted (the bring-up patch diverges from our 23F84-era kern_exec surface; fork merge deferred to first-boot evidence). Bounds regressions against this recorded face, not runtime qualification.",
+ "description": "Session-52 (2026-11-05) observed baseline of our 24A446 lane in ORIGINAL (donor) coordinates: the upstream baseline plus the sheng board-layer sites we have not adopted. The bring-up patch (which defines the .original adapter-stub targets behind the two upstream required branches, IOMobileFramebufferLegacy C2 and IOHIDDevice handleOpen) diverges from our 23F84-era kern_exec surface; the fork merge is deferred to first-boot evidence, so this lane emits zero adapter branches until then. Bounds regressions against this recorded face, not runtime qualification.",
  "kernelcache_sha256": "38e6d9fa5f789b8228f4617ef4c6d2a3fd8ab564abdc9b62920f1db53fc1780a",
  "missing": {
   "com.apple.driver.AppleARMPlatform": {
@@ -226,10 +226,7 @@
    "0xfffffe000b92add0": 1
   }
  },
- "required_original_branches": [
-  "__ZN25IOMobileFramebufferLegacyC2EPK11OSMetaClass",
-  "__ZN11IOHIDDevice10handleOpenEP9IOServicejPv"
- ],
+ "required_original_branches": [],
  "stubbed": {
   "com.apple.AppleFSCompression.AppleFSCompressionTypeZlib": {
    "0xfffffe000af271c4": 1,
