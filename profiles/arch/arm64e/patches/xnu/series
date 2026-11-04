@@ -65,7 +65,6 @@
 ../../../../../patches/xnu-12377/native-4k-block-split.patch
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
 ../../../../../patches/xnu-12377/source-storage-runtime.patch
-../../../../../patches/xnu-12377/zzzz-sheng-ipados27-bringup-core.patch
 ../../../../../patches/xnu-12377/zzzzzz-sheng-latency-trace.patch
 ../../../../../patches/xnu-12377/zzzzzzzz-sheng-exit-latency.patch
 ../../../../../patches/xnu-12377/zzzzzzzzz-sheng-unnest-trace.patch
