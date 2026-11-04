@@ -227,6 +227,13 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
                     if (directory / 'BootLatencyTrace.c').is_file()), None)
     if latency:
         sources.append(latency)
+    # The sheng board hook surface (kernel-side patch definitions upstream;
+    # our ld64 errors on unresolved weak references where Apple's binds them
+    # to zero) rides as a device package stand-in when present.
+    hooks = next((directory / 'ShengLatencyHooks.c' for directory in package_dirs
+                  if (directory / 'ShengLatencyHooks.c').is_file()), None)
+    if hooks:
+        sources.append(hooks)
     objects, inputs = [], {}
     objcopy = shutil.which('llvm-objcopy') or '/opt/homebrew/opt/llvm/bin/llvm-objcopy'
     for source in sources:
