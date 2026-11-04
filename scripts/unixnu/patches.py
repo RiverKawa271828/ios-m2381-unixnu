@@ -57,9 +57,17 @@ def prepare(ctx, modules):
             log(f'kernel: patch {path.name}')
             try:
                 git(work, 'apply', str(path))
-            except Error as error:
-                shutil.rmtree(work)
-                raise Error(f'XNU patch {path}: {error}') from error
+            except Error:
+                # Board patches adopted from another fork carry index blobs but
+                # drift in context where our own series touched the same lines
+                # (2026-11-05, sheng board layer over our 4k/ctrr series); the
+                # 3-way mode resolves the drifted hunks from the index blobs and
+                # still fails loudly on a real conflict.
+                try:
+                    git(work, 'apply', '-3', str(path))
+                except Error as error:
+                    shutil.rmtree(work)
+                    raise Error(f'XNU patch {path}: {error}') from error
         # A fresh clone lacks the public headers newer xnu omits (TrustCache among them); archives compile against it before the kernel build.
         run(['python3', ctx.tree / 'scripts/prepare-xnu-source.py'], cwd=ctx.tree)
         stamp.write_text(json.dumps(signature, indent=2) + '\n')
