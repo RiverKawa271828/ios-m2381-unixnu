@@ -62,10 +62,4 @@
 ../../../../../patches/xnu-12377/trustcache-runtime-layout.patch
 ../../../../../patches/xnu-12377/fileset-unmapped-call.patch
 ../../../../../patches/xnu-12377/native-4k-block-split.patch
-../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
-../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
-../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
-../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
-../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
-../../../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
