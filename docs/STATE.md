@@ -2,10 +2,11 @@
 
 ## 0. 现势指针（每轮首更，2026-11-04 会话四十八）
 
-- **现役件（已出件待刷）**：`out/m2381/payload-w40fix-96422b08.img`
-  （payload sha8 `a9bf924f`，kernel `96422b08`，**墙 40 一字补丁件**
-  = kit `TEXT_WORD_PATCHES` 通道首发）**待用户刷 recovery_a**。
-  在机 = w39fix（payload `426ae6ce`，已判读：墙 39 通关）。
+- **现役件（已刷在机）**：`payload-w40fix-96422b08.img`（payload
+  sha8 `a9bf924f`，kernel `96422b08`，**墙 40 一字补丁件**）用户
+  已刷 recovery_a 并开机：**用户报 = 史最长运行**（墙 40 修复真机
+  生效；口头报告，屏摄正式判读待补）。**新墙坐标未知，屏摄待收
+  ——会话四十九第一件事 = 收新屏。**
 - **会话四十八已毕 = 墙 40 定谳 + 修复出件**（全档 10.Y.14）：
   新墙 = PAC failure from kernel with IA key branching to x8 @donor
   `0x84ca4fc`（AppleARMCPU::start +0x48），esr `0x72000000`。机制 =
@@ -19,30 +20,33 @@
   **判读结论：墙 39 + 池批量 18 笔真机全效**（stage 全亮维持，
   pages 0x125b08/free 0x1249c8 前沿再推进，崩点 = start() 内
   ml 调用之前的间接调用站）。
-- **下轮工作单 = 会话四十九：w40fix 首刷判读 + 标签漂移族扫荡**：
-  ①屏摄转录：**本墙起 panic 消息 = sleh.c PAC 多行新格式**
-  （`panic_plain` 全寄存器 dump；`verify-panic-crc.py` 只校准了
-  unmapped-call 单行格式——**PAC 格式 CRC = PANIC_TEXT 副本且
-  `\t`/`\n` 存成空格**（`put()` c<32→' '），转录验真脚本需扩
-  两格式；本轮以 `kc.py fn <pc>` 结构验证法替代：反汇编见
-  `blraa x8,x17` 即证 pc 转录）。
-  ②同族扫荡 = **移植表标签漂移审计**：final 页 donor
-  `0x7cfd410..0x810` 全部节点 div 已知（`0x4529/0x573c/0x1a4e/
-  0x6c3d/0x9be9=attach…`）；donor 读者 movk 标签宽窗扫描器已写
-  （tools 会话四十八，模式 = adrp g 页 + ldr #0xfd8 + add #off +
-  movk #imm48）；下一个 FPAC 墙照 → `movk` 旧字钉死 → 追加
-  `TEXT_WORD_PATCHES` 条目 → scp Mac 重建（**tree 会自动重暂存
-  kit，无需手动 tree**——本轮实证）。
-  ③**头号候选墙 = `0xaedab0c`**（last-CPU 屏障包装器，10.Y.13
-  挂账全析在案，SMP 全核起来才触发；定名输入 = 墙照 x0/x1 +
-  `blscan-donor.py 0xfffffe000aedab0c`）。
-  ④过 start() → 批量续 = **ApplePMGR 21 targets**（关键路径下一
-  侦察对象）；IOHIDFamily 46 / apfs 137 targets 在后。
-  ⑤红利对账：`blscan-donor.py <新靶…>` + 账本对拼。
-  **工具坑（本轮实证）**：①`make_fixture.py` 必须
-  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`（权威区间）；②照片
-  OCR 丢 f + 偶发位误读（0a4cfd18/0a4cdf18 前科）——**pc 转录
-  以 donor 反汇编结构验证为准，CRC 只作辅证**；③Mac `tree` 会
+- **下轮工作单 = 会话四十九：新墙屏摄判读 + PMGR 批量**：
+  ①收新屏摄 → 判读流程 = **结构验证法定坐标**（`kc.py fn <pc>`
+  见 `blraa/相关指令` 即证转录；PAC 多行格式 CRC 转录验真仍挂账
+  ——wall-40 屏摄转录 3 位全扫仍 MISS 原因未明，CRC 只作辅证）。
+  新墙分流照旧：定名三证 → spec → make_fixture（带
+  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`）→ scp Mac → 一次重建
+  一刷（tree 自动重暂存 kit，无需手动 tree）。
+  ②**标签漂移家族已清仓（s48 收队审计，事实记录）**：donor 全镜像
+  （内核 + 298 kext 全段）gTable `0x7e07fd8` 读者唯一 = 0x84ca4f8
+  站（已补）。审计器已入仓 = 设备仓
+  `scripts/scan-donor-table-readers.py`（含 LDR imm12 按 8 缩放 /
+  BRAA≠BLR 掩码两坑注释；审计时 SKEW 需对照 kit 已补清单）。**下
+  轮墙不会是该家族。**
+  ③**头号候选 = `0xaedab0c` last-CPU 屏障**（blscan 实测 **10 站**
+  = start() 双 bl `0x84cad54/6c` + `0x9bb71ec/200/580/adc` 四连 +
+  `0x89986b4`/`0x92a550c`/`0xafaaed8`/`0xafbf640` 四散站；10.Y.13
+  全析在案。定名输入 = 新墙照 x0/x1 运行态值 + 10 调用方上下文）。
+  ④**ApplePMGR 21 targets 清单已枚举**（85 站；donor 低36位 =
+  `0xa81b688/a81b954/a9593a4/a961fd0/a962760/a963b54/aeaddcc/
+  aed9a64/aef6714/af041b4/af041e0/af16f08/af51d90/af61c78/af61fa8/
+  af63824/af6391c/af65b98/af671e8/af672ac/af68200`）：三路子代理
+  扇出定名（方法卡 = fn/slots/KDK 三证、不硬凑）→ 高置信度批次
+  fixture。IOHIDFamily 46 / apfs 137 targets 在后。
+  ⑤红利对账：`blscan-donor.py <新靶…>` + 账本对拼；回退链核对。
+  **工具坑**：①`make_fixture.py` 必须
+  `PYTHONPATH=UniXNU-m2381/kits/XnuPrelink`（权威区间）；②OCR 丢
+  f + 位误读有前科——pc 转录以反汇编结构验证为准；③Mac `tree`
   自动重暂存 kit（改 kit 只需 scp + kernel 步）。
   回退 = recovery_a ← `payload-w39fix-2f31a6bd.img`（`426ae6ce`，
   已证通关墙 39）；b6bfe74b 二级；e6b06399 三级。
@@ -65,10 +69,10 @@
   …`，**变量必须 Mac 绝对路径 + `PATH=/opt/homebrew/bin:$PATH`**；
   旧 temp/refswap 管线脚本已被清理，以上即全套）；Linux = 参照件
   供给 + 回归门 + 离线重放。
-- **未推**：主树 `9678be3`+`6f5794c` + 本节 docs（§0 文件纪律 +
-  s48 判读单）；设备仓 `155d3c3`+`6156dd4`+`beef9fe`+`bdd72fd`+
-  `4706e64`+`899bfae`+`1b9921f`（fixture）+ 本轮入仓 commit。
-  Mac 树 = scp 新态（fixture `bc48611d` 已同步 + 出件双存档在
+- **未推**：主树 `9678be3`+`6f5794c`+`783270f`+ 本节 docs（s49
+  开工单）；设备仓 `155d3c3`…`1b9921f`（fixture 批）+`2d168e8`
+  （kit TEXT_WORD_PATCHES）+ 扫描器入仓 commit。
+  Mac 树 = scp 新态（kit `2d168e8` 态已同步 + 出件双存档在
   Mac `out/m2381/`）。
 - **文档卫生常规（2026-11-03 用户拍板，每轮执行）**：①本指针每轮首更
   ②已执行工作单段落移 `docs/archive/STATE-history.md`（正文只留指针）
