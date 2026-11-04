@@ -58,16 +58,23 @@ def prepare(ctx, modules):
             try:
                 git(work, 'apply', str(path))
             except Error:
-                # Board patches adopted from another fork carry index blobs but
-                # drift in context where our own series touched the same lines
-                # (2026-11-05, sheng board layer over our 4k/ctrr series); the
-                # 3-way mode resolves the drifted hunks from the index blobs and
-                # still fails loudly on a real conflict.
-                try:
-                    git(work, 'apply', '-3', str(path))
-                except Error as error:
+                # Board patches adopted from another fork carry index blobs of
+                # their own intermediate tree state, which neither a plain nor
+                # a 3-way apply can resolve here (2026-11-05, sheng board layer
+                # over our 4k/ctrr series). The last resort is patch(1) with
+                # fuzz: match hunks by context at drifted offsets and fail
+                # loudly when a hunk truly cannot land.
+                import subprocess as _sp
+                result = _sp.run(['patch', '-p1', '--forward', '--batch', '--fuzz=3', '-i', str(path)],
+                                 cwd=work, capture_output=True, text=True)
+                if result.returncode:
                     shutil.rmtree(work)
-                    raise Error(f'XNU patch {path}: {error}') from error
+                    raise Error(f'XNU patch {path}: patch(1) fallback failed: '
+                                f'{(result.stdout + result.stderr).strip()[-400:]}')
+                if 'FAILED' in result.stdout:
+                    shutil.rmtree(work)
+                    raise Error(f'XNU patch {path}: patch(1) fallback left failed hunks: '
+                                f'{result.stdout.strip()[-400:]}')
         # A fresh clone lacks the public headers newer xnu omits (TrustCache among them); archives compile against it before the kernel build.
         run(['python3', ctx.tree / 'scripts/prepare-xnu-source.py'], cwd=ctx.tree)
         stamp.write_text(json.dumps(signature, indent=2) + '\n')
