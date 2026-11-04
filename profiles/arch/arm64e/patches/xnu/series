@@ -69,3 +69,4 @@
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
 ../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
 ../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
+../../../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
