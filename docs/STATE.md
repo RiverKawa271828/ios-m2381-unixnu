@@ -16,18 +16,28 @@
   .apple.kernel entry 的 exec 文本 = `__TEXT_EXEC` 尾段
   **[0xacb4000,0xb5be908]**（LC_FUNCTION_STARTS 21792 函数），8 站 callee
   全是 kernel entry 函数。
-- **★会话五十三工作单（r53 修复）**：通道 = `kits/XnuPrelink/fixtures/
-  fileset-24A446-symbols.json`（kc_sha `38e6d9fa` 已钉，现有 143 条）补
-  reviewed 记录：①kprintf 记录字段已备（original `0xfffffe000b55c3e8`
-  size 400 sha256 `588972dc…f3997`，native `_kprintf` 0x7b58cb8，evidence
-  三证齐）；②`stubbed[corecrypto]` 其余 7 站（0xad43134/0xad43db4/
-  0xae9bd20/0xaecef24/0xb42b4a0/0xb441a24/0xb441b54，形状 = atomic-cas/
-  percpu-reg-loop/once-gate/ldadd/log-wrapper 族）逐站三证定名（自动
-  masked-twin >0.85 零命中，必须手工源序+caller-xref）；③
-  PE_parse_boot_argn 槽 0x84ac8d0 = bind 零槽，boot 期绑定归留下轮实证。
-  之后 map 重生成 → Mac 重建出件 r53 → 只刷 recovery_a（回退一级不变 =
-  w42fix `3fe101ba`/`6436442d`）。判读三件已 scp 回 Linux（kernel.json/
-  kernel.map.json/kernel.macho + tree-noctf）。
+- **★会话五十三修复出件完成（2026-11-05）= payload-r53 已出待刷**：
+  `out/m2381/payload-r53-47859083.img`（99 MiB，sha256
+  `47859083b27028d7…` 双端逐位同；内嵌 kernel sha `ab06853b…`，emit 件
+  kernel `238862eb…`）。修法两笔：①kprintf reviewed record（144 条 =
+  117+26 主树件合并+kprintf，native `_kprintf`）→ 全部 66 个 kprintf
+  auth-GOT 槽转绑 native，**基线移动：stubbed 1262→1236 / missing
+  320→179**（新基线以此为准）；②TWP 一字：`0xfffffe000ac726e8`
+  `0x94003CE6→0xD503201F`（corecrypto_kext_start 的 kpis-publish bl→NOP；
+  27 代 kernel-entry 接收器 0xb42b4a0 被 native 整体替换、无孪生、混合件
+  内 0x7ec5178 零读者、返回值忽略 = 语义空洞）。字节复核全绿：NOP 在位
+  + 槽 0x84ac948→镜像 0xb514cb8（=noctf `_kprintf` 0x7b58cb8 平移
+  0x3CBC00，逐指令同构）。stubbed[corecrypto] 余 7 站 = 27 代专有函数
+  无 26.5 孪生且 kext exec 内零调用点（死链遗产），留桩报站。提交：设备
+  仓 `fb8af03`、kit `a028840`、主树 `41d1d0a`（均未推）。
+- **★下刷预期（r53 首刷判读 = 会话五十四）**：①`PE_parse_boot_argn`
+  bind 槽 0x84ac8d0 = 首个实证点（boot 期按名绑，绑不上 = hit#2 报站）；
+  ②FIPS POST 应过（donor 算法自洽）→ "corecrypto_kext_start completed
+  successfully" 可见性不保证（屏帧有限）；③6 死桩若被间接触发 = hit#N
+  报站（0xad43134/0xad43db4/0xae9bd20/0xaecef24/0xb441a24/0xb441b54）；
+  ④然后 = **AMFI No-PMGR 第一预期墙**（PENDING 站表
+  0x924e77c/0x924ef1c/0x924ef5c 预案不变，t≈32s IORTC 税面）；⑤成功旗
+  标不变 = SHLOG state=2。
 - **换道出件完成（2026-11-05，会话五十二）**：os_profile →
   `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
   `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
