@@ -613,13 +613,16 @@ else
   EXTRA_MAKE_ARGS+=("XNU_REFERENCE_BUILD=1")
   # The component archives replay DEVELOPMENT compile records, so their objects
   # carry UBSan-minimal instrumentation that the RELEASE kernel does not build
-  # (the sanitizer flags are a DEVELOPMENT/DEBUG config feature). Two no-op
-  # handlers close the reference link; the reference never executes.
+  # (the sanitizer flags are a DEVELOPMENT/DEBUG config feature). Three no-op
+  # handlers close the reference link (add/sub/negate overflow, the complete
+  # undefined set nm-scanned from the component archives); the reference never
+  # executes.
   UBSAN_STUB=$ROOT/build/xnu/ubsan-minimal-stub.c
   UBSAN_STUB_OBJ=$ROOT/build/xnu/ubsan-minimal-stub-$XNU_KERNEL_CONFIGS.o
   cat > "$UBSAN_STUB" <<'UBSAN'
 void __ubsan_handle_add_overflow_minimal(void) {}
 void __ubsan_handle_sub_overflow_minimal(void) {}
+void __ubsan_handle_negate_overflow_minimal(void) {}
 UBSAN
   "$CROSS_CLANG" -target "$DARWIN_TRIPLE" -ffreestanding -fno-stack-protector \
     -fno-stack-check -fno-omit-frame-pointer -c "$UBSAN_STUB" -o "$UBSAN_STUB_OBJ"
