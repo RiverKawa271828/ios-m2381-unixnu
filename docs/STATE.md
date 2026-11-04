@@ -46,10 +46,23 @@
 - **未推**：主树 `139c7c5` `beebdd8` `c97e6a2` `556b847` `d4766d1`
   `3e6b3ca` `378a922` `886eeee`；设备仓 `1464ec1`…`52d8e01`（12 笔）。
   Mac = rsync/scp 全量同步 ✓。
+- **★首刷前提前项（2026-11-05 收队轮）**：①步 0 闭合——w42fix 屏墙
+  donor 0xac8f594 定名 = **ktriage register-subsystem-strings 族**（范围门
+  [0xa,0x12] = subsystem id；native `_ktriage_register_subsystem_strings`
+  0x7834074 同形），24A446 AMFI 2661 bl 站扫描**零复现**（此墙新车道不
+  在）。②wall-42 24A446 站表备妥（PENDING）：AMFI dev-mode 函数
+  **0x924e7b0**（0x498B，/arm-io/soc-misc@0x924e800 + ApplePMGRNub
+  @0x924e92c 同函数）三 caller 站 **0x924e77c/0x924ef1c/0x924ef5c**，与
+  23F84 三站同构；首刷若撞 No-PMGR assert = TEXT_WORD_PATCHES 三站→
+  shim 一重建一刷。③bringup fork-merge 侦察定谳——36 段中 35 段 per-file
+  可落但实跑**多文件真分歧**（exception.c/iokit_rpc.c/pmap.c/proc_reg.h/
+  vm_dyld_pager.c/sched_clutch/vm_param.h = 我们自己的 4k/sandbox 链改同
+  行），patch 级不可落；**series 保持 r52 基线**（bringup-core 两次摘除，
+  6bd09d3）；merge = 首 刷证据后按缺失面逐文件手工工程（设备仓
+  e479869 普查账）。
 - **下轮工作单 = 会话五十三首刷判读**：新墙照旧分流（定名三证 → 通道
   选择 → spec → 一重建一刷）；**板级 bringup fork-merge** 按首刷缺失面
-  证据立项；步 0 特征档案（0xac8f594 = 范围门[0xa,0x12]+注册表+EINVAL22）
-  备同型墙匹配。
+  证据立项。
 
 ## 1. 一句话现状（**2026-10-31 会话二十四收档：23F84 fileset 车道，matcher v11 判别子通道落地，战略拍板 = 关键路径优先**）：
 
