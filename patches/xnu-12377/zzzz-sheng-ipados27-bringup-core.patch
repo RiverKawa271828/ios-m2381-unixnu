@@ -1,4 +1,4 @@
-The 35 self-contained file sections of the sheng 24A446 bring-up patch (UniXNU-sheng tip 965460a); bsd/kern/kern_exec.c is deferred separately — its gpu-addon/ls-store surface diverges from our 23F84-era zzy-* patches and is a fork-merge project on its own (session-52 recon, porting.toml wall42/bringup areas).
+The 34 self-contained file sections of the sheng 24A446 bring-up patch (UniXNU-sheng tip 965460a). Deferred to the fork-merge project (session-52 recon): bsd/kern/kern_exec.c (gpu-addon/ls-store surface diverges from our 23F84-era zzy-* patches) and osfmk/kern/exception.c (its exception_triage rework sits in the drift field of our native-4k/sandbox exception.c chain; hunks fail to land even with fuzz).
 
 diff --git a/bsd/kern/bsd_init.c b/bsd/kern/bsd_init.c
 index 87ca424..2156540 100644
@@ -21,6 +21,7 @@ index 87ca424..2156540 100644
  	native_mobile_graphics_load_probe();
  	native_iogpu_load_probe();
  #if defined(XNU_ADRENO_FIRMWARE_PROBE) && XNU_ADRENO_FIRMWARE_PROBE
+
 
 diff --git a/bsd/kern/kern_exit.c b/bsd/kern/kern_exit.c
 index b1ac3ad..7e93e95 100644
@@ -56,6 +57,7 @@ index b1ac3ad..7e93e95 100644
  		corpse_source = vm_map_is_corpse_source(get_task_map(task));
  	}
 
+
 diff --git a/bsd/kern/kern_newsysctl.c b/bsd/kern/kern_newsysctl.c
 index 20d071c..7b0e929 100644
 --- a/bsd/kern/kern_newsysctl.c
@@ -75,6 +77,7 @@ index 20d071c..7b0e929 100644
  		error = mac_system_check_sysctlbyname(kauth_cred_get(),
  		    namestring,
  		    name,
+
 
 diff --git a/bsd/kern/lockdown_mode.c b/bsd/kern/lockdown_mode.c
 index 1c104b3..324460f 100644
@@ -103,6 +106,7 @@ index 1c104b3..324460f 100644
  int
  get_lockdown_mode_state(void)
  {
+
 
 diff --git a/bsd/miscfs/bindfs/bind_vfsops.c b/bsd/miscfs/bindfs/bind_vfsops.c
 index 199a91b..7ccec6c 100644
@@ -207,6 +211,7 @@ index 199a91b..7ccec6c 100644
  	.vfs_sysctl             = NULL,
  	.vfs_setattr            = NULL,
 
+
 diff --git a/bsd/vfs/kpi_vfs.c b/bsd/vfs/kpi_vfs.c
 index 75816a5..0e222bf 100644
 --- a/bsd/vfs/kpi_vfs.c
@@ -309,6 +314,7 @@ index 75816a5..0e222bf 100644
  	DTRACE_FSINFO(setattr, vnode_t, vp);
  
 
+
 diff --git a/bsd/vm/vm_unix.c b/bsd/vm/vm_unix.c
 index 930dac3..ab2489f 100644
 --- a/bsd/vm/vm_unix.c
@@ -325,6 +331,7 @@ index 930dac3..ab2489f 100644
  		kr = KERN_INVALID_ARGUMENT;
  		goto done;
  	}
+
 
 diff --git a/iokit/Kernel/IOUserClient.cpp b/iokit/Kernel/IOUserClient.cpp
 index 0d9c70a..f256633 100644
@@ -368,6 +375,7 @@ index 0d9c70a..f256633 100644
  			const uint32_t selectors[] = {90, 0x80000000U, ~0U};
  			for (unsigned i = 0; i < 3; i++) {
 
+
 diff --git a/libkern/c++/OSArray.cpp b/libkern/c++/OSArray.cpp
 index 08db030..a7c759b 100644
 --- a/libkern/c++/OSArray.cpp
@@ -394,6 +402,7 @@ index 08db030..a7c759b 100644
  	}
  
 
+
 diff --git a/libkern/c++/OSData.cpp b/libkern/c++/OSData.cpp
 index 0cad743..7c9f112 100644
 --- a/libkern/c++/OSData.cpp
@@ -406,6 +415,7 @@ index 0cad743..7c9f112 100644
  		return nullptr;
  	}
  	return me;
+
 
 diff --git a/libkern/c++/OSDictionary.cpp b/libkern/c++/OSDictionary.cpp
 index 67e94c1..ca3d1a8 100644
@@ -420,6 +430,7 @@ index 67e94c1..ca3d1a8 100644
  	}
  
 
+
 diff --git a/libkern/c++/OSNumber.cpp b/libkern/c++/OSNumber.cpp
 index dc2ed78..2c19d17 100644
 --- a/libkern/c++/OSNumber.cpp
@@ -432,6 +443,7 @@ index dc2ed78..2c19d17 100644
  		return nullptr;
  	}
  
+
 
 diff --git a/libkern/c++/OSString.cpp b/libkern/c++/OSString.cpp
 index 6418d83..b696593 100644
@@ -450,6 +462,7 @@ index 6418d83..b696593 100644
  
  	return me;
  }
+
 
 diff --git a/libkern/c++/OSSymbol.cpp b/libkern/c++/OSSymbol.cpp
 index 9d4e084..e63b148 100644
@@ -477,6 +490,7 @@ index 9d4e084..e63b148 100644
  	}
  
 
+
 diff --git a/osfmk/arm/arm_init.c b/osfmk/arm/arm_init.c
 index 72d3561..e8db5d8 100644
 --- a/osfmk/arm/arm_init.c
@@ -494,6 +508,7 @@ index 72d3561..e8db5d8 100644
  	arm_slide_rebase_and_sign_image();
  
  	arm_static_if_init(args);
+
 
 diff --git a/osfmk/arm/cpu_common.c b/osfmk/arm/cpu_common.c
 index eadffaf..8776f16 100644
@@ -541,6 +556,7 @@ index eadffaf..8776f16 100644
  			if ((current_signals & SIGPdisabled) == SIGPdisabled) {
  				if (current_proc == target_proc) {
  					panic("cpu_signal of self while signals are disabled");
+
 
 diff --git a/osfmk/arm/pmap/pmap.c b/osfmk/arm/pmap/pmap.c
 index 9760c9c..2eadcf0 100644
@@ -762,6 +778,7 @@ index 9760c9c..2eadcf0 100644
 +	return count;
 +}
 
+
 diff --git a/osfmk/arm/pmap/pmap.h b/osfmk/arm/pmap/pmap.h
 index 0c6ba7c..9b9da2b 100644
 --- a/osfmk/arm/pmap/pmap.h
@@ -776,6 +793,7 @@ index 0c6ba7c..9b9da2b 100644
  extern uint64_t pmap_get_arm64_prot(pmap_t, vm_offset_t);
  #else /* defined(__arm64__) */
  #error Unsupported architecture
+
 
 diff --git a/osfmk/arm/pmap/pmap_pt_geometry.h b/osfmk/arm/pmap/pmap_pt_geometry.h
 index fc64830..dd93d91 100644
@@ -797,6 +815,7 @@ index fc64830..dd93d91 100644
  
  #endif /* ARM_PARAMETERIZED_PMAP */
 
+
 diff --git a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 index 01ab93b..f2e883b 100644
 --- a/osfmk/arm64/arm_vm_init.c
@@ -811,6 +830,7 @@ index 01ab93b..f2e883b 100644
  
  	flush_mmu_tlb();
  	kva_active = TRUE;
+
 
 diff --git a/osfmk/arm64/cpu.c b/osfmk/arm64/cpu.c
 index 53f9ce5..8312c43 100644
@@ -908,6 +928,7 @@ index 53f9ce5..8312c43 100644
  		/**
  		 * On SPTM devices, CTRR is configured entirely by the SPTM. Due to this, this logic
 
+
 diff --git a/osfmk/arm64/proc_reg.h b/osfmk/arm64/proc_reg.h
 index 51fdc9d..8f83d0a 100644
 --- a/osfmk/arm64/proc_reg.h
@@ -962,6 +983,7 @@ index 51fdc9d..8f83d0a 100644
  #else
  #define CACHE_ATTRINDX_RT CACHE_ATTRINDX_POSTED_COMBINED_REORDERED
 
+
 diff --git a/osfmk/arm64/sleh.c b/osfmk/arm64/sleh.c
 index d6fff49..d8d69a3 100644
 --- a/osfmk/arm64/sleh.c
@@ -1000,6 +1022,7 @@ index d6fff49..d8d69a3 100644
  #if USE_APPLEARMSMP
  	PE_handle_ext_interrupt();
 
+
 diff --git a/osfmk/arm64/start.s b/osfmk/arm64/start.s
 index ad43956..05d38d6 100644
 --- a/osfmk/arm64/start.s
@@ -1020,6 +1043,7 @@ index ad43956..05d38d6 100644
  	mov		x19, lr
  	// Convert CPU data PA to VA and set as first argument
  	mov		x0, x21
+
 
 diff --git a/osfmk/device/iokit_rpc.c b/osfmk/device/iokit_rpc.c
 index fd3e49e..64bcd3f 100644
@@ -1052,151 +1076,6 @@ index fd3e49e..64bcd3f 100644
  iokit_lookup_ident_port(ipc_port_t port)
  {
 
-diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
-index 29d7dbe..af797d0 100644
---- a/osfmk/kern/exception.c
-+++ b/osfmk/kern/exception.c
-@@ -94,6 +94,9 @@
- #include <string.h>
- 
- #include <pexpert/pexpert.h>
-+#if __arm64__
-+#include <arm/thread.h>
-+#endif
- 
- #include <os/log.h>
- #include <os/system_event_log.h>
-@@ -101,6 +104,14 @@
- #include <libkern/coreanalytics/coreanalytics.h>
- 
- #include <sys/code_signing.h> /* for developer mode state */
-+#include <vm/vm_protos.h> /* proc_best_name; proc_pid is declared there only for DEVELOPMENT, so the same declaration follows */
-+#ifdef MACH_BSD
-+extern int proc_pid(struct proc *);
-+#endif
-+/* The last four user exceptions of the processes sheng-exc-name lists, for the board's boot log (the message buffer wraps). */
-+struct sheng_exc_record {char name[20]; uint32_t pid, type, esr, frames; uint64_t pc, lr, far, ret[12];};
-+struct sheng_exc_record sheng_exc_ring[4];
-+volatile uint32_t sheng_exc_count;
- 
- bool panic_on_exception_triage = false;
- 
-@@ -957,9 +964,115 @@ exception_triage(
- 		/* Note this may consume control flow if it decides the exception is unrecoverable. */
- 		maybe_unrecoverable_exception_triage(exception, code);
- 	}
-+#ifdef MACH_BSD
-+	/* Processes whose exceptions are dumped: launchd, plus the comma-separated names in sheng-exc-name. */
-+	char sheng_exc_names[96] = "backboardd,chronod,liveactivitiesd";
-+	PE_parse_boot_argn("sheng-exc-name", sheng_exc_names, sizeof(sheng_exc_names));
-+	bool sheng_exc_match = false;
-+	if (get_bsdtask_info(task)) {
-+		const char *name = proc_best_name(get_bsdtask_info(task));
-+		size_t length = strlen(name);
-+		for (const char *at = sheng_exc_names; *at;) {
-+			const char *end = strchr(at, ',');
-+			size_t n = end ? (size_t)(end - at) : strlen(at);
-+			if (n == length && !strncmp(at, name, n)) {
-+				sheng_exc_match = true;
-+			}
-+			at += n + (end ? 1 : 0);
-+		}
-+	}
-+	if (get_bsdtask_info(task) && (proc_pid(get_bsdtask_info(task)) == 1 || sheng_exc_match)) {
-+		printf("sheng-exc: %s[%d] exception type=0x%x code=0x%llx subcode=0x%llx\n",
-+		    proc_best_name(get_bsdtask_info(task)), proc_pid(get_bsdtask_info(task)),
-+		    exception, (unsigned long long)code[0], codeCnt > 1 ? (unsigned long long)code[1] : 0ULL);
-+#if __arm64__
-+		arm_saved_state_t *ss = find_user_regs(thread);
-+		if (ss != NULL) {
-+			uint64_t pc = get_saved_state_pc(ss);
-+			/* The boot log's copy (the message buffer wraps long before a late look at it): the last four, with the frame chain. */
-+			{
-+				struct sheng_exc_record *rec = &sheng_exc_ring[sheng_exc_count & 3];
-+				*rec = (struct sheng_exc_record){};
-+				strlcpy(rec->name, proc_best_name(get_bsdtask_info(task)), sizeof(rec->name));
-+				rec->pid = (uint32_t)proc_pid(get_bsdtask_info(task));rec->type = (uint32_t)exception;
-+				rec->pc = pc;rec->lr = get_saved_state_lr(ss);rec->far = get_saved_state_far(ss);rec->esr = get_saved_state_esr(ss);
-+				uint64_t fp = get_saved_state_fp(ss);
-+				for (unsigned i = 0; thread == current_thread() && i < 12 && fp && !(fp & 7); i++) {
-+					uint64_t frame[2];
-+					if (copyin((user_addr_t)fp, frame, sizeof(frame)) != 0) {
-+						break;
-+					}
-+					rec->ret[i] = frame[1] & 0x00007fffffffffffULL;rec->frames = i + 1;
-+					if (frame[0] <= fp) {
-+						break;
-+					}
-+					fp = frame[0];
-+				}
-+				sheng_exc_count = sheng_exc_count + 1;
-+			}
-+			printf("sheng-exc: pc=0x%llx lr=0x%llx sp=0x%llx far=0x%llx esr=0x%x\n",
-+			    pc, get_saved_state_lr(ss), get_saved_state_sp(ss), get_saved_state_far(ss), get_saved_state_esr(ss));
-+			for (unsigned r = 0; r < 29; r += 4) {
-+				printf("sheng-exc: x%u=0x%llx 0x%llx 0x%llx 0x%llx\n", r,
-+				    get_saved_state_reg(ss, r), get_saved_state_reg(ss, r + 1),
-+				    r + 2 < 29 ? get_saved_state_reg(ss, r + 2) : 0ULL, r + 3 < 29 ? get_saved_state_reg(ss, r + 3) : 0ULL);
-+			}
-+			uint32_t insn[8] = {};
-+			if (copyin((user_addr_t)(pc - 16), insn, sizeof(insn)) == 0) {
-+				printf("sheng-exc: insn@pc-16 %08x %08x %08x %08x | %08x %08x %08x %08x\n",
-+				    insn[0], insn[1], insn[2], insn[3], insn[4], insn[5], insn[6], insn[7]);
-+			}
-+			/* What the fault address maps to: physical page, managed DRAM or not, cache attributes. */
-+			extern ppnum_t pmap_find_phys(pmap_t, addr64_t);
-+			extern unsigned int pmap_cache_attributes(ppnum_t);
-+			extern boolean_t pmap_valid_page(ppnum_t);
-+			ppnum_t pn = pmap_find_phys(get_task_pmap(task), get_saved_state_far(ss));
-+			printf("sheng-exc: far page 0x%x managed=%d wimg=0x%x\n", pn, pn ? pmap_valid_page(pn) : -1,
-+			    pn ? pmap_cache_attributes(pn) : 0);
-+			if (thread == current_thread()) {
-+				/* The attributes the MMU uses for this user address (PAR_EL1[63:56] is the MAIR encoding) and SCTLR_EL1. */
-+				uint64_t par = 0, sctlr = 0, mair = 0;
-+				__asm__ volatile ("at s1e0w, %3\n isb\n mrs %0, par_el1\n mrs %1, sctlr_el1\n mrs %2, mair_el1"
-+				    : "=r"(par), "=r"(sctlr), "=r"(mair) : "r"(get_saved_state_far(ss)) : "memory");
-+				printf("sheng-exc: par=0x%llx (attr 0x%llx) sctlr=0x%llx mair=0x%llx\n", par, par >> 56, sctlr, mair);
-+				void sheng_dump_user_backtrace(const char *tag);
-+				sheng_dump_user_backtrace("sheng-exc");
-+			}
-+		}
-+#endif /* __arm64__ */
-+	}
-+#endif /* MACH_BSD */
- 	return exception_triage_thread(exception, code, codeCnt, thread);
- }
- 
-+#if __arm64__
-+/* Print the current thread's user registers and frame-pointer chain (launchd bring-up diagnostics). */
-+void sheng_dump_user_backtrace(const char *tag);
-+void
-+sheng_dump_user_backtrace(const char *tag)
-+{
-+	arm_saved_state_t *ss = find_user_regs(current_thread());
-+	if (ss == NULL) {
-+		return;
-+	}
-+	printf("sheng-ubt %s: pc=0x%llx lr=0x%llx sp=0x%llx fp=0x%llx x0=0x%llx x1=0x%llx x2=0x%llx\n", tag,
-+	    get_saved_state_pc(ss), get_saved_state_lr(ss), get_saved_state_sp(ss), get_saved_state_fp(ss),
-+	    get_saved_state_reg(ss, 0), get_saved_state_reg(ss, 1), get_saved_state_reg(ss, 2));
-+	uint64_t fp = get_saved_state_fp(ss);
-+	for (int i = 0; i < 32 && fp != 0 && (fp & 7) == 0; i++) {
-+		uint64_t frame[2];
-+		if (copyin((user_addr_t)fp, frame, sizeof(frame)) != 0) {
-+			break;
-+		}
-+		printf("sheng-ubt %s: #%d fp=0x%llx ret=0x%llx\n", tag, i, fp, frame[1] & 0x00007fffffffffffULL);
-+		if (frame[0] <= fp) {
-+			break;
-+		}
-+		fp = frame[0];
-+	}
-+}
-+#endif /* __arm64__ */
-+
- kern_return_t
- bsd_exception(
- 	exception_type_t        exception,
 
 diff --git a/osfmk/kern/ipc_kobject.c b/osfmk/kern/ipc_kobject.c
 index d4272a1..fb9b778 100644
@@ -1228,6 +1107,7 @@ index d4272a1..fb9b778 100644
  		kern_return_t kr = mac_task_kobj_msg_evaluate(curproc,
  		    request_msgh_id, idx);
 
+
 diff --git a/osfmk/kern/sched_clutch.c b/osfmk/kern/sched_clutch.c
 index b27d291..01e48b2 100644
 --- a/osfmk/kern/sched_clutch.c
@@ -1244,6 +1124,7 @@ index b27d291..01e48b2 100644
  #endif /* DEVELOPMENT || DEBUG */
  	splx(s);
  }
+
 
 diff --git a/osfmk/kern/stack.c b/osfmk/kern/stack.c
 index 1111ccf..069db94 100644
@@ -1280,6 +1161,7 @@ index 1111ccf..069db94 100644
  STARTUP(TUNABLES, STARTUP_RANK_MIDDLE, stack_init);
  
 
+
 diff --git a/osfmk/mach/arm/vm_param.h b/osfmk/mach/arm/vm_param.h
 index 8d11b54..6b12ab1 100644
 --- a/osfmk/mach/arm/vm_param.h
@@ -1293,6 +1175,7 @@ index 8d11b54..6b12ab1 100644
  #define _VM_KERNEL_STRIP_PTR(_va)       ({((_va) & 1ULL << 55) ? ((_va) | VM_KERNEL_STRIP_MASK) : ((_va) & VM_USER_STRIP_MASK);})
  #else /* XNU_KERNEL_PRIVATE */
  
+
 
 diff --git a/osfmk/vm/vm_dyld_pager.c b/osfmk/vm/vm_dyld_pager.c
 index d3cd6e8..17a842c 100644
@@ -1622,6 +1505,7 @@ index d3cd6e8..17a842c 100644
  }
  
 
+
 diff --git a/osfmk/vm/vm_shared_region.c b/osfmk/vm/vm_shared_region.c
 index 451f335..09532fc 100644
 --- a/osfmk/vm/vm_shared_region.c
@@ -1654,6 +1538,7 @@ index 451f335..09532fc 100644
  					pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
  #else /* CONFIG_SPTM */
 
+
 diff --git a/osfmk/vm/vm_shared_region_pager.c b/osfmk/vm/vm_shared_region_pager.c
 index 543e621..1571e29 100644
 --- a/osfmk/vm/vm_shared_region_pager.c
@@ -1674,6 +1559,7 @@ index 543e621..1571e29 100644
  			vm_object_offset_t offset_in_backing_object = offset + cur_offset + pager->srp_backing_offset;
  			bcopy((const char *)src_vaddr, (char *)dst_vaddr, PAGE_SIZE);
  			if (offset_in_backing_object < pager->srp_slide_info->si_start ||
+
 
 diff --git a/pexpert/gen/bootargs.c b/pexpert/gen/bootargs.c
 index 1ef8caa..36275ba 100644
@@ -1714,6 +1600,7 @@ index 1ef8caa..36275ba 100644
  }
  
  #if defined(CONFIG_XNUPOST)
+
 
 diff --git a/pexpert/pexpert/arm64/BCM2837.h b/pexpert/pexpert/arm64/BCM2837.h
 index b12c67b..10454e8 100644
