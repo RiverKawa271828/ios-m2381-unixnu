@@ -48,10 +48,37 @@
         分配/释放 → fipspost POST 完整跑 → PRNG 登记 → PE_init_iokit →
         AMFI（t≈32s IORTC 税）→ No-PMGR → PENDING 站表 0x924e77c/ef1c/ef5c。
      b. **新哨兵墙** → 照哨兵流程:bl 定位（注意尾跳类 = LR 可能保留上游）→
-        槽 → donor 坐标 → 三证定名 → 修。重点候选:donor `0xb441738`
-        （114 槽）/`0xae9bd20`（18 槽）/lck 族后续（lck_mtx_init/lck_grp 面）。
+        槽 → donor 坐标 → 三证定名 → 修。**候选病灶表（会话五十七预研,
+        撞到即按行施工,修法已钉）**：
+        | donor 桩 | 面 | 已知身份 | 钉死修法 |
+        |---|---|---|---|
+        | `0xb3d385c` | 292(267+25哨) | OSObject 默认构造器（体首 = pacda 写
+        per-object 签名 isa,0xcda1 上下文,写 [x0]）| 直绑 native
+        `__ZN8OSObjectC2Ev`（noctf 查名 +0x39BC000;s45 墙36 fixture 前例;
+        注意 267 个存活槽证明 donor 拷贝部分可用——先看哨兵 25 槽的调用方
+        再决定全量 or 只绑哨兵面）|
+        | `0xb46c278`/`0xb46c2d0` | 186×2(161+25哨) | IOCECFamily 桩对
+        （体首 = `mov w8,#1; str w8,[x0,#8]` = 置标志 + GOT 调用）| 先
+        disasm 全身定名再选:native 孪生直绑 or 镜像 shim |
+        | `0xb4424c4` | 134(118+16哨) | lck 默认组包装（`ldr x0,[0xb929330]`
+        → tail donor lck_mtx_alloc_init）| shim:`adrp x0,<our 默认 lck_grp>
+        ; ldr x0,[x0]; b native lck_mtx_alloc_init 0xaceffe8`——先从
+        noctf 查我们内核的 IOLock 组全局名 |
+        | `0xb441738` | 114(全 donor) | `b 0xad3e894` = [x0] 非空检查 →
+        OSMetaClass 注册表派发（sub/lsr#7/cmp#0x40b≈1035 表）；我们内核
+        同款模式零命中 = 寄存器分配差异 | 待屏证（x0/x1 会给对象与参数）；
+        定名走 KDK 邻域 or 模式扫描（放宽寄存器）|
+        | `0xae9bd20` | 18 | 拷贝首调用经 **donor 零槽 `0x7dffa68`** blraa
+        （donor 文件即 0,运行态由 donor fixup 填）| 需解析 donor chained
+        fixups 得运行态目标才能定名；撞墙时先看 x0/x1 |
+        通用：emitter-dead 权威名单 = kernel.json `stubbed`（490 桩）;存活
+        拷贝（donor 词槽）多数可用,勿全量盲修。
      c. **数据 abort / PAC 类** → 先复核 shim 常量（kfree_ext `0xace8d18`,
         KHEAP_DEFAULT `0x7dec3e0`）与 braa 鉴权形（ESR EC 0x1C）。
+     d. **r58 上机自检表（刷后读回对拍,dd 读回才算证据）**：payload
+        `ca755a65` 开头;shim @0xaef0820 = `1a 01 0a aa …`(mov x2,x1)@
+        0xaef0838 = adrp;槽 `0x84ac900` = `0x8011000003eec820`;
+        `__fips_hmacs`@payload `0x4ec5fd` 前 8B = `6fc44336fd3f44b7`。
   2. 工具坑累积（先读再动）：temp/rNN/kernel.macho = **术前件**（验手术
      必须读 payload;110 shim 词只在 payload）;rNN-shim.json 的 shim_va 可能
      是废稿（真身 = 槽值解码）;kc.py DON 钉 23F84;donor VA 低 48 位 =
