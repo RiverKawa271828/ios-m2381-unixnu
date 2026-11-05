@@ -1,22 +1,50 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-05 会话五十三·r52 首刷判读版）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十四·r55 出件待刷版）
 
-- **★r52 首刷判读定谳 = fileset unmapped-call 哨兵墙首执行站（2026-11-05
-  会话五十三，runbook 2d 分流命中，非 2c AMFI）**：屏摄（crc
-  `0xd3edecbb`，t=1s，stage 走到 mapping adjust 后）死因 = donor
-  **com.apple.kec.corecrypto kext 自己的 exec 文本**（`__TEXT_EXEC`
-  0xac72428，bti c+pacibsp，出件字节复核逐位在位）首调
-  `kprintf("corecrypto_kext_start (tracing disabled)\n")`（feeds
-  `corecrypto_kext.c:332` 逐字同串，x0=fmt@0x7dcbe3b 屏值吻合）→ kprintf
-  走 donor auth-GOT 槽 **0x84ac948**（rebase 压缩指针 `0x8011|0x45583e8`，
-  无符号名）→ matcher v11 未配对（kernel.json `stubbed[corecrypto]` 8 站
-  含 **0xb55c3e8=kprintf 本尊**）→ 出件槽已重绑 `0x8011|0x45a5c4c` =
-  镜像内 `_unixnu_fileset_unmapped` 桩（0xb5a9c4c，panic 串 0x71d9b11
-  实测）→ braa 尾跳 LR=0xac72460 = 屏面 from 值分毫不差。布局修正：com
-  .apple.kernel entry 的 exec 文本 = `__TEXT_EXEC` 尾段
-  **[0xacb4000,0xb5be908]**（LC_FUNCTION_STARTS 21792 函数），8 站 callee
-  全是 kernel entry 函数。
-- **★会话五十三对齐完成 = payload-r54 已出待刷（2026-11-05）**：
+- **★会话五十四 = 墙 54 判读定谳 + 四 records + r55 出件待刷（2026-11-05）**：
+  **r54 首刷**（crc `0x196bb370` 零纠正一次命中 len=124B，t=1s，stage 到
+  mapping adjust）= from `0xac1536c` → bl `0xac15368` → thunk `0xac819b0` →
+  auth-GOT 槽 `0x84ac980`（rebase `0x8011|0x3ecaf24`）→ donor **`0xaecef24`
+  = `_mach_absolute_time`**；caller `0xac15330` = corecrypto kext
+  **`fipspost_post(fips_mode=0, mach_header=ki->address)`**（x1 =
+  `0x7dc74e0` = corecrypto entry 基址；`static corecrypto_kext_pmach_header`
+  记忆化体与 fipspost_post.c:106 逐句同源）——首调 =
+  `cc_absolute_time()`（cc_absolute_time.h CC_KERNEL 分支）。
+  **方法修正**：s53 "余 6 桩零调用点"系线性反汇编数据池失步漏扫（thunk 簇
+  0xac818b0..0xac81a80 在线扫失步区）；word 级重扫 = 7 桩目标 bl 站
+  **125/1/1/1/1/1/0**。**四 reviewed records（144→148，设备仓 62935f9）**：
+  ①`0xaecef24→_mach_absolute_time`（125 站 = 最大剩余 import 面）；②
+  `0xad43134→_lck_mtx_alloc_init`（槽夹逼 lck_grp_alloc_init/mtx_assert +
+  KT_LCK_MTX 分配体 + caller pacda 签回锁指针）；③`0xad43db4→
+  _IOLockTryLock`（槽夹逼 IOLockLock/IOLockUnlock + casa-percpu 体形）；
+  ④`0xb42b4a0→_register_crypto_functions`（register_crypto.h:284，**翻案
+  s53 "无孪生"**——源码级孪生在，noctf 实证）。**撤 wall-53 kpis-publish
+  NOP**（TEXT_WORD_PATCHES 清空）：实测 emitter 机制 = bl 保持指 donor
+  thunk、槽重绑 native → **FIPS 哈希段 [0xac12c00,0xac818b0) 文本 diff = 0
+  （donor 逐位还原）**。**board.toml kernel_args + `fips_mode=4`**
+  （FIPS_MODE_FLAG_DISABLE）：完整 HMAC 虽已可过，POST KAT 面仍有未知墙，
+  DISABLE 让 fipspost_post 过 mach_absolute_time 后立即 CCERR_OK
+  （PE_parse_boot_argn r53 已绑可解析）。**留桩 3**（故意）：
+  0xb441a24（1 参 kalloc_data 形态 flags 0x31000 烘死，我们 2 参无安全
+  孪生）/ 0xae9bd20（零直调）/ 0xb441b54（死 thunk）。
+  **r55 出件**：`out/m2381/payload-r55-dd51ff60.img`（payload `dd51ff60` /
+  kernel `e64448dd`，99 MiB，payload.json kernel_args 含 fips_mode=4 实
+  证）；stubbed 1024→**1002**、corecrypto 7→**3**；四槽重绑字节级实证
+  （0x84ac980→0xaefbfdc / 958→0xaceffe8 / 970→0xacf0368 / 9e8→0xb3fdb18，
+  verify-r55.py 四门）；Mac 全链（defconfig→tree→kernel→payload）BUILD
+  EXIT=0（~/unixnu/s54-build.log）。
+- **★下轮工作单 = 会话五十五 r55 首刷判读（runbook）**：0. 收屏（屏态永
+  非判决）。1. 判读主线：a. unmapped-call hit → `verify-panic-crc.py` 对
+  拍 → from−4 = bl 站 → 对号 kernel.json（stubbed 1002 面，donor 坐标）
+  → 三证定名（word 级 thunk 扫描法，勿线扫）→ 通道。b. **预期推进面**：
+  fipspost DISABLE 过 → corecrypto_kext_start 尾段（kpis publish 已通/
+  sysctl_register_oid 31+13 面/register_and_init_prng 已配/cc_kext_random
+  _init）→ 新墙按站分流。c. FIPS POST Failed（不该发生：fips_mode=4 在；
+  若现 = boot-arg 解析问题，查 ADT chosen 传递）。d. AMFI No-PMGR（t≈32s
+  IORTC 税面）→ PENDING 站表 0x924e77c/0x924ef1c/0x924ef5c → shim 三条目
+  → r56。2. 成功旗标不变：vfsinit → root/cryptex mount → SHLOG state=2。
+  3. 回退：recovery_a ← r54 `df033828`；w42fix `3fe101ba` 二级。
+- **★会话五十三对齐 = payload-r54 出件（2026-11-05，已刷已判 = 墙 54）**：
   `out/m2381/payload-r54-df033828.img`（99 MiB，sha256 `df033828fd9fec1f…`
   双端同；内嵌 kernel sha `2221b0d2…`）。本轮 = "跟着上游对齐"落地：
   上游 24A446 = **同源 xnu-12377.121.6**（Darwin 26 源码未发布，谁都无法
@@ -37,38 +65,10 @@
   树 baseline+policy+STATE，设备仓 kit 本轮未动（fb8af03 仍为头）。
 - **r53（无 reference 过渡件）**：payload-r53-47859083 已出已验证，被
   r54 取代，留档不刷。
-- **★下轮工作单 = 会话五十四 r54 首刷判读（runbook，2026-11-05 定稿）**：
-  0. **工具前置**（一次）：`scp` Mac 侧 r54 三件回 Linux 判读区
-     （`kernel.json` + `kernel.map.json` + `kernel.macho`，emit 07:51 版）；
-     DON = `out/ipsw/24A446/kernelcache.decompressed`（本地在位）、NAT =
-     `tree-noctf`（已在）；本轮判读工具 `temp/s53-{judge,judge2,attribute,
-     evidence,twin-search,dump7}.py` + `temp/s53-noctf-syms.json` 可复用。
-  1. **收屏**：刷机结果屏摄（挂 = panic 屏；进 = 启动面/黑屏，黑屏不阻塞
-     ——屏态永非判决）。
-  2. **判读主线（分流）**：
-     a. fileset unmapped-call hit → `verify-panic-crc.py` 对拍 → from−4 =
-        bl 站 → **对号新 policy 面**（missing 149/stubbed 1024 sites，已转
-        donor 坐标，`prelink-regression.json` 即账本）→ 三证定名（kprintf
-        先例：caller 源码串→callee 形状→noctf 名）→ 通道：有孪生=
-        reviewed record / 语义空洞=TWP NOP / 有消费者无孪生=native shim。
-     b. **PE_parse_boot_argn bind 槽 0x84ac8d0（首个实证点）**：hit#2 若
-        落在 fips_mode 解析 = boot 期按名绑失败 → 修 = reviewed record
-        （native `_PE_parse_boot_argn` 0x7b55a64，noctf 已核）。
-     c. FIPS POST 挂（"FIPS Kernel POST Failed (%d)!"）→ 站 = fipspost
-        家族直调面 → 按 fips_mode=0 语义分流。
-     d. **AMFI No-PMGR（第一预期墙，t≈32s IORTC 税面）**：启用 PENDING
-        站表 `0x924e77c/0x924ef1c/0x924ef5c` → `_bl_to_native(
-        'unixnu_amfi_devmode_config')` 三条目入 TEXT_WORD_PATCHES → shim
-        补建（fileset-amfi-devmode-shim.patch 23F84 版复活 + Mach.exports）
-        → 一重建一刷（r55）。
-     e. 新墙 → 三证定名 → 通道 → spec → 一重建一刷。
-  3. **成功分支旗标**：native pac-keys → IORTC 税 → vfsinit → root/
-     cryptex mount → **SHLOG 窗 state=2 = 大捷旗标** → launchd/
-     SpringBoard 站。
-  4. **判读后工程（证据后立项，不提前扇出）**：bringup fork-merge（2006
-     行，设备仓 e479869 普查账）按缺失面逐文件；PMGR 包重取证（仅当
-     AMFI 等待面实锤需要 nub 路径）；sheng 板级 10 条对账补全。
-  5. **回退**：r52 `773d5578`（或 w42fix `3fe101ba`）。
+- **会话五十三判读档（墙 53，已执行移档）**：r52 首刷 = corecrypto kprintf
+  槽 0x84ac948 漏配全案 + kpis-publish NOP（本轮已翻案撤销）→ 全文在
+  `docs/archive/STATE-history.md`（2026-11-05 会话五十四移档）与记忆
+  `s53-r52-firstflash-unmapped-wall`。
 - **换道出件完成（2026-11-05，会话五十二）**：os_profile →
   `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
   `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
