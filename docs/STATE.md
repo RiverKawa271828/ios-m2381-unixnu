@@ -1,5 +1,44 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-05 会话五十四·r55 出件待刷版）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十五·墙 55 定谳 + 手术 r56 出件待刷版）
+
+- **★会话五十五 = 墙 55 定谳（自设门，非 donor 墙）+ fips_mode 撤除 + 外科手术 r56 出件待刷（2026-11-05）**：
+  **r55 首刷判读**：t=1s，stage 至 mapping_adjust 后 panic =
+  `source corecrypto verification requires complete default POST
+  @prng_random.c:665`，crc `0x27f71c47` 零纠正命中（plain
+  crc32("message @file:line") 实证）。**病灶 = 我们自己的
+  `source-corecrypto14-bootstrap.patch` 门**（STARTUP SYSCTL
+  RANK_LAST，在 provider start 之前）：`PE_parse_boot_argn("fips_mode")
+  && mode != 0 → panic`——s54 加的 `fips_mode=4`（FIPS_MODE_FLAG_DISABLE）
+  正是该门禁止项（系列契约 = no skipped POST；PRNG 上下文登记依赖 POST
+  完成态）。**r55 比 r54 死得更早**：fipspost_post 根本没跑，s54 四槽
+  重绑（0x84ac980→0xaefbfdc 等）仍未上机验证。修法 = **board.toml 撤
+  `fips_mode=4`**（设备仓，连同其"kpis bl retarget 在哈希段内 HMAC 永
+  不匹配"的过时注释一并改写：emitter 换道后 TEXT_WORD_PATCHES 已清空、
+  FIPS 哈希段 [0xac12c00,0xac818b0) diff=0，完整 HMAC 可过；DISABLE 只
+  是防 KAT 未知的保险，被门判非法）。
+  **r56 出件遇硬阻**：Linux out 树 kernel = r52 旧件 cfbe9b25；s54 两
+  次 scp（temp/s54/kernel.macho=`3d158c4d`、kernel-r55.macho=`e64448dd`）
+  走本地 payload 步骤封印后 HMAC 均为 `61f9ca2a…` ≠ r55 实际封印件
+  `b2f48b39…`，且 0x3eeb64c..0x3eebfdb ~1.4KB 指令级差异（编译级）——
+  **r55 的父内核 X = 未回传第三状态**（Mac payload 出件时间早于两次
+  scp，X 仅存于 Mac out 树）。**外科手术定案**：对
+  `payload-r55-dd51ff60.img` 全图 FAT 手术，仅重写 unixnu.toml 活动簇
+  （dir entry 簇 94598 = 0x5D29800，` fips_mode=4` 移除 562→550B + 尺寸
+  字段）——全图 diff 166B 全部落在 toml 簇 + size 字段内，**内核
+  （封印件 787778cb）、ADT、Data seed、HMAC 报告与实机在跑 r55 逐字
+  节相同**。四门验证（mtools 读回 / 7z 逐件 / 全图 diff 定位 / sha）。
+  **r56 出件**：`out/m2381/payload-r56-94a096c3.img`（99 MiB，sha256
+  `94a096c3f52bf242…40e1cc7`；payload.json 已写手术 provenance）。board
+  已改，**后续正式出件必须重走 Mac（rsync 后本地树重出）或 Mac scp 新
+  kernel**。屏幕显 args 与 loader 实际一致（内核内嵌 args 串随封印件保
+  留 r55 原文 = 判读时屏显即实证）。**预期推进面**：门过 → donor
+  corecrypto kext start → **fipspost_post 完整 POST 首次实测**
+  （mach_absolute_time 槽 + HMAC 段 diff=0 应过；KAT 面 = s54 挂账未知
+  墙，踩到按哨兵流程定名）→ PRNG 登记 → PE_init_iokit → AMFI（站表
+  0x924e77c/ef1c/ef5c shim 预案在案）。成功旗标不变：vfsinit →
+  root/cryptex mount → SHLOG state=2。回退：recovery_a ← r55
+  `dd51ff60`（当轮在跑件）/ r54 `df033828` 二级。
+
 
 - **★会话五十四 = 墙 54 判读定谳 + 四 records + r55 出件待刷（2026-11-05）**：
   **r54 首刷**（crc `0x196bb370` 零纠正一次命中 len=124B，t=1s，stage 到
