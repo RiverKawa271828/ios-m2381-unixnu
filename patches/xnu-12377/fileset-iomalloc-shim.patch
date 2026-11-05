@@ -1,0 +1,36 @@
+--- a/osfmk/kern/kalloc.c
++++ b/osfmk/kern/kalloc.c
+@@ -2443,6 +2443,23 @@
+ }
+ #endif /* XNU_PLATFORM_MacOSX */
+ 
++/*
++ * Fileset emission: donor components allocate through a one-argument
++ * IOMalloc KPI (kalloc_ext(KHEAP_DEFAULT, size, Z_VM_TAG_BT(Z_WAITOK,
++ * VM_KERN_MEMORY_IOKIT), NULL) plus a size-statistic add), which this
++ * kernel never builds out-of-line: in-tree callers expand the IOMalloc
++ * macro inline and no external wrapper survives into the binary. Provide
++ * the body so the rebinder can pair the donor import against it. The
++ * plain kalloc_ext accounting replaces the donor's separate size counter.
++ */
++__attribute__((used, noinline))
++void *
++unixnu_iomalloc_shim(vm_size_t size)
++{
++	return kalloc_ext(KHEAP_DEFAULT, size,
++	    Z_VM_TAG_BT(Z_WAITOK, VM_KERN_MEMORY_IOKIT), NULL).addr;
++}
++
+ void *
+ kalloc_data_external(vm_size_t size, zalloc_flags_t flags);
+ void *
+--- a/config/Mach.exports
++++ b/config/Mach.exports
+@@ -66,6 +66,7 @@
+ _thread_terminate
+ _thread_tid
+ _thread_wakeup_prim
++_unixnu_iomalloc_shim
+ _vm_kernel_addrhash:_vm_kernel_addrhash_external
+ _vm_kernel_addrhide
+ _vm_kernel_addrperm_external

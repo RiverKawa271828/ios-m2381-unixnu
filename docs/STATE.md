@@ -1,5 +1,44 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-05 会话五十五·墙 55 定谳 + 手术 r56 出件待刷版）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十五续·墙 56 定谳 + 手术 r57 出件待刷版）
+
+- **★会话五十五续 = 墙 56 判读定谳（_IOMalloc 110 槽导入面）+ r57 手术出件待刷（2026-11-05）**：
+  **r56 首刷**：fips 门过了（prng_random panic 消失，toml 手术生效），
+  推进到 donor corecrypto kext start 的 PRNG init,新哨兵墙 =
+  `fileset: original component called an unmapped kernel function from
+  0xfffffff00ac20904 (x0 0x518 x1 0xfffffff007dcc9c8) hit #1`,crc
+  `0xad79e802` 零纠正命中。**定谳 = donor `_IOMalloc` 未绑**：站
+  0xac20900 → bl thunk 0xac818c0 → 槽 `0x84ac908` → donor
+  `0xfffffe000b441a24`（= s54"留桩三件"之首,其"1参 kalloc_data 无安全
+  孪生"判断错误）。四证定名：①callee 体 = `kalloc_ext(KHEAP_DEFAULT,
+  size, Z_VM_TAG_BT(Z_WAITOK, VM_KERN_MEMORY_IOKIT), NULL)` + `ldadd`
+  大小记账（flags 0x301000 逐位解出,VM_KERN_MEMORY_IOKIT=13）;②KDK
+  26.5.2 `_IOMalloc`（0x7ab1e34）逐指令同形;③x0=0x518 = PRNG 上下文
+  尺寸;④size 区别于 IOMallocZero(Z_ZERO +0x4)。**影响面 = 110 槽**
+  （92 原样未动 + 18 已绑哨兵桩,corecrypto 站仅首发）。**无原生孪生**
+  （在树调用点走 IOMalloc 宏内联;`kalloc_external` 仅 MacOSX;
+  `kernel_kalloc` 已从 12377 删除）→ **s49 shim 先例**：源码
+  `_unixnu_iomalloc_shim`（kalloc_ext(KHEAP_DEFAULT, size, 0x301000,
+  NULL)）+ Mach.exports + series 新增
+  `fileset-iomalloc-shim.patch`（三 feed 干跑全过）;账本 reviewed
+  record 144→145（体 76B,sha af74cbaa…）。**r57 = payload 手术**（免
+  Mac）：28B shim 写入 native 文本页 padding `0xaef0800`（7 指令:
+  mov x1,x0 / adrp+add KHEAP_DEFAULT 0x7dec3e0 / w2=0x301000 / x3=0 /
+  b `0xace84d4` = native kalloc_ext,从 _IOMallocTypeVarImpl 尾调实
+  证）,110 槽全部重绑（pac 0x8011|0x3eec800）,native seal HMAC 重算
+  （0x2856e20a…,只盖 __text;donor POST 只盖 corecrypto kext 段 =
+  未触）。全图 diff = 495B/112 簇（110×4 + 28 + 32）,零杂散。**r57
+  出件**：`out/m2381/payload-r57-104bff44.img`（99 MiB,内核
+  `20b4729f`,unixnu.toml 与 r56 逐字同）。**预期推进面**：PRNG init
+  过分配 → POST 完整跑（HMAC + KAT）→ PRNG 登记 → PE_init_iokit →
+  AMFI（站表 0x924e77c/ef1c/ef5c shim 预案）。旗标不变：vfsinit →
+  root/cryptex mount → SHLOG state=2。回退：recovery_a ← r56
+  `94a096c3` / r55 `dd51ff60`。**工具坑三连（下次拆站先读）**：kc.py
+  DON 仍钉 23F84（wall 命令读字不可信,24A446 用
+  `out/ipsw/24A446/kernelcache.decompressed`）;ours↔donor slide =
+  `0x1f000000000`（README 少一个零）;低 36 位换算 = `VA & 0xFFFFFFFF`
+  取低 32 位（0xfffffff0 前缀下 36 位手算易错）。capstone 装在 user
+  site（python3 不带 -I 跑）。
+
 
 - **★会话五十五 = 墙 55 定谳（自设门，非 donor 墙）+ fips_mode 撤除 + 外科手术 r56 出件待刷（2026-11-05）**：
   **r55 首刷判读**：t=1s，stage 至 mapping_adjust 后 panic =
