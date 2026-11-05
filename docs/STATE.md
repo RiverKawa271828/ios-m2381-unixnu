@@ -45,8 +45,11 @@
   **刷机策略：跳过 r60 直刷 r61**（r61 ⊇ r60 全部 10 导入修复，省一轮
   刷机；若 r61 异常，r60 `7da7e0b3` 上架作二分基准）。
   **A. 账本与 kit fixture 同步**：
-    0. 设备仓账本加 696 条 records（双证 = matcher body-hash how 字段 +
-       noctf 同名符号精确；体界+sha 程序算，evidence 统一模板），165→861。
+    0. 设备仓账本 upsert 696 条 records（双证 = matcher body-hash how 字段 +
+       noctf 同名符号精确；体界+sha 程序算，evidence 统一模板）。**按
+       original VA 去重**：s45 era 旧 records（OSMetaClass 家族等）已在账本
+       ——已存在且 native_symbol 一致者跳过，**名字冲突即 abort 报数**；
+       净增约 650±，165→~815。
     1. 同步设备仓账本 → `kits/XnuPrelink/fixtures/fileset-24A446-symbols.json`
        （kit 仓本地 commit，沿用 a028840 先例；主树子模块指针暂不动）。
        构建期 emitter 从此认识全部已定名导入。
@@ -68,19 +71,26 @@
       diff 审计零杂散；seal 断言未动（0x4ec5fd 仍 6fc44336fd3f44b7）。
     - 产出 `payload-r61.img` + surgery.json + sha256 + 刷写卡（只刷
       recovery_a，dd 读回对拍）。
-  **C. emitter 对账侦察（time-box 半场，只读 + 一次试验，不改管线）**：
+  **C. emitter 调用差异侦察（C-lite，≤半场，纯只读，可砍）**：
     - diff 上游 UniXNU sheng 车道 kernel/payload 步对 emit_prelink 的调用
       （flags / map 来源 / reference 来源 / adapter branches /
-      bring-up fork merge 状态）vs 我们 `scripts/unixnu/kernel.py`。
-    - 同输入试验：synced fixture + RELEASE reference 跑 emit，报 stubbed/
-      trap 未决集 vs 基线（build 期 1255 stub / payload 395 活哨兵 import），
-      产出 go/no-go 表（各通道/分支各关多少）。终点参照 = sheng 终态
-      2 data + 24 trap。
-  **D. 收尾**：STATE §0、双仓 commit+push。**判读 = 会话六十二**
-    （CRC 对拍 → 分流 → emitter go/no-go → r62 排单；成功旗标不变 =
-    vfsinit → root/cryptex mount → SHLOG state=2）。
+      bring-up fork merge 状态）vs 我们 `scripts/unixnu/kernel.py`，
+      产出差异清单。**不试验、不改管线**（试验挪会话六十二与判读同轮）。
+  **D. 收尾**：STATE §0、双仓 commit+push、r61 刷写卡。会话六十一到此为止。
   **E. 回退**：recovery_a ← r60 `7da7e0b3`（一级）/ r59 `72cc9ef4`（二级）/
      r58 `ca755a65`（三级）。
+- **★下下轮工作单 = 会话六十二（判读 + 决断轮；用户会前刷 r61）**：
+  A. r61 首刷判读：CRC 对拍（--autofix）→ 分流：
+     a) 新哨兵墙（预期落 395 未定名集或 IOCrypto 13）→ 三证定名顺带修；
+     b) 数据 abort / PAC → 疑 696 批量错孪生 → 刷 r60 二分定位；
+     c) 无墙推进 → 看 stage 轨迹 / vfsinit / root mount / SHLOG state=2。
+  B. emit 同输入试验（自会话六十一挪入）：synced fixture + RELEASE
+     reference 跑 emit，报 stubbed/trap 未决集 vs 基线（build 期 1255
+     stub / payload 395 活哨兵 import），终点参照 sheng 终态 2 data +
+     24 trap → emitter 路线 go/no-go。
+  C. r63 排单：go → emitter 全配置出件（构建期重绑取代 payload 手术线）；
+     no-go → 手术线继续（IOCrypto 13 三证 + 395 残余自动孪生管线 +
+     sheng 板级件收编按墙出现时机插入）。
 
 - **★会话五十八 = 墙 58 定谳（IOLockAlloc 134 槽）+ OSObject ctor 翻案（292 槽全量）+ r59 手术出件待刷（2026-11-06）**：
   **r58 首刷判读**（payload-r58-ca755a65）：crc `0xfcd9b111`（autofix 仅补 x1
