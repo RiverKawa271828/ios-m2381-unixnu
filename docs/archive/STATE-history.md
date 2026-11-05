@@ -4837,3 +4837,94 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
   4. **判读后工程**：AMFI 站表启用出件；bringup fork-merge 按缺失面
      证据逐文件立项（设备仓 e479869 普查账）；PMGR 包重取证（仅当
      AMFI 等待面实锤需要 nub 路径）。
+
+
+<!-- ==== 会话五十七 §0(墙57定谳+r58工作单),2026-11-06 会话五十八移档 ==== -->
+
+## 0. 现势指针（每轮首更，2026-11-06 会话五十七·墙 57 定谳 + 同族批量手术 r58 出件待刷版）
+
+- **★会话五十七 = 墙 57 判读定谳（_IOFree 132 槽导入面）+ 同族批量手术 r58 出件待刷（2026-11-05/06）**：
+  **r57 首刷判读**（payload-r57-104bff44）：crc `0x8f64878b`（autofix 仅补前
+  导 f,零数字错）,t=1s,stage 至 mapping_adjust。panic from `0xfffffff00ac209e4`
+  （x0 `0xfffffff7b0ecbe00` = **堆指针**,x1 `0x518`）→ **墙 56 消实锤**：r57
+  shim 分配成功,同 corecrypto PRNG-init 调用方 +0xE0 推进到清理路径。新哨兵墙
+  机制 = **尾跳进哨兵**：bl `0xac209e0` → 局部直调 g(`0xac207e0`,kext 本体非
+  thunk)→ pred1（槽 0x84ac9b8,已绑）非零清旗返;pred2（槽 0x84ac9d0,已绑）
+  为零 → 尾跳 b `0xac818b0` → 槽 `0x84ac900` = 哨兵 `0xb5a9c4c`（r52 同址）；
+  尾跳先恢复 x30 故 LR 保 `0xac209e4`。**定谳 = donor `_IOFree`**
+  （`0xfffffe000b441b54`,80B,sha `1506b0c5…`：cbz x0 + KHEAP_DEFAULT view
+  `0x7f08e00` + bl donor kfree_ext `0xad3e43c`;与 donor _IOMalloc 同 view
+  相邻 +0x130）——**s54"死 thunk"标签翻案**。**槽枚举法定标（工具级）**：
+  donor KC `__DATA_CONST` 低 48 位扫描,IOMalloc 自证 110 恰数,IOFree =
+  **132 槽**（115 原样 + 17 哨兵）。**坐标定标**：kernel.macho native =
+  noctf + `0x39BC000`（kernel.json statistics __TEXT_EXEC old→new 自证）；
+  native kfree_ext = `0xace8d18`（kalloc_ext 0xace84d4 + 0x844,cbz x1 NULL
+  自守）;native _IOFree 配 view `0x7dec4e0` ≠ shim 的 KHEAP_DEFAULT
+  `0x7dec3e0` → 不能绑 native,必须镜像 shim。**r58 = 同族批量手术**
+  （`UniXNU-m2381/scripts/s58-payload-surgery.py`,前像白名单三分类:donor 词/
+  哨兵 → 重写,emitter 已绑 native → 保留）：
+  ① shim_iofree @0xaef0820（5 指令）→ 132 槽;② shim_kfreevar @0xaef0838
+  （3 指令,discard donor kt_view;= kfree_type_var `0xb441c0c` 尾块,98 槽,
+  16 槽 emitter 已绑 native `0xb415f80` 保留）;③ kprintf 65 槽全量 → native
+  `0xb514cb8`（s53 孪生,10 槽保留）;④ mach_absolute_time 133 槽 → native
+  `0xaefbfdc`（s54 孪生,12 保留）;⑤ lck_mtx_alloc_init 8 槽 / IOLockTryLock
+  10 槽 → native（fipspost 路径已实证可用,3/2 保留）;⑥ IOFreeAligned 7 槽 →
+  native `0xb4151dc`（其 view = KHEAP_DEFAULT 自身,免 shim）。共 **453 槽 +
+  2 shim + seal 重算**。seal 契约修正:fileset entry 的 section offset 本就
+  全藏相对,不可再加 entry 基址（首版误加 0x180000 写糊 32B 字符串,r57 本体
+  无损,已重做）；真 `__fips_hmacs` @payload `0x4ec5fd`,HMAC
+  `6fc44336fd3f44b7…` 盖 entry `__TEXT,__text`（payload `0x3e49800`,
+  0x9e0e94B）。**全图 diff 审计 = 417 簇/1506B,零不可归账字节**。
+  **r58 出件**：`out/m2381/payload-r58-ca755a65.img`（99 MiB,内核封印件
+  与 r57 同 = `20b4729f`,unixnu.toml 不变）。源码双轨:
+  `fileset-iomalloc-shim.patch` 扩展 `unixnu_iofree_shim` +
+  `unixnu_kfreevar_shim`（三 xnu feed 干跑全过,主树 5ab920a）;账本
+  records 151-153 + 144-147 全量重绑注记（设备仓 d4a9ba6）。
+  **记档不修**：donor `0xb441738`（114 槽大面,`b 0xad3e894` = [x0] 函数指针
+  派发尾块,拷贝静态存活,语义未证）;donor `0xae9bd20`（18 槽,拷贝首调用经
+  **donor 零槽 0x7dffa68** blraa,需 donor fixup 解析才能定名）。
+- **★下轮工作单 = 会话五十八 r58 首刷判读（runbook）**：
+  0. 收屏;CRC 对拍照旧（verify-panic-crc --autofix）。
+  1. 分流：
+     a. **同族推进成功**（无 fileset 哨兵墙）→ 预期面:PRNG init 过
+        分配/释放 → fipspost POST 完整跑 → PRNG 登记 → PE_init_iokit →
+        AMFI（t≈32s IORTC 税）→ No-PMGR → PENDING 站表 0x924e77c/ef1c/ef5c。
+     b. **新哨兵墙** → 照哨兵流程:bl 定位（注意尾跳类 = LR 可能保留上游）→
+        槽 → donor 坐标 → 三证定名 → 修。**候选病灶表（会话五十七预研,
+        撞到即按行施工,修法已钉）**：
+        | donor 桩 | 面 | 已知身份 | 钉死修法 |
+        |---|---|---|---|
+        | `0xb3d385c` | 292(267+25哨) | OSObject 默认构造器（体首 = pacda 写
+        per-object 签名 isa,0xcda1 上下文,写 [x0]）| 直绑 native
+        `__ZN8OSObjectC2Ev`（noctf 查名 +0x39BC000;s45 墙36 fixture 前例;
+        注意 267 个存活槽证明 donor 拷贝部分可用——先看哨兵 25 槽的调用方
+        再决定全量 or 只绑哨兵面）|
+        | `0xb46c278`/`0xb46c2d0` | 186×2(161+25哨) | IOCECFamily 桩对
+        （体首 = `mov w8,#1; str w8,[x0,#8]` = 置标志 + GOT 调用）| 先
+        disasm 全身定名再选:native 孪生直绑 or 镜像 shim |
+        | `0xb4424c4` | 134(118+16哨) | lck 默认组包装（`ldr x0,[0xb929330]`
+        → tail donor lck_mtx_alloc_init）| shim:`adrp x0,<our 默认 lck_grp>
+        ; ldr x0,[x0]; b native lck_mtx_alloc_init 0xaceffe8`——先从
+        noctf 查我们内核的 IOLock 组全局名 |
+        | `0xb441738` | 114(全 donor) | `b 0xad3e894` = [x0] 非空检查 →
+        OSMetaClass 注册表派发（sub/lsr#7/cmp#0x40b≈1035 表）；我们内核
+        同款模式零命中 = 寄存器分配差异 | 待屏证（x0/x1 会给对象与参数）；
+        定名走 KDK 邻域 or 模式扫描（放宽寄存器）|
+        | `0xae9bd20` | 18 | 拷贝首调用经 **donor 零槽 `0x7dffa68`** blraa
+        （donor 文件即 0,运行态由 donor fixup 填）| 需解析 donor chained
+        fixups 得运行态目标才能定名；撞墙时先看 x0/x1 |
+        通用：emitter-dead 权威名单 = kernel.json `stubbed`（490 桩）;存活
+        拷贝（donor 词槽）多数可用,勿全量盲修。
+     c. **数据 abort / PAC 类** → 先复核 shim 常量（kfree_ext `0xace8d18`,
+        KHEAP_DEFAULT `0x7dec3e0`）与 braa 鉴权形（ESR EC 0x1C）。
+     d. **r58 上机自检表（刷后读回对拍,dd 读回才算证据）**：payload
+        `ca755a65` 开头;shim @0xaef0820 = `1a 01 0a aa …`(mov x2,x1)@
+        0xaef0838 = adrp;槽 `0x84ac900` = `0x8011000003eec820`;
+        `__fips_hmacs`@payload `0x4ec5fd` 前 8B = `6fc44336fd3f44b7`。
+  2. 工具坑累积（先读再动）：temp/rNN/kernel.macho = **术前件**（验手术
+     必须读 payload;110 shim 词只在 payload）;rNN-shim.json 的 shim_va 可能
+     是废稿（真身 = 槽值解码）;kc.py DON 钉 23F84;donor VA 低 48 位 =
+     `(VA & 0xFFFFFFFFF) - 0x7004000`（直接相减会残留高位）;capstone 在
+     user site;账本权威 = 设备仓 kits/。
+  3. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2。
+  4. 回退：recovery_a ← r57 `104bff44`（一级）/ r56 `94a096c3`（二级）。
