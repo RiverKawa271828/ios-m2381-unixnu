@@ -1,6 +1,6 @@
 --- a/osfmk/kern/kalloc.c
 +++ b/osfmk/kern/kalloc.c
-@@ -2443,6 +2443,23 @@
+@@ -2443,6 +2443,47 @@
  }
  #endif /* XNU_PLATFORM_MacOSX */
  
@@ -21,16 +21,42 @@
 +	    Z_VM_TAG_BT(Z_WAITOK, VM_KERN_MEMORY_IOKIT), NULL).addr;
 +}
 +
++/*
++ * Same out-of-line gap on the free side: donor components free through the
++ * two-argument IOFree KPI (kfree_ext(KHEAP_DEFAULT, addr, size)) and through
++ * the mangled-view kfree_type_var tail (kfree_ext(kt_view | 1, ptr, size)),
++ * neither of which this kernel builds out of line for kext pairing. Provide
++ * both bodies; the kt_view is discarded in favor of KHEAP_DEFAULT so every
++ * donor allocation freed through these shims pairs with the
++ * unixnu_iomalloc_shim allocation zone.
++ */
++__attribute__((used, noinline))
++void
++unixnu_iofree_shim(void *addr, vm_size_t size)
++{
++	kfree_ext(KHEAP_DEFAULT, addr, size);
++}
++
++__attribute__((used, noinline))
++void
++unixnu_kfreevar_shim(void *kt_view, void *ptr, vm_size_t size)
++{
++	(void)kt_view;
++	kfree_ext(KHEAP_DEFAULT, ptr, size);
++}
++
  void *
  kalloc_data_external(vm_size_t size, zalloc_flags_t flags);
  void *
 --- a/config/Mach.exports
 +++ b/config/Mach.exports
-@@ -66,6 +66,7 @@
+@@ -66,6 +66,9 @@
  _thread_terminate
  _thread_tid
  _thread_wakeup_prim
++_unixnu_iofree_shim
 +_unixnu_iomalloc_shim
++_unixnu_kfreevar_shim
  _vm_kernel_addrhash:_vm_kernel_addrhash_external
  _vm_kernel_addrhide
  _vm_kernel_addrperm_external
