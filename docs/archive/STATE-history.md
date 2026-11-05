@@ -4570,3 +4570,270 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
 - **对齐收官（用户拍板"先对齐"）**：上游 24A446 同源 xnu-12377.121.6（Darwin 26 源码未发布）+ os series 逐字同 + kit 同 commit；真缺口 = Mac 从未建 RELEASE fileset reference（session 43 同坑，23F84 参照件系 Linux 建）。修通链：`XNU_KERNEL_CONFIGS=RELEASE ./unixnu kernel --skip-prelink`（builder 携 defconfig 的 `CONFIG_XNU_KERNEL_CHAINED_FIXUPS=y`，绕过 builder 手搓 = 丢环境 → MakeInc.def else 分支要 ld-classic → Xcode 27.2 无的假象）+ Mac 补 `CROSS_CLANG`/`DARWIN_TRIPLE`（UBSan stub 块 linux_env 专属）+ stub 三缺一 negate_overflow（nm 扫组件档实测）补进 baseline.sh + reference 17.2MB 手动 stage `tree/build/xnu/fileset-reference/`。
 - **r54 emit 基线（reference 元素首秀）**：reference-symbol 1489 + reference-order 4334，functions 8215→9468，stubbed 1262→1024，missing 320→286；regression policy 按新面重生成（IOAVFamily 0xb92ab20 = 旧面疑似误配改如实缺失）。payload-r54-df033828（内嵌 kernel 2221b0d2，NOP+kprintf 槽复核存活）待刷。
 - **提交**：设备仓 fb8af03、kit a028840、主树 41d1d0a+93f5903+9e0225f（均未推）。判读工具 temp/s53-*.py + temp/s53-noctf-syms.json 可复用。
+
+# STATE — 现势状态（m2381，2026-10-28 更新）
+## 0. 现势指针（每轮首更，2026-11-05 会话五十五续·墙 56 定谳 + 手术 r57 出件待刷版）
+
+- **★会话五十五续 = 墙 56 判读定谳（_IOMalloc 110 槽导入面）+ r57 手术出件待刷（2026-11-05）**：
+  **r56 首刷**：fips 门过了（prng_random panic 消失，toml 手术生效），
+  推进到 donor corecrypto kext start 的 PRNG init,新哨兵墙 =
+  `fileset: original component called an unmapped kernel function from
+  0xfffffff00ac20904 (x0 0x518 x1 0xfffffff007dcc9c8) hit #1`,crc
+  `0xad79e802` 零纠正命中。**定谳 = donor `_IOMalloc` 未绑**：站
+  0xac20900 → bl thunk 0xac818c0 → 槽 `0x84ac908` → donor
+  `0xfffffe000b441a24`（= s54"留桩三件"之首,其"1参 kalloc_data 无安全
+  孪生"判断错误）。四证定名：①callee 体 = `kalloc_ext(KHEAP_DEFAULT,
+  size, Z_VM_TAG_BT(Z_WAITOK, VM_KERN_MEMORY_IOKIT), NULL)` + `ldadd`
+  大小记账（flags 0x301000 逐位解出,VM_KERN_MEMORY_IOKIT=13）;②KDK
+  26.5.2 `_IOMalloc`（0x7ab1e34）逐指令同形;③x0=0x518 = PRNG 上下文
+  尺寸;④size 区别于 IOMallocZero(Z_ZERO +0x4)。**影响面 = 110 槽**
+  （92 原样未动 + 18 已绑哨兵桩,corecrypto 站仅首发）。**无原生孪生**
+  （在树调用点走 IOMalloc 宏内联;`kalloc_external` 仅 MacOSX;
+  `kernel_kalloc` 已从 12377 删除）→ **s49 shim 先例**：源码
+  `_unixnu_iomalloc_shim`（kalloc_ext(KHEAP_DEFAULT, size, 0x301000,
+  NULL)）+ Mach.exports + series 新增
+  `fileset-iomalloc-shim.patch`（三 feed 干跑全过）;账本 reviewed
+  record 144→145（体 76B,sha af74cbaa…）。**r57 = payload 手术**（免
+  Mac）：28B shim 写入 native 文本页 padding `0xaef0800`（7 指令:
+  mov x1,x0 / adrp+add KHEAP_DEFAULT 0x7dec3e0 / w2=0x301000 / x3=0 /
+  b `0xace84d4` = native kalloc_ext,从 _IOMallocTypeVarImpl 尾调实
+  证）,110 槽全部重绑（pac 0x8011|0x3eec800）,native seal HMAC 重算
+  （0x2856e20a…,只盖 __text;donor POST 只盖 corecrypto kext 段 =
+  未触）。全图 diff = 495B/112 簇（110×4 + 28 + 32）,零杂散。**r57
+  出件**：`out/m2381/payload-r57-104bff44.img`（99 MiB,内核
+  `20b4729f`,unixnu.toml 与 r56 逐字同）。**预期推进面**：PRNG init
+  过分配 → POST 完整跑（HMAC + KAT）→ PRNG 登记 → PE_init_iokit →
+  AMFI（站表 0x924e77c/ef1c/ef5c shim 预案）。旗标不变：vfsinit →
+  root/cryptex mount → SHLOG state=2。回退：recovery_a ← r56
+  `94a096c3` / r55 `dd51ff60`。**工具坑三连（下次拆站先读）**：kc.py
+  DON 仍钉 23F84（wall 命令读字不可信,24A446 用
+  `out/ipsw/24A446/kernelcache.decompressed`）;ours↔donor slide =
+  `0x1f000000000`（README 少一个零）;低 36 位换算 = `VA & 0xFFFFFFFF`
+  取低 32 位（0xfffffff0 前缀下 36 位手算易错）。capstone 装在 user
+  site（python3 不带 -I 跑）。
+- **★下轮工作单 = 会话五十六 r57 首刷判读（runbook）**：
+  0. 收屏（屏态非判决）；CRC 对拍 = plain zlib.crc32 整串（哨兵含
+  `hit #N`,语义 panic 含 `@file:line`）。
+  1. 判读主线：
+  a. **同站 0xac20904 仍哨兵** → shim 未接管：读回槽 0x84ac908 是否
+  `0x8011000003eec800`,再查 braa 鉴权失败形（PAC 类 ESR）→ 编码/区域
+  复核;若 x0/x1 变了 = 已过分配、新站 → 按站分流。
+  b. **数据 abort 形 panic** → 先复核 shim 两常量:kalloc_ext =
+  0xace84d4（_IOMallocTypeVarImpl 尾调）、KHEAP_DEFAULT view =
+  0x7dec3e0（_IOMallocAligned 包装 adrp）,与封印件再交叉。
+  c. **预期推进面**：PRNG init 过分配 → **fipspost_post 完整 POST 首
+  实测**（HMAC 段 diff=0 应过;KAT 面 = s54 挂账未知墙,踩到 → word 级
+  thunk 扫描（勿线扫）→ 槽 → donor 坐标 → 三证定名 → 哨兵流程）→
+  PRNG 登记（register_and_init_prng / cc_kext_random_init）→
+  PE_init_iokit → AMFI（t≈32s IORTC 税）→ No-PMGR → PENDING 站表
+  0x924e77c / 0x924ef1c / 0x924ef5c → shim 三条目 → r58。
+  d. `FIPS Kernel POST Failed` = donor HMAC 不匹配（不该发生：哈希段
+  diff=0;若现 = kext 段被污染,查 cpusub/probe patcher 是否越界写）。
+  2. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2（reader
+  cargo,read-m2381-ufs-log.py 只信 slots_written 以内）。
+  3. 回退：recovery_a ← r56 `94a096c3`（一级）/ r55 `dd51ff60`（二级）。
+  4. 拆站工具坑（本轮实证,先读再动）：kc.py DON 钉 23F84（wall/fn 对
+  24A446 不可信;donor 用 `out/ipsw/24A446/kernelcache.decompressed`,
+  实机字节用 payload 内封印件）;ours↔donor slide = `0x1f000000000`;
+  槽低 32 位 = `VA & 0xFFFFFFFF`;capstone 在 user site（python3 不带
+  -I）;账本权威 = 设备仓 kits/（主树 kits/ 为过期子模块勿改）。
+  5. 若 r57 过 PRNG：下轮主菜 = AMFI No-PMGR 站表三条目；Mac 重建
+  （fileset-iomalloc-shim.patch 已入 series + 账本 149 在案）任一轮可
+  接管手术件,r57 手术即退役。
+
+
+- **★会话五十五 = 墙 55 定谳（自设门，非 donor 墙）+ fips_mode 撤除 + 外科手术 r56 出件待刷（2026-11-05）**：
+  **r55 首刷判读**：t=1s，stage 至 mapping_adjust 后 panic =
+  `source corecrypto verification requires complete default POST
+  @prng_random.c:665`，crc `0x27f71c47` 零纠正命中（plain
+  crc32("message @file:line") 实证）。**病灶 = 我们自己的
+  `source-corecrypto14-bootstrap.patch` 门**（STARTUP SYSCTL
+  RANK_LAST，在 provider start 之前）：`PE_parse_boot_argn("fips_mode")
+  && mode != 0 → panic`——s54 加的 `fips_mode=4`（FIPS_MODE_FLAG_DISABLE）
+  正是该门禁止项（系列契约 = no skipped POST；PRNG 上下文登记依赖 POST
+  完成态）。**r55 比 r54 死得更早**：fipspost_post 根本没跑，s54 四槽
+  重绑（0x84ac980→0xaefbfdc 等）仍未上机验证。修法 = **board.toml 撤
+  `fips_mode=4`**（设备仓，连同其"kpis bl retarget 在哈希段内 HMAC 永
+  不匹配"的过时注释一并改写：emitter 换道后 TEXT_WORD_PATCHES 已清空、
+  FIPS 哈希段 [0xac12c00,0xac818b0) diff=0，完整 HMAC 可过；DISABLE 只
+  是防 KAT 未知的保险，被门判非法）。
+  **r56 出件遇硬阻**：Linux out 树 kernel = r52 旧件 cfbe9b25；s54 两
+  次 scp（temp/s54/kernel.macho=`3d158c4d`、kernel-r55.macho=`e64448dd`）
+  走本地 payload 步骤封印后 HMAC 均为 `61f9ca2a…` ≠ r55 实际封印件
+  `b2f48b39…`，且 0x3eeb64c..0x3eebfdb ~1.4KB 指令级差异（编译级）——
+  **r55 的父内核 X = 未回传第三状态**（Mac payload 出件时间早于两次
+  scp，X 仅存于 Mac out 树）。**外科手术定案**：对
+  `payload-r55-dd51ff60.img` 全图 FAT 手术，仅重写 unixnu.toml 活动簇
+  （dir entry 簇 94598 = 0x5D29800，` fips_mode=4` 移除 562→550B + 尺寸
+  字段）——全图 diff 166B 全部落在 toml 簇 + size 字段内，**内核
+  （封印件 787778cb）、ADT、Data seed、HMAC 报告与实机在跑 r55 逐字
+  节相同**。四门验证（mtools 读回 / 7z 逐件 / 全图 diff 定位 / sha）。
+  **r56 出件**：`out/m2381/payload-r56-94a096c3.img`（99 MiB，sha256
+  `94a096c3f52bf242…40e1cc7`；payload.json 已写手术 provenance）。board
+  已改，**后续正式出件必须重走 Mac（rsync 后本地树重出）或 Mac scp 新
+  kernel**。屏幕显 args 与 loader 实际一致（内核内嵌 args 串随封印件保
+  留 r55 原文 = 判读时屏显即实证）。**预期推进面**：门过 → donor
+  corecrypto kext start → **fipspost_post 完整 POST 首次实测**
+  （mach_absolute_time 槽 + HMAC 段 diff=0 应过；KAT 面 = s54 挂账未知
+  墙，踩到按哨兵流程定名）→ PRNG 登记 → PE_init_iokit → AMFI（站表
+  0x924e77c/ef1c/ef5c shim 预案在案）。成功旗标不变：vfsinit →
+  root/cryptex mount → SHLOG state=2。回退：recovery_a ← r55
+  `dd51ff60`（当轮在跑件）/ r54 `df033828` 二级。
+
+
+- **★会话五十四 = 墙 54 判读定谳 + 四 records + r55 出件待刷（2026-11-05）**：
+  **r54 首刷**（crc `0x196bb370` 零纠正一次命中 len=124B，t=1s，stage 到
+  mapping adjust）= from `0xac1536c` → bl `0xac15368` → thunk `0xac819b0` →
+  auth-GOT 槽 `0x84ac980`（rebase `0x8011|0x3ecaf24`）→ donor **`0xaecef24`
+  = `_mach_absolute_time`**；caller `0xac15330` = corecrypto kext
+  **`fipspost_post(fips_mode=0, mach_header=ki->address)`**（x1 =
+  `0x7dc74e0` = corecrypto entry 基址；`static corecrypto_kext_pmach_header`
+  记忆化体与 fipspost_post.c:106 逐句同源）——首调 =
+  `cc_absolute_time()`（cc_absolute_time.h CC_KERNEL 分支）。
+  **方法修正**：s53 "余 6 桩零调用点"系线性反汇编数据池失步漏扫（thunk 簇
+  0xac818b0..0xac81a80 在线扫失步区）；word 级重扫 = 7 桩目标 bl 站
+  **125/1/1/1/1/1/0**。**四 reviewed records（144→148，设备仓 62935f9）**：
+  ①`0xaecef24→_mach_absolute_time`（125 站 = 最大剩余 import 面）；②
+  `0xad43134→_lck_mtx_alloc_init`（槽夹逼 lck_grp_alloc_init/mtx_assert +
+  KT_LCK_MTX 分配体 + caller pacda 签回锁指针）；③`0xad43db4→
+  _IOLockTryLock`（槽夹逼 IOLockLock/IOLockUnlock + casa-percpu 体形）；
+  ④`0xb42b4a0→_register_crypto_functions`（register_crypto.h:284，**翻案
+  s53 "无孪生"**——源码级孪生在，noctf 实证）。**撤 wall-53 kpis-publish
+  NOP**（TEXT_WORD_PATCHES 清空）：实测 emitter 机制 = bl 保持指 donor
+  thunk、槽重绑 native → **FIPS 哈希段 [0xac12c00,0xac818b0) 文本 diff = 0
+  （donor 逐位还原）**。**board.toml kernel_args + `fips_mode=4`**
+  （FIPS_MODE_FLAG_DISABLE）：完整 HMAC 虽已可过，POST KAT 面仍有未知墙，
+  DISABLE 让 fipspost_post 过 mach_absolute_time 后立即 CCERR_OK
+  （PE_parse_boot_argn r53 已绑可解析）。**留桩 3**（故意）：
+  0xb441a24（1 参 kalloc_data 形态 flags 0x31000 烘死，我们 2 参无安全
+  孪生）/ 0xae9bd20（零直调）/ 0xb441b54（死 thunk）。
+  **r55 出件**：`out/m2381/payload-r55-dd51ff60.img`（payload `dd51ff60` /
+  kernel `e64448dd`，99 MiB，payload.json kernel_args 含 fips_mode=4 实
+  证）；stubbed 1024→**1002**、corecrypto 7→**3**；四槽重绑字节级实证
+  （0x84ac980→0xaefbfdc / 958→0xaceffe8 / 970→0xacf0368 / 9e8→0xb3fdb18，
+  verify-r55.py 四门）；Mac 全链（defconfig→tree→kernel→payload）BUILD
+  EXIT=0（~/unixnu/s54-build.log）。
+- **★下轮工作单 = 会话五十五 r55 首刷判读（runbook）**：0. 收屏（屏态永
+  非判决）。1. 判读主线：a. unmapped-call hit → `verify-panic-crc.py` 对
+  拍 → from−4 = bl 站 → 对号 kernel.json（stubbed 1002 面，donor 坐标）
+  → 三证定名（word 级 thunk 扫描法，勿线扫）→ 通道。b. **预期推进面**：
+  fipspost DISABLE 过 → corecrypto_kext_start 尾段（kpis publish 已通/
+  sysctl_register_oid 31+13 面/register_and_init_prng 已配/cc_kext_random
+  _init）→ 新墙按站分流。c. FIPS POST Failed（不该发生：fips_mode=4 在；
+  若现 = boot-arg 解析问题，查 ADT chosen 传递）。d. AMFI No-PMGR（t≈32s
+  IORTC 税面）→ PENDING 站表 0x924e77c/0x924ef1c/0x924ef5c → shim 三条目
+  → r56。2. 成功旗标不变：vfsinit → root/cryptex mount → SHLOG state=2。
+  3. 回退：recovery_a ← r54 `df033828`；w42fix `3fe101ba` 二级。
+- **★会话五十三对齐 = payload-r54 出件（2026-11-05，已刷已判 = 墙 54）**：
+  `out/m2381/payload-r54-df033828.img`（99 MiB，sha256 `df033828fd9fec1f…`
+  双端同；内嵌 kernel sha `2221b0d2…`）。本轮 = "跟着上游对齐"落地：
+  上游 24A446 = **同源 xnu-12377.121.6**（Darwin 26 源码未发布，谁都无法
+  源码换代）+ series 逐字同 + kit 同 commit b1888c1；**真缺口 = Mac 从未
+  构建 RELEASE fileset reference**（26.5 车道 session 43 同坑重演，参照件
+  一直是 Linux 建的）。修复链：①正确通道 = `XNU_KERNEL_CONFIGS=RELEASE
+  ./unixnu kernel --skip-prelink`（builder 带 defconfig 环境，我两次绕过
+  builder 手搓 = 丢 `XNU_KERNEL_CHAINED_FIXUPS`=1 → ld-classic 缺失假象）
+  ②baseline UBSan stub 缺 `__ubsan_handle_negate_overflow_minimal`（nm 扫
+  组件档实测三缺一，已补）③CROSS_CLANG/DARWIN_TRIPLE 两个 Linux 专属变量
+  Mac 上需显式补（homebrew llvm + arm64e-apple-ios27.0）。
+  **r54 emit 基线（reference 元素首秀）**：reference-symbol 1489 +
+  reference-order 4334 anchors，functions 8215→**9468**，stubbed
+  1262→**1024**，missing 320→**286**；regression policy 已按新观测面重生成
+  （missing 149/stubbed 1024 sites，IOAVFamily 0xb92ab20 = reference 重配
+  后如实缺失，旧面疑似误配）。字节复核：NOP 0xac726e8 在位 + kprintf 槽
+  0x84ac948→0xb514cb8（reviewed 绑定在 reference 重配下幸存）。提交：主
+  树 baseline+policy+STATE，设备仓 kit 本轮未动（fb8af03 仍为头）。
+- **r53（无 reference 过渡件）**：payload-r53-47859083 已出已验证，被
+  r54 取代，留档不刷。
+- **会话五十三判读档（墙 53，已执行移档）**：r52 首刷 = corecrypto kprintf
+  槽 0x84ac948 漏配全案 + kpis-publish NOP（本轮已翻案撤销）→ 全文在
+  `docs/archive/STATE-history.md`（2026-11-05 会话五十四移档）与记忆
+  `s53-r52-firstflash-unmapped-wall`。
+- **换道出件完成（2026-11-05，会话五十二）**：os_profile →
+  `ipados-27.0.1-24A446` 全链走通，**payload-r52 已出待刷**：
+  `out/m2381/payload-r52-773d5578.img`（payload sha8 `773d5578`，kernel
+  `cfbe9b25`，99 MiB ESP，Mac 出件后 Linux 拉回 sha 逐位同）；
+  check-m2381 **4 ok 0 fail**；emit 报告 missing 320 / stubbed 1262 =
+  政策基线吻合，adapter branches 0。首刷判读 = **会话五十三**（recovery_a
+  only + `set_active b`；回退一级 = `payload-w42fix-3fe101ba.img`
+  `6436442d`）。
+- **★对账重大修正（板级层）**：上游实证 24A446 车道 = **arch series +
+  UniXNU-sheng 板级 kernel patches（10 条）+ 板级 package capture 面**——
+  侦察档"arch 68 条全有/零 we-only"口径漏了板级层。**已收编 4 条自洽件**
+  （source-storage-runtime + latency-trace/exit-latency/unnest-trace 三
+  hooks，定义 sheng_user_fault/exit/unnest_hook 指针）；**bringup 主件
+  (2006 行) 未收编**：其 kern_exec 面在 sheng 24A446 树上重写
+  （AGXMetalG17G/壁纸 27 变体），与我们 23F84 时代 zzy-* patch 同功能区
+  fork 分歧，patch 级不可落（git apply/-3/patch --fuzz=3 三级 fallback 全
+  试，kern_exec hunks #4-8/#11 真冲突）——**fork merge 挂账首刷证据后做**。
+  prepare 新增 `git apply -3` → `patch -p1 --fuzz=3` 两级 fallback
+  （3e6b3ca/378a922）。
+- **步 3 终版结论（7 条 we-only）**：六条退役维持（23F84 墙修 ≠ sheng
+  板级修），**prng 保留**（Xcode 27.2 转换税 + 0xbcad 24A446 三站同构实证
+  donor-va ≈ 0xaf73560/0xaf74ef8/0xaf75868）。TEXT_WORD_PATCHES 清空（4 条
+  23F84 钉全失效）。
+- **verified-root-24A446 政策对（换 donor 隐性硬前置）**：Mac userdata 出
+  件（AEA 链 = blacktop `ipsw fw aea --key` + `/usr/bin/aea decrypt`；ipsw
+  CLI 3.1.741 已 brew 装机），OS 9,613,344,768B sha `8a12cdad` ✓ /
+  SystemOS 6,016,729,088B sha `d5b4873d` ✓ = profile [root] pins 逐位同；
+  政策对 = 通用化 build-owner-policies-local.py（窗口/pins 自
+  userdata-root.json + profile 读），RSA 全块 **OS 586,752 + SystemOS
+  367,232 全 PASS**。
+- **emit 布局定谳**：24A446 kernel-entry __DATA 窗 0x1e8000（23F84 =
+  0x22c000），native __DATA 放置其内；越界 0x1c000（撞 Libm 等四条
+  retained __DATA @0xba1c000）→ **bp 采样环 4096→1024**（省 120KB）。
+  ESP volume 96→99 MiB（24A446 payload 92 MiB 顶 95% 门）。
+- **iOS27 源码面补齐**：BootProcessProbe/Worker/BootUiTraceProbe +
+  BootLatencyTrace 家族 verbatim 收编；BootWatchdogPolicy/BootDiagExport
+  双载 → build-boot-progress.py 门扩展 + TelemetryDefs 预处理门；
+  ShengLatencyHooks.c 只留 native_gpu_role_thread（sheng 车道也无定义 =
+  Apple ld 绑零；我们 ld64 拒 weak-undefined）。
+- **参考链**：kit gitlink `b1888c12` ✓；RELEASE 参照件 Mac `5a794da8` ✓；
+  trust bundle `dc655bcb` 双端 ✓；IPSW `fa93b653` 双端 ✓；kernelcache
+  `38e6d9fa` ✓（profile 硬门）。
+- **未推**：主树 `139c7c5` `beebdd8` `c97e6a2` `556b847` `d4766d1`
+  `3e6b3ca` `378a922` `886eeee`；设备仓 `1464ec1`…`52d8e01`（12 笔）。
+  Mac = rsync/scp 全量同步 ✓。
+- **★首刷前提前项（2026-11-05 收队轮）**：①步 0 闭合——w42fix 屏墙
+  donor 0xac8f594 定名 = **ktriage register-subsystem-strings 族**（范围门
+  [0xa,0x12] = subsystem id；native `_ktriage_register_subsystem_strings`
+  0x7834074 同形），24A446 AMFI 2661 bl 站扫描**零复现**（此墙新车道不
+  在）。②wall-42 24A446 站表备妥（PENDING）：AMFI dev-mode 函数
+  **0x924e7b0**（0x498B，/arm-io/soc-misc@0x924e800 + ApplePMGRNub
+  @0x924e92c 同函数）三 caller 站 **0x924e77c/0x924ef1c/0x924ef5c**，与
+  23F84 三站同构；首刷若撞 No-PMGR assert = TEXT_WORD_PATCHES 三站→
+  shim 一重建一刷。③bringup fork-merge 侦察定谳——36 段中 35 段 per-file
+  可落但实跑**多文件真分歧**（exception.c/iokit_rpc.c/pmap.c/proc_reg.h/
+  vm_dyld_pager.c/sched_clutch/vm_param.h = 我们自己的 4k/sandbox 链改同
+  行），patch 级不可落；**series 保持 r52 基线**（bringup-core 两次摘除，
+  6bd09d3）；merge = 首 刷证据后按缺失面逐文件手工工程（设备仓
+  e479869 普查账）。
+- **★下轮工作单 = 会话五十三 r52 首刷判读（runbook，2026-11-05 定稿）**：
+  0. **工具前置**（判读开始前一次）：`scp` Mac 侧 24A446 三件回 Linux
+     判读工作区（`out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho`
+     + `tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.
+     bcm2837.unstripped.noctf` + `kernel/kernel.json`）；`tools/xnu27/kc.py`
+     路径参数化（DON/OUR/NAT 现钉 23F84，SLIDE `0x1f000000000` 不变——
+     13 跑 record 验证同值），判读站坐标 = donor 空间口径。
+  1. **收屏**：刷机结果屏摄（挂 = panic 屏；进 = 启动面/黑屏，黑屏不阻塞
+     ——屏态永非判决）。
+  2. **判读主线（分流）**：
+     a. `verify-panic-crc.py` 对拍（assert 配方 `"MSG" @%s:%d` 已校准；
+        24A446 PANIC_TEXT 布局/映射若变 = 会话 49 屏映射法重对 LC）；
+     b. panic 站解码 `kc.py wall SITE`（donor 空间；屏地址归属先对 LC
+        判 native/donor——49 课）；
+     c. **AMFI "No PMGR?"（第一预期，预案已备）**：ConfigurationSettings
+        :388 同族 → 启用 PENDING 站表 `0x924e77c/0x924ef1c/0x924ef5c` →
+        `_bl_to_native('unixnu_amfi_devmode_config')` 三条目入
+        TEXT_WORD_PATCHES → 一重建一刷（r53b）；
+     d. unmapped-call 哨兵墙 → 对号 kernel.json missing 面（320 站基线
+        已录）定名分流；
+     e. 新墙 → 三证定名 → 通道选择（内核目标=fixture / kext 站=TWP）
+        → spec → 一重建一刷。
+  3. **成功分支旗标**：native pac-keys → IORTC 税（t≈32s，clock_initialize
+        _calendar 面 = 23F84 墙 41 后继形态待验）→ vfsinit → root/cryptex
+        mount → **SHLOG 窗 state=2 = 大捷旗标**（24A446 root layout 才
+        开窗）→ launchd/SpringBoard 站。
+  4. **判读后工程**：AMFI 站表启用出件；bringup fork-merge 按缺失面
+     证据逐文件立项（设备仓 e479869 普查账）；PMGR 包重取证（仅当
+     AMFI 等待面实锤需要 nub 路径）。
