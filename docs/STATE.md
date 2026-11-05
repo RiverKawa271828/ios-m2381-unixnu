@@ -40,40 +40,49 @@
   `0xb4a6a20` / `0xb4a6ae8` / `0xb4a0528` / `0xb4a0580` / `0xb46c278` /
   `0xb46c2d0`（IOCEC 对）/ `0xad7e344` / `0xb29df7c` / `0xaec5fe0`（13 个;
   全部经本 kext thunk 表 0xa0ab710-0xa0ab920 可达）。
-- **★下轮工作单 = 会话五十九 r59 首刷判读（runbook）**：
-  0. 收屏;CRC 对拍（verify-panic-crc --autofix）。
-  1. 分流：
-     a. **无哨兵墙** → IOLockAlloc + OSObject ctor 生效,预期推进：kext ctor
-        完成 → fipspost POST 完整跑 → PRNG 登记 → PE_init_iokit → AMFI
-        （t≈32s IORTC 税）→ No-PMGR → PENDING 站表 0x924e77c/ef1c/ef5c。
-     b. **新哨兵墙** → 照哨兵流程：bl 定位（尾跳类 = LR 可能保留上游）→
-        thunk → 槽 → donor 原词 → 三证定名 → 修。**候选病灶表**：
-        | donor 桩 | 面 | 已知身份 | 钉死修法 |
-        |---|---|---|---|
-        | `0xb46c278`/`0xb46c2d0` | 186×2(161+25哨) | IOCECFamily 桩对
-        （体首 = `mov w8,#1; str w8,[x0,#8]` = 置标志 + GOT 调用）| 先
-        disasm 全身定名再选:native 孪生直绑 or 镜像 shim |
-        | `0xb441738` | 114(全 donor) | `b 0xad3e894` = [x0] 非空检查 →
-        OSMetaClass 注册表派发 | 待屏证（x0/x1 给对象与参数）;KDK 邻域 or
-        模式扫描 |
-        | `0xae9bd20` | 18 | 拷贝首调用经 donor 零槽 `0x7dffa68` blraa |
-        需解析 donor chained fixups 才能定名;撞墙先看 x0/x1 |
-        + IOCrypto kext 13 sentinel 导入清单（上条）——若新墙 caller 落在该
-        kext,优先按清单逐个三证。
-        通用：emitter-dead 权威名单 = kernel.json `stubbed`;donor 词槽 ≠
-        可用（指向 native 随机代码,一律重绑）。
-     c. **数据 abort / PAC 类** → 先复核 shim 常量（kfree_ext `0xace8d18`,
+- **★下轮工作单 = 会话五十九（r59 首刷判读 + IOCrypto 残余 13 导入预研，安排于 2026-11-06 收队时，只写单不执行）**：
+  **A. 首刷判读主线（用户刷 r59 `72cc9ef4` 后）**：
+  0. 收屏；CRC 对拍（verify-panic-crc --autofix）；t/stage/hit# 与 r58 对拍。
+  1. 读回自检表（上条 d 项）+ reader dd 读回对拍（dd 读回才算证据）。
+  2. 分流：
+     a. **无哨兵墙**（可能性低——本 kext 残余 12 导入大概率下一站）→
+        IOLockAlloc + OSObject ctor 通关实锤,直接推进:fipspost POST 完整跑
+        → PRNG 登记 → PE_init_iokit → AMFI（t≈32s IORTC 税）→ No-PMGR →
+        PENDING 站表 0x924e77c/ef1c/ef5c。
+     b. **新哨兵墙**（第一预期,caller 大概率仍落 IOCryptoAcceleratorFamily）
+        → 照哨兵流程：bl 定位（尾跳类 = LR 可能保留上游）→ thunk → 槽 →
+        donor 原词 → 三证定名 → 修;若 donor 词 ∈ 下面 B 单清单 = 预研已备,
+        直接按钉死修法施工。
+     c. **数据 abort / PAC 类** → 复核 shim 常量（kfree_ext `0xace8d18`,
         KHEAP_DEFAULT `0x7dec3e0`）与 braa 鉴权形（ESR EC 0x1C）。
-     d. **r59 上机自检表（刷后读回对拍,dd 读回才算证据）**：payload
-        `72cc9ef4` 开头;槽 `0x8313b60` = `0x8011000004412a00`;槽 `0x8313bc8` =
-        `0x80110000043a7a18`;`__fips_hmacs`@payload `0x4ec5fd` 前 8B =
-        `6fc44336fd3f44b7`;shim @0xaef0820 = `1a 01 0a aa…`。
-  2. 工具坑累积（先读再动）：temp/rNN/kernel.macho = 术前件（验手术必须读
-     payload）;rNN-shim.json 的 shim_va 可能是废稿（真身 = 槽值解码）;kc.py
-     DON 钉 23F84;donor VA 低 48 位 = `(VA & 0xFFFFFFFFF) - 0x7004000`;capstone
-     在 user site;账本权威 = 设备仓 kits/;手术偏移 +KHEAD 0x1c9800。
-  3. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2。
-  4. 回退：recovery_a ← r58 `ca755a65`（一级）/ r57 `104bff44`（二级）。
+  **B. 预研单（不等刷机结果,会话开头即可跑;s57→s58 模式）**：
+  对 IOCryptoAcceleratorFamily 残余 13 个 sentinel 导入逐个三证
+  （donor 坐标,全部经本 kext thunk 表 0xa0ab710-0xa0ab920 可达）：
+  `0xb49c874` / `0xb4e7140` / `0xb4e670c` / `0xb4e6764` / `0xb4a6a20` /
+  `0xb4a6ae8` / `0xb4a0528` / `0xb4a0580` / `0xb46c278` / `0xb46c2d0`
+  （IOCEC 对,候选表旧行:体首 `mov w8,#1; str w8,[x0,#8]` 置标志+GOT 调用,
+  186×2 面）/ `0xad7e344` / `0xb29df7c` / `0xaec5fe0`。
+  步骤（每个）：
+  ① donor 体形：bounds + disasm（temp/s58-wall.py 反汇编模式,donor exec
+    fo = 0x3cb0000 + (va − 0xacb4000)）；下一步定体边界（下个 bti c /
+    pacibsp,冷路径块算同函数——OSObject ctor 536B 前例）。
+  ② noctf 孪生：体形扫描 + 符号表（temp/s53-noctf-syms.json,noctf VA =
+    placed − 0x39BC000;先试符号精确命中再退体形搜索）。
+  ③ 修法三分类：native 孪生直绑（词 = 0x8011<<48|(twin−0x7004000),程序算,
+    勿手算）/ 需镜像 shim（页 padding 0xaef08xx 系）/ 记档不修。
+  ④ 有钉死修法者做面数枚举（donor __DATA_CONST 词扫描,s59 脚本枚举器复用）,
+    预写 r60 病灶表行。
+  产出 = r60 候选病灶表增补（钉死修法 + 词 + 面数）,撞墙即施工。
+  `0xae9bd20` 特别注：需 donor chained fixups 解析（donor 零槽 `0x7dffa68`
+  blraa,文件即 0）——侦察成本高,排在 13 导入之后;信息真空先报成本再动。
+  `0xb441738`（114 面 meta 表派发尾块）同样殿后:待屏证 x0/x1 才好定名。
+  **C. 施工与出件（判读或预研钉出新修法后）**：
+  s60-payload-surgery.py（s59 模板;坑:+KHEAD `0x1c9800`、memoryview 原位写、
+  pre-image 白名单三分类、diff 审计零杂散、seal 断言未动）→ 读回自检表 →
+  账本 records 156+（设备仓 kits/fileset-24A446-symbols.json）→ STATE §0 →
+  双仓 commit+push → 刷写卡（常规迭代轮只 recovery_a,sha 门 + dd 读回）。
+  **D. 成功旗标**：vfsinit → root/cryptex mount → SHLOG state=2。
+  **E. 回退**：recovery_a ← r59 `72cc9ef4`（一级）/ r58 `ca755a65`（二级）。
 
 ## 1. 一句话现状（**2026-10-31 会话二十四收档：23F84 fileset 车道，matcher v11 判别子通道落地，战略拍板 = 关键路径优先**）：
 
