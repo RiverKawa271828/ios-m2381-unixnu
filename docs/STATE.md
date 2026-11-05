@@ -1,5 +1,36 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十二·墙60 read_erandom 族定谳 payload-r62 待刷版）
+## 0. 现势指针（每轮首更，2026-11-06 会话六十三·墙61 bdevsw 族定谳 payload-r63 待刷版）
+
+- **★会话六十三 = r62 首刷判读定谳墙61 = bdevsw 族 + 2 面绑 native `_bdevsw_add`
+  r63 出件待刷（2026-11-06，本会话连轮）**：
+  **r62 首刷判读**（payload-r62-2d3e8dd4）：crc `0xaf0e2d21` 零纠正（124B），t=1s，hit
+  \#1。panic from `0xfffffff00a41cb04`（x0 `0x1` x1 `0xfffffff00bb651f8`）→ **墙 60 消实
+  锤**（erandom 7 面生效；AppleImage4 nonce 过，推进到某驱动的设备注册）。**定谳链**：
+  caller bl `0xa422054` → 标准 GOT thunk（adrp 0x83ae000+0x480）→ 槽 `0x83ae480` 哨兵 →
+  donor `0xb3d1700`。语义 = **`bdevsw_add(1, 56B 模板)`**：x0=1=请求 major，x1=kext 自有
+  bdevsw 模板（0xbb651f8，diversified-auth 指针数组），返回值与请求 major 比较 =
+  bdevsw_add 契约。**定名**（devsw 域取证，TU=`bsd/kern/bsd_stubs.c`）：donor
+  `0xb3d1700` = **`bdevsw_add`**（devsw CAS 锁 0xb9ce228 = donor `_cdevsw_add/_cdevsw_remove/
+  _devsw_unlock` 同一全局；per-cpu mtx stats [tpidr+0x1c0]；bound 0x17=nblkdev−1；
+  memcmp vs empty-bdevsw 占位 0x7ec2aa8 = 6×eno_\*+0）；donor `0xb3d161c` =
+  **`bdevsw_isfree`**。几何铁证：donor bdevsw[24×56B]@0xb89c1b0 **紧邻** cdevsw[64×
+  112B]@0xb89c6f0（donor `_cdevsw_add` stride 0x70/bound 0x3f/key 0x7ec2ae0）= conf.c
+  bdevsw[]→cdevsw[] 布局。**修 = 2 面（0x83ae480/0x849f240）绑 native `_bdevsw_add`
+  `0xB3A7810`**（noctf 0x79eb810 精确，体同构）；**isfree 槽 0x83ae488 已被 s61 696
+  批量绑到同一 native `0xB3A7700`——独立交叉证实孪生判定**。s63 手术（设备仓
+  scripts/s63-payload-surgery.py，按 donor 词动态枚举面）：词 `0x80110000043a3810`，
+  diff 6B/2 簇**零杂散**，seal 未动。**出件 `out/m2381/payload-r63.img`（99MiB）
+  sha256 `0cb17660…` 待刷**（recovery_a ← r63；回退一级 = r62 `2d3e8dd4`）。账本
+  814→**816**（+bdevsw_add/bdevsw_isfree 双记录，体 sha 在 temp/s63-ledger-bodies.json）。
+  **注**：native `_cdevsw_isfree` stride 0x70 = cdevsw(112B)、donor f 表 stride 0x38 =
+  bdevsw(56B)，两表各归各勿混判；s63 手术 diff 期望须按面动态算字节数（哨兵低 48 位
+  0x045A5C4C 的 byte3=0x04 与部分新词相同）。s64 可选项（待拍板）：395 集中 noctf
+  精确 + 体验证的导入小批合绑（5-10 个/轮）以加速收敛，风险 = 难二分。
+- **★下轮工作单 = 会话六十四**：A. 刷 r63 判读（CRC 对拍 → 新哨兵墙 → s62-sentinels
+  名单对号 + 三证顺带修；PAC/数据 abort → 回退 r62 二分；无墙推进 → stage 轨迹）。
+  B. 小批队列不变：`0xb47008c` publishResource 3 面 + IOCrypto 13 三证 + `0xad8f628`
+  5 面（绑 `0xAD39884`）+ 395 残余。C. emit go/no-go 不变。
+- **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
 
 - **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
   r62 出件待刷（2026-11-06）**：
