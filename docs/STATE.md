@@ -26,10 +26,32 @@
   bdevsw(56B)，两表各归各勿混判；s63 手术 diff 期望须按面动态算字节数（哨兵低 48 位
   0x045A5C4C 的 byte3=0x04 与部分新词相同）。s64 可选项（待拍板）：395 集中 noctf
   精确 + 体验证的导入小批合绑（5-10 个/轮）以加速收敛，风险 = 难二分。
-- **★下轮工作单 = 会话六十四**：A. 刷 r63 判读（CRC 对拍 → 新哨兵墙 → s62-sentinels
-  名单对号 + 三证顺带修；PAC/数据 abort → 回退 r62 二分；无墙推进 → stage 轨迹）。
-  B. 小批队列不变：`0xb47008c` publishResource 3 面 + IOCrypto 13 三证 + `0xad8f628`
-  5 面（绑 `0xAD39884`）+ 395 残余。C. emit go/no-go 不变。
+- **★下轮工作单 = 会话六十四（战略升级：静态引导道追踪 + 并行判读农场，终结打地鼠；用户授权激进多轮迭代）**：
+  **r63 屏摄核验**（用户指示本轮不判读）：crc `0x68352ecd` 零纠正（124B）from
+  `0xfffffff00a41cb1c`（x0 0x1 x1 `0xfffffff00bb65188`）→ **静态预测命中实锤**：s63 收
+  队前从 bdevsw caller 前向扫描预读的下一墙 = bl 0xa41cb18 → 槽 0x83ae510 → donor
+  `0xb3d1d58`（回退地址精确吻合）——**墙可静态预读，刷机只是验证不再是探路**。x1 =
+  0xbb65188 = cdevsw 尺寸（112B）模板（比墙61 的 bdevsw 模板 0xbb651f8 恰低一表项），
+  疑 cdevsw_add 族；donor 0xb3d1d58 落 bsd_stubs.c TU 区（源序 isfree<add<remove<cdevsw
+  族），native `_bdevsw_remove`/`_cdevsw_isfree`/`_devsw_unlock` noctf 在册待对。
+  A. **工具基建**（深度研究三件）：
+     A1. kext 归属修复：GOT 页 → fileset entry（修 span 解析 bug：entry 内层段独立重定
+         基），产出 = 815 面/392 导入按 kext 分桶清单。
+     A2. **静态引导道追踪器**：从当前墙 caller 起 DFS bl→thunk→slot 链 + 本地函数跳转
+         （有界深度），产出每 kext 导入触发序列 = 未来墙预告单（0xa41cb18 扫描 = PoC，
+         一扫双墙：0x83ae510→0xb3d1d58、0x83ae490→0xb3d1894，均 sentinel）。
+     A3. donor 导出 trie（0x4c50000 blob 0x5cc 无名串）与 kext 内层 bind（prelink 已剥）
+         复攻 = 低优先级挂账。
+  B. **并行判读农场**（多轮迭代引擎）：
+     B1. 当前 kext（caller 所在，GOT 0x83aexxx 页）全部哨兵导入 → 扇出 agent 并行三证
+         判读（管线已文档化：donor 体反汇编 → noctf/源码锚 → TU 几何 + 全局指纹 → 语义
+         契约；范例 = erandom/bdevsw 双案录）；我复核抽查 → 合批绑定 → payload-r64 →
+         刷机验证。
+     B2. 每轮清一个 kext（或数个）；回退链逐轮滚动；账本逐轮增记（构建期价值累积，
+         emitter go/no-go 押后到农场跑顺后再议）。
+  C. **边界**：无证据不绑——近匹配自动评分已判死（7 对已知孪生校准相似度仅
+     0.08-0.24，donor 27.0.1 与 feed 编译分歧过大）；每面仍需三证，agent 产证、人复核
+     后绑定；T1 精确体哈希猎手产出 ≈ 0（temp/s64-twinhunter.py）亦留档。
 - **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
 
 - **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
