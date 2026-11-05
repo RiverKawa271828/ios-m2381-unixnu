@@ -1,5 +1,52 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话五十八·墙 58 定谳 + OSObject ctor 翻案 + r59 出件待刷版）
+## 0. 现势指针（每轮首更，2026-11-06 会话五十九·墙 59 定谳 kalloc_type_impl_external + r60 十导入 44 槽批量出件待刷版）
+
+- **★会话五十九 = r59 首刷判读 + 墙 59 定谳（kalloc_type_impl_external，AppleImage4/AMFI 双家）+ r60 批量手术出件待刷（2026-11-06）**：
+  **r59 首刷判读**（payload-r59-72cc9ef4）：crc `0x719ca2b6`（autofix 补
+  from/x0 各一个前导 f，零数字错），124B，t=1s，hit #1。panic from
+  `0xfffffff009023d34`（x0 `0xfffffff0080e16d0` x1 `0x4`）→ **墙 58 消实锤**
+  （IOLockAlloc 134 槽 + OSObject ctor 292 槽全部生效，推进过 IOCrypto
+  ctor）。**定谳 = caller com.apple.security.AppleImage4**（老 21H461 车道
+  墙 10 同族！）：bl `0x903a698`（auth-GOT thunk）→ 槽 `0x80e1940` =
+  哨兵 → donor import `0xad3e380`；x0 = **kalloc_type_view**（name 串
+  `site.nonce_magazine_t`@0x751da8e + site 位图串@0x751daa4，kt_flags
+  0xf8@+0x28，kt_size 0x64@+0x2c），w1 = 4 = zflags。**注意：本墙不在
+  s58 预测的 IOCrypto 13 导入之列**——另一 kext（AppleImage4，AMFI 同调）
+  的 kalloc_type 先撞线；IOCrypto 13 仍是下一梯队。
+  **修 = donor `0xad3e380` 直绑 native `_kalloc_type_impl_external`
+  `0xace8c8c`**（noctf `0x732cc8c` 符号精确、与 `_kalloc_type_impl` LTO
+  别名同址；三证 = ①noctf 符号精确且紧邻 r58 已证 `_kfree_ext
+  0xace8d18`（同 kalloc.c TU）②语义体形全对（0xd01000 常量对同对、
+  zflags&7 折入同构 bfxil≡orr、ktv +0/+0x28/+0x2c 读法同、尾调
+  `_kalloc_type_impl_internal` donor 0xadb2914 ≡ native 0xace9214 别名证实）
+  ③stubbed 账本 AppleImage4+AppleMobileFileIntegrity 双家在册）。
+  **★坐标系补充定谳：kernel.map.json `native` 字段 = noctf 空间 VA**
+  （0xfffffff0 前缀），km VA = noctf + `0x39BC000`（s57 kfree_ext/
+  s58 IOLockAlloc 双坐标验证）。
+- **r60 = `UniXNU-m2381/scripts/s60-payload-surgery.py`：10 导入 44 槽**
+  （墙 59 import 8 面 + matcher 账本（body-hash，noctf 交叉复核过）已定名
+  9 导入 36 面：OSUnserializeXML 18 面 / IOFreeTypeImpl 8 面 /
+  kauth_cred_nfs4domain2dsnode 3 面 / OSCollection::init、buf_biowait、
+  buf_invalidateblks、cluster_unlock_direct_read、vfs_iterate、
+  vn_authorize_unlink 各 1 面）。pre-image 白名单全中，diff 审计
+  143B/43 簇**零杂散**，seal 未动（`__fips_hmacs`@0x4ec5fd 仍
+  `6fc44336fd3f44b7`）。**出件 `out/m2381/payload-r60-7da7e0b3.img`
+  （99 MiB）待刷**。账本 records 156-165 入
+  `kits/XnuPrelink/fixtures/fileset-24A446-symbols.json`（165 条）。
+- **IOCryptoAcceleratorFamily 残余哨兵导入（r61 第一梯队，坐标已采未修）**：
+  `0xb49c874` / `0xb4e7140` / `0xb4e670c` / `0xb4e6764` / `0xb4a6a20` /
+  `0xb4a6ae8` / `0xb4a0528` / `0xb4a0580` / `0xb46c278` / `0xb46c2d0`
+  （IOCEC 对）/ `0xad7e344` / `0xb29df7c` / `0xaec5fe0`（13 个，matcher
+  账本全未定名，需逐个三证）。DC 区 sentinel 面余 **839**（r60 后）。
+- **★下轮工作单 = 会话六十（r60 首刷判读 + IOCrypto 13 导入预研施工）**：
+  A. 判读：CRC 对拍（--autofix）→ 分流（新哨兵墙 / 数据 abort / 无墙推进）。
+     预期：AppleImage4 ktv 路径过 → IOCrypto ctor 继续 → 下一站大概率
+     落 IOCrypto 13 之一（0xb49c874 系）或 AMFI 路径新面。
+  B. IOCrypto 13 逐个三证（s58-recon 模式：bounds+体形 → noctf 孪生 →
+     修法三分类 → 面数枚举），有钉死修法者并入 r61 手术（s60 模板）。
+  C. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2。
+  D. 回退：recovery_a ← r60 `7da7e0b3`（一级）/ r59 `72cc9ef4`（二级）/
+     r58 `ca755a65`（三级）。
 
 - **★会话五十八 = 墙 58 定谳（IOLockAlloc 134 槽）+ OSObject ctor 翻案（292 槽全量）+ r59 手术出件待刷（2026-11-06）**：
   **r58 首刷判读**（payload-r58-ca755a65）：crc `0xfcd9b111`（autofix 仅补 x1
