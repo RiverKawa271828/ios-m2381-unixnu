@@ -33,19 +33,53 @@
   `6fc44336fd3f44b7`）。**出件 `out/m2381/payload-r60-7da7e0b3.img`
   （99 MiB）待刷**。账本 records 156-165 入
   `kits/XnuPrelink/fixtures/fileset-24A446-symbols.json`（165 条）。
-- **IOCryptoAcceleratorFamily 残余哨兵导入（r61 第一梯队，坐标已采未修）**：
+- **IOCryptoAcceleratorFamily 残余哨兵导入（坐标已采未修，排在 696 批量与
+  emitter 线之后）**：
   `0xb49c874` / `0xb4e7140` / `0xb4e670c` / `0xb4e6764` / `0xb4a6a20` /
   `0xb4a6ae8` / `0xb4a0528` / `0xb4a0580` / `0xb46c278` / `0xb46c2d0`
   （IOCEC 对）/ `0xad7e344` / `0xb29df7c` / `0xaec5fe0`（13 个，matcher
-  账本全未定名，需逐个三证）。DC 区 sentinel 面余 **839**（r60 后）。
-- **★下轮工作单 = 会话六十（r60 首刷判读 + IOCrypto 13 导入预研施工）**：
-  A. 判读：CRC 对拍（--autofix）→ 分流（新哨兵墙 / 数据 abort / 无墙推进）。
-     预期：AppleImage4 ktv 路径过 → IOCrypto ctor 继续 → 下一站大概率
-     落 IOCrypto 13 之一（0xb49c874 系）或 AMFI 路径新面。
-  B. IOCrypto 13 逐个三证（s58-recon 模式：bounds+体形 → noctf 孪生 →
-     修法三分类 → 面数枚举），有钉死修法者并入 r61 手术（s60 模板）。
-  C. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2。
-  D. 回退：recovery_a ← r60 `7da7e0b3`（一级）/ r59 `72cc9ef4`（二级）/
+  账本全未定名，需逐个三证）。DC 区 sentinel 面 r60 后 = **823**
+  （395 import；其中 696 已定名 import 的 9,139 面 = donor 词隐患，r61
+  批量带走；两者不相交）。
+- **★下轮工作单 = 会话六十一（激进施工轮：账本同步 + 696 已定名批量 + emitter 对账侦察；r61 判读顺延至会话六十二）**：
+  **刷机策略：跳过 r60 直刷 r61**（r61 ⊇ r60 全部 10 导入修复，省一轮
+  刷机；若 r61 异常，r60 `7da7e0b3` 上架作二分基准）。
+  **A. 账本与 kit fixture 同步**：
+    0. 设备仓账本加 696 条 records（双证 = matcher body-hash how 字段 +
+       noctf 同名符号精确；体界+sha 程序算，evidence 统一模板），165→861。
+    1. 同步设备仓账本 → `kits/XnuPrelink/fixtures/fileset-24A446-symbols.json`
+       （kit 仓本地 commit，沿用 a028840 先例；主树子模块指针暂不动）。
+       构建期 emitter 从此认识全部已定名导入。
+  **B. s61 大批量手术（主力，全 Linux，读 payload-r60 写 payload-r61）**：
+    - 输入 = kernel.map.json functions ∩ noctf 同名精确 = **696 导入 /
+      9,139 面（r60 payload 实测：全 donor 词、零 sentinel 面）**。
+      大头：_OSObject_typed_operator_new/delete 各 267、OSMetaClassC2 267、
+      instanceConstructed 265、safeMetaCast 257、IOLog 209、memcpy 208、
+      __stack_chk_fail 206、panic 177、PE_parse_boot_argn 158、snprintf 145、
+      __bzero 144。
+    - 算法纪律：**单遍 join**（s57 坑：一遍 DC 扫描建 import→offsets 索引
+      再改写，禁止逐导入重复扫描）；native km VA = (map.native &
+      0xfffffffff) + `0x39BC000`（r60 双坐标验证）；词 = 0x8011<<48|(km−
+      0x7004000) 程序算勿手算；memoryview 原位写。
+    - 门：每面 pre-image 必须 = donor 词（见 sentinel 即 abort 报数）；
+      计数断言 696/9139；每个 native km VA 必须落在 native kernel
+      __TEXT/__TEXT_EXEC（kernel.json segment_layout）内否则 abort；
+      与账本既有 records（s45 era OSMetaClass 家族）名单一致性抽查；
+      diff 审计零杂散；seal 断言未动（0x4ec5fd 仍 6fc44336fd3f44b7）。
+    - 产出 `payload-r61.img` + surgery.json + sha256 + 刷写卡（只刷
+      recovery_a，dd 读回对拍）。
+  **C. emitter 对账侦察（time-box 半场，只读 + 一次试验，不改管线）**：
+    - diff 上游 UniXNU sheng 车道 kernel/payload 步对 emit_prelink 的调用
+      （flags / map 来源 / reference 来源 / adapter branches /
+      bring-up fork merge 状态）vs 我们 `scripts/unixnu/kernel.py`。
+    - 同输入试验：synced fixture + RELEASE reference 跑 emit，报 stubbed/
+      trap 未决集 vs 基线（build 期 1255 stub / payload 395 活哨兵 import），
+      产出 go/no-go 表（各通道/分支各关多少）。终点参照 = sheng 终态
+      2 data + 24 trap。
+  **D. 收尾**：STATE §0、双仓 commit+push。**判读 = 会话六十二**
+    （CRC 对拍 → 分流 → emitter go/no-go → r62 排单；成功旗标不变 =
+    vfsinit → root/cryptex mount → SHLOG state=2）。
+  **E. 回退**：recovery_a ← r60 `7da7e0b3`（一级）/ r59 `72cc9ef4`（二级）/
      r58 `ca755a65`（三级）。
 
 - **★会话五十八 = 墙 58 定谳（IOLockAlloc 134 槽）+ OSObject ctor 翻案（292 槽全量）+ r59 手术出件待刷（2026-11-06）**：
