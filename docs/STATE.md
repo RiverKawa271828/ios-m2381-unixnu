@@ -38,6 +38,35 @@
   `0x1f000000000`（README 少一个零）;低 36 位换算 = `VA & 0xFFFFFFFF`
   取低 32 位（0xfffffff0 前缀下 36 位手算易错）。capstone 装在 user
   site（python3 不带 -I 跑）。
+- **★下轮工作单 = 会话五十六 r57 首刷判读（runbook）**：
+  0. 收屏（屏态非判决）；CRC 对拍 = plain zlib.crc32 整串（哨兵含
+  `hit #N`,语义 panic 含 `@file:line`）。
+  1. 判读主线：
+  a. **同站 0xac20904 仍哨兵** → shim 未接管：读回槽 0x84ac908 是否
+  `0x8011000003eec800`,再查 braa 鉴权失败形（PAC 类 ESR）→ 编码/区域
+  复核;若 x0/x1 变了 = 已过分配、新站 → 按站分流。
+  b. **数据 abort 形 panic** → 先复核 shim 两常量:kalloc_ext =
+  0xace84d4（_IOMallocTypeVarImpl 尾调）、KHEAP_DEFAULT view =
+  0x7dec3e0（_IOMallocAligned 包装 adrp）,与封印件再交叉。
+  c. **预期推进面**：PRNG init 过分配 → **fipspost_post 完整 POST 首
+  实测**（HMAC 段 diff=0 应过;KAT 面 = s54 挂账未知墙,踩到 → word 级
+  thunk 扫描（勿线扫）→ 槽 → donor 坐标 → 三证定名 → 哨兵流程）→
+  PRNG 登记（register_and_init_prng / cc_kext_random_init）→
+  PE_init_iokit → AMFI（t≈32s IORTC 税）→ No-PMGR → PENDING 站表
+  0x924e77c / 0x924ef1c / 0x924ef5c → shim 三条目 → r58。
+  d. `FIPS Kernel POST Failed` = donor HMAC 不匹配（不该发生：哈希段
+  diff=0;若现 = kext 段被污染,查 cpusub/probe patcher 是否越界写）。
+  2. 成功旗标：vfsinit → root/cryptex mount → SHLOG state=2（reader
+  cargo,read-m2381-ufs-log.py 只信 slots_written 以内）。
+  3. 回退：recovery_a ← r56 `94a096c3`（一级）/ r55 `dd51ff60`（二级）。
+  4. 拆站工具坑（本轮实证,先读再动）：kc.py DON 钉 23F84（wall/fn 对
+  24A446 不可信;donor 用 `out/ipsw/24A446/kernelcache.decompressed`,
+  实机字节用 payload 内封印件）;ours↔donor slide = `0x1f000000000`;
+  槽低 32 位 = `VA & 0xFFFFFFFF`;capstone 在 user site（python3 不带
+  -I）;账本权威 = 设备仓 kits/（主树 kits/ 为过期子模块勿改）。
+  5. 若 r57 过 PRNG：下轮主菜 = AMFI No-PMGR 站表三条目；Mac 重建
+  （fileset-iomalloc-shim.patch 已入 series + 账本 149 在案）任一轮可
+  接管手术件,r57 手术即退役。
 
 
 - **★会话五十五 = 墙 55 定谳（自设门，非 donor 墙）+ fips_mode 撤除 + 外科手术 r56 出件待刷（2026-11-05）**：
