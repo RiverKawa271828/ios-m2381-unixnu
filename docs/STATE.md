@@ -1,6 +1,44 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十一·696 定名导入批量手术 payload-r61 待刷版）
+## 0. 现势指针（每轮首更，2026-11-06 会话六十二·墙60 read_erandom 族定谳 payload-r62 待刷版）
 
+- **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
+  r62 出件待刷（2026-11-06）**：
+  **r61 首刷判读**（payload-r61-1795d6bb）：crc `0xa9474625` 零纠正（125B），t=1s，hit
+  \#1。panic from `0xfffffff0090261b8`（x0 `0xfffffff00ba64b19` x1 `0x10`）→ **墙 59 消实
+  锤**（696 批量 9,134 面全生效；corecrypto kext start 注册 PRNG 后推进进 AppleImage4
+  nonce manager）。**定谳链（全程证据闭环）**：caller bl `0x9028f44` = 环境对象回调派发
+  thunk（`ldr x16,[x0,#0x100]; mov x17,#0x12f7; braa x16,x17`；对象 = 运行时填充的
+  __DATA 注册表）→ 回调 = **ctx-drop 适配器 `0x902576c`**（`mov x0,x1; mov x1,x2; b
+  0x903a898`，(ctx,buf,len)→(buf,len)）→ AppleImage4 GOT thunk 0x903a898 → 槽
+  `0x80e1a40` 哨兵。语义 = **16 字节随机读取**（nonce；x0 = struct+5 内嵌 16B 缓冲，
+  x1 = [x10+0x48] 长度字段）。**定名**（donor 导出 trie 不可解码；source 锚 + 体取证）：
+  donor `0xae9bd20` = `read_random_generate`（blraa 经 `prng_generate` 函数指针全局
+  [0x7dff0a68] + 每核互斥 tpidr_el1 + 0x100 分块）；donor `0xae9bc68` = `read_erandom`
+  （u32 len + `prng_ready` 门 [0x7dff0a80]）；兄弟 `0xae9bbac` = `read_erandom_generate`
+  （16K PAGE_SIZE 分块；map how=string 记录独立佐证 native 0x7507818）——TU =
+  `osfmk/prng/prng_random.c`（墙 55 fips 门同文件）。**修 = 7 面绑 native
+  `_read_frandom` `0xAEC2BF8`**（noctf 0x7506bf8 精确；源码 read_frandom{read_erandom}
+  = 门+(prng_ready?PRNG:DRBG) 语义超集；native 体近指令级同构 = 同门+同 0xedeb per-cpu
+  pacia 全局+同 0x100 分块；native 无 `_read_random_generate`/`_read_erandom` 符号
+  （静态内联）故 `_read_frandom` 为正解；xnu-12377 车道的 fileset-read-erandom-shim
+  不在 27 车道亦不需要）。**s62 手术**（设备仓 scripts/s62-payload-surgery.py）：槽
+  0x80e1a40/0x8316e80/0x833c2e8/0x8479c28/0x849fa18/0x84ac9d8/0x848d5e8 → 词
+  `0x8011000003ebebf8`，pre-image 白名单+donor 词断言全中，diff 28B/7 簇**零杂散**，
+  seal 未动。**出件 `out/m2381/payload-r62.img`（99MiB）sha256 `2d3e8dd4…` 待刷**
+  （recovery_a ← r62；回退一级 = r61 `1795d6bb`）。账本 812→**814**（+read_erandom/
+  read_random_generate 双记录，体 sha 在 temp/s62-ledger-bodies.json）。
+  **对质裁决（工作单 B 项）**：s61 冲突 `0xad8f628`（map=`_task_reference` vs
+  账本=`_task_reference_external`）**操作上化解**——noctf 两名同址 `0x737d884`
+  （别名/ICF 合并），绑定目标唯一 = native km `0xAD39884`，s63 直绑无需裁名。
+  **工具警示**：map 稀疏（仅 matcher 映过函数），近邻命名不可靠；**395 未定名集已可
+  用 `temp/s62-sentinels.py` 全枚举**（824 槽/395 导入，donor 词→map 近邻名为**暂定**
+  需逐个三证；824 vs r60 记账 823 差 1 未溯源）。
+- **★下轮工作单 = 会话六十三**：A. 刷 r62 判读（CRC 对拍 → 分流：新哨兵墙 →
+  s62-sentinels 全名单对号 + 三证顺带修；PAC/数据 abort → 疑 `_read_frandom` 绑定 →
+  回退 r61 二分；无墙推进 → stage 轨迹/vfsinit/root mount/SHLOG state=2）。B. 小批队
+  列：`0xb47008c` publishResource 3 面 + IOCrypto 13 三证 + `0xad8f628` 5 面（绑
+  `0xAD39884`）+ 395 残余。C. emit 同输入试验 go/no-go（kit `96eedc2` synced fixture +
+  RELEASE reference）不变。
 - **★会话六十一 = 696 定名导入批量手术 r61 出件待刷（2026-11-06，跳过 r60 直刷 r61）**：
   **口径定谳**：工作单 696/9,139 精确复现 = **r52 期 24A446 matcher map**
   （`out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.map.json`，v11，
