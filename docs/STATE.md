@@ -1,6 +1,36 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十四·静态预读双墙定谳 payload-r64 待刷版）
+## 0. 现势指针（每轮首更，2026-11-06 会话六十五·墙64 AMFI ctor 定谳 payload-r65 待刷版）
 
+- **★会话六十五 = r64 首刷判读（墙62/63 消实锤）+ 墙64 定谳 = OSMetaClass 六参
+  zone ctor + 2 面绑 native，r65 出件待刷（2026-11-06，连轮，无 agent 直判 30 分钟）**：
+  **r64 首刷判读**（payload-r64-b7535382）：crc `0x785f87e4`（屏摄），t=1s，hit #1。
+  panic from `0xfffffff00925a148`（x0 `0xfffffff00bac96e8` x1 `0xfffffff007642b21`）→
+  **墙 62/63 双消实锤**（IOStorageFamily 注册函数 22 调用全绑放行，推进进 AMFI）——
+  静态预读战略第 3 轮兑现。**判读链（tracer 秒解）**：caller bl `0x925a144` =
+  **com.apple.driver.AppleMobileFileIntegrity** __TEXT_EXEC（span 修复桶归属）→ 槽
+  `0x8135d30` 哨兵 → donor `0xb3d37ec`。语义：x0 = AMFI __DATA 全零静态（metaclass
+  存储），x1 = **串 "OSDetachedCertificates"**（AMFI 类名；串池邻域 = zone 名
+  "iokit.OSDetachedCertificates" + ConstraintUtilities.cpp/CertManager.cpp 串）= AMFI
+  静态 C++ 构造注册自类。**定名**：donor `0xb3d37ec` =
+  **`__ZN11OSMetaClassC2EPKcPKS_jPP4zoneS1_19zone_create_flags_t`**（OSMetaClass
+  六参 zone_create ctor，OSMetaClass.cpp logError 后首个导出函数）。三证：①donor 体
+  [0xb3d37ec,0xb3d385c)——pacibsp+存 x3-x6/x0（x1/x2 活）→ bl `0xb3cfcbc` = donor 三参
+  核心 ctor（委托；map 0xb3cfca8 "_unix_syscall" 系 how=calls 误名）→ tbnz 全局位门
+  （=if (!(kIOTracking & gIOKitDebug))）→ zflags|ZC_ZFREE_CLEARMEM → bl `0xadb3e94`
+  zone_create → `str x0,[x19]` 写 \*inZone → 返 this；②native 孪生 noctf 精确
+  0x79ed4bc（km `0xB3A94BC`）：序幕与 donor 逐字节相同；native 布局镜像 donor 序
+  （三参 C2 0xB3A90EC < logError 0xB3A9360（map how=body-hash 精确）< 六参
+  0xB3A94BC）；③源码锚 OSMetaClass.cpp ~575 行（委托+zone_create 门逐指令吻合）。
+  第 2 面 `0x83b6148` = **IOSurface**（zone-backed 类，交叉证实孪生）。**修 = 2 面绑
+  native**（词 `0x80110000043A54BC`）。s65 手术（设备仓 scripts/s65-payload-surgery.py，
+  新增 gate2 = noctf 表精确名+km delta 双验）：**2 面 6B/2 簇零杂散，seal 未动**。
+  **出件 `out/m2381/payload-r65.img`（99MiB）sha256 `7bac97e6…` 待刷**（recovery_a ←
+  r65；回退一级 = r64 `b7535382`）。账本 818→**819**。**★工具坑定谳**：native 体
+  必须读 kernel.macho `__TEXT_E`（vm 0x8500000，km VA = noctf+0x39BC000 直落其中）；
+  读 payload 的 donor 段布局 km VA 会拿到 donor exec band 字节（本轮误读一次浪费两
+  个 dump，验算法无碍——绑定公式由 r61-r64 四轮实机背书）。本轮判读无 agent 直判：
+  tracer 秒解链 → 读 x1 串秒定性（s59 同款）→ 源码序对位 → noctf 精确 → 手术，全链
+  ~30 分钟 = 农场单墙标准节拍。
 - **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
   （2026-11-06，连轮，子代理并行产证）**：
   **caller 定性修正**：墙 61/62/63 的 caller 函数 [0xa41ca8c,0xa41ce70) 归属
