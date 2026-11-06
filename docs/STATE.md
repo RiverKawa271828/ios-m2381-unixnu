@@ -1,6 +1,46 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十三·墙61 bdevsw 族定谳 payload-r63 待刷版）
+## 0. 现势指针（每轮首更，2026-11-06 会话六十四·静态预读双墙定谳 payload-r64 待刷版）
 
+- **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
+  （2026-11-06，连轮，子代理并行产证）**：
+  **caller 定性修正**：墙 61/62/63 的 caller 函数 [0xa41ca8c,0xa41ce70) 归属
+  **IOStorageFamily**（span bug 修复后定谳；此前"memdev"系调用序与 memdev.c:665-673
+  同构所致的特征误标，kext 本体 = IOStorageFamily 的设备注册函数）。
+  **墙 62 定谳**：donor `0xb3d1d58` = **`cdevsw_add_with_bdev`**（r63 屏摄 crc
+  `0x68352ecd` 零纠正，panic from `0xa41cb1c`，x1=`0xbb65188` cdevsw 112B 模板；
+  bl `0xa41cb18` → 槽 `0x83ae510`）。三证：①体 316B——体首 bl donor `_cdevsw_add`
+  `0xb3d1a98`（kernel.map how=calls）、bdev 写 chrtoblktab `0xb89bea4`[major]（cmp
+  #0x17 后）、bdev 越界内联 `_cdevsw_remove` 回滚（五常量全中：cdevsw 0xb89c6f0 /
+  nocdev 占位 0x7ec2ae0 / flags 0xb9284f8 / CAS 锁 0xb9ce228 / memcmp 0xae82458）、
+  返 index/−1；②**s63"native 无符号"翻案**——noctf 精确 `_cdevsw_add_with_bdev`
+  0x79ebd74（km `0xB3A7D74`，228B）在表（s63 只查 matcher map 未查 noctf-syms 所
+  致），与 donor 逐块 1:1（native 调 `_cdevsw_add` 0xB3A7B3C + `_chrtoblk_set`
+  0xB3A0FEC；几何闭环 0xB854BD8+24×0x38=`0xB855118`=native cdevsw 表基；
+  chrtoblktab 0xB856D18）；③源码锚 bsd_stubs.c:266-284——with_bdev = cdevsw_add +
+  chrtoblk_set + 失败回滚，`cdevsw_remove_with_bdev` 全树不存在，chrtoblktab 唯一
+  读者 `chrtoblk()` 返 NODEV 属设计内（无启动早期 panic 面）。方案 B（shim 重构）
+  作废。**墙 63 定谳**：donor `0xb3d1894` = **`bdevsw_remove`**（三重指纹 cmp#0x17/
+  stride 0x38/表 0xb89c1b0 全中 + 与 bdevsw_add 镜像；native `_bdevsw_remove` km
+  `0xB3A7968` 几何闭环同上）。**勘误**：无条件面 = `0x849f248`（apfs 反注册 fn
+  0xaaedb8c），s64 工单所写 `0x849f240` 系墙 61 bdevsw_add 已绑槽之误。
+  **修 = 3 面绑 native**：槽 `0x83ae510`→`_cdevsw_add_with_bdev`（词
+  `0x80110000043A3D74`）+ 槽 `0x83ae490`/`0x849f248`→`_bdevsw_remove`（词
+  `0x80110000043A3968`）。s64 手术（设备仓 scripts/s64-payload-surgery.py，动态枚
+  举+面数断言+noctf→km delta 门）：**3 面 9B/3 簇零杂散，seal 未动**。
+  **出件 `out/m2381/payload-r64.img`（99MiB）sha256 `b7535382…` 待刷**（recovery_a
+  ← r64；回退一级 = r63 `0cb17660`）。账本 816→**818**（体 sha 在
+  temp/s64-ledger-bodies.json）。**判读农场基建（本轮三件，报告 temp/s64-farm-report.md
+  与 temp/s64-span-fix.md / s64-wall62.md / s64-wall63.md）**：A1 span bug 修复
+  （旧"最小 span 者胜"退化→全部槽误归 corecrypto；新 s64-kext-buckets.py 按
+  LC_FILESET_ENTRY 独立重定基 + DC 区间包含判属）→ **815 面/392 导入/27 桶清单**
+  （temp/s64-kext-buckets.json；差 1 悬案溯源 = 槽 0x849fff8 高 16 位 0x8001 非
+  form-A，823=form-A 口径/824=low48 口径）；farm manifest 392 导入体特征全覆盖
+  （temp/s64-farm-manifest.json）+ IOStorageFamily 桶初评 **高 2/中 4/低 24**
+  （temp/s64-farm-currentkext.json，中置信不绑守边界）+ tracer 复现 22/20/2
+  （temp/s64-tracer.py）。**策略定谳**：纯体哈希/词级方法打不动此池（392 目标仅
+  28 哈希命中、可绑级 1；已知孪生词等 topk 从未进前 3）——同 TU 锚点+体语义+
+  caller 契约是主路径。中置信 4 条待人工复核（含 `_IOLockWakeup`：topk s_min=1.0
+  + ledger 邻居 IOLockSleepDeadline+0x14、6 面）。
 - **★会话六十三 = r62 首刷判读定谳墙61 = bdevsw 族 + 2 面绑 native `_bdevsw_add`
   r63 出件待刷（2026-11-06，本会话连轮）**：
   **r62 首刷判读**（payload-r62-2d3e8dd4）：crc `0xaf0e2d21` 零纠正（124B），t=1s，hit
@@ -68,8 +108,20 @@
   D. **边界**：无证据不绑——近匹配自动评分已判死（7 对已知孪生校准相似度仅
      0.08-0.24，donor 27.0.1 与 feed 编译分歧过大）；每面仍需三证，agent 产证、人复核
      后绑定；T1 精确体哈希猎手产出 ≈ 0（temp/s64-twinhunter.py）亦留档。
-- **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
-
+- **★下轮工作单 = 会话六十五（r64 判读 + IOStorageFamily 清桶轮）**：
+  A. **r64 刷机判读**：预期墙 62/63 双消——caller 注册函数 22 调用全绑后该注册路径
+     应放行；成功旗标 = 新 panic 来自**不同 caller**（≠0xa41cb1c 一族）或推进（crc
+     必为新值）；若仍 0xa41cb1c 族 → 检查同族第 4 墙（cdevsw_remove/cdevsw_isfree
+     的 caller 是否被注册失败路径触达）。回退一级 = r63 `0cb17660`。
+  B. **IOStorageFamily 清桶**：桶剩 29 面/28 导入（farm currentkext.json 已备初评）；
+     高置信 2 条已随 r64 绑毕；中置信 4 条人工复核后决定绑否（`_IOLockWakeup` 6 面
+     = 头号候选：topk s_min=1.0 + ledger 邻居 IOLockSleepDeadline+0x14 + 语义契约
+     唯一性）；低置信 24 条按"下一墙优先"逐个三证（s64-tracer.py + farm manifest
+     体特征为现成产证底稿）。
+  C. **全量推进序**（kext-buckets.json 桶面数）：apfs 155 / AppleARMPlatform 70 /
+     sandbox 63 / IOGPUFamily 61 / IOHIDFamily 52 / AMFI 43 / IOAVFamily 40 /
+     IOSurface 38 / ApplePMGR 37——每轮清一桶，静态预读下一墙后再刷（刷机只验证）。
+  D. 边界不变：无证据不绑；账本逐轮增记；回退链逐轮滚动。
 - **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
   r62 出件待刷（2026-11-06）**：
   **r61 首刷判读**（payload-r61-1795d6bb）：crc `0xa9474625` 零纠正（125B），t=1s，hit
