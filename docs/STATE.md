@@ -35,10 +35,20 @@
      `b280f63e9a0c8cf8`，15.6GB 刷写较久）；②recovery_a ← r67 `41b52bea`。回退：payload = r66
      `fa977e3a`；userdata 回退件 = 本机 23F84 13.98G（`out/m2381/ipados-26.5.2-23F84/m2381/userdata/`）。
      刷后 STATE §2 刷写表现势刷新（boot_b `289614ba` / recovery_a r67 / userdata b280f63e 现役——
-     现表停 10-31/23F84 时点待更）。
-  B. **r67 判读**：crc 必新；caller 允许仍在 AMFI span（余 112 调用），但**槽必非
-     `0x8136078`/`0x8135f80`/`0x848d250`**（已绑槽再放行 = 绑定失效，先查 dd 读回再判读）。普查纪律：
-     `calls` 键 + payload_word 低48 真值过滤（s67 勘误）。
+     现表停 10-31/23F84 时点待更）。userdata 读回对拍（红线"dd 读回才算证据"）= 时间允许全件
+     sha256 对 `b280f63e…4667d`；否则至少双窗头采样（OS 窗 @1MiB 起 1MiB + SystemOS 窗
+     @9,614,393,344 起 1MiB，sha 与 userdata-root.json 窗记录前缀比对）。
+  B. **r67 判读**：crc 必新；caller 允许仍在 AMFI span（**余 88 调用 / 33 靶** =
+     114 − identity 24 − lockdown 2），但**槽必非 `0x8136078`/`0x8135f80`/`0x848d250`**
+     （已绑槽再放行 = 绑定失效，先查 dd 读回再判读）。普查重生成 =
+     `python3 -I temp/s64-tracer.py 0x92469c0 0x92721c8 --payload out/m2381/payload-r67.img
+     --donor out/ipsw/24A446/kernelcache.decompressed --out temp/s68-amfi-prescan.json`，
+     过滤纪律 = `calls` 键 + `payload_word` 低48 == `0x45a5c4c` 真值 + 打印计数非空（s67 勘误）。
+     **★新屏形态分支：若不 panic 而挂死**（stage 停滞无新 crc）→ 首疑
+     `lockdown_mode_init` 未达（其 async 变体等 IONVRAM matching resource；我们环境
+     NVRAM nub 可能不发布 → get_lockdown_mode_state 的 msleep 路径永眠）：查我们内核
+     lockdown_mode_init 走 #if-async 还是 #else-直调分支 + IONVRAM 发布者，必要时
+     bind/patch 直调变体（= 上游 #else 形）。
   C. **批量预读候选（四证 bar 不变，s60-s64 批量先例）**：0xad3e8e4（12 调用，bracket =
      _IOFreeTypeImpl 0xad3e894 < 靶 < _kfree_shared_data 0xad3e910，kalloc/free 族）+ 0xaf21778
      （11 调用，bracket = _vnode_hold 0xaf215f8 < 靶 < _mount_lock_spin 0xaf21850，vnode 族）——
