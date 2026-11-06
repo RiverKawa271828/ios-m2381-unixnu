@@ -27,18 +27,22 @@
   AppleMatch×7 + AMFI×12 + 3 其他镜像**：设备仓 scripts/s71-payload-surgery.py，24B/6 簇零杂散，
   seal 未动，6/6 回读解码验证。**出件 out/m2381/payload-r71.img sha256 `ddbaa7b9` 待刷**。
   账本 827→**829**。
-- **★下轮工作单 = 会话七十二（r71 判读 + 哨兵扩容拍板 + 农场续批）**：
-  A. **刷机**：recovery_a ← r71 `ddbaa7b9`（payload-only；回退 = r70 `ecf23f32`）。
-  B. **r71 判读**：crc 必新；槽必非本轮 6 槽 + r70 七槽 + 账本全量。kfree_data×5 槽清 AMFI 12 站
-     后，AMFI 残余（s67 普查 35 靶/余 88 调）与 sandbox 普查（59 靶）交错撞线。
-  C. **★哨兵扩容拍板（用户问询 2026-11-07）**：现哨兵只打 from+x0/x1+hit+crc。提案 = stub 增打
-     **kext 归属名**（fileset 镜像界表烧进 stub 数据区，~30 条 [start,end,"name"]）+ **x2/x3** +
-     槽地址——每轮省掉桶表/普查两步换算 + 今日 x2（n）类实据直接可见。代价 = 改 fileset patch
-     + payload 全链重出 + verify-panic-crc 配方换版（消息文本变）。等用户拍板。
-  D. **农场续批**：sandbox T3 0xb2aa3f8×27 / T4 0xad45364×25（lock_rw 分型）/ 0xadb7cbc×10 /
-     0xb260110×14 / 0xb26324c×10 / 0xad94128×10；AMFI 残余 33 靶中的高频项（0xb226cc8×24 已绑
-     s67，下查 0xaf21778 已绑，再看 AMFI 预读余单）。四证 bar 不变。
-  E. **判读纪律**：同 payload 必同 site（报点差=payload 判别）继续有效；CRC autofix 每轮必跑。
+- **★下轮工作单 = 会话七十二（★审查轮，用户拍板 2026-11-07"下轮会话做审查"；激进多干授权不顺延）**：
+  A. **同步完整性审查**：rebase 108c 对我们关键面的 diff 审计（profiles / payload.py / patches/xnu
+     series / kit emit 代码——b6afb4b "bang root" emitter 新特性对我们出件流的影响）；kit 并集
+     f9123a3 vs 设备仓账本一致性核对（应 839=839）；AdrenoMetal pin 6416a76e（GPU parity 线）对
+     我们无 GPU 树的影响评估。
+  B. **构建前静态门**：check-m2381 + 出件 dry-run（839 账本后 expected 哨兵变化数预估，对齐
+     全图普查 778 槽/379 靶基线）；release-reference 与新补丁系列咬合验证。
+  C. **r71 判读**（若已刷）：crc 必新；caller 允许 sandbox/AMFI span；**槽必非账本 839 全量**；
+     同 payload 必同 site 纪律继续。
+  D. **方向拍板材料**（用户三问完整账目，供 A/B 拍板）：A=留 24A446 提速（执行线 ~83 靶，家族
+     自动解析 pass + 农场 3-5 靶/轮 ≈ 几十轮）；B=回 21H461 成熟线（上游 alioth 同款配对，账本
+     三次清零的解药，代价=弃 iOS27）；侦察结论已入档（sheng=SM8550 同 SoC、config 假说排除、
+     快因=板级成熟+全职早 3 天）。附两项待拍板：**哨兵扩容**（kext 归属名+x2/x3+槽地址，代价=
+     fileset patch 改+全链重出+CRC 配方换版）、**kit 反哺推送**（f9123a3→上游 UniXNU/XnuPrelink
+     main，让全生态跳过我们 700+ 条墙）。
+  E. **卫生**：temp 大件隔轮清拍板（s6x-* 普查大 JSON）；备份分支 pre-sync71 保留至 r72 出件后。
 - **★s71 同步+侦察（2026-11-07 用户令"先侦察，同步上游"）**：主树 rebase upstream/main **108c**
   （QcomDwc3 USB 驱动组件 + 蓝牙原生栈线 + root union fsid 修复 + iPad17,3 board_id/security_domain
   修复 + archive 可重现 + addon/UART runtime 修复；冲突三处按规矩解：AdrenoMetal pin 跟上游 GPU
