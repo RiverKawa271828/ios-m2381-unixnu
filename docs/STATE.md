@@ -31,6 +31,26 @@
   个 dump，验算法无碍——绑定公式由 r61-r64 四轮实机背书）。本轮判读无 agent 直判：
   tracer 秒解链 → 读 x1 串秒定性（s59 同款）→ 源码序对位 → noctf 精确 → 手术，全链
   ~30 分钟 = 农场单墙标准节拍。
+- **★下轮工作单 = 会话六十六（r65 判读 + AMFI/下一 kext 连清轮；激进多轮授权延续）**：
+  A. **r65 刷机判读**（recovery_a ← r65 `7bac97e6`；回退一级 = r64 `b7535382`）：
+     成功旗标 = 新 panic caller ≠ `0x925a148` 族（OSDetachedCertificates/IOSurface
+     两类构造面放行）、crc 必为新值。若 caller 仍在 AMFI（0x92xxxx）→ tracer 秒解
+     → 读 x1 串定性 → 源码序对位 → noctf 精确 → s66 手术（模板 s65，改 BINDINGS+
+     面数断言+gate2）——单墙 ~30 分钟节拍，一个会话连清多墙；若换新 kext → 先查
+     s64-kext-buckets.json 桶归属再同流程。
+  B. **静态预读续用**：每绑完一墙，对 caller 函数前向扫下一个未绑 bl（s63 PoC 法，
+     temp/s64-tracer.py 现成），预测墙先行判读——刷机只验证不探路。
+  C. **IOStorageFamily 中置信 4 条人工复核**（头号 `_IOLockWakeup` 6 面：topk
+     s_min=1.0 + ledger 邻居 IOLockSleepDeadline+0x14 + 语义契约唯一性）：复核过才
+     绑，无证据不绑边界不变。
+  D. **挂账区（非刷机轮做）**：UEFI 仓 7 条未推（含上游 sheng 5 条）找判读间隙推
+     掉；temp 大件隔轮清（s64/s65 产证 wall62/63/64 报告 + farm manifest + buckets
+     **保留**作 APFS 桶工作底稿）；主树 kit 账本 812 vs 设备仓 819 权威——下次 Mac
+     重编/emit 复触发前先同步；主树 out/ 顶层 23F84 残留删除待用户拍板（s61 定谳勿
+     引，删除不可逆）。
+  E. **底稿就绪**：APFS 桶 155 面 = 下一大户（buckets/manifest/tracer 三件现成）；
+     emit 维持降级挂账（复触发 = 首次 Mac 重编顺带开）。AGENTS.md 指路牌已修
+     （§8/20H392 过期指针 → §0 现役车道，2026-11-06）。
 - **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
   （2026-11-06，连轮，子代理并行产证）**：
   **caller 定性修正**：墙 61/62/63 的 caller 函数 [0xa41ca8c,0xa41ce70) 归属
