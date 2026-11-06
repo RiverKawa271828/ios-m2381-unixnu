@@ -1,5 +1,44 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-07 会话七十·r69 判读墙70 _strncasecmp 定谳 + T2 _current_thread_ro 定谳 + 双靶7槽批绑，payload-r70 待刷版）
+## 0. 现势指针（每轮首更，2026-11-07 会话七十一·r70 判读墙71 出 AppleMatch：kfree_data 族定谳 + 6 槽批绑，payload-r71 待刷版）
+
+- **★会话七十一 = r70 首刷判读（7 槽全生效）+ 墙71 定谳（AppleMatch kfree_data 族）+ 6 槽批绑，r71 出件待刷（2026-11-07 凌晨连轮）**：
+  **r70 首刷判读**（payload-r70-ecf23f32；屏摄 IMG_20261107_014846 01:48）：crc `0xb64e1097`
+  单命中零纠正，hit #1，t=1s。报点 `0xfffffff0092029c8`（x0 `0xfffffff802dcc0c0` x1 `0x35`）。
+  **site ≠ 墙70 的 0xaa75010 → 同 payload 必同 site 判据 → r70 七槽绑定全部生效、墙70 消**。
+  **新 span = com.apple.kext.AppleMatch**（text [0x9200c20,0x92032a8) +0x1da4，s64 桶表）——
+  AMFI/sandbox 的 entitlement 正则 kext，与墙 69/70 同一条执行线（entitlement 匹配流水）。
+  **caller 实据**：x0 = `0xfffffff8_02dcc0c0` = **内核堆银行指针**（高 32 位 0xfffffff8 vs 文本段
+  0xfffffff0——新情报：本 runtime 堆在 0xfffffff8 段），x1 = 0x35 = **size 53** → kfree_data(addr,53)。
+  **span 普查**（s70-applematch-prescan.json，tracer 51 bl）：8 哨兵收敛 **2 靶**：`0xad3e8e4`×7
+  站（槽 0x8126030）+ `0xad3e8fc`×1（槽 0x8126038）；**0xad3e8e4 同时 = s66 AMFI 普查二号靶**
+  （12 站槽 0x8136108）+ s64 farm 118 行预判 `_kfree_data` topk 0.833（槽 0x83ae580）——三案卷
+  交叉同靶。
+  **墙71 定谳**：donor `0xad3e8e4` = **`_kfree_data`**、`0xad3e8fc` = **`_kfree_data_addr`**。
+  四证：①donor 体与 native **逐指令同形**（0x18B/0x14B 包装器：mov x2,x1; mov x1,x0; adrp+add
+  x0=kheap 全局; 尾跳 kfree_ext/kfree_addr_ext——仅各自 kheap 全局 0x7f08e00 vs 0x7dec3c0 与
+  尾跳目标异）；donor kfree_data 尾跳 0xad3e43c = **map 精确 `_kfree_ext`**（native km 0xACE8D18
+  同 noctf 符号=几何闭环）；②**族几何 donor/native 全同**（kfree_data +0x18 kfree_data_addr
+  +0x2c kfree_shared_data；donor map 夹逼 _IOFreeTypeImpl−0x50…_kfree_shared_data+0x2c 间隙恰容
+  双靶）；③noctf 精确（_kfree_data 0x732d360/km 0xACE9360、_kfree_data_addr 0x732d378/km
+  0xACE9378）+ s64 farm 同 km 预判；④源锚 osfmk/kern/kalloc.h:521
+  （kfree_data(elem,size)=kheap_free(KHEAP_DATA_BUFFERS,elem,size)）+ kalloc.c:2866。
+  **修 = 2 靶 6 槽**（kfree_data：`0x80e1960/0x8126030/0x8136108/0x8333818/0x83ae580`→
+  `0x8011000003CE5360`；kfree_data_addr：`0x8126038`→`0x8011000003CE5378`）——**一靶同时清
+  AppleMatch×7 + AMFI×12 + 3 其他镜像**：设备仓 scripts/s71-payload-surgery.py，24B/6 簇零杂散，
+  seal 未动，6/6 回读解码验证。**出件 out/m2381/payload-r71.img sha256 `ddbaa7b9` 待刷**。
+  账本 827→**829**。
+- **★下轮工作单 = 会话七十二（r71 判读 + 哨兵扩容拍板 + 农场续批）**：
+  A. **刷机**：recovery_a ← r71 `ddbaa7b9`（payload-only；回退 = r70 `ecf23f32`）。
+  B. **r71 判读**：crc 必新；槽必非本轮 6 槽 + r70 七槽 + 账本全量。kfree_data×5 槽清 AMFI 12 站
+     后，AMFI 残余（s67 普查 35 靶/余 88 调）与 sandbox 普查（59 靶）交错撞线。
+  C. **★哨兵扩容拍板（用户问询 2026-11-07）**：现哨兵只打 from+x0/x1+hit+crc。提案 = stub 增打
+     **kext 归属名**（fileset 镜像界表烧进 stub 数据区，~30 条 [start,end,"name"]）+ **x2/x3** +
+     槽地址——每轮省掉桶表/普查两步换算 + 今日 x2（n）类实据直接可见。代价 = 改 fileset patch
+     + payload 全链重出 + verify-panic-crc 配方换版（消息文本变）。等用户拍板。
+  D. **农场续批**：sandbox T3 0xb2aa3f8×27 / T4 0xad45364×25（lock_rw 分型）/ 0xadb7cbc×10 /
+     0xb260110×14 / 0xb26324c×10 / 0xad94128×10；AMFI 残余 33 靶中的高频项（0xb226cc8×24 已绑
+     s67，下查 0xaf21778 已绑，再看 AMFI 预读余单）。四证 bar 不变。
+  E. **判读纪律**：同 payload 必同 site（报点差=payload 判别）继续有效；CRC autofix 每轮必跑。
 
 - **★会话六十九 = r68 首刷判读（墙出 AMFI 进 sandbox 里程碑）+ 墙69 定谳 + sandbox 普查 267哨兵/59靶 + 双靶批绑，r69 出件待刷（2026-11-07 凌晨连轮）**：
   **r68 首刷判读**（payload-r68-dd3e9636；屏摄 23:55）：crc `0x64d09506` 零纠正，hit #1，t=1s。
