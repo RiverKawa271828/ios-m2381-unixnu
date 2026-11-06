@@ -7,7 +7,7 @@
   A. **r66 刷机判读**（recovery_a ← r66 `fa977e3a`；回退一级 = r65 `7bac97e6`）：成功旗标 = caller ∉ AMFI span `[0x92469c0,0x92721c8]`（AMFI 清仓验证）、crc 必为新值。若 caller 仍在 AMFI span → 预读器漏了（先查 s66-amfi-prescan.json 对账再判读）；新 kext → 先查 s64-kext-buckets.json 桶归属 → tracer 秒解 → 读 x0/x1 串定性（本轮三串秒杀法续用）→ 源码锚/noctf 精确 → s67 手术（模板 s66）。**已知下一大户预判**：apfs（155 槽，root mount 前必经）、AppleARMPE/AppleARM70（48）、sandbox（63）。墙序预判 = APFS 系先撞（ vfsinit/roots 阶段 procs=0 → APFS driver 注册），若 caller 落 apfs → 体取证常含 mount/label 语义串，同节拍判读。
   B. **静读续用**：s66-amfi-prescan.json 已证"每墙后全域重扫"零成本（tracer ~35s），换 kext 后对新 kext span 同款重扫，预测下一墙先行判读——刷机只验证不探路。
   C. **IOStorageFamily 中置信 4 条人工复核**（头号 `_IOLockWakeup` 6 面）：复核过才绑，无证据不绑边界不变。
-  D. **挂账区（非刷机轮做）**：UEFI 仓 7 条未推找判读间隙推掉；temp 大件隔轮清（s65/s66 产证 wall64/65 报告 + tracer/prescan json **保留**）；主树 out/ 顶层 23F84 残留删除待用户拍板。
+  D. **挂账区（非刷机轮做）**：UEFI 仓未推 **已清账（2026-11-06 会话六十六重启前间隙，force-with-lease 5297334c→e2c13592；远端旧件 = 本地 10-30 rebase 改写前版本，内容被 9318b62e 完整包含，零丢失）**；temp 大件隔轮清（s65/s66 产证 wall64/65 报告 + tracer/prescan json **保留**）；主树 out/ 顶层 23F84 残留删除待用户拍板。
   E. **emit 挂账不变**：AMFI 清仓后 kext 面只剩 810 槽，emit 复触发仍挂账（= 首次 Mac 重编顺带开）；APFS 桶 155 面工作底稿（buckets/manifest/tracer 三件）就绪。
 - **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
   （2026-11-06，连轮，子代理并行产证）**：
