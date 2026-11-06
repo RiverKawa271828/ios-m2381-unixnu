@@ -1,5 +1,5 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-07 会话七十四·r73 账本手术轮：**payload-r73-f38d11cc 待刷**；墙73 靶=OSObject ctor 账本直绑；record[152] 误绑修正；stub 37→25）
+## 0. 现势指针（每轮首更，2026-11-07 会话七十四·r73 首刷判读 + r74 根因修复轮：**payload-r74-7db186c0 + userdata-e01c27ae 待刷**；墙74=SourceStorage.cpp:102 root policy 信封缺供给，已接线修复；**iOS27 车道史上最长 boot=31s**）
 
 - **★★★★会话七十四 = r73 判读深读+账本手术+出件（2026-11-07 晨，用户令"开始r73"；Linux 分析+Mac 出件，源码零改动）**。
   **⓪①ABI 深读定谳：墙73 靶 donor `0xb3d6498`（44B 叶件）= `OSObject::OSObject()`**——`bti c; adrp/add/add → __ZTV8OSObject+0x10`（=0x7f077d8，`__DATA_CONST.__const`；vtable 槽位 div 序列 0x3771/0x56b7/0xbaa2… 与 OSObject 虚函数集 release(int)/getRetainCount/retain/release/serialize/getMetaClass/isEqualTo/taggedRetain/taggedRelease×2/Dispatch/init/free 逐位对上，map body-hash 交叉命名）；`movk x17,#0xcda1,lsl#48` 修饰符=obj 高 16 位换判别子；`str w8,[x0,#8]`=32 位 retainCount=1。**x1 全程不用**（r72 推断实证）。源码锚 OSObject.cpp:427（xnu-3199e8bc）= retainCount=1 单行体。**kernel 内 0 直呼 bl**——内核构造器全内联惯用语（native 1468 站同款），out-of-line 件只作为 kext 导出面存在：donor 全宇宙 109 kext GOT 槽，**存活 entry 内 12 槽 = r72 stub 报告"12站"精确来源**（工具=temp/s74-*.py，槽清单=temp/s74-kext-got-imports.json）。
@@ -8,6 +8,9 @@
   **③修法 = 零 shim、纯账本两笔**（设备仓 9302de7；s56-shim 预案作废——其前提"native 无 out-of-line 件"被证伪）：新增 record `0xb3d6498→__ZN8OSObjectC2Ev`（44B sha 629cfcc7…）+ record[152] native_symbol→`__ZN11OSMetaClassD1Ev`（体 sha 不变仍绿）。kit 单测 46/46。
   **④Mac 出件**（tree→prelink→payload；源码零改动=参照件 448c84b7 复用，map 缓存按 evidence 自动失效）：**stub 37→25 站/14 kext 精确兑现**（helper 12 站全消；余=ARMPlatform×7/Image4×5/IOGPU×2/各×1；missing 2 不变）；map v12 functions 17001=+1（0xb3d6498[reviewed]→0x79efa98、0xb3d385c[reviewed]→0x7c95964）；**槽级实证：CoreAnalytics 槽 0x827c610→0xb3aba98（反汇编=OSObjectC2 逐指令同款），12 helper 槽全绑同靶，25 dtor 槽全绑 OSMetaClassD1Ev@0xb651964**。kernel **9b9f57e0**（96MiB）/payload **f38d11cc**（99MiB）双端 sha 逐位同。
   **★r74 工作单 = 首刷判读**：预期墙73 死（CoreAnalytics t≈2s 面过、boot 后移）；下一墙=余 25 站首个命中（候选序照 23 靶预注册：Image4×4/ARMPlatform×7/0xad94128 等）；**留意 vnode_put/vnode_hold 修正（0e38039）首次实跑**（r72 死于 VFS 前，r73 若推进到 root mount 即验证）+ dtor 重绑（25 槽）无回归。**余单 = 账本 23F84 遗留 record 审计**（record[152] 同族风险：凡换道前入账且按 VA 重算过 sha 的 record 需补 vtable 复验——本轮实证此类错可潜伏整条链）。回退=recovery_a ← payload-r72-5a92ea2b。
+  **★★★r73 首刷判读（2026-11-07 屏摄 IMG_20261107_072740/072753，用户报"跑得最久"）**：**t=30s 中途屏 + t=31s panic —— iOS27 车道史上最长 boot**（r72=2s）。**墙73 消实锤**：CoreAnalytics 面过（r72 的 OSObject ctor stub 未复现），余 25 stub 站全未踩；stage 行 `+28s bsd_init: calling IOKitInitializeTime?`（30s IORTC 开机税照挂账）+ 内核 console 深入（IONVRAM unserialize/ephemeral-data-mode、vm swapout/swapfile/GC 线程、lockdown_mode nvram 读取）；PC 采样 23-30s 停 0xb59f23c/238 微跳（IOKitInitializeTime 轮询内，非挂死）；MEM free4K=1197116 与 panic 屏 free=0x12443c 逐位互证。**新墙 panic：`SourceStorage: root policy handoff or authentication failed` @SourceStorage.cpp:102——性质换档：非 stub 哨兵，是自家 SourceStorage 组件的 policy 强制门**（native-source-storage=1 车道史上第一次跑到）。CRC 0x2960355a 未精配（消息缓冲格式未钉死，pages/free 交叉验证已足信，精配挂账）。
+  **★★★墙74 根因定谳（全链尸检）**：`native_source_root_policies_load()` 读 `/chosen/memory-map.RootPolicies`（16B {phys,len}）→ 复制锁页 → `VROOTB01` 信封逐 policy `vr_open/vr_open_header` 对编译内置 `verified_root_key[395]` 验签。链条逐环核验：kernel 步 `build-sheng-source-storage.py` 已合成信封（VROOTB01/v1/count=2/30.5MB 全量表）+ 同源 key（RootAnchor.c，trusted-key sha 74e60348=Mac `.cache/firmware/verified-root-24A446` pair，verification.json 的 image_sha256 8a12cdad=userdata-root.json OS 窗口 sha 逐位同）——**kernel/pair 侧自洽**；UEFI DarwinBoot 读 `<KernelPath>.vroot` 交接（缺文件+DT 有属性=固件层拒启，r73 进了内核=两缺）；**根因=board.toml [payload] 从无 `root_policies` 键** → .vroot 未上 ESP、DT 无属性 → 内核 getProperty=NULL → panic。s52 备忘"政策对=换 donor 硬前置"的最后一步（payload 接线）从未落地，此前 71 轮全死在 t≤2s 故从未暴露。
+  **★r74 修复 = 三件套接线（零内核改动）**：①board.toml [payload] `root_policies="{tree}/build/sheng-source-storage/root-policies.bin"`（设备仓 6ba3b84）；②**全量表 30.5MB 塞不进 99MiB ESP**（kernel 已占 91.4MiB）→ lane 转 **tables-in-userdata 模式**：kernel 步 env `XNU_SOURCE_STORAGE_TABLES=userdata`（bundle 缩成 2×544B 签名头 =1152B）+ userdata 重建带 `--object OS.vroot=<pair>/OS/manifest.bin --object SystemOS.vroot=<pair>/SystemOS/manifest.bin`（NativeUfs 从根镜像 v2 objects 读全表对签名头验签，RootLayout.h/NativeUfs.cpp:1668 既有通路）；③Mac 重跑三步：**kernel sha 9b9f57e0 逐位不变**（env 只改 bundle，重验证 ✓）+ userdata 新件 **e01c27ae**（15,662,579,712B=旧+31.5MB objects，OS.vroot 18,776,608B@0x3a3b00000 + SystemOS.vroot 11,751,968B@0x3a4d00000）+ payload **7db186c0**（ESP 实测 VROOTB01/ver1/count2/total1152 在位）。**r74 判读预期**：SourceStorage 过门→UFS start→Data disk→root mount 首跑（vnode_put/vnode_hold 修正（0e38039）首次实跑窗口）→ 新墙=余 25 stub 站首中或 NativeUfs root step 报点。刷写 = **双件**：userdata ← e01c27ae + recovery_a ← 7db186c0（boot_b 289614ba 不动）；回退 = recovery_a ← payload-r73-f38d11cc + userdata ← b280f63e。
 
 
 ## 1. 一句话现状（**2026-10-31 会话二十四收档：23F84 fileset 车道，matcher v11 判别子通道落地，战略拍板 = 关键路径优先**）：
@@ -45,8 +48,8 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（24A446 线配套） | `289614ba` | **现役**（不动） |
-| recovery_a | payload vtslot | `5a92ea2b`（r72） | **现役**（r72 已刷已判=墙73）；**r73 `f38d11cc` 待刷** |
-| userdata | 24A446 Mac AEA 链件 | `b280f63e` | **现役**（2026-11-07 已刷，15,631,122,432B；dd 读回对拍降级为补证项） |
+| recovery_a | payload vtslot | `f38d11cc`（r73） | **现役**（r73 已刷已判=墙74 SourceStorage 策略信封）；**r74 `7db186c0` 待刷** |
+| userdata | 24A446 tables-in-userdata 件 | `b280f63e` | **现役**（r73 判读件）；**r74 `e01c27ae` 待刷**（+OS/SystemOS.vroot objects，15,662,579,712B） |
 
 - **读窗 = forensic reader**（专用件 `payload-reader-0f1013f4.img`；
   23F84 payload 本体 forensic=false 无 reader——ESP 超 recovery_a 已摘
