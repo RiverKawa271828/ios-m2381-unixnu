@@ -39,6 +39,24 @@
      0xb260110×14 / 0xb26324c×10 / 0xad94128×10；AMFI 残余 33 靶中的高频项（0xb226cc8×24 已绑
      s67，下查 0xaf21778 已绑，再看 AMFI 预读余单）。四证 bar 不变。
   E. **判读纪律**：同 payload 必同 site（报点差=payload 判别）继续有效；CRC autofix 每轮必跑。
+- **★s71 同步+侦察（2026-11-07 用户令"先侦察，同步上游"）**：主树 rebase upstream/main **108c**
+  （QcomDwc3 USB 驱动组件 + 蓝牙原生栈线 + root union fsid 修复 + iPad17,3 board_id/security_domain
+  修复 + archive 可重现 + addon/UART runtime 修复；冲突三处按规矩解：AdrenoMetal pin 跟上游 GPU
+  parity 线 / README 还上游 / kit gitlink 取我侧后统一 bump）。kit 仓并集 **f9123a3 = 839 条**（我们
+  827 unique + 上游独有 12 条零冲突，同 VA 同 native 两家互证；上游独有 = IOService Start/Stop_Invoke
+  RPC + OSSerialize setIndexed + mbuf 三兄弟 + cdevsw_setkqueueok + ttsetwater + IOPMrootDomain
+  isLPWMode + panic_with_options + vfs_vnodecovered + ml_io_read8）；设备仓账本同步 829→839（c958bdd），
+  主树 e86c5621 force-with-lease 已推，备份分支 m2381-ios27-pre-sync71。
+  **★侦察定谳（用户"为什么别人快"案）**：**sheng = 小米 Pad 6S Pro 12.4 = SM8550 —— 与 m2381 同
+  SoC**（"机型差异更大"前提不成立，是最亲兄弟）；他们 24A446 全绿（GPU Metal 149 draws/BT
+  AirPods A2DP/WiFi/触控/UFS root 全 device-verified）。快的三因：①**板级线 23F84 时代已成熟**
+  （共享 SM8550 支持现成，24A446 只换 OS profile）；②全职维护者早 3 天（11-02 开工 vs 我们
+  11-05 换道）；③墙账两家独立收敛同批（他们 156 条里 144 与我们重叠=互证，独有 12 条=他们的
+  USB 栈位置）。**config 假说排除**：我们 profile 本就带 `--fileset-reference mach.release...noctf`
+  （s43 参照件），匹配参考件已对齐。我们真正的结构差 = 板级 bring-up 与换代同步做 + 换代两次
+  （21H461→23F84→24A446 账本三次清零）。**下一步红利**：r72 起从同步后的树出件（新补丁+839 账本
+  自动多绑）；USB 栈走他们铺好的路（QcomDwc3 + roots 加 USB 栈 + sheng-usb 模式）；可选反哺
+  （把 839 推上游 UniXNU/XnuPrelink 共享，kit 本地线 96eedc2 未推）。
 
 - **★会话六十九 = r68 首刷判读（墙出 AMFI 进 sandbox 里程碑）+ 墙69 定谳 + sandbox 普查 267哨兵/59靶 + 双靶批绑，r69 出件待刷（2026-11-07 凌晨连轮）**：
   **r68 首刷判读**（payload-r68-dd3e9636；屏摄 23:55）：crc `0x64d09506` 零纠正，hit #1，t=1s。
