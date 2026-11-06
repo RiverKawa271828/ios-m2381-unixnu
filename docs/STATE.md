@@ -47,9 +47,25 @@
          判读（管线已文档化：donor 体反汇编 → noctf/源码锚 → TU 几何 + 全局指纹 → 语义
          契约；范例 = erandom/bdevsw 双案录）；我复核抽查 → 合批绑定 → payload-r64 →
          刷机验证。
-     B2. 每轮清一个 kext（或数个）；回退链逐轮滚动；账本逐轮增记（构建期价值累积，
-         emitter go/no-go 押后到农场跑顺后再议）。
-  C. **边界**：无证据不绑——近匹配自动评分已判死（7 对已知孪生校准相似度仅
+     B2. 每轮清一个 kext（或数个）；回退链逐轮滚动；账本逐轮增记（构建期价值累积）。
+  B3. **s64 首批（预读墙已备）**：caller = donor memdev 注册（模板对 cdevsw 112B
+         @0xbb65188 + bdevsw 56B @0xbb651f8 与 memdev.c:665-673 调用序逐行吻合；函数
+         [0xa41ca8c,0xa41ce70) 22 调用中 20 已绑全绿）。墙 62 = donor `0xb3d1d58` =
+         **`cdevsw_add_with_bdev`**（体首 bl donor cdevsw_add + 3 参 (1, csw, bdev)；
+         **native 无此符号（单调用点被内联）→ s64 首个真判读题**：直绑 native
+         `_cdevsw_add` 0xB3A7B3C（bdev 关联簿记缺失，源码在手裁决）vs 源码重构）。
+         墙 63 = donor `0xb3d1894` = **`bdevsw_remove`**（体首 cmp w0,#0x17 + stride
+         0x38 + 表 0xb89c1b0 三重几何指纹；条件墙——cdevsw_add_with_bdev 成功路径跳
+         过；另面 0x849f240 无条件 caller）→ 直绑 native `_bdevsw_remove` 0xB3A7968
+         就绪。native bsd_stubs TU 全家福（noctf）：isfree 0xB3A7700 / add 0xB3A7810 /
+         remove 0xB3A7968 / cdevsw_isfree 0xB3A7A2C / cdevsw_add 0xB3A7B3C /
+         cdevsw_remove 0xB3A7C9C。
+  C. **emit go/no-go = 降级挂账（2026-11-06 裁决）**：emit 解决绑定机制，而现瓶颈 =
+         判名（emit 同样只能绑账本内名字，392 未名面 emit 也救不了）；手术绑定已证
+         廉价确定（s63 = 6B/分钟级）。**复触发条件 = 第一次因任何原因需要 Mac 重编**
+         （如 shim 需求）——届时顺带开 emitter 让该次构建自绑全部账本名，一次成本双
+         收益。此前不再投入。
+  D. **边界**：无证据不绑——近匹配自动评分已判死（7 对已知孪生校准相似度仅
      0.08-0.24，donor 27.0.1 与 feed 编译分歧过大）；每面仍需三证，agent 产证、人复核
      后绑定；T1 精确体哈希猎手产出 ≈ 0（temp/s64-twinhunter.py）亦留档。
 - **★会话六十二 = r61 首刷判读定谳墙60 = read_erandom 族 + 7 面绑 native `_read_frandom`
