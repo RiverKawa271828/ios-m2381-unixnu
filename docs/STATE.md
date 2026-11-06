@@ -1,14 +1,53 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十六·墙65 os_log_create 定谳 payload-r66 待刷版；AMFI 导入面清仓）
+## 0. 现势指针（每轮首更，2026-11-06 会话六十七·墙66 get_lockdown_mode_state + 批量绑 _csblob_get_identity，payload-r67 待刷版；双勘误：AMFI清仓系假零 / 24A446 userdata 从未刷机）
 
-- **★会话六十六 = r65 首刷判读（墙64 消实锤）+ 墙65 定谳 = os_log_create + 5 面绑 native，r66 出件待刷（2026-11-06，连轮，无 agent 直判 ~40 分钟 = 农场单墙节拍；AMFI 内 sentinel 清零）**：
-  **r65 首刷判读**（payload-r65-7bac97e6）：屏 crc `0x992021fb`（照片换行拼接噪声使初转录 MISS `5c859dd0`，蛮力单字符仲裁零歧义恢复 = 三处地址各一处 'f'→'8' 误读，转录已定谳），hit #1，t=1s，pages `0x12558d` free `0x124e4d`，procs=0 root=~（AMFI 静态构造带）。panic from `0xfffffff00924f21c`（x0 `0xfffffff00763e445` x1 `0xfffffff00763e463`）→ **墙 64 消实锤**（报点 `0x925a148`→`0x924f21c`，OSDetachedCertificates/IOSurface 构造面放行，推进进 AMFI 深处）。**判读链（tracer 秒解）**：caller = AMFI text span `[0x92469c0,0x92721c8]` 内 15 指令小函数 `0x924f1fc`（日志句柄 init helper）：x0 = 串 **"com.apple.MobileFileIntegrity"**（`0x763e445`，os_log subsystem = AMFI bundle id）、x1 = 串 **"library_validation_failure"**（`0x763e463`，os_log category）→ bl `0x924f218` → thunk `0x9271d28` → 槽 `0x8136200` 哨兵 → donor `0xb41d998`；随后 `cmp x0,#0`/`csel` 与 OS_LOG_DEFAULT 导入（槽 `0x81364e0` 已绑）回退并存入 AMFI 静态 `0xbac95a0` —— NULL 回退恰镜像 os_log_disabled 早退。**定名**：donor `0xb41d998` = **`_os_log_create`**（libkern/os/log.c:613，静态 os_log_create_impl 内联）。四重证据：①签名 `os_log_create(const char *subsystem, const char *category)`（log.h:161）与双串参数精确吻合；②体镜像（native km `0xB3EA19C` 读 kernel.macho `__TEXT_E`）：pacibsp+stp 墙（donor 帧 0x1a0 vs native 0x180 均匀 +0x20 平移）、全局拷贝守卫 `stur [x29,#-0x60]`、**os_log_disabled 字节旗标门→返 NULL**（donor 0x7ec4fc0 位0 vs native 0x7e4d678 位0）、key 缓冲 memset（0x100/0x120）、subsystem→category strlen+0x80 clamp len 存 [sp,#2]/[sp,#3]；③donor map 括区：_os_log_hash `0xb41d788`（map body-hash→km 0xb3ea0f0）< 靶 < __os_log_internal `0xb41df20`（call-sites→km 0xb3ea640），native 括区内唯一 noctf 函数即 create（_os_log_equ 0xb3ea13c < _oslog_try_get 0xb3ea190 < create 0xb3ea19c）；④源码锚 log.c:556 os_log_create_impl：disabled 早退 + os_log_subsystem_init 打包 + cache find/insert = 邻接 _os_log_key_hash/_os_log_hash 一族。体 `[0xb41d998,0xb41df08)` 1392B（出口块 0xb41decc→retab 0xb41df04，紧接 __os_log_internal 0xb41df20 无夹层）。**修 = 5 面绑 native**（AMFI `0x8136200` + 兄弟 kext 导入者 `0x7f85720`/`0x82da8d8`/`0x83584d0`/`0x848d450`；词 `0x80110000043E619C`）。s66 手术（设备仓 scripts/s66-payload-surgery.py，模板 s65，体终点用 map 下界+retab 实扫）：**5 面 15B/5 簇零杂散，seal 未动**。**出件 `out/m2381/payload-r66.img`（99MiB）sha256 `fa977e3a…` 待刷**（recovery_a ← r66；回退一级 = r65 `7bac97e6`）。账本 819→**820**。**★分水岭**：r66 后 AMFI 全域 `[0x92469c0,0x92721c8]` 重扫 **sentinel = 0**（temp/s66-amfi-prescan.json）——本墙是 AMFI 最后一个漏绑导入，AMFI kext 导入面清仓；下一墙将在下一个 kext 出现（当前全图余额 810 槽，桶头 apfs155/AppleARM70/sandbox63）。
-- **★下轮工作单 = 会话六十七（r66 判读 + 换 kext 判读轮；激进多轮授权延续）**：
-  A. **r66 刷机判读**（recovery_a ← r66 `fa977e3a`；回退一级 = r65 `7bac97e6`）：成功旗标 = caller ∉ AMFI span `[0x92469c0,0x92721c8]`（AMFI 清仓验证）、crc 必为新值。若 caller 仍在 AMFI span → 预读器漏了（先查 s66-amfi-prescan.json 对账再判读）；新 kext → 先查 s64-kext-buckets.json 桶归属 → tracer 秒解 → 读 x0/x1 串定性（本轮三串秒杀法续用）→ 源码锚/noctf 精确 → s67 手术（模板 s66）。**已知下一大户预判**：apfs（155 槽，root mount 前必经）、AppleARMPE/AppleARM70（48）、sandbox（63）。墙序预判 = APFS 系先撞（ vfsinit/roots 阶段 procs=0 → APFS driver 注册），若 caller 落 apfs → 体取证常含 mount/label 语义串，同节拍判读。
-  B. **静读续用**：s66-amfi-prescan.json 已证"每墙后全域重扫"零成本（tracer ~35s），换 kext 后对新 kext span 同款重扫，预测下一墙先行判读——刷机只验证不探路。
-  C. **IOStorageFamily 中置信 4 条人工复核**（头号 `_IOLockWakeup` 6 面）：复核过才绑，无证据不绑边界不变。
-  D. **挂账区（非刷机轮做）**：UEFI 仓未推 **已清账（2026-11-06 会话六十六重启前间隙，force-with-lease 5297334c→e2c13592；远端旧件 = 本地 10-30 rebase 改写前版本，内容被 9318b62e 完整包含，零丢失）**；temp 大件隔轮清（s65/s66 产证 wall64/65 报告 + tracer/prescan json **保留**）；主树 out/ 顶层 23F84 残留删除待用户拍板。
-  E. **emit 挂账不变**：AMFI 清仓后 kext 面只剩 810 槽，emit 复触发仍挂账（= 首次 Mac 重编顺带开）；APFS 桶 155 面工作底稿（buckets/manifest/tracer 三件）就绪。
+- **★会话六十七 = r66 首刷判读 + 预读 bug 正名 + 墙66 定谳 + 预读批量绑，r67 出件待刷（2026-11-06，连轮）**：
+  **r66 首刷判读**（payload-r66-fa977e3a）：crc `0x7a50a1ae` 零纠正，hit #1，t=1s。panic from
+  `0xfffffff00924e648`（x0 0x0 x1 0x1 = 上一调用的残渣，真签名无参）→ **caller 仍在 AMFI span 内**
+  → **s66"AMFI 导入面清仓"系假零**：预读 JSON 的真结构 = `calls`（2661 条）+ 小写 verdict，s66 判读
+  读了不存在的 `bls` 键 + 大写 'SENTINEL' 子串 → 空集误判为零。按 `payload_word` 低48位真值重扫：
+  **AMFI 实余 114 调用 / 35 个 distinct donor 靶**（头号 0xb226cc8×24 调用点 / 0xad3e8e4×12 /
+  0xaf21778×11），墙66 就在普查单里（site 0x924e644 早已记录）。
+  **墙66 定谳**：donor `0xb2a405c` = **`_get_lockdown_mode_state`**（bsd/kern/lockdown_mode.c:87，
+  Private.exports:407 导出）。caller = AMFI policy-config 函数 `0x924e440`（boot-arg 读 + 9×静态注册
+  + PAC 字典查），调用后 `cmp w0,#0`/`cset` 存 AMFI 全局 `0x8130e58`，非零则连发
+  0x10000000/0x20000000/0x40000000 三笔强制位 = lockdown-mode 执法扇出。四证：①体
+  [0xb2a405c,0xb2a4134) 216B：内联 CAS 锁（0xb9cbaf8）+ init-done 旗标 + **msleep wmesg 串字面
+  "get_lockdown_mode_state"（0x70a4d3d）自报名字** + 返 lockdown_mode_state 全局；②noctf 精确
+  0x78bd4c4（km 0xB2794C4）；③原生体镜像（真 lck_mtx_lock/unlock 调用 + 同 msleep 形 + 同 wmesg；
+  donor 内联 CAS / native 走调用 = 同操作两编译策略）；④源码锚逐指令吻合。
+  **★userdata 勘误（用户记忆为准）**：24A446 userdata（Mac AEA 链件，11-05 02:32，15,631,122,432B
+  sha `b280f63e9a0c8cf8…4667d`，OS 窗 `8a12cdad`@1MiB / SystemOS 窗 `d5b4873d`@9,614,393,344 与
+  profile pins 逐位同）**从未刷过机**——s66 首更"r52 已带上机"系推断错误，设备现 userdata = 23F84
+  旧件。本会话已从 Mac（`naoniudeair@192.168.10.246:~/unixnu/`）拉回本机
+  `out/m2381/ipados-27.0.1-24A446/m2381/userdata/`（img+json 双件，sha 验讫）。
+  **修 = 2 笔 3 面**（lockdown 槽 `0x8136078`×1 + identity 槽 `0x8135f80`（24 调用点共用）/`0x848d250`×2）：
+  批量第二笔 = 预读普查头号靶 donor `0xb226cc8` = **`_csblob_get_identity`**（codesign 标识串 getter：
+  guard [csb+0x20] 位0 → 找 CSMAGIC 0xfade0c02 CodeDirectory → BE32@[dir+0x14]=identOffset → 返
+  标识串；noctf 精确 0x7843cb4/km 0xB1FFCB4 + 体镜像 + 邻体消歧[teamid=3指令leaf、cdhash=3指令缓存
+  getter 与 noctf cdhash 体逐字节同=排除]）。s67 手术（设备仓 scripts/s67-payload-surgery.py）：
+  **3 面 9B/3 簇零杂散，seal 未动**。**出件 `out/m2381/payload-r67.img` sha256 `41b52bea…` 待刷**。
+  账本 820→**822** + os_log_create entry 勘误（假零段标注）。**判读纪律新增**：预读普查必须按
+  `calls` 键 + `payload_word` 低48 == sentinel 真值过滤，任何"清零"结论前先打印计数非空验证。
+- **★下轮工作单 = 会话六十八（r67 判读 + userdata 首刷 + 批量预读轮；激进多轮授权延续）**：
+  A. **双件刷机**（用户手刷）：①userdata ← 24A446 Mac 件（本机
+     `out/m2381/ipados-27.0.1-24A446/m2381/userdata/userdata-root.img`，sha 门
+     `b280f63e9a0c8cf8`，15.6GB 刷写较久）；②recovery_a ← r67 `41b52bea`。回退：payload = r66
+     `fa977e3a`；userdata 回退件 = 本机 23F84 13.98G（`out/m2381/ipados-26.5.2-23F84/m2381/userdata/`）。
+     刷后 STATE §2 刷写表现势刷新（boot_b `289614ba` / recovery_a r67 / userdata b280f63e 现役——
+     现表停 10-31/23F84 时点待更）。
+  B. **r67 判读**：crc 必新；caller 允许仍在 AMFI span（余 112 调用），但**槽必非
+     `0x8136078`/`0x8135f80`/`0x848d250`**（已绑槽再放行 = 绑定失效，先查 dd 读回再判读）。普查纪律：
+     `calls` 键 + payload_word 低48 真值过滤（s67 勘误）。
+  C. **批量预读候选（四证 bar 不变，s60-s64 批量先例）**：0xad3e8e4（12 调用，bracket =
+     _IOFreeTypeImpl 0xad3e894 < 靶 < _kfree_shared_data 0xad3e910，kalloc/free 族）+ 0xaf21778
+     （11 调用，bracket = _vnode_hold 0xaf215f8 < 靶 < _mount_lock_spin 0xaf21850，vnode 族）——
+     体取证+noctf 精确+邻体消歧齐了才绑，齐不了只记不绑。
+  D. **userdata 刷后新面**：root mount 前的全部分墙（apfs155/AppleARM70/sandbox63 桶）+ AMFI 清完后
+     vfsinit 方向；**24A446 verified-root/configureVerification 首秀**（政策对容量/窗 sha 匹配 =
+     首次实测），若卡发布=先查窗 sha 与 pins 对拍。
+  E. **挂账**：emit 复触发仍挂账；temp s66/s67 产证保留；记忆 s66 勘误已入（AMFI清仓假零+userdata
+     真相），s67 条目已建。
 - **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
   （2026-11-06，连轮，子代理并行产证）**：
   **caller 定性修正**：墙 61/62/63 的 caller 函数 [0xa41ca8c,0xa41ce70) 归属
