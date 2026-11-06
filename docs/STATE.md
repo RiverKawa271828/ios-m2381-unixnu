@@ -1,6 +1,60 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-06 会话六十七·墙66 get_lockdown_mode_state + 批量绑 _csblob_get_identity，payload-r67 待刷版；双勘误：AMFI清仓系假零 / 24A446 userdata 从未刷机）
+## 0. 现势指针（每轮首更，2026-11-07 会话七十·r69 判读墙70 _strncasecmp 定谳 + T2 _current_thread_ro 定谳 + 双靶7槽批绑，payload-r70 待刷版）
 
+- **★会话六十九 = r68 首刷判读（墙出 AMFI 进 sandbox 里程碑）+ 墙69 定谳 + sandbox 普查 267哨兵/59靶 + 双靶批绑，r69 出件待刷（2026-11-07 凌晨连轮）**：
+  **r68 首刷判读**（payload-r68-dd3e9636；屏摄 23:55）：crc `0x64d09506` 零纠正，hit #1，t=1s。
+  报点 `0xfffffff00aa5a2e8`（转录多一 f，CRC 仲裁）。**墙离开 AMFI span** —— site `0xaa5a2e4` 落
+  com.apple.security.sandbox text span `[0xaa46c70,0xaa81594)`（s64 桶表）→ **r68 LookupEntry 绑定
+  生效、AMFI 清完、boot 进 sandbox init**（= s43 参照车道"崩点过AMFI进sandbox注册"里程碑）。
+  **墙69 定谳**：donor `0xb26a124` = **`_proc_get_syscall_filter_mask_size`**（kern_proc.c:5289）。
+  caller = sandbox init：w0=0 / w0=1 两调，结果存 sandbox 全局（UNIX/MACH mask 尺寸）。四证：①
+  donor 体 52B switch（0→常量 0x22e=nsysent 558 / 1→0x80=mach_trap_count 128 / 2→全局
+  mach_kobj_count / default 0，Apple release 常量化）；②noctf 精确 0x78838a4→km 0xB23F8A4；③
+  native 体镜像同 switch（our build nsysent 是变量 [0x719e670]）；④源码锚。
+  **sandbox 预读普查**（s64-tracer 全 span，temp/s69-sandbox-prescan.json）：**267 哨兵调用 / 59 个
+  distinct donor 靶**（头号 0xaf21778×44 / 0xaf55418×28 / 0xb2aa3f8×27 / 0xad45364×25 / 0xb260110×14 /
+  0xadb7cbc×10）。**头号靶定谳**：donor `0xaf21778` = **`vnode_hold`**（27.x 带锁 flavor：CAS [vp+8]
+  自旋拿锁 → ldadd [vp+0xb4] holdcount++ → INT32_MAX panic；**panic `__FUNCTION__` 串 "vnode_hold"
+  @0x706e6cb + "vfs_subr.c" + "vp %p holdcount overflow" 全串字节读讫 = 自报家门**；姊妹 leaf
+  0xaf215f8 = matcher body-hash _vnode_hold，与 native km 0xAF5FE84 逐指令同形）。
+  **修 = 2 靶 5 槽**（0x848d4f0→0x801100000423B8A4；0x80e1b10/0x8136408/0x848d828/0x84a0008→
+  0x8011000003F5BE84）：scripts/s69-payload-surgery.py，19B/5 簇零杂散，seal 未动。**出件
+  out/m2381/payload-r69.img sha256 `be541f1c` 待刷**。账本 823→**825**。
+  **★工具坑（s69 新增两条）**：①capstone 从非 4K 对齐起点反汇编会**错位误读**（"非函数头"假象——
+  必须回退到真 entry 重同步；本次两处"mid-function 假象"全是自己 offadj 双减/错位所致，幻灯
+  +0x39BC000 继续全局成立）；②`offadj` 参数（KH 修正）sign 写反过一次——读 payload 统一用
+  `KHEAD+(km−KBASE)` 正偏移。
+
+- **★会话六十八 = r67 首刷判读（三笔绑定全生效）+ 墙67 定谳 SecureDTLookupEntry + 五面绑，r68 出件待刷（2026-11-06 深夜连轮）**：
+  **r67 首刷判读**（payload-r67-41b52bea；屏摄 IMG_20261106_223903 22:39，用户标注"r66"系笔误——
+  报点 0x924e69c ≠ 墙66 的 0x924e644/0x924e648，且 r67 22:13 出件 → 时间链定谳 = r67 首刷；判读
+  纪律新增：**同 payload 必同 site，报点差可作 payload 版本判别**）。crc `0xeb9fb8ca`（verify-panic-crc
+  --autofix 仅补前导 f，零纠正），hit #1，t=1s。工作单 B 三条件全过：crc 新 / caller 仍在 AMFI span /
+  槽 `0x8135d08` ∉ r67 三已绑槽 → **r67 三笔（lockdown/identity×2）全部生效，墙66 消**，墙 +0x58
+  推进至同一 caller `0x924e440`（LocalSigning.cpp DT 阶段）。
+  **墙67 定谳**：donor `0xb5be330` = **`_SecureDTLookupEntry`**（pexpert device_tree.c）。caller 现场：
+  `DTLookupEntry(0, "/chosen", &entry)`（x1="/chosen"@0x763b99e 字节读讫），返值比 #1(kDTSuccess)，
+  随后 `DTGetProperty(entry, "darwinos-security-environment"@0x763e055, &ptr, &size)` —— 该槽
+  `0x8135d00` r58 已绑 `_SecureDTGetProperty`（native 体逐指令同形复核讫，r58 绑定正确）。四证：
+  ①donor 体 [0xb5be330,0xb5be5c8) 664B：init 旗标 cbz / NULL→csel gDTRoot[x25+0x318]+边界[x24+0x328]
+  ccmp / 前导'/'跳过（空路径→*entry=root,w0=1）/ w9=0x3f 分量拷贝循环 / 走树 bl 0xb5be11c（matcher
+  验讫 _SecureDTGetPropertyInternal）取字面 "name"@0x70cf529 + bl 0xb5bc51c 比名 + bl 0xb5be5c8 孩子
+  迭代 / 错误块 device_tree.c 断言串（行 98/150，"Device tree pointer outside of device tree region"）；
+  ②noctf 精确 0xfffffff007b5522c（km 0xB51122C = +0x39BC000）；③native 体镜像逐块同构（native
+  bl 0xb511600 恰 = GetPropertyInternal 自身幻灯 km——几何闭环）；④源码锚 pexpert device_tree.c。
+  **修 = 5 面绑**（`0x7f87218 0x80e17b8 0x8135d08[AMFI 双调用点 0x924e69c+0x924f00c] 0x8479a60
+  0x848d0c8` → `0x801100000450D22C`）：设备仓 scripts/s68-payload-surgery.py，15B/5 簇零杂散，seal
+  未动。**出件 out/m2381/payload-r68.img sha256 `dd3e9636` 待刷**。账本 822→**823**。
+  **★工具坑（s68 定谳）**：payload 原生体读必须绝对偏移 `KHEAD+(km−0x7004000)`——漏 KHEAD 错位
+  0x1c9800 并伪造"本地布局分歧"假象（lockdown/identity 两 runtime 锚点当场抓获翻案）；PACIBSP =
+  `0xd503237f`（0xd503233f = PACIASP，勿混）。
+  **★下一墙预读（s69 主菜）**：site `0x924ec80` 槽 `0x8135e08` donor `0xb472cd8` =
+  **`_ZN9IOService15serviceMatchingEPKcP12OSDictionary`**（noctf 精确 0x7a7d024 → km 0xB439024；
+  体镜像 withCString→withCapacity(2)→merge 同构；matcher 图未收）。caller = ConfigurationSettings.cpp
+  SCRD 段：`serviceMatching("sep-endpoint,scrd", 0)` → 紧随 site 0x924ec90
+  `waitForMatchingService(dict, -1=WAITFOREVER)`（槽 0x8135e20 r58 已绑）。**★绑定风险已标：本平台
+  无 SEP SCRD 端点，单绑 serviceMatching = boot 挂死无 crc（比 panic 更糟的判读面）——s69 必须
+  绑定 + SCRD 等待中和同轮上，单绑不刷**。
 - **★会话六十七 = r66 首刷判读 + 预读 bug 正名 + 墙66 定谳 + 预读批量绑，r67 出件待刷（2026-11-06，连轮）**：
   **r66 首刷判读**（payload-r66-fa977e3a）：crc `0x7a50a1ae` 零纠正，hit #1，t=1s。panic from
   `0xfffffff00924e648`（x0 0x0 x1 0x1 = 上一调用的残渣，真签名无参）→ **caller 仍在 AMFI span 内**
@@ -29,35 +83,55 @@
   **3 面 9B/3 簇零杂散，seal 未动**。**出件 `out/m2381/payload-r67.img` sha256 `41b52bea…` 待刷**。
   账本 820→**822** + os_log_create entry 勘误（假零段标注）。**判读纪律新增**：预读普查必须按
   `calls` 键 + `payload_word` 低48 == sentinel 真值过滤，任何"清零"结论前先打印计数非空验证。
-- **★下轮工作单 = 会话六十八（r67 判读 + userdata 首刷 + 批量预读轮；激进多轮授权延续）**：
-  A. **双件刷机**（用户手刷）：①userdata ← 24A446 Mac 件（本机
-     `out/m2381/ipados-27.0.1-24A446/m2381/userdata/userdata-root.img`，sha 门
-     `b280f63e9a0c8cf8`，15.6GB 刷写较久）；②recovery_a ← r67 `41b52bea`。回退：payload = r66
-     `fa977e3a`；userdata 回退件 = 本机 23F84 13.98G（`out/m2381/ipados-26.5.2-23F84/m2381/userdata/`）。
-     刷后 STATE §2 刷写表现势刷新（boot_b `289614ba` / recovery_a r67 / userdata b280f63e 现役——
-     现表停 10-31/23F84 时点待更）。userdata 读回对拍（红线"dd 读回才算证据"）= 时间允许全件
-     sha256 对 `b280f63e…4667d`；否则至少双窗头采样（OS 窗 @1MiB 起 1MiB + SystemOS 窗
-     @9,614,393,344 起 1MiB，sha 与 userdata-root.json 窗记录前缀比对）。
-  B. **r67 判读**：crc 必新；caller 允许仍在 AMFI span（**余 88 调用 / 33 靶** =
-     114 − identity 24 − lockdown 2），但**槽必非 `0x8136078`/`0x8135f80`/`0x848d250`**
-     （已绑槽再放行 = 绑定失效，先查 dd 读回再判读）。普查重生成 =
-     `python3 -I temp/s64-tracer.py 0x92469c0 0x92721c8 --payload out/m2381/payload-r67.img
-     --donor out/ipsw/24A446/kernelcache.decompressed --out temp/s68-amfi-prescan.json`，
-     过滤纪律 = `calls` 键 + `payload_word` 低48 == `0x45a5c4c` 真值 + 打印计数非空（s67 勘误）。
-     **★新屏形态分支：若不 panic 而挂死**（stage 停滞无新 crc）→ 首疑
-     `lockdown_mode_init` 未达（其 async 变体等 IONVRAM matching resource；我们环境
-     NVRAM nub 可能不发布 → get_lockdown_mode_state 的 msleep 路径永眠）：查我们内核
-     lockdown_mode_init 走 #if-async 还是 #else-直调分支 + IONVRAM 发布者，必要时
-     bind/patch 直调变体（= 上游 #else 形）。
-  C. **批量预读候选（四证 bar 不变，s60-s64 批量先例）**：0xad3e8e4（12 调用，bracket =
-     _IOFreeTypeImpl 0xad3e894 < 靶 < _kfree_shared_data 0xad3e910，kalloc/free 族）+ 0xaf21778
-     （11 调用，bracket = _vnode_hold 0xaf215f8 < 靶 < _mount_lock_spin 0xaf21850，vnode 族）——
-     体取证+noctf 精确+邻体消歧齐了才绑，齐不了只记不绑。
-  D. **userdata 刷后新面**：root mount 前的全部分墙（apfs155/AppleARM70/sandbox63 桶）+ AMFI 清完后
-     vfsinit 方向；**24A446 verified-root/configureVerification 首秀**（政策对容量/窗 sha 匹配 =
-     首次实测），若卡发布=先查窗 sha 与 pins 对拍。
-  E. **挂账**：emit 复触发仍挂账；temp s66/s67 产证保留；记忆 s66 勘误已入（AMFI清仓假零+userdata
-     真相），s67 条目已建。
+- **★会话七十 = r69 首刷判读 + 墙70 定谳 + 农场 T2 定名，r70 出件待刷（2026-11-07 凌晨连轮）**：
+  **r69 首刷判读**（payload-r69-be541f1c；屏摄 IMG_20261107_011047 01:10）：crc `0xf53b30e2`
+  单命中零纠正（照片 f-run 17 位=多一 f 惯性，x1 反向少一 f——双侧仲裁），hit #1，t=1s。
+  报点 `0xfffffff00aa75014`（x0/x1 = 两个 donor 串）。**墙仍在 sandbox span** —— site `0xaa75010`
+  落 [0xaa46c70,0xaa81594) → **r69 两靶绑定生效、墙单调后移**。**caller 实据 = entitlement 前缀
+  匹配**：x0 = "ENTITLEMENT:com.apple.security.exception.iokit-user-client-class"@0x7d646a2、
+  x1 = "ENTITLEMENT:"@0x7d67dbe（字节读讫）——沙盒/AMFI 政策 init 的 entitlement 过滤解析。
+  **墙70 定谳**：donor `0xae825b8` = **`_strncasecmp`**（map-nearest "_strcasecmp(+0x44)" 的真义 =
+  靶是 map 符号身后紧邻的下一函数，donor map 缺 _strncasecmp）。四证：①donor 体 0x60B capstone
+  （bti c/cbz x2 n==0→0/索引循环 ldrsb/tolower 内联 `(c−0x41)<0x1a ? c|0x20 : c`×2/ca!=cb→diff/
+  ca==0→0/alen==blen==n 使 strbufcasecmp 长度尾编译消除）；②noctf 精确 0x74f0604（km 0xAEAC604），
+  **noctf 家族序=源序**（strcasecmp 0x74f05c0/strncasecmp +0x44/strbufcasecmp +0x74/strlcasecmp
+  +0xe4），donor 几何同（donor _strcasecmp 0xae82574=靶−0x44，matcher body-hash 在案）；③native
+  镜像：_strcasecmp 17 条**逐字节 1:1**、_strncasecmp 24 条同集合**单步相邻重排**（donor ldrsb
+  w13,[x1,x9] 在 cmp w11,#0x1a 前，native 互换=调度差，s67 lockdown 先例类）；④源码锚
+  osfmk/device/subrs.c：strncasecmp_impl=strbufcasecmp_impl(s1,n,s2,n)+tolower 逐行对应。
+  **T2 定谳（农场头名，28 面共槽 0x848d6e8）**：donor `0xaf55418` = 2 条 bti-c 别名尾跳
+  （bti c; b 0xadbafd4；map-nearest _vfs_64bitready+0xac 系夹逼伪影）→ 真身 `0xadbafd4` =
+  **`_current_thread_ro`**（无参 flavor：mrs tpidr_el1→thread（入参 x0 被覆写=零参）；[thr+0x420]
+  =tro（donor 结构偏移）；**内联 zone-element 验证四重**（标记指针界对 [0x7df9f40]/16K 页算术
+  [0x7e00140]/页元 ldrh&0x3ff==3 [0x7df9fa0]/回指针 [ro]==thread）→ 失败 bl 0xb59bd64 =
+  `_zone_id_require_ro_panic`（map how=string）/邻 `___thread_ro_circularity_panic`；成功返 ro）。
+  四证：①体 0x98B 全 disasm；②noctf 精确 0x73add2c（km 0xAD69D2C）+ donor map 夹逼同族
+  （_get_thread_ro−0x94/_swap_task_map+0x690/_get_threadtask+0x8bc）；③native 语义镜像（bl
+  _current_thread→[thr+0x4e8]→bl zone_id_require(3,0x38,ro)→回指针核对→返 ro；donor 内联 zone
+  验证 vs native 走 helper = s67 lockdown"同操作两编译策略"类；偏移 0x420/0x4e8 各内核自洽，
+  donor _get_thread_ro 同读 [th+0x420] 佐证）；④源码锚 osfmk/kern/bsd_kern.c:167。
+  **修 = 2 靶 7 槽**（strncasecmp：`0x7f85788/0x836b580/0x848d698/0x849faa8`→`0x8011000003EA8604`；
+  current_thread_ro：`0x82da968/0x848d6e8/0x849fcf0`→`0x8011000003D65D2C`；**全 __DATA_C 全局
+  枚举——沙盒 span 外其他镜像的同靶哨兵槽一并绑**）：设备仓 scripts/s70-payload-surgery.py，
+  28B/7 簇零杂散，seal 未动。**出件 out/m2381/payload-r70.img sha256 `ecf23f32` 待刷**。
+  账本 825→**827**。**s68/s69 设备仓脚本+账本漏 commit，s70 一并收仓**。
+  **★工具坑（s70 新增）**：①map-nearest(+0xNN) 判读：先查 noctf 家族序+几何（+0x44 常是"身后
+  紧邻下一函数"），再下结论，勿把 addend 当函数内偏移；②noctf-syms.json 条目 = [带符号十进制
+  int, 名]，`&0xFFFFFFFF` 才是 36 位坐标（0xfffffff0 前缀）；③twinhunter 归一化 hash 对**单步
+  重排**盲——镜像判定落到逐条 capstone 对读。
+- **★下轮工作单 = 会话七十一（r70 判读 + sandbox 农场续批）**：
+  A. **刷机**：recovery_a ← r70 `ecf23f32`（payload-only；回退 = r69 `be541f1c`）。刷后 STATE §2
+     已由 s70 预更（boot_b 289614ba / recovery_a r70 / userdata b280f63e）。
+  B. **r70 判读**：crc 必新；caller 允许 sandbox span 内；**槽必非本轮 7 槽**（0x7f85788/0x836b580/
+     0x848d698/0x849faa8/0x82da968/0x848d6e8/0x849fcf0）。current_thread_ro 28 面热路径 = 下一墙
+     头号候选（若其哨兵面在 sandbox init 执行序最先撞线）。
+  C. **农场续批（s71 主体，普查余 57 靶）**：T3 0xb2aa3f8×27（缓冲空间计算体待分型）；T4
+     0xad45364×25（**lock_rw_old.c lck_rw 族 flavor 分型**："Taking non-sleepable RW lock with
+     preemption enabled"@0x705490d、文件串 0x70547b9 已读）；0xadb7cbc×10（kfree_type_impl_internal
+     邻域 = s60 家族，查 s60 已绑 native 是否同款）；0xb260110×14 / 0xb26324c×10（proc_name
+     +0x7c）/0xad94128×10（thread_set_cpulimit +0x1c4）。四证 bar 不变，齐一靶绑一靶。
+  D. **判读纪律**：CRC autofix 每轮必跑；kext 归属查 s64-kext-buckets.json；槽排除清单 = 账本
+     functions 全量（现 827 条）；payload 体读 = KHEAD 正偏移。
 - **★会话六十四 = 静态预读双墙定谳（墙62/63）+ 判读农场基建 + r64 出件待刷
   （2026-11-06，连轮，子代理并行产证）**：
   **caller 定性修正**：墙 61/62/63 的 caller 函数 [0xa41ca8c,0xa41ce70) 归属
@@ -418,13 +492,13 @@ ledger 3082→**3048 站**/847 目标 = 墙 21 −34 精确）**待刷**。
 userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕，
 待刷后按调用序出队）。
 
-## 2. 设备现状（2026-10-31 = **iOS 链现役**）
+## 2. 设备现状（2026-11-07 更新 = **iOS 链现役，24A446 混合线**）
 
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
-| boot_b | 本仓 UEFI（23F84 线配套） | `d0200a6b` | **现役**（不动） |
-| recovery_a | payload vtslot | `2b8b8258` | **现役**（会话二十四已刷；会话二十五出件 `e5e9556f` 待刷换防） |
-| userdata | CI 重建 iOS root | `fd43ee70` | **现役**（未动；源件 = `out/m2381/ci-artifacts/userdata-root.img` 8.8G，sha 同，勿删） |
+| boot_b | 本仓 UEFI（24A446 线配套） | `289614ba` | **现役**（不动） |
+| recovery_a | payload vtslot | `be541f1c`（r69） | **现役**（r69 已刷已判）；**r70 `ecf23f32` 待刷** |
+| userdata | 24A446 Mac AEA 链件 | `b280f63e` | **现役**（2026-11-07 已刷，15,631,122,432B；dd 读回对拍降级为补证项） |
 
 - **读窗 = forensic reader**（专用件 `payload-reader-0f1013f4.img`；
   23F84 payload 本体 forensic=false 无 reader——ESP 超 recovery_a 已摘
