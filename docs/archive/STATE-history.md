@@ -6097,3 +6097,8 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
   ③**受控主树同步轮（判读轮之后、单独做，勿混）**：Mac 主树落后 Linux 442+ 条（docs/kits/XnuPrelink emit 工具全套）——rsync 双仓全量（纪律清单+dry-run 核对）后**必须重出件对齐 sha**（emit 工具换代=map 可能重排，桩位/sha 记录全部重核）。**勿在判读轮混入**（单变量纪律）。
   ④挂账：kits `check.py` 16K 断言 Mac xcrun 验证（r82 改的，两轮未验）；大分区议题冻结等上游；CRC 精配照 panic_call.h:46 口径随轮直算。
   ⑤出件纪律照 `mac-payload-chain-inputs` 配方（三红线输入路径+unique-chip-id 3645AD55D47E77C1+旗标在子命令后+homebrew PATH）；刷写 = recovery_a 单件；**回退锚 = r84 `75a7f935`**。
+
+
+## r86 工作单 v1（r85 首刷判读部分已执行，2026-11-08 会话七十七归档；②-⑤并入现行 r86 工作单）
+
+**★r86 工作单（新会话开工单）**：①**r85 首刷判读 = 屏摄**，CRC 验转录（★本 trap 无 @file:line 后缀，直接消息本体 crc32）→ 分流：**unmapped-call 再现** = `from−4` → donor 低 32 → 前缀翻转 + 三段对拍（runtime=noctf+0x39BC000/GOT base 0x7004000）→ 定名 → 账本一笔（本轮同款）；kfree confusion = from 自报 + 家族预案照 r83/r85 流程；**若 sandbox 面全过 → launchd exec 推进 = 新前沿**（banner `spawn>`0 = init 程序真起来；SHLOG 落盘通道 root mount 后已开，可收 reader log.bin——shlog-header 纪律只信 slots_written 以内）。②余 22 stub 中靶候选（Mac kernel.json stubbed）：AppleARMPlatform×7 / Image4×4 / ARMWatchdogTimer×3 / IOGPU×2 / AMFI×1 / PMGR×1 / IOCrypto×1 / IOHID×1 / IOSurface×1 / AppleImage4×1；missing 2（ARMWatchdogTimer 0x70446a8 / IOHIDFamily 0xb8b3ce8）= noctf 无符号，命中需先定性。③**受控主树同步轮（判读轮之后单独做，勿混）**：Mac 主树落后 442+ 条（docs/kits emit 工具全套）——rsync 双仓全量+重出件对齐 sha（emit 工具换代=map 可能重排，桩位/sha 全部重核）。④挂账：kits check.py 16K 断言 Mac xcrun 验证（r82 改，三轮未验）；IORTC 30s 开机税；CRC 精配照 panic_call.h:46 口径随轮直算。⑤刷写 = recovery_a 单件；回退锚 = r85 `410c2e36`。
