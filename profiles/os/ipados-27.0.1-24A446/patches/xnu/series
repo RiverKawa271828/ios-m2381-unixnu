@@ -5,3 +5,10 @@ arch:../../../patches/xnu-12377/darwin26-syscalls.patch
 arch:../../../patches/xnu-12377/darwin26-kpi.patch
 arch:../../../patches/xnu-12377/darwin26-shared-region.patch
 arch:../../../patches/xnu-12377/fileset-iomalloc-shim.patch
+# 2026-11-07 (wall-76): the 23F84-lane s50 recipe re-homed. Donor AMFI
+# ConfigurationSettings (combined latch fn 0xfffffe000924e7b0) waits 30s for an
+# ApplePMGRNub that SM8550 never publishes, then trips "AMFI: No PMGR?"
+# (ConfigurationSettings.cpp:392). Shim unixnu_amfi_devmode_config() provides
+# the benign-absence path; the three caller bl stations are retargeted by the
+# kit TEXT_WORD_PATCHES (device repo, wall-76 entries).
+arch:../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
