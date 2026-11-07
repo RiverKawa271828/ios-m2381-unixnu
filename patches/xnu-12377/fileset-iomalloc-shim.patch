@@ -1,6 +1,6 @@
 --- a/osfmk/kern/kalloc.c
 +++ b/osfmk/kern/kalloc.c
-@@ -2443,6 +2443,76 @@
+@@ -2443,6 +2443,74 @@
  }
  #endif /* XNU_PLATFORM_MacOSX */
  
@@ -50,20 +50,18 @@
 +	if (addr == NULL) {
 +		return;
 +	}
-+	if (size > KFREE_ABSURD_SIZE) {
-+		kfree_size_invalid_panic(addr, size);
-+	}
 +	if (size <= KHEAP_MAX_SIZE) {
 +		bucket_size = zone_element_size(addr, &z, true, &oob_offs);
-+		if (size + oob_offs > bucket_size || bucket_size == 0) {
-+			kfree_size_confusion_panic(z, addr, oob_offs, size, bucket_size);
++		if (bucket_size && size + oob_offs <= bucket_size) {
++			addr = (char *)addr - oob_offs;
++			__nosan_bzero(addr, bucket_size);
++			zfree_ext(z, z->z_stats, addr, ZFREE_PACK_SIZE(bucket_size, size));
++			return;
 +		}
-+		addr = (char *)addr - oob_offs;
-+		__nosan_bzero(addr, bucket_size);
-+		zfree_ext(z, z->z_stats, addr, ZFREE_PACK_SIZE(bucket_size, size));
-+	} else {
-+		kfree_large((vm_offset_t)addr, size, KMF_NONE, NULL);
 +	}
++	/* Large or foreign element: the original path - kfree_ext carries its own
++	 * size-confusion panics and the large-free branch. */
++	kfree_ext(KHEAP_DEFAULT, addr, size);
 +}
 +
 +__attribute__((used, noinline))
