@@ -12,3 +12,12 @@ arch:../../../patches/xnu-12377/fileset-iomalloc-shim.patch
 # the benign-absence path; the three caller bl stations are retargeted by the
 # kit TEXT_WORD_PATCHES (device repo, wall-76 entries).
 arch:../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
+# 2026-11-08 (wall-82, r83): donor kext kalloc_type views are never processed in
+# this hybrid (no BootKC registration), so kalloc_type_get_heap returns
+# KHEAP_DEFAULT for any non-data view and a data-buffers object freed through a
+# donor typed-free face trips kfree_heap_confusion_panic without naming its
+# caller (screen crc 0x94673e52, addr 0xfffffffa8c9f75c0 size 192). Record the
+# face-boundary return address (kfree_ext / kfree_addr_ext entry; the donor bl
+# through the rebound GOT slot preserves LR across the tail branch) and the
+# first argument, and append them to the confusion panic message.
+arch:../../../patches/xnu-12377/kfree-ext-panic-caller.patch
