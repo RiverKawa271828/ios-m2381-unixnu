@@ -1,6 +1,6 @@
 --- a/osfmk/kern/kalloc.c
 +++ b/osfmk/kern/kalloc.c
-@@ -2443,6 +2443,47 @@
+@@ -2443,6 +2443,76 @@
  }
  #endif /* XNU_PLATFORM_MacOSX */
  
@@ -29,12 +29,41 @@
 + * both bodies; the kt_view is discarded in favor of KHEAP_DEFAULT so every
 + * donor allocation freed through these shims pairs with the
 + * unixnu_iomalloc_shim allocation zone.
++ *
++ * r84 (wall-82): the KHEAP_DEFAULT expectation above only holds for objects
++ * that stayed inside the IOMalloc/IOFree pair. Objects that crossed the
++ * fileset boundary - allocated by native APIs or by data-heap faces - can
++ * live in any kalloc heap, and forcing KHEAP_DEFAULT here trips
++ * kfree_heap_confusion_panic (r82/r83 screens, crc 0x94673e52 / 0xa4355c2c,
++ * size 192 in heap data.*; the caller chain donor IOFree veneer -> this shim
++ * -> kfree_ext was captured by the kfree-ext-panic-caller patch). Mirror the
++ * kfree_ext body minus the heap expectation instead: identical behavior for
++ * default-heap pairs, correct for objects that live elsewhere.
 + */
 +__attribute__((used, noinline))
 +void
 +unixnu_iofree_shim(void *addr, vm_size_t size)
 +{
-+	kfree_ext(KHEAP_DEFAULT, addr, size);
++	vm_size_t bucket_size, oob_offs;
++	zone_t z;
++
++	if (addr == NULL) {
++		return;
++	}
++	if (size > KFREE_ABSURD_SIZE) {
++		kfree_size_invalid_panic(addr, size);
++	}
++	if (size <= KHEAP_MAX_SIZE) {
++		bucket_size = zone_element_size(addr, &z, true, &oob_offs);
++		if (size + oob_offs > bucket_size || bucket_size == 0) {
++			kfree_size_confusion_panic(z, addr, oob_offs, size, bucket_size);
++		}
++		addr = (char *)addr - oob_offs;
++		__nosan_bzero(addr, bucket_size);
++		zfree_ext(z, z->z_stats, addr, ZFREE_PACK_SIZE(bucket_size, size));
++	} else {
++		kfree_large((vm_offset_t)addr, size, KMF_NONE, NULL);
++	}
 +}
 +
 +__attribute__((used, noinline))
