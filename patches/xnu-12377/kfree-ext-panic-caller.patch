@@ -1,0 +1,58 @@
+--- a/osfmk/kern/kalloc.c
++++ b/osfmk/kern/kalloc.c
+@@ -2802,6 +2802,20 @@
+ 
+ #pragma mark kfree
+ 
++/*
++ * Free-path diagnostics (r83, wall-82 triage): the donor components'
++ * kalloc_type views are never processed in this hybrid (no BootKC
++ * registration), so a non-data view frees with a KHEAP_DEFAULT expectation
++ * and any data-buffers object trips the confusion panic below without
++ * naming its caller. The face boundaries (kfree_ext, kfree_addr_ext) record
++ * their return address and first argument so the panic message can name the
++ * caller directly. Racy across CPUs; the panicking CPU's own stash wins in
++ * practice and the values are diagnostic-only.
++ */
++static uintptr_t kfree_diag_caller;
++static void *kfree_diag_arg0;
++static int kfree_diag_via;
++
+ __abortlike
+ static void
+ kfree_heap_confusion_panic(kalloc_heap_t kheap, void *data, size_t size, zone_t z)
+@@ -2820,8 +2834,10 @@
+ 		panic("kfree: addr %p, size %zd found in regular zone '%s%s'",
+ 		    data, size, zone_heap_name(z), z->z_name);
+ 	} else {
+-		panic("kfree: addr %p, size %zd found in heap %s* instead of %s*",
+-		    data, size, zone_heap_name(z), kheap_name);
++		panic("kfree: addr %p, size %zd found in heap %s* instead of %s*"
++		    " from %p arg0=%p via=%d",
++		    data, size, zone_heap_name(z), kheap_name,
++		    (void *)kfree_diag_caller, kfree_diag_arg0, kfree_diag_via);
+ 	}
+ }
+ 
+@@ -2947,6 +2963,10 @@
+ 	vm_size_t bucket_size;
+ 	zone_t z;
+ 
++	kfree_diag_caller = (uintptr_t)__builtin_return_address(0);
++	kfree_diag_arg0 = kheap_or_kt_view;
++	kfree_diag_via = 0;
++
+ 	if (data == NULL) {
+ 		return;
+ 	}
+@@ -2978,6 +2998,10 @@
+ 	vm_size_t size, usize = 0;
+ 	zone_t z;
+ 
++	kfree_diag_caller = (uintptr_t)__builtin_return_address(0);
++	kfree_diag_arg0 = (void *)kheap;
++	kfree_diag_via = 1;
++
+ 	if (data == NULL) {
+ 		return;
+ 	}
