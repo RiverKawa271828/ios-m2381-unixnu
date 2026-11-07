@@ -6083,3 +6083,17 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
   **★墙73 机制全解**：site 的 bl 是**直呼** kext 内 auth-thunk 池 `0x9bf8e1c`（`ldr x16,[GOT 0x827c610]; braa`，payload 字原样保留）→ GOT 槽 donor 靶 = **`0xb3d6498` = s58 案卷"未修大头 OSObject ctor 签名 isa（292 面）"家族头号**（预注册 23 靶之首，12 kext 导入）→ emit 未绑 → 槽进 stub → braa 尾跳 LR=0x9bf0454 全链自洽。语义 = arm64e kext 对象构造的**签名 isa 安装器**（`[obj]=pacda(&vtable_global,obj); [obj+8]=1`，movk diversity 常量 `#0xcda1`）。
   **关键勘误**：native 构建**有**同款惯用语且同 `#0xcda1` 常量（noctf OSMetaClass ctor 尾部内联，0x79ef030 段实拍），但**无独立 44B out-of-line 辅助件**（初搜"开源树永缺"系我 MOVK48 编码字段写错=搜了 LSL#16；修正编码后仍 0，因 native 全内联）→ **修法 = s56 iomalloc 同款 shim 家族**，非账本绑定。
   **★r73 工作单 = 0xb3d6498 shim 家族（s58 线重启）**：①ABI 深读（x1 参数角色——CoreAnalytics 调用传 x1=&0xbb296a0 自家 __DATA 但 44B 体不用 x1；caller 返回后覆写 [obj]=pacda(&0x827a6a8)——helper 的 [obj] store 对此 caller 冗余，真效果疑似仅 [obj+8]=1；11 个其他导入方的调用面普查）；②donor `0x7f077d8` global 内容与 native 对应物定位；③shim 补丁+Mach.exports+账本（同 iomalloc 三件套）+同族 0xb3d385c(292面) 一并清算；④重出件。回退=recovery_a ← payload-r71-ddbaa7b9。vnode 修正**尚未被验证**（本 boot 死在 VFS 之前，apfs/vnode 路径未跑到——r73 判读时留意）。
+
+
+## r85 工作单（已执行，2026-11-08 会话七十七归档）
+
+**★r85 工作单（新会话开工单，2026-11-08 收队定稿）**：
+  ①**r84 首刷判读 = 先要屏摄**，按旗标分流：
+  - **`verified4K>` 0 且 `requests>` 0** = 窗口读兑现（**墙81 硬件证明入账**）→ root mount 前沿推进；新墙照补丁自报家门流程判读。
+  - **同签名 kfree confusion** → `from=` 直报新 caller → 照 r83 流程：capstone 静态三段对拍（runtime=noctf+0x39BC000、donor=前缀翻转、GOT base 0x7004000 三恒等式）→ 面定名 → 修法。
+  - **`from=` 落在 kfree_data/kfree_shared 面（DATA 期望 vs default 区对象）** = 反向错配（donor IOMalloc shim 所产 default 对象经 data-heap face 释放）→ 修法预案 = 该面同款 lookup shim（`fileset-iomalloc-shim.patch` 加 `unixnu_kfree_data_lookup_shim` + 账本对应 record 改绑；**只在真机出现时做**——v1 教训：先核插入点符号可见性）。
+  - 全新非 kfree 墙 → 常规判读流（CRC 宏口径直算 + pages/free 交叉验证）。
+  ②**若 kfree 家族全过且 root mount 推进**：SHLOG state=2 大捷旗标窗口（root mount 后才开）→ 转入 root mount 后组件判读。留意 IOFree 面**修好后的连带面**：donor IOMalloc shim 产出的 default 对象若被 donor 代码经 data-heap face 释放=反向墙（见①预案）。
+  ③**受控主树同步轮（判读轮之后、单独做，勿混）**：Mac 主树落后 Linux 442+ 条（docs/kits/XnuPrelink emit 工具全套）——rsync 双仓全量（纪律清单+dry-run 核对）后**必须重出件对齐 sha**（emit 工具换代=map 可能重排，桩位/sha 记录全部重核）。**勿在判读轮混入**（单变量纪律）。
+  ④挂账：kits `check.py` 16K 断言 Mac xcrun 验证（r82 改的，两轮未验）；大分区议题冻结等上游；CRC 精配照 panic_call.h:46 口径随轮直算。
+  ⑤出件纪律照 `mac-payload-chain-inputs` 配方（三红线输入路径+unique-chip-id 3645AD55D47E77C1+旗标在子命令后+homebrew PATH）；刷写 = recovery_a 单件；**回退锚 = r84 `75a7f935`**。
