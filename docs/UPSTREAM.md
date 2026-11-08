@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 `feat/ipados27-gpu-parity` 上；remote `upstream`（fetch-only） | lane pin `359d77c` (2026-10-31 晚)；main `67df14d`（docs-only，不并入） |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 **`main`** 上（2026-11-08 谱系修正：feat tip `d2666583` 已被 main 吸收，"lane 跟 feat"规则过期）；remote `upstream`（fetch-only） | lane pin `5dc00d20`（2026-11-08，main） |
 | **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `../UniXNU-m2381`（工作区根 `/home/ri/work/unixnu-meizu`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
 | **本设备 UEFI（2026-10-29 新建）** | https://github.com/RiverKawa271828/uefi-m2381（待建仓首推） | `../uefi-m2381`（分支 main） | 基座 = 上游 uefi-sheng `sheng@0eb4514` + overlay `5297334`；实证来源 = nura 链 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
@@ -37,6 +37,36 @@
   （`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
 
 ### 1.1 同步记录
+
+- **2026-11-08：集成线转 `upstream/main`，`main` → `5dc00d20`（gap 13 条，
+  437 个工作区提交标准 rebase 重放；2 冲突全部按 §0⑦ 续作配方解毕）。
+  **谱系修正**：`feat/ipados27-gpu-parity` tip `d2666583` 已被 main 吸收
+  （feat tip = main 祖先）→ "lane 跟 feat / main docs 不并入"规则过期，
+  现役集成线 = main。上游 13 条主题：**AppSync 适配器**（7fdf1e61，iPadOS
+  27 用户应用适配，新功能面）+ **背光 fix**（54796a72，backboardd 选物理
+  亮度控制——与我们显示线直接相关，r88 判读后可消费）+ **USB/BT docs**
+  （b56f17c0/68b52589/1950226f）+ gitlink bump 4 条（AdrenoMetal
+  8d96e320/b6de3eb1 → `6d7f7343`、metal2vulkan 642c4fef → `963f0e64`、
+  ArmCpu+AppleKeyStoreState 5dc00d20 → `696e0921`/`58e5461e`）+ 打包管线
+  社区 PR。冲突① 99e5a148（test metal extended-range）：gitlink 取上游
+  `6d7f7343` + 保留本 lane 脚本（老坑第三现）；冲突② 64bda2d0（s72
+  ArmCpu 守卫 93a5030）：上游 pin ≠ 守卫值 → 取上游（守卫使命由上游
+  接棒；ls-remote 验证 696e0921/58e5461e 均为各 driver main tip，无幽灵钉）。
+  **老坑第四现**：rebase 完成后重放序列后段旧 bump 把三处 drivers
+  gitlink 拖回 stale，单独提交 `c13a05af` 对齐（10-31 先例 924877f 同款；
+  今后同步轮 rebase 完成后必须 `git ls-tree -r` 对拍全部 gitlink 再收尾）。
+  **kits/XnuPrelink 保留 `68ebb26d` 不动**（s74 vendored v12 matcher +
+  账本 812 = 出件链运行时权威；与上游 main pin `c645d76b` 互不为祖先，
+  上游独有 `ef4fe4f` "bind three more 24A446 kernel imports" 待下轮
+  kit 并集吸收）。上游 13 条对 `patches/` 零触碰 → r87 三件套
+  （sheng-shared-region-sign-gate / pac-fail-capture /
+  kfree-ext-panic-caller）文件零变化免重放。收尾门：check-m2381
+  4 ok 0 fail + kit 测试 7/8 绿（`test_fileset.py` 系 s74 pin 68ebb26d
+  自带 pre-existing 坏——import 的 `chain_relocations` 在我们线
+  native_prelink.py 从 0dbb4fa 起就不存在，与本轮无关，挂账）+ CLI
+  冒烟（defconfig 列单/落位，profile = ipados-27.0.1-24A446 正确）。
+  origin/m2381-ios27 远端 pin `f2b04369` 落后（push = 用户窗口）。
+  备份 `m2381-ios27-pre-sync-20261108`（= fd90ca3a）。
 
 - **2026-10-31（晚）：`upstream/feat/ipados27-gpu-parity` `8fe2aaa` →
   `359d77c`（本 lane 窗口 +10 提交，标准 rebase 重放 295 个工作区提交；
