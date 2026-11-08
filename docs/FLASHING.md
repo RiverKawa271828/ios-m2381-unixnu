@@ -185,10 +185,14 @@ boot_b 不动；Mu 会重新扫描 ESP。
 python3 ../UniXNU-m2381/forensic/build-forensic-esp.py \
     --cache-dir ../UniXNU-m2381/.cache/forensic \
     --out ../UniXNU-m2381/.cache/forensic/reader-esp.img
-# fastboot flash recovery_a ../UniXNU-m2381/.cache/forensic/reader-esp.img
+# 耐久副本落 out 树再刷卡（.cache 是可再生的构建 scratch，现役件不
+# 寄居其中；2026-11-08 起 reader-esp 与 payload 同走平铺命名）：
+# cp ../UniXNU-m2381/.cache/forensic/reader-esp.img \
+#    out/m2381/reader-esp-$(sha256sum ../UniXNU-m2381/.cache/forensic/reader-esp.img | cut -c1-8).img
+# fastboot flash recovery_a out/m2381/reader-esp-d3e6d468.img
 # 刷卡前对 ESP 验四样：scratch-data.img 在 / toml 有 initrd 行 /
 # trustcache 在 / ADT 有 PackedRAMDisk（r56 = 四缺三翻车实录）
-# 平铺出件照旧（payload-rNN-<sha8>.img）
+# 平铺出件照旧（payload-rNN-<sha8>.img / reader-esp-<sha8>.img）
 ```
 
 ### 宿主一次性准备（串口权限持久化，用户已装 2026-10-27）
