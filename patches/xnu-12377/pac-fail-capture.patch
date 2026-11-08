@@ -1,0 +1,58 @@
+--- a/osfmk/arm64/sleh.c
++++ b/osfmk/arm64/sleh.c
+@@ -2925,6 +2925,55 @@
+ 		panic_with_thread_kernel_state(msg, state);
+ 	}
+ 
++	/*
++	 * r86 (wall-85 triage, 2026-11-08): r85's launchd died 68s after exec
++	 * with OS_REASON_PAC_EXCEPTION / EXC_ARM_PAC_FAIL while still in dyld
++	 * pre-main (initproc_spawned never set, spawn stayed at 2). The reader
++	 * window (kernel 32s-100s) showed only kernel-side activity: the
++	 * verified-root read pipeline (SHA-256 hashing, NEON inflate), the
++	 * wait/park alternation, and zero sentinel hits — so the fault is
++	 * userspace. The console ring cannot carry this: once boot_progress is
++	 * active the serial/video console take over and boot_progress_putc stops
++	 * feeding (r86 boot proved the +10s stall runs — the PC samples sit in
++	 * the spin — while the console line never lands). Print the site to the
++	 * video console (visible on the panic screen) AND render it into the two
++	 * wide rows, which BootLog emits into the boot-diag page on every
++	 * writer tick. Diagnostic only; the fatal path proceeds unchanged.
++	 */
++	{
++		extern int proc_selfpid(void);
++		extern void boot_progress_pac_wide(const char *, const char *);
++		uint64_t pc = get_saved_state_pc(state);
++		uint64_t lr = get_saved_state_lr(state);
++		uint64_t sp = get_saved_state_sp(state);
++		uint64_t fp = get_saved_state_fp(state);
++		uint64_t x16 = get_saved_state_reg(state, 16);
++		uint64_t x17 = get_saved_state_reg(state, 17);
++		uint64_t t0, v, freq;
++		char r0[112], r1[112];
++
++		printf("PACFAIL p%d pc=%llx lr=%llx sp=%llx fp=%llx esr=%llx "
++		    "instr=%08x key=%u slide=%x x16=%llx x17=%llx\n",
++		    proc_selfpid(), pc, lr, sp, fp, esr, instr,
++		    (unsigned)(esr & 0x3),
++		    current_task()->task_shared_region_slide, x16, x17);
++
++		snprintf(r0, sizeof r0, "PACFAIL p%d pc=%llx lr=%llx esr=%llx "
++		    "instr=%08x key=%u", proc_selfpid(), pc, lr, esr, instr,
++		    (unsigned)(esr & 0x3));
++		snprintf(r1, sizeof r1, "PACFAIL sp=%llx fp=%llx slide=%x x16=%llx "
++		    "x17=%llx", sp, fp, current_task()->task_shared_region_slide,
++		    x16, x17);
++		boot_progress_pac_wide(r0, r1);
++
++		__asm__ volatile("mrs %0, cntfrq_el0" : "=r"(freq));
++		__asm__ volatile("mrs %0, cntpct_el0" : "=r"(t0));
++		__asm__ volatile("msr daifclr, #2"); /* IRQs on: let the writer run */
++		do {
++			__asm__ volatile("mrs %0, cntpct_el0" : "=r"(v));
++		} while (v - t0 < freq * 10);
++	}
++
+ 	codes[1] = instr;
+ 
+ 	exception_triage(exception, codes, numcodes);

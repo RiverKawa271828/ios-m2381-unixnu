@@ -21,3 +21,38 @@ arch:../../../patches/xnu-12377/fileset-amfi-devmode-shim.patch
 # through the rebound GOT slot preserves LR across the tail branch) and the
 # first argument, and append them to the confusion panic message.
 arch:../../../patches/xnu-12377/kfree-ext-panic-caller.patch
+# 2026-11-08 (r86, wall-85 diagnostic): launchd died 68s after exec with
+# OS_REASON_PAC_EXCEPTION (EXC_ARM_PAC_FAIL) still in dyld pre-main
+# (initproc_spawned unset, spawn=2). The r86 reader window proved the
+# kernel side clean (verified-root reads, NEON inflate, SHA-256 hashing,
+# wait/park alternation, zero sentinel hits) but the console ring froze
+# ~0.5s before the fatal exit, so the user-side site was never recorded.
+# The user PAC-fail handler already copies out the faulting instruction;
+# print the full site to the console ring and hold ~10s with IRQs on so
+# the 2s boot-diag writer captures the line. Diagnostic only; fatal path
+# unchanged.
+arch:../../../patches/xnu-12377/pac-fail-capture.patch
+# 2026-11-08 (r87, wall-85 fix): launchd died 68s after exec with
+# OS_REASON_PAC_EXCEPTION (EXC_ARM_PAC_FAIL, key=DA) at the first userland
+# AUTDA. The r86b capture line decodes against the 24A446 cache exactly: the
+# fixup entry at unslid VA 0x1e8d37228 (.25.dylddata file 0x6c5b228) is
+# auth=1 keyIsData=1(DA) addrDiv=1 diversity=0x9abf runtimeOffset=0x68d37270,
+# and runtimeOffset + value_add (0x180000000) + slide (0x970000) = the
+# captured x16 bit for bit - the kernel rebased the pointer but stored it
+# UNSIGNED, so the consumer AUTDA can never pass. The unsigned store comes
+# from the slide sign gate "jop_key != 0": launchd is a platform binary
+# without a team id, so its shared_region_id is "" and
+# shared_region_key_alloc("") takes ml_default_jop_pid(), which is 0 on
+# non-paravirtualized (native PAC) hardware, so the gate skips signing for
+# every auth fixup. Under HAS_NATIVE_PAC the kernel and all processes share
+# one boot-derived key set (native-pac-keys.patch) and
+# ml_enable_user_jop_key is a no-op, so the jop_key value is irrelevant to
+# the signature; only its zero-ness gated signing at all. Sheng's bring-up
+# patch deletes the jop_key != 0 term for exactly this reason, but that
+# patch never made it into this lane (porting.toml bringup-merge-recon: it
+# fails cross-file apply, series kept at the r52 baseline). This patch is
+# the three gate hunks of zzzz-sheng-ipados27-bringup-core.patch verbatim,
+# split out standalone; H-B (cache content / fixup metadata wrong) refuted
+# by the entry decode, H-A (wrong DA key value) refuted by the 68s of
+# passing IA/IB auth under the same shared key set.
+arch:../../../patches/xnu-12377/sheng-shared-region-sign-gate.patch
