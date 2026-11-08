@@ -79,7 +79,7 @@ index 7c92b73..84319ad 100644
  	switch (kr) {
  	case KERN_SUCCESS:
 diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
-index 7d3a1a8..7a188f6 100644
+index 7d3a1a8..f7ba8bc 100644
 --- a/osfmk/kern/exception.c
 +++ b/osfmk/kern/exception.c
 @@ -102,6 +102,22 @@
@@ -93,8 +93,8 @@ index 7d3a1a8..7a188f6 100644
 +#if __arm64__
 +#include <arm/thread.h>
 +#include <mach/arm/thread_status.h>
-+/* copyin lives in osfmk/arm64/copyio.c; this TU does not pull its header. */
-+extern int copyin(const user_addr_t, void *, vm_size_t);
++/* copyin comes in through <bsd/libkern/copyio.h> (a __copyin_chk macro). */
++void sheng_dump_user_backtrace(const char *tag);
 +#endif
 +/* The last four user exceptions of pid 1 and the processes sheng-exc-name
 + * lists, kept for the board log (the message buffer wraps). */
