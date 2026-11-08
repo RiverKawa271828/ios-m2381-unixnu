@@ -56,3 +56,21 @@ arch:../../../patches/xnu-12377/pac-fail-capture.patch
 # by the entry decode, H-A (wrong DA key value) refuted by the 68s of
 # passing IA/IB auth under the same shared key set.
 arch:../../../patches/xnu-12377/sheng-shared-region-sign-gate.patch
+# 2026-11-08 (r89, wall-86 capture): r87's launchd passed the PAC gate
+# (signature accepted, ran 68s pre-main) and then died with OS_REASON_SIGNAL /
+# SIGSEGV (namespace 2, subcode 0xb) still before main. The pre-death kernel
+# residency (reader-window PC samples, 95-100s) sat in
+# AppleFSCompressionTypeZlib demand-paging the dyld shared cache, but the
+# userspace fault site has no capture channel: the console ring closes once
+# boot_progress goes active, a signal exit never renders the panic screen,
+# and the reader window only carries kernel-side rows. This patch mirrors
+# pac-fail-capture.patch at the threadsignal() fatal branch — the
+# psignal_internal mirror condition already gates the block to soon-fatal
+# signals only, so demand-page noise never reaches it. One console line, the
+# two wide rows (BootLog emits them into the boot-diag page every writer
+# tick), and a 10s hold with IRQs on for the 2s writer. pc/lr/sp/fp come
+# from the faulting thread's saved user state, code = mach exception code,
+# uu_subcode = fault address set by handle_ux_exception() right before
+# threadsignal(); the saved-state far is printed as a cross-check.
+# Diagnostic only; the fatal path proceeds unchanged.
+arch:../../../patches/xnu-12377/segfail-capture.patch
