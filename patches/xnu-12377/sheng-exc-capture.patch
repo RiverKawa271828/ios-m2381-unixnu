@@ -79,7 +79,7 @@ index 7c92b73..84319ad 100644
  	switch (kr) {
  	case KERN_SUCCESS:
 diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
-index 7d3a1a8..f7ba8bc 100644
+index 7d3a1a8..8e95335 100644
 --- a/osfmk/kern/exception.c
 +++ b/osfmk/kern/exception.c
 @@ -102,6 +102,22 @@
@@ -105,7 +105,7 @@ index 7d3a1a8..f7ba8bc 100644
  bool panic_on_exception_triage = false;
  
  /* Not used in coded, only for inspection during debugging */
-@@ -959,9 +975,156 @@ exception_triage(
+@@ -959,9 +975,154 @@ exception_triage(
  		/* Note this may consume control flow if it decides the exception is unrecoverable. */
  		maybe_unrecoverable_exception_triage(exception, code);
  	}
@@ -234,8 +234,6 @@ index 7d3a1a8..f7ba8bc 100644
 +			printf("[cache-input] object=%llx read=%d bytes=%llx length=%llu strings=%llx/%llu\n",
 +			    object, error, data[4], data[5], strings[0], strings[1]);
 +			if (!error && data[4] && data[5] >= 32 && data[5] <= 4 * 1024 * 1024) {
-+				extern void boot_cache_input_capture(user_addr_t, uint64_t) __attribute__((weak_import));
-+				if (&boot_cache_input_capture) boot_cache_input_capture((user_addr_t)data[4], data[5]);
 +				uint64_t first = 0, tail[4] = {0}, hash = 14695981039346656037ULL;
 +				unsigned char bytes[256];
 +				error = copyin((user_addr_t)data[4], &first, sizeof(first));
