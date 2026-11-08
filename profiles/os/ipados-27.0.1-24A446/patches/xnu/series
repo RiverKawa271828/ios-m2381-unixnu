@@ -93,3 +93,17 @@ arch:../../../patches/xnu-12377/segfail-capture.patch
 # first-flash evidence of which fixup path is live; the dyld_a_key == 0 gate
 # mirrors the v5 gate already removed in sheng-shared-region-sign-gate.patch.
 arch:../../../patches/xnu-12377/sheng-mwl-page-in-linking.patch
+# 2026-11-09 (r91, wall-86 diagnostic): the r90 window re-read with the
+# message-buffer blocks (read-m2381-ufs-log.py --msg, missed by the slot-only
+# parse) overturned the "channel dead / MWL never ran" verdicts: printf rows
+# live in blocks 1..32 until the death, and the pager's 16 KiB fixup assembly
+# genuinely ran 0.12 s before the same libobjc isa SIGSEGV (sheng-mwl
+# fmt=0xc 0x4000, 12-entry chain walk, one a_key=0 strong sign). This patch
+# adopts the sheng bring-up exception diagnostic (pid 1 / sheng-exc-name:
+# full registers, eight instructions around pc, the far's physical page and
+# MMU attributes, 32-frame user backtrace) with the cache-parser input
+# capture (0x46618-0x1bba4 return-pair trigger, FNV-64), keeps sheng's
+# critical-exit backtrace hook, uncaps the r90 stations and adds written
+# values (sheng-wrote), per-page completion ([mwl-page]) and syscall
+# entry/exit ([mwl-syscall]) so the next window shows the whole MWL story.
+arch:../../../patches/xnu-12377/sheng-exc-capture.patch

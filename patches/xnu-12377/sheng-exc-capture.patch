@@ -1,0 +1,322 @@
+# 2026-11-09 (r91, wall-86 diagnostic): the r90 window re-read (with the
+# message-buffer blocks the slot-only parse missed) overturned two verdicts at
+# once: the printf->msgbuf->window channel is alive until the death (sheng-*
+# rows and the SEGFAIL line are all in blocks 1..32), and the dyld pager's
+# 16 KiB fixup assembly genuinely ran - sheng-src/sheng-peek/sheng-mwl
+# (fmt=0xc, hdr_page_size=0x4000), a 12-entry chain walk in fixupPageAuth64
+# and one sheng-sign (a_key=0 strong sign) all fired 0.12 s before the same
+# libobjc isa SIGSEGV. What is still invisible: whether the map_with_linking_np
+# syscall itself is on the live path (the pager can assemble pages for plain
+# faults too), what the fixups wrote into the delivered page, and what the
+# dying launchd thread had in its registers/frames. This patch adopts the
+# sheng bring-up exception diagnostic (exception_triage hook for pid 1 and the
+# sheng-exc-name list: full registers, the eight instructions around pc, the
+# far's physical page and MMU attributes, a 32-frame user backtrace) plus the
+# cache-parser input capture (the 0x46618-0x1bba4 return-pair trigger with a
+# bounded copyin, FNV-64 of the whole input and head/tail words) - the channel
+# adaptation is none: printf already reaches the window. The kern_exit.c hook
+# keeps sheng's critical-exit backtrace (tag = process name, so a launchd
+# exit still arms the cache-input capture). The pager/syscall stations are
+# uncapped and extended (written values, per-page completion, syscall
+# entry/exit) so the next window shows the whole MWL story. Diagnostic only.
+diff --git a/bsd/kern/kern_exit.c b/bsd/kern/kern_exit.c
+index 72ef3c5..b86b393 100644
+--- a/bsd/kern/kern_exit.c
++++ b/bsd/kern/kern_exit.c
+@@ -1988,6 +1988,16 @@ proc_handle_critical_exit(proc_t p, int rv)
+ 
+ 	char *exit_reason_desc = exit_reason_get_string_desc(p->p_exit_reason);
+ 
++#if __arm64__
++	/* Bring-up: the user backtrace of a boot-critical exit (launchd dying on a
++	 * signal passes here after the fatal path; tag = process name so the
++	 * cache-input capture arms on "launchd" as in the sheng lane). */
++	if (current_proc() == p) {
++		extern void sheng_dump_user_backtrace(const char *tag);
++		sheng_dump_user_backtrace(proc_best_name(p));
++	}
++#endif /* __arm64__ */
++
+ 	if (p->p_exit_reason == OS_REASON_NULL) {
+ 		printf("pid %d exited -- no exit reason available -- (signal %d, exit %d)\n",
+ 		    proc_getpid(p), WTERMSIG(rv), WEXITSTATUS(rv));
+diff --git a/bsd/vm/vm_unix.c b/bsd/vm/vm_unix.c
+index 7c92b73..84319ad 100644
+--- a/bsd/vm/vm_unix.c
++++ b/bsd/vm/vm_unix.c
+@@ -2587,6 +2587,19 @@ map_with_linking_np(
+ 		kr = KERN_INVALID_ARGUMENT;
+ 		goto done;
+ 	}
++	/* r91: the syscall-level station. The r90 pager-path stations cannot tell
++	 * whether dyld ever calls map_with_linking_np - the pager assembles fixup
++	 * pages for plain faults too. Entry (past the 16 KiB gate) and exit make
++	 * the syscall story visible in the same window. */
++	{
++		static int mwl_entry_logged = 0;
++		if (mwl_entry_logged < 40) {
++			printf("[mwl-syscall] entry pid=%d rc=%u lis=%u ps=0x%x fmt=0x%x\n",
++			    proc_getpid(p), region_count, link_info_size,
++			    info_hdr->mwli_page_size, info_hdr->mwli_pointer_format);
++			mwl_entry_logged++;
++		}
++	}
+ 
+ 	binds_size = (uint64_t)info_hdr->mwli_binds_count *
+ 	    ((info_hdr->mwli_pointer_format == DYLD_CHAINED_PTR_32) ? 4 : 8);
+@@ -2766,6 +2779,13 @@ done:
+ 	if (link_info != NULL) {
+ 		kfree_data(link_info, link_info_size);
+ 	}
++	{
++		static int mwl_exit_logged = 0;
++		if (mwl_exit_logged < 40) {
++			printf("[mwl-syscall] exit kr=%d\n", kr);
++			mwl_exit_logged++;
++		}
++	}
+ 
+ 	switch (kr) {
+ 	case KERN_SUCCESS:
+diff --git a/osfmk/kern/exception.c b/osfmk/kern/exception.c
+index 7d3a1a8..7a188f6 100644
+--- a/osfmk/kern/exception.c
++++ b/osfmk/kern/exception.c
+@@ -102,6 +102,22 @@
+ 
+ #include <sys/code_signing.h> /* for developer mode state */
+ 
++#include <vm/vm_protos.h> /* proc_best_name; proc_pid is declared there only for DEVELOPMENT, so the same declaration follows */
++#ifdef MACH_BSD
++extern int proc_pid(struct proc *);
++#endif
++#if __arm64__
++#include <arm/thread.h>
++#include <mach/arm/thread_status.h>
++/* copyin lives in osfmk/arm64/copyio.c; this TU does not pull its header. */
++extern int copyin(const user_addr_t, void *, vm_size_t);
++#endif
++/* The last four user exceptions of pid 1 and the processes sheng-exc-name
++ * lists, kept for the board log (the message buffer wraps). */
++struct sheng_exc_record {char name[20]; uint32_t pid, type, esr, frames; uint64_t pc, lr, far, ret[12];};
++struct sheng_exc_record sheng_exc_ring[4];
++volatile uint32_t sheng_exc_count;
++
+ bool panic_on_exception_triage = false;
+ 
+ /* Not used in coded, only for inspection during debugging */
+@@ -959,9 +975,156 @@ exception_triage(
+ 		/* Note this may consume control flow if it decides the exception is unrecoverable. */
+ 		maybe_unrecoverable_exception_triage(exception, code);
+ 	}
++#ifdef MACH_BSD
++	/* The full user-side state of the boot-critical exceptions: pid 1 and the
++	 * comma-separated names in sheng-exc-name. printf reaches the reader
++	 * window's message-buffer blocks even after boot_progress goes active
++	 * (r90 window re-read), so the console ring is not a concern here. */
++	{
++		bool sheng_exc_match = false;
++		if (get_bsdtask_info(task)) {
++			char sheng_exc_names[96] = "backboardd,chronod,liveactivitiesd";
++			PE_parse_boot_argn("sheng-exc-name", sheng_exc_names, sizeof(sheng_exc_names));
++			const char *name = proc_best_name(get_bsdtask_info(task));
++			size_t length = strlen(name);
++			for (const char *at = sheng_exc_names; *at;) {
++				const char *end = strchr(at, ',');
++				size_t n = end ? (size_t)(end - at) : strlen(at);
++				if (n == length && !strncmp(at, name, n)) {
++					sheng_exc_match = true;
++				}
++				at += n + (end ? 1 : 0);
++			}
++		}
++		if (get_bsdtask_info(task) && (proc_pid(get_bsdtask_info(task)) == 1 || sheng_exc_match)) {
++			static int sheng_exc_dumps = 0;
++			printf("sheng-exc: %s[%d] exception type=0x%x code=0x%llx subcode=0x%llx\n",
++			    proc_best_name(get_bsdtask_info(task)), proc_pid(get_bsdtask_info(task)),
++			    exception, (unsigned long long)code[0], codeCnt > 1 ? (unsigned long long)code[1] : 0ULL);
++#if __arm64__
++			arm_saved_state_t *ss = find_user_regs(thread);
++			if (ss != NULL && sheng_exc_dumps < 8) {
++				uint64_t pc = get_saved_state_pc(ss);
++				sheng_exc_dumps++;
++				{
++					struct sheng_exc_record *rec = &sheng_exc_ring[sheng_exc_count & 3];
++					*rec = (struct sheng_exc_record){};
++					strlcpy(rec->name, proc_best_name(get_bsdtask_info(task)), sizeof(rec->name));
++					rec->pid = (uint32_t)proc_pid(get_bsdtask_info(task));rec->type = (uint32_t)exception;
++					rec->pc = pc;rec->lr = get_saved_state_lr(ss);rec->far = get_saved_state_far(ss);rec->esr = get_saved_state_esr(ss);
++					uint64_t fp = get_saved_state_fp(ss);
++					for (unsigned i = 0; thread == current_thread() && i < 12 && fp && !(fp & 7); i++) {
++						uint64_t frame[2];
++						if (copyin((user_addr_t)fp, frame, sizeof(frame)) != 0) {
++							break;
++						}
++						rec->ret[i] = frame[1] & 0x00007fffffffffffULL;rec->frames = i + 1;
++						if (frame[0] <= fp) {
++							break;
++						}
++						fp = frame[0];
++					}
++					sheng_exc_count = sheng_exc_count + 1;
++				}
++				printf("sheng-exc: pc=0x%llx lr=0x%llx sp=0x%llx far=0x%llx esr=0x%x\n",
++				    pc, get_saved_state_lr(ss), get_saved_state_sp(ss), get_saved_state_far(ss), get_saved_state_esr(ss));
++				for (unsigned r = 0; r < 29; r += 4) {
++					printf("sheng-exc: x%u=0x%llx 0x%llx 0x%llx 0x%llx\n", r,
++					    get_saved_state_reg(ss, r), get_saved_state_reg(ss, r + 1),
++					    r + 2 < 29 ? get_saved_state_reg(ss, r + 2) : 0ULL, r + 3 < 29 ? get_saved_state_reg(ss, r + 3) : 0ULL);
++				}
++				uint32_t insn[8] = {};
++				if (copyin((user_addr_t)(pc - 16), insn, sizeof(insn)) == 0) {
++					printf("sheng-exc: insn@pc-16 %08x %08x %08x %08x | %08x %08x %08x %08x\n",
++					    insn[0], insn[1], insn[2], insn[3], insn[4], insn[5], insn[6], insn[7]);
++				}
++				/* What the fault address maps to: physical page, managed DRAM or not, cache attributes. */
++				extern ppnum_t pmap_find_phys(pmap_t, addr64_t);
++				extern unsigned int pmap_cache_attributes(ppnum_t);
++				extern boolean_t pmap_valid_page(ppnum_t);
++				ppnum_t pn = pmap_find_phys(get_task_pmap(task), get_saved_state_far(ss));
++				printf("sheng-exc: far page 0x%x managed=%d wimg=0x%x\n", pn, pn ? pmap_valid_page(pn) : -1,
++				    pn ? pmap_cache_attributes(pn) : 0);
++				if (thread == current_thread()) {
++					/* The attributes the MMU uses for this user address (PAR_EL1[63:56] is the MAIR encoding). */
++					uint64_t par = 0, sctlr = 0, mair = 0;
++					__asm__ volatile ("at s1e0w, %3\n isb\n mrs %0, par_el1\n mrs %1, sctlr_el1\n mrs %2, mair_el1"
++					    : "=r"(par), "=r"(sctlr), "=r"(mair) : "r"(get_saved_state_far(ss)) : "memory");
++					printf("sheng-exc: par=0x%llx (attr 0x%llx) sctlr=0x%llx mair=0x%llx\n", par, par >> 56, sctlr, mair);
++					/* pid 1 arms the cache-parser input capture (tag "launchd"); the name list gets "sheng-exc". */
++					sheng_dump_user_backtrace(proc_pid(get_bsdtask_info(task)) == 1 ? "launchd" : "sheng-exc");
++				}
++			}
++#endif /* __arm64__ */
++		}
++	}
++#endif /* MACH_BSD */
+ 	return exception_triage_thread(exception, code, codeCnt, thread);
+ }
+ 
++#if __arm64__
++/* Print the current thread's user registers and frame-pointer chain (launchd
++ * bring-up diagnostics; the cache-input capture follows the sheng patch). */
++void sheng_dump_user_backtrace(const char *tag);
++void
++sheng_dump_user_backtrace(const char *tag)
++{
++	arm_saved_state_t *ss = find_user_regs(current_thread());
++	if (ss == NULL) {
++		return;
++	}
++	printf("sheng-ubt %s: pc=0x%llx lr=0x%llx sp=0x%llx fp=0x%llx x0=0x%llx x1=0x%llx x2=0x%llx\n", tag,
++	    get_saved_state_pc(ss), get_saved_state_lr(ss), get_saved_state_sp(ss), get_saved_state_fp(ss),
++	    get_saved_state_reg(ss, 0), get_saved_state_reg(ss, 1), get_saved_state_reg(ss, 2));
++	uint32_t cache_trace = 1;
++	PE_parse_boot_argn("sheng-cache-log", &cache_trace, sizeof(cache_trace));
++	cache_trace = cache_trace && tag && !strcmp(tag, "launchd");
++	uint64_t previous_return = 0;
++	uint64_t fp = get_saved_state_fp(ss);
++	for (int i = 0; i < 32 && fp != 0 && (fp & 7) == 0; i++) {
++		uint64_t frame[2];
++		if (copyin((user_addr_t)fp, frame, sizeof(frame)) != 0) {
++			break;
++		}
++		printf("sheng-ubt %s: #%d fp=0x%llx ret=0x%llx\n", tag, i, fp, frame[1] & 0x00007fffffffffffULL);
++
++		uint64_t ret = frame[1] & 0x00007fffffffffffULL;
++		/* 24A446 launchd: cache-parser caller follows its fatal-cache frame.
++		 * Its saved x19 is the original XPC data object passed to the parser. */
++		if (cache_trace && previous_return && ret > previous_return &&
++		    ret - previous_return == 0x46618 - 0x1bba4 && fp >= 8) {
++			uint64_t object = 0, data[7] = {0}, strings[2] = {0};
++			int error = copyin((user_addr_t)(fp - 8), &object, sizeof(object));
++			if (!error && object) error = copyin((user_addr_t)object, data, sizeof(data));
++			copyin((user_addr_t)(previous_return - 0x1bba4 + 0x87208), strings, sizeof(strings));
++			printf("[cache-input] object=%llx read=%d bytes=%llx length=%llu strings=%llx/%llu\n",
++			    object, error, data[4], data[5], strings[0], strings[1]);
++			if (!error && data[4] && data[5] >= 32 && data[5] <= 4 * 1024 * 1024) {
++				extern void boot_cache_input_capture(user_addr_t, uint64_t) __attribute__((weak_import));
++				if (&boot_cache_input_capture) boot_cache_input_capture((user_addr_t)data[4], data[5]);
++				uint64_t first = 0, tail[4] = {0}, hash = 14695981039346656037ULL;
++				unsigned char bytes[256];
++				error = copyin((user_addr_t)data[4], &first, sizeof(first));
++				if (!error) error = copyin((user_addr_t)(data[4] + data[5] - 32), tail, sizeof(tail));
++				for (uint64_t offset = 0; !error && offset < data[5]; offset += sizeof(bytes)) {
++					size_t count = data[5] - offset < sizeof(bytes) ? (size_t)(data[5] - offset) : sizeof(bytes);
++					error = copyin((user_addr_t)(data[4] + offset), bytes, count);
++					if (!error) for (size_t j = 0; j < count; j++) hash = (hash ^ bytes[j]) * 1099511628211ULL;
++				}
++				printf("[cache-input] first=%llx tail=%llx/%llx/%llx/%llx fnv64=%llx read=%d\n",
++				    first, tail[0], tail[1], tail[2], tail[3], hash, error);
++			}
++			cache_trace = 0;
++		}
++		previous_return = ret;
++		if (frame[0] <= fp) {
++			break;
++		}
++		fp = frame[0];
++	}
++}
++#endif /* __arm64__ */
++
+ kern_return_t
+ bsd_exception(
+ 	exception_type_t        exception,
+diff --git a/osfmk/vm/vm_dyld_pager.c b/osfmk/vm/vm_dyld_pager.c
+index 17a842c..1fd7434 100644
+--- a/osfmk/vm/vm_dyld_pager.c
++++ b/osfmk/vm/vm_dyld_pager.c
+@@ -592,8 +592,8 @@ signPointer(
+ 			*signedAddr = (uintptr_t)pmap_sign_user_ptr((void *)unsignedAddr, key, extendedDiscriminator, pager->dyld_a_key);
+ 		}
+ 		static int sheng_sign_logged = 0;
+-		if (!sheng_sign_logged) {
+-			sheng_sign_logged = 1;
++		if (sheng_sign_logged < 8) {
++			sheng_sign_logged++;
+ 			printf("sheng-sign: unsignedAddr=0x%llx key=%d addrDiv=%d diversity=0x%x disc=0x%llx a_key=0x%llx result=0x%llx\n",
+ 			    (unsigned long long)unsignedAddr, key, addrDiv, diversity,
+ 			    (unsigned long long)extendedDiscriminator, (unsigned long long)pager->dyld_a_key,
+@@ -735,6 +735,14 @@ fixupPageAuth64(
+ 			}
+ 		}
+ 		bool crossing_page = false;;
++		/* The entry as written (after any rebase/bind/sign), next to the raw
++		 * value the sheng-chain line prints - the poisoned-slot check. */
++		static int sheng_wrote_logged = 0;
++		if (sheng_wrote_logged < 12) {
++			printf("sheng-wrote[%d]: off=0x%llx now=0x%llx\n",
++			    sheng_wrote_logged, (unsigned long long)((uintptr_t)chain - contents), (unsigned long long)*chain);
++			sheng_wrote_logged++;
++		}
+ 		valid_chain = _delta_ptr_within_page_nospec(&chain, delta, &crossing_page, (uintptr_t)userVA, page_shift);
+ 
+ 		if (crossing_page) {
+@@ -891,8 +899,8 @@ fixup_page(
+ 			segInfo = seg;
+ 			pageIndex = (uint32_t)(userVA - segStartAddress) / seg->page_size;
+ 			static int sheng_mwl_logged = 0;
+-			if (!sheng_mwl_logged) {
+-				sheng_mwl_logged = 1;
++			if (sheng_mwl_logged < 64) {
++				sheng_mwl_logged++;
+ 				printf("sheng-mwl: fmt=0x%x hdr_page_size=0x%x seg_page_size=0x%x seg_count=%u pageIndex=%u userVA=0x%llx segStart=0x%llx\n",
+ 				    hdr->mwli_pointer_format, hdr->mwli_page_size, seg->page_size, seg->page_count, pageIndex,
+ 				    (unsigned long long)userVA, (unsigned long long)segStartAddress);
+@@ -1349,6 +1357,16 @@ retry_src_fault:
+ 					retval = KERN_FAILURE;
+ 				} else {
+ 					bcopy((const char *)fixup_buffer + (vm_offset_t)part * PAGE_SIZE, (char *)dst_vaddr, PAGE_SIZE);
++					/* Completion line with the first delivered bytes - the
++					 * poisoned-slot check against the donor truth. */
++					static int mwl_page_logged = 0;
++					if (mwl_page_logged < 64) {
++						uint64_t wrote8 = 0;
++						memcpy(&wrote8, (const void *)((uintptr_t)fixup_buffer + (vm_offset_t)part * PAGE_SIZE), sizeof(wrote8));
++						printf("[mwl-page] va=0x%llx part=%u wrote8=0x%llx\n",
++						    (unsigned long long)base_userVA, part, (unsigned long long)wrote8);
++						mwl_page_logged++;
++					}
+ 				}
+ 			}
+ 		} else if (fixup_page(dst_vaddr, userVA, pager) != KERN_SUCCESS) {
