@@ -74,3 +74,22 @@ arch:../../../patches/xnu-12377/sheng-shared-region-sign-gate.patch
 # threadsignal(); the saved-state far is printed as a cross-check.
 # Diagnostic only; the fatal path proceeds unchanged.
 arch:../../../patches/xnu-12377/segfail-capture.patch
+# 2026-11-09 (r90, wall-86 fix): r89's SIGSEGV was launchd consuming a poisoned
+# plain-rebase slot in a cache subcache page; the recon pinned the topology:
+# iOS26 dyld maps each subcache with kernel page-in linking (map_with_linking_np)
+# and falls back to "linking in-process" (userspace chained-fixup application,
+# decoded from the 24A446 dyld binary) when the kernel rejects the call. Ours
+# rejects: map_with_linking_np only accepts mwli_page_size == PAGE_SIZE (4 KiB)
+# while the arm64e 24A446 cache bakes 16 KiB fixup pages, and the dyld pager
+# walkers are PAGE_SIZE-based - so this lane alone runs the userspace fallback
+# no real hardware ever exercises. Sheng accepts 4*PAGE_SIZE and assembles the
+# whole 16 KiB fixup page in a kernel buffer (dyld_pager_peek + scratch
+# copy-out) - the configuration that reached SpringBoard on the same donor.
+# This is the vm_dyld_pager.c section of zzzz-sheng-ipados27-bringup-core.patch
+# plus the map_with_linking_np acceptance hunk, split standalone with the
+# sheng-shared-region-sign-gate.patch recipe (the r52 recon found the full
+# patch fails cross-file; these two files apply clean, git apply --check PASS
+# on the build tree). The sheng-* one-shot printfs stay deliberately as
+# first-flash evidence of which fixup path is live; the dyld_a_key == 0 gate
+# mirrors the v5 gate already removed in sheng-shared-region-sign-gate.patch.
+arch:../../../patches/xnu-12377/sheng-mwl-page-in-linking.patch
