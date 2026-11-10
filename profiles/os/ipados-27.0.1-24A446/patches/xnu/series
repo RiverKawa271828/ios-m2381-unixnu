@@ -107,3 +107,24 @@ arch:../../../patches/xnu-12377/sheng-mwl-page-in-linking.patch
 # values (sheng-wrote), per-page completion ([mwl-page]) and syscall
 # entry/exit ([mwl-syscall]) so the next window shows the whole MWL story.
 arch:../../../patches/xnu-12377/sheng-exc-capture.patch
+# r92 (2026-11-09).  r91 pinned wall-86 to donor sc25@0x4DDD070, an
+# authenticated self-referencing metaclass-isa rebase (diversity 0x6ae1)
+# in the writable data subcache mapping, but attributed the poison to a
+# 44-bit store mask on this face.  The r92 static blade overturned that:
+# the compiled r91 kernel (local object and shipped binary) signs at full
+# hardware pacda width in every face (v3, v5 page, v5 4K part, MWL), the
+# donor 24A446 kernel hands the same entries to its SPTM batch signer,
+# and neither our kernel, the donor kernel nor dyld contains any 44-bit
+# mask.  The real contract lives in the consumer: libobjc's own stores
+# for this slot family keep only bits 3-46 (pacda + and #0x7ffffffffffff8
+# at libobjc+0x1b4b4/1b51c), while the r86b AUTDA family needs the full
+# width.  r87's gate removal therefore signs ObjC-managed writable-data
+# slots into a form libobjc reads as a raw pointer, giving the observed
+# [VA36][PAC bits 38-43][zeroed 44+] far.  This patch scopes the r87
+# signature to read-only mappings (the AUTDA family, e.g. sc25
+# mapping[5] initProt 1) and stores writable mappings (the ObjC family,
+# e.g. sc25 mapping[4] initProt 3) plain, restoring the donor's
+# jop_key==0 gate behaviour per mapping; a sheng-v5 probe row prints the
+# writability, diversity and stored value of the first eight
+# authenticated entries so the next window shows the split.
+arch:../../../patches/xnu-12377/sheng-v5-store-form-split.patch
