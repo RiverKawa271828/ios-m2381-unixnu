@@ -72,9 +72,10 @@
   四新条 + 我们 sheng 族全保留）+ kits/XnuPrelink gitlink ×1（中途取
   上游、终局收口 vendored）。**老坑第五现**：rebase 完成后重放旧 bump
   把 8 条 drivers gitlink 拖回 stale → 对齐提交 `2a376abe`（18/20
-  =上游 tip）；两条有意例外 = **drivers/AppleKeyStoreState 保
-  `58e5461`**（上游钉 `6ff4f11d` 未发布到其子仓 = 幽灵钉，ls-remote
-  实证仅 main=58e5461）+ **kits/XnuPrelink 保 vendored**。kit 并集：
+  =上游 tip）；两条有意例外（其一当晚退役）= **drivers/AppleKeyStoreState 保
+  `58e5461`**（上游钉 `6ff4f11d` 当时未发布 = 幽灵钉，ls-remote 实证；
+  **当日稍后上游补推**，同日收口钉位 `2b37d743` → 对拍升 19/20）+
+  **kits/XnuPrelink 保 vendored**（唯一存留例外）。kit 并集：
   上游 kit main（macOS 构建/集合名 fileset_names.py/26C5035r AMFI
   stack shift + fixture）merge 进 vendored `m2381-sync-71` →
   `f129ca7f`（零冲突；上游同期独立删了 test_fileset.py = 与我们本轮
