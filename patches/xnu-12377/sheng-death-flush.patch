@@ -1,0 +1,33 @@
+# r95 death capture: one synchronous log-window round on the critical-exit path, before the
+# panic parks the cores. The boot-log writer thread never runs again once the panic stops the
+# machine, so r94's launchd abort printed its reason into the message buffer and the window
+# froze at the previous 2 s round - the abort message was lost with the machine. The kit side
+# (UniXNU-m2381 package/BootLog.c) assigns the hook (boot_log_flush_now) once the window is
+# open and serialises the one-shot round against the writer thread.
+--- a/bsd/kern/kern_exit.c
++++ b/bsd/kern/kern_exit.c
+@@ -1639,6 +1639,9 @@
+  * NOTE: exit_with_reason drops a reference on the passed exit_reason
+  */
+ void (*sheng_user_exit_hook)(int, int, uint32_t, uint64_t, const char *, const char *);
++/* Death capture: the boot-log kit assigns boot_log_flush_now once the window is open; the
++ * critical-exit path calls it for one synchronous final round (see proc_handle_critical_exit). */
++void (*sheng_death_flush_hook)(void);
+ 
+ int
+ exit_with_reason(proc_t p, int rv, int *retval, boolean_t thread_can_terminate, boolean_t perf_notify,
+@@ -2007,6 +2010,14 @@
+ 		    exit_reason_desc : "none");
+ 	}
+ 
++	/* Death capture: one synchronous log-window round before the panic parks the cores (the
++	 * boot-log writer thread never runs again after it). Without this the final console lines
++	 * die in the message buffer: r94's launchd abort printed its reason and the window froze
++	 * at the previous 2 s round, so the abort message was lost with the machine. */
++	if (__improbable(sheng_death_flush_hook != NULL)) {
++		sheng_death_flush_hook();
++	}
++
+ 	const char *prefix_str;
+ #if defined(XNU_BOOT_PROGRESS) && XNU_BOOT_PROGRESS
+ 	char prefix_str_buf[1024];

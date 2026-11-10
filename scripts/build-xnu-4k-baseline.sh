@@ -190,17 +190,20 @@ if [ "$(uname -s)" = Linux ] && [ "${XNU_ARCH_STRING:-}" = arm64e ]; then
   # generic-subtarget integrated assembler on BCM2837, which carries no
   # -mcpu in MakeInc.def unlike every Apple board.
   EXTRA_MAKE_ARGS+=("cswitch.o_SFLAGS_ADD=-mcpu=apple-a14")
-  # The upstream drivers take the address of kernel hooks via weak_import
-  # (NativeRamBlock's native_ufs_store_write_cached feature probe).  Apple's
-  # ld binds an undefined weak symbol (plus its __auth_ptr stub) to null, so
-  # the macOS link succeeds with the hook dormant; our self-built ld64 errors
-  # out, and with -U alone the resulting null binds the direct branch 68 GB
-  # out of range.  Alias the hook to its plain-write sibling: the branch
-  # resolves in range and the runtime semantics (cached write falls back to
-  # the plain store) match the macOS behaviour.  Linux compile gate only;
-  # the shipped payloads still come from the macOS chain.
-  EXTRA_MAKE_ARGS+=("LDFLAGS_KERNEL_DEVELOPMENT=-Wl,-alias,_native_ufs_store_write,_native_ufs_store_write_cached")
 fi
+# The upstream drivers take the address of kernel hooks via weak_import
+# (NativeRamBlock's native_ufs_store_write_cached feature probe).  With the
+# hook undefined the reference must bind null: self-built ld64 (the Linux
+# compile gate) hard-errors on it, and with -U alone the resulting null binds
+# the direct branch 68 GB out of range.  Alias the hook to its plain-write
+# sibling: the branch resolves in range and the runtime semantics (cached
+# write falls back to the plain store) match the dormant-hook behaviour.
+# r95 (2026-11-11): this used to be Linux-only because Apple's ld bound the
+# undefined weak (plus its __auth_ptr stub) to null - but the macOS tree had
+# simply kept a stale libShengUfs.a compiled before the probe existed; the
+# first rebuild (rsync mtime churn) made ld-27106.1 reject the reference on
+# the macOS chain too, so the alias is required wherever the kernel links.
+EXTRA_MAKE_ARGS+=("LDFLAGS_KERNEL_DEVELOPMENT=-Wl,-alias,_native_ufs_store_write,_native_ufs_store_write_cached")
 ARM_DT_PLATFORM=${XNU_ARM_DT_PLATFORM:-0}
 if [ "$ARM_DT_PLATFORM" != 0 ] && [ "$ARM_DT_PLATFORM" != 1 ]; then
   echo 'XNU_ARM_DT_PLATFORM must be 0 or 1' >&2

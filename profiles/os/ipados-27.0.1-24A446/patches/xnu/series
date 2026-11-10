@@ -156,3 +156,13 @@ arch:../../../patches/xnu-12377/sheng-v5-store-form-split.patch
 # (pmap.c pmap_switch_user_ttb/clear), and widens the fault/strip masks
 # (sleh.c, vm_param.h) to the 47-bit user range.
 arch:../../../patches/xnu-12377/sheng-t0sz-user-47bit.patch
+# r95: the rest of the sheng bring-up (19 of its 36 files apply clean on the full r94 series;
+# iokit_rpc/ipc_kobject/cpu need sheng-only symbols we do not carry). Suspects for the r94
+# launchd abort (ns2/0x6 after every boot task ran): lockdown_mode.c gives Darwin 26 libsystem
+# the sysctl os_lockdown_mode_enabled aborts without; kern_exec.c converts the Darwin 26
+# 0x100-byte posix_spawnattr; BCM2837.h flips on the 16-bit ASID face the pmap files carry.
+arch:../../../patches/xnu-12377/sheng-bringup-remaining.patch
+# r95 death capture: one synchronous window round on the critical-exit path, before the panic
+# parks the cores (r94's abort message died in the message buffer, the window froze at the
+# previous round). Kit side: UniXNU-m2381 package/BootLog.c assigns the hook.
+arch:../../../patches/xnu-12377/sheng-death-flush.patch
