@@ -1,0 +1,83 @@
+The v5 slide face stores one form for every authenticated rebase, but the
+donor consumers read the cache data through two incompatible contracts, and
+r91's poison slot pins the split to the mapping writability.
+
+Read-only auth mappings (sc25 mapping[5], initProt 1) hold GOT-style slots
+that the dyld fixup stage authenticates (AUTDA, the r86b wall-85 family):
+they need the full hardware pacda form, PAC at bits 38-55.  Writable data
+mappings (sc25 mapping[4], initProt 3) hold ObjC-managed slots (the
+metaclass self-reference family, diversity 0x6ae1): libobjc reads those
+raw and its own stores keep only bits 3-46 ("pacda x17, x16; and
+#0x7ffffffffffff8; str" at libobjc+0x1b4b4/1b51c in the 24A446 cache), so
+any bits above 46 are garbage to it.  r87 made this face sign every
+authenticated entry at full width, which poisons the writable-mapping
+family exactly as observed in r89-r91: far = [VA36][PAC bits 38-43]
+[zeroed 44+], VA part bit-exact across three generations.
+
+Scope the r87 signature to the read-only mappings and store the writable
+mappings plain (the donor's jop_key==0 gate behaviour, which sheng's
+9b19ac2 reversal also restored globally).  A sheng-v5 probe row reports
+the writability, diversity and stored value of the first eight
+authenticated entries so the next window shows the split in place.
+
+--- a/osfmk/vm/vm_shared_region_xnu.h
++++ b/osfmk/vm/vm_shared_region_xnu.h
+@@ -164,6 +164,7 @@
+ typedef struct vm_shared_region_slide_info {
+ 	uint32_t                si_slide;           /* the distance that the file data is relocated */
+ 	bool                    si_slid;
++	bool                    si_writable;        /* mapping initProt is VM_PROT_WRITE: ObjC-managed slots, plain store form */
+ #if __has_feature(ptrauth_calls)
+ 	bool                    si_ptrauth;
+ 	uint64_t                si_jop_key;
+--- a/osfmk/vm/vm_shared_region.c
++++ b/osfmk/vm/vm_shared_region.c
+@@ -2688,6 +2688,7 @@
+ 	si->si_start = start;
+ 	si->si_end = si->si_start + size;
+ 	si->si_slide = slide;
++	si->si_writable = (prot & VM_PROT_WRITE) != 0;
+ #if __has_feature(ptrauth_calls)
+ 	/*
+ 	 * If there is authenticated pointer data in this slid mapping,
+@@ -3335,7 +3336,7 @@
+ 				discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
+ 			}
+ 
+-			if (si->si_ptrauth && !arm_user_jop_disabled()) {
++			if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
+ #if CONFIG_SPTM
+ 				pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
+ #else /* CONFIG_SPTM */
+@@ -3554,7 +3555,7 @@
+ 				discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
+ 			}
+ 
+-			if (si->si_ptrauth && !arm_user_jop_disabled()) {
++			if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
+ #if CONFIG_SPTM
+ 				pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
+ #else /* CONFIG_SPTM */
+@@ -3644,7 +3645,7 @@
+ 					uintptr_t pageOffset = rebaseLocation - page_content;
+ 					discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
+ 				}
+-				if (si->si_ptrauth && !arm_user_jop_disabled()) {
++				if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
+ #if CONFIG_SPTM
+ 					pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
+ #else /* CONFIG_SPTM */
+@@ -3654,6 +3655,13 @@
+ 				} else {
+ 					memcpy(rebaseLocation, &value, sizeof(value));
+ 				}
++				static int sheng_v5_probe = 0;
++				if (sheng_v5_probe < 8) {
++					sheng_v5_probe++;
++					printf("sheng-v5: wr=%d div=0x%x stored=0x%llx\n",
++					    si->si_writable ? 1 : 0, (uint32_t)diversity,
++					    (unsigned long long)*(volatile uint64_t *)(void *)rebaseLocation);
++				}
+ #endif /* __has_feature(ptrauth_calls) */
+ 			} else {
+ 				value += high8;
