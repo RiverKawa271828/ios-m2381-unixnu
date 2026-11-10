@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 **`main`** 上（2026-11-08 谱系修正：feat tip `d2666583` 已被 main 吸收，"lane 跟 feat"规则过期）；remote `upstream`（fetch-only） | lane pin `5dc00d20`（2026-11-08，main） |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 **`main`** 上（2026-11-08 谱系修正：feat tip `d2666583` 已被 main 吸收，"lane 跟 feat"规则过期）；remote `upstream`（fetch-only） | lane pin `3375ac9d`（2026-11-10，main） |
 | **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `../UniXNU-m2381`（工作区根 `/home/ri/work/unixnu-meizu`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
 | **本设备 UEFI（2026-10-29 新建）** | https://github.com/RiverKawa271828/uefi-m2381（待建仓首推） | `../uefi-m2381`（分支 main） | 基座 = 上游 uefi-sheng `sheng@0eb4514` + overlay `5297334`；实证来源 = nura 链 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
@@ -37,6 +37,54 @@
   （`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
 
 ### 1.1 同步记录
+
+- **2026-11-10：`upstream/main` `5dc00d20` → `3375ac9d`（gap 61 条，463 个
+  工作区提交标准 rebase 重放→460 落位；3 条重放中变空自动掉）。
+  **网络面（本轮最大的非 git 工程）**：FlClash 国际节点全死（直连/代理/
+  socks5/六镜像/ssh-over-443 全灭，根因 = TUN auto-route 对一切境外流量
+  fake-accept，`8.8.8.8:1` 0.1ms "连上" 即铁证）→ **旁路实例配方**：
+  `/tmp/bypass-proxy/bypass-core`（用户 FlClash_pmos 树 vendored mihomo
+  库自建 main，CGO_ENABLED=0 -tags with_gvisor，goproxy.cn 供模块）+
+  config 取自现役 profile（43 节点）+ `interface-name: wlp4s0`
+  （SO_BINDTODEVICE 逃 TUN 循环劫持 = 成败唯一开关）+ DoH DNS（:53 全被
+  TUN dns-hijack 污染成 fake-ip，DoH 443 直连 223.5.5.5 免疫）+ 全套
+  updateListeners 手动补（上游 fork 注释掉了 executor 里的
+  updateListeners + lan-allowed-ips 缺省空 = 入站全拒的暗坑两连）。
+  20 节点活（新加坡 118ms）→ fetch/submodule fetch/ls-remote 全程走
+  socks5h://127.0.0.1:17890。**上游 61 条主题：① macOS 27.3 车道整建制
+  上线**（macosx 内核目标/Data seed + firmlinks/Darwin26 MAC hooks
+  end_rename_swap+service-port derive/47 位用户地址空间/8GiB arm64 共享
+  区/vc-text 启动日志/exec-log/rosp+apfs_boot_util/KPI closure+AMFI
+  early initializer/DarwinBoot 载 macOS KC/GPU plugin for macOS 27/
+  AdrenoMetal base limits+half-float 采样）+ **② sheng- 前缀从 boot
+  args 全量退役**（47ec6a52：sheng-touch=4→touch=4，scripts/patches/
+  drivers 三层全改；影响判读 = 仅驱动侧诊断旗标惰性化，我们 probe
+  命名空间自洽不消费，board.toml 唯一 sheng-log=1 由自家 patch 消费
+  照旧）+ **③ arm64e 车道直接相关修复**（f65660d0 PAR_EL1
+  mmu_kvtop_wpreflight 同步 + a11553a7 user PAC keys off + f105b318
+  4K pager source page/union reads/modload order）+ AppSync installd
+  内签 + 并发 UFS Data 直取（56afc53f）+ XnuPrelink 26C5035r AMFI
+  stack shift 绑定 + RamBlock 单写位图复位 + 打包/文档多件。
+  **冲突账**：AdrenoMetal gitlink ×1（取上游 `c68f9a1d`）+ README.md
+  ×20（取工作区版，自动化环收）+ `profiles/arch/arm64e/patches/xnu/
+  series` ×9（union 逐条并入：上游 native-modload-lock-order/
+  native-union-readdir-eof/native-at-par-sync/native-pac-arm64-user-jop
+  四新条 + 我们 sheng 族全保留）+ kits/XnuPrelink gitlink ×1（中途取
+  上游、终局收口 vendored）。**老坑第五现**：rebase 完成后重放旧 bump
+  把 8 条 drivers gitlink 拖回 stale → 对齐提交 `2a376abe`（18/20
+  =上游 tip）；两条有意例外 = **drivers/AppleKeyStoreState 保
+  `58e5461`**（上游钉 `6ff4f11d` 未发布到其子仓 = 幽灵钉，ls-remote
+  实证仅 main=58e5461）+ **kits/XnuPrelink 保 vendored**。kit 并集：
+  上游 kit main（macOS 构建/集合名 fileset_names.py/26C5035r AMFI
+  stack shift + fixture）merge 进 vendored `m2381-sync-71` →
+  `f129ca7f`（零冲突；上游同期独立删了 test_fileset.py = 与我们本轮
+  判断殊途同归），主树收口 `01ab48cf`。设备仓侧：test_fileset.py
+  化石删除 `bc64864`（测已退役的 21H16 双模 API，上游从未有过此
+  文件）。收尾门：check-m2381 **4 ok 0 fail** + kit 测试 **7/7 绿** +
+  CLI 冒烟（defconfig 列单 + tree 落位 = ipados-27.0.1-24A446 正确）。
+  备份 tag `m2381-ios27-pre-sync-20261110`（= 90543bfd）。origin 远端
+  push = 用户窗口（不主动）。旁路实例（mihomo :17890/:19090）暂留
+  /tmp 供下轮 r92 编译门复用；重启即失，重建配方见本条。
 
 - **2026-11-08：集成线转 `upstream/main`，`main` → `5dc00d20`（gap 13 条，
   437 个工作区提交标准 rebase 重放；2 冲突全部按 §0⑦ 续作配方解毕）。
