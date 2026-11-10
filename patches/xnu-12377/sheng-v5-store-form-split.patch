@@ -1,32 +1,37 @@
-The v5 slide face stores one form for every authenticated rebase, but the
-donor consumers read the cache data through two incompatible contracts, and
-r91's poison slot pins the split to the mapping writability.
+The v5 slide face serves two incompatible consumer contracts for its
+authenticated rebase entries, and neither the r87 all-signed gate nor the
+r92 mapping-writability split satisfies both.  r92's real-machine window
+settled it: the sheng-v5 probe printed wr=1 for all eight entries because
+slide_mapping is only ever handed sms_max_prot (vm_shared_region.c
+sr_file_mappings pass), so the writability split degenerated to
+plain-everywhere and dyld's AUTDA at the r85 wall-85 slot (unslid
+.25.dylddata 0x1E8D37228, diversity 0x9abf, consumer dyld+0xb38b74 this
+boot) failed on the plain store 165us after the probe row -- the same
+slot that r87-r91 proved passes AUTDA when stored full-width.  s84's own
+sc25 page-209 chain also shows both families interleaved inside one
+writable mapping (0x6ae1 self-ref next to 0xb5ab), so no mapping-level
+signal can ever separate them.
 
-Read-only auth mappings (sc25 mapping[5], initProt 1) hold GOT-style slots
-that the dyld fixup stage authenticates (AUTDA, the r86b wall-85 family):
-they need the full hardware pacda form, PAC at bits 38-55.  Writable data
-mappings (sc25 mapping[4], initProt 3) hold ObjC-managed slots (the
-metaclass self-reference family, diversity 0x6ae1): libobjc reads those
-raw and its own stores keep only bits 3-46 ("pacda x17, x16; and
-#0x7ffffffffffff8; str" at libobjc+0x1b4b4/1b51c in the 24A446 cache), so
-any bits above 46 are garbage to it.  r87 made this face sign every
-authenticated entry at full width, which poisons the writable-mapping
-family exactly as observed in r89-r91: far = [VA36][PAC bits 38-43]
-[zeroed 44+], VA part bit-exact across three generations.
+Split on the entry instead: target == slot marks the self-referential
+anchor family (the ObjC root-metaclass isa self-pointers; libobjc reads
+them raw and ISA_MASK-masks them, the r89-r91 wall-86 far = [tag][VA]
+with the VA part bit-exact across three generations), so they must stay
+plain.  Every other authenticated entry is consumed through AUTDA (the
+wall-85 family) and keeps the full hardware pacda form, which r87-r91
+proved passes.  Plain rebases (auth bit clear) are untouched.  The
+si_writable field stays only as probe telemetry; the sheng-v5 probe is
+widened to 32 rows and now prints the self-reference verdict and the
+clean target alongside the stored form.
 
-Scope the r87 signature to the read-only mappings and store the writable
-mappings plain (the donor's jop_key==0 gate behaviour, which sheng's
-9b19ac2 reversal also restored globally).  A sheng-v5 probe row reports
-the writability, diversity and stored value of the first eight
-authenticated entries so the next window shows the split in place.
-
+--- a/osfmk/vm/vm_shared_region_xnu.h
++++ b/osfmk/vm/vm_shared_region_xnu.h
 --- a/osfmk/vm/vm_shared_region_xnu.h
 +++ b/osfmk/vm/vm_shared_region_xnu.h
 @@ -164,6 +164,7 @@
  typedef struct vm_shared_region_slide_info {
  	uint32_t                si_slide;           /* the distance that the file data is relocated */
  	bool                    si_slid;
-+	bool                    si_writable;        /* mapping initProt is VM_PROT_WRITE: ObjC-managed slots, plain store form */
++	bool                    si_writable;        /* slide_mapping's prot arg (sr sms_max_prot): probe telemetry only, the sign decision keys on the entry self-reference (r93) */
  #if __has_feature(ptrauth_calls)
  	bool                    si_ptrauth;
  	uint64_t                si_jop_key;
@@ -40,42 +45,93 @@ authenticated entries so the next window shows the split in place.
  #if __has_feature(ptrauth_calls)
  	/*
  	 * If there is authenticated pointer data in this slid mapping,
-@@ -3335,7 +3336,7 @@
+@@ -3328,14 +3329,23 @@
+ 			value += value_add;
+ 
+ #if __has_feature(ptrauth_calls)
++			/*
++			 * r93: sign every authenticated entry except the self-referential
++			 * anchors (target == slot, the ObjC root-metaclass isa family,
++			 * read raw + ISA_MASK): those stay plain.  The r92 mapping-level
++			 * writability split is dead on hardware (slide_mapping only sees
++			 * sms_max_prot, and both consumer families interleave in one
++			 * writable mapping).
++			 */
++			uintptr_t pageOffset = rebaseLocation - page_content;
++			bool selfRef = (value == ((uintptr_t)uservaddr + pageOffset));
+ 			uint64_t discriminator = diversity_data;
+ 			if (hasAddressDiversity) {
+ 				// First calculate a new discriminator using the address of where we are trying to store the value
+-				uintptr_t pageOffset = rebaseLocation - page_content;
  				discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
  			}
  
 -			if (si->si_ptrauth && !arm_user_jop_disabled()) {
-+			if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
++			if (!selfRef && si->si_ptrauth && !arm_user_jop_disabled()) {
  #if CONFIG_SPTM
  				pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
  #else /* CONFIG_SPTM */
-@@ -3554,7 +3555,7 @@
+@@ -3547,14 +3557,23 @@
+ 		value = (value & 0x3FFFFFFFFULL) + value_add + slide_amount;
+ 		if (isAuthenticated) {
+ #if __has_feature(ptrauth_calls)
++			/*
++			 * r93: sign every authenticated entry except the self-referential
++			 * anchors (target == slot, the ObjC root-metaclass isa family,
++			 * read raw + ISA_MASK): those stay plain.  The r92 mapping-level
++			 * writability split is dead on hardware (slide_mapping only sees
++			 * sms_max_prot, and both consumer families interleave in one
++			 * writable mapping).
++			 */
++			uintptr_t pageOffset = rebaseLocation - page_content;
++			bool selfRef = (value == ((uintptr_t)uservaddr + pageOffset));
+ 			uint64_t discriminator = diversity;
+ 			if (addrDiv) {
+ 				// First calculate a new discriminator using the address of where we are trying to store the value
+-				uintptr_t pageOffset = rebaseLocation - page_content;
  				discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
  			}
  
 -			if (si->si_ptrauth && !arm_user_jop_disabled()) {
-+			if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
++			if (!selfRef && si->si_ptrauth && !arm_user_jop_disabled()) {
  #if CONFIG_SPTM
  				pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
  #else /* CONFIG_SPTM */
-@@ -3644,7 +3645,7 @@
- 					uintptr_t pageOffset = rebaseLocation - page_content;
+@@ -3639,12 +3658,22 @@
+ 			value = (value & 0x3FFFFFFFFULL) + value_add + slide_amount;
+ 			if (isAuthenticated) {
+ #if __has_feature(ptrauth_calls)
++				/*
++				 * r93: sign every authenticated entry except the self-referential
++				 * anchors (target == slot, the ObjC root-metaclass isa family,
++				 * read raw + ISA_MASK): those stay plain.  The r92 mapping-level
++				 * writability split is dead on hardware (slide_mapping only sees
++				 * sms_max_prot, and both consumer families interleave in one
++				 * writable mapping).
++				 */
++				uintptr_t pageOffset = rebaseLocation - page_content;
++				uint64_t targetValue = value;
++				bool selfRef = (value == ((uintptr_t)uservaddr + pageOffset));
+ 				uint64_t discriminator = diversity;
+ 				if (addrDiv) {
+-					uintptr_t pageOffset = rebaseLocation - page_content;
  					discriminator = __builtin_ptrauth_blend_discriminator((void*)(((uintptr_t)uservaddr) + pageOffset), discriminator);
  				}
 -				if (si->si_ptrauth && !arm_user_jop_disabled()) {
-+				if (!si->si_writable && si->si_ptrauth && !arm_user_jop_disabled()) {
++				if (!selfRef && si->si_ptrauth && !arm_user_jop_disabled()) {
  #if CONFIG_SPTM
  					pmap_batch_sign_user_ptr(rebaseLocation, (void *)value, key, discriminator, jop_key);
  #else /* CONFIG_SPTM */
-@@ -3654,6 +3655,13 @@
+@@ -3654,6 +3683,14 @@
  				} else {
  					memcpy(rebaseLocation, &value, sizeof(value));
  				}
 +				static int sheng_v5_probe = 0;
-+				if (sheng_v5_probe < 8) {
++				if (sheng_v5_probe < 32) {
 +					sheng_v5_probe++;
-+					printf("sheng-v5: wr=%d div=0x%x stored=0x%llx\n",
-+					    si->si_writable ? 1 : 0, (uint32_t)diversity,
++					printf("sheng-v5: wr=%d self=%d div=0x%x tgt=0x%llx stored=0x%llx\n",
++					    si->si_writable ? 1 : 0, selfRef ? 1 : 0, (uint32_t)diversity,
++					    (unsigned long long)targetValue,
 +					    (unsigned long long)*(volatile uint64_t *)(void *)rebaseLocation);
 +				}
  #endif /* __has_feature(ptrauth_calls) */

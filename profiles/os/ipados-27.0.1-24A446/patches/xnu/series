@@ -120,11 +120,39 @@ arch:../../../patches/xnu-12377/sheng-exc-capture.patch
 # at libobjc+0x1b4b4/1b51c), while the r86b AUTDA family needs the full
 # width.  r87's gate removal therefore signs ObjC-managed writable-data
 # slots into a form libobjc reads as a raw pointer, giving the observed
-# [VA36][PAC bits 38-43][zeroed 44+] far.  This patch scopes the r87
-# signature to read-only mappings (the AUTDA family, e.g. sc25
-# mapping[5] initProt 1) and stores writable mappings (the ObjC family,
-# e.g. sc25 mapping[4] initProt 3) plain, restoring the donor's
-# jop_key==0 gate behaviour per mapping; a sheng-v5 probe row prints the
-# writability, diversity and stored value of the first eight
-# authenticated entries so the next window shows the split.
+# [VA36][PAC bits 38-43][zeroed 44+] far.  The r92 hardware window then
+# killed the mapping-level form of that split: the sheng-v5 probe printed
+# wr=1 for all eight entries because slide_mapping is only ever handed
+# sms_max_prot (never the cache mapping's initProt), so the split
+# degenerated to plain-everywhere and dyld's AUTDA failed on the plain
+# store at the r85 wall-85 slot (.25.dylddata 0x1E8D37228, div 0x9abf)
+# 165us after the probe rows -- while wall-86's SIGSEGV stayed absent.
+# s84's own sc25 page-209 chain also shows both families interleaved in
+# one writable mapping (0x6ae1 self-ref next to 0xb5ab), so no
+# mapping-level signal can separate them.  r93 moves the split onto the
+# entry: target == slot marks the self-referential anchor family (the
+# ObjC root-metaclass isa, read raw + ISA_MASK by libobjc, the r89-r91
+# wall-86 far) and stays plain; every other authenticated entry is
+# consumed through AUTDA (the r85/r92 wall-85 family, full-width store
+# proven passing in r87-r91) and keeps the full hardware pacda form.
+# si_writable remains as probe telemetry only; the probe is widened to
+# 32 rows printing self-ref verdict, clean target and stored form.
 arch:../../../patches/xnu-12377/sheng-v5-store-form-split.patch
+# r94 (2026-11-11, s87): sheng T0SZ_USER transplant -- the 47-bit user VA for the
+# 4K arm64e bcm2837 config.  The r93 device judgment pinned wall-86's root cause:
+# our TCR T0SZ=26 (38-bit user VA) puts hardware PAC bits at 38-63, so the
+# canonical form libobjc writes (pacda + AND 0x7ffffffffffff8, F+0x388) carries
+# PAC residue at 38-46 INSIDE the ISA_MASK (bits 3-46, a 47-bit-layout mask) --
+# four generations died at libobjc+0x17140 reading a tagged pointer as an address
+# (far unslid 0x1E6EB9070 constant).  sheng (same SoC SM8550, same 4K bcm2837
+# config, same donor, desktop-proven) fixes exactly this with T0SZ_USER=17: user
+# pmaps get an L0-rooted TTBR0 over a 47-bit range while TTBR1 keeps T1SZ_BOOT.
+# Extracted verbatim from zzzz-sheng-ipados27-bringup-core.patch (shelved whole at
+# r52 for cross-file apply conflicts; only the sign-gate was extracted then, r87).
+# Gate BCM2837 && !__ARM_16K_PG__ && __arm64e__ matches our build precisely.
+# The transplant switches TTBR0 to its final size BEFORE the first pointer is
+# signed (start.s TCR_EL1_KVA_ENTRY + arm_init.c), keeps TTBR0 walks off (EPD0)
+# until a user root lands (arm_vm_init.c), re-applies on user/kernel TTB switches
+# (pmap.c pmap_switch_user_ttb/clear), and widens the fault/strip masks
+# (sleh.c, vm_param.h) to the 47-bit user range.
+arch:../../../patches/xnu-12377/sheng-t0sz-user-47bit.patch

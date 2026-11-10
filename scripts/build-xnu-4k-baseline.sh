@@ -173,6 +173,34 @@ EXTRA_MAKE_ARGS=()
 # A fileset boot replaces com.apple.kernel inside a kernel collection: the
 # native executable must carry chained fixups and split-segment records.
 EXTRA_MAKE_ARGS+=("XNU_KERNEL_CHAINED_FIXUPS=${XNU_KERNEL_CHAINED_FIXUPS:-0}")
+# Linux cross compiles: the CLT shim's arm64e default injects the Apple clang
+# __ARM_ARCH_8_2__..8_5__ predefines (which mimic -mcpu=apple-a14), but the
+# BCM2837 machine flags carry no -mcpu, so the integrated assembler's
+# subtarget stays generic while the DIT sysreg lines in cswitch.s pass their
+# __ARM_ARCH_8_4__ preprocessor guard and then fail to assemble.  Every
+# arm64e Apple board in MakeInc.def carries an explicit -mcpu for exactly
+# this reason; give the native 4K machine layer the same a14 baseline on
+# Linux only, so the compile gate matches the macOS builds (whose Apple
+# clang keeps its own -mkernel arm64e baseline).
+if [ "$(uname -s)" = Linux ] && [ "${XNU_ARCH_STRING:-}" = arm64e ]; then
+  # Per-file only: a global -mcpu would shift codegen for every function and
+  # break the prelink ledger's native body hashes.  cswitch.s is the only
+  # arm64 asm file whose __ARM_ARCH_8_4__-guarded sysreg lines (DIT) assemble
+  # (the CLT shim injects the Apple clang a14 predefines) and then fail the
+  # generic-subtarget integrated assembler on BCM2837, which carries no
+  # -mcpu in MakeInc.def unlike every Apple board.
+  EXTRA_MAKE_ARGS+=("cswitch.o_SFLAGS_ADD=-mcpu=apple-a14")
+  # The upstream drivers take the address of kernel hooks via weak_import
+  # (NativeRamBlock's native_ufs_store_write_cached feature probe).  Apple's
+  # ld binds an undefined weak symbol (plus its __auth_ptr stub) to null, so
+  # the macOS link succeeds with the hook dormant; our self-built ld64 errors
+  # out, and with -U alone the resulting null binds the direct branch 68 GB
+  # out of range.  Alias the hook to its plain-write sibling: the branch
+  # resolves in range and the runtime semantics (cached write falls back to
+  # the plain store) match the macOS behaviour.  Linux compile gate only;
+  # the shipped payloads still come from the macOS chain.
+  EXTRA_MAKE_ARGS+=("LDFLAGS_KERNEL_DEVELOPMENT=-Wl,-alias,_native_ufs_store_write,_native_ufs_store_write_cached")
+fi
 ARM_DT_PLATFORM=${XNU_ARM_DT_PLATFORM:-0}
 if [ "$ARM_DT_PLATFORM" != 0 ] && [ "$ARM_DT_PLATFORM" != 1 ]; then
   echo 'XNU_ARM_DT_PLATFORM must be 0 or 1' >&2
