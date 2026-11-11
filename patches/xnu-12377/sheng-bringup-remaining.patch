@@ -1,6 +1,6 @@
 # r95: the remaining sheng bring-up faces. r94 carried only the T0SZ_USER 9-file face; this is
 # the rest of zzzz-sheng-ipados27-bringup.patch that applies clean on top of the full r94 series
-# (20 of its 36 files; cpu.c filtered: only the IDLE_PROXIMATE_TIMER_WFE define, the T6000 ifdef
+# (17 of its 36 files; cpu.c filtered: only the IDLE_PROXIMATE_TIMER_WFE define, the T6000 ifdef
 # fix, the cpu_sw_asids HAS_16BIT_ASID guard and the cpu_start cache-flush - the cpu_idle SIGP
 # hunks need sheng_sigp_recover which this tree does not carry. iokit_rpc.c/ipc_kobject.c dropped
 # for the same reason: native_adreno_connect_granted. The 14 conflicting files are already covered
@@ -732,52 +732,6 @@ index 9d4e084..e63b148 100644
  		return nullptr;
  	}
  
-diff --git a/osfmk/arm/cpu_common.c b/osfmk/arm/cpu_common.c
-index eadffaf..8776f16 100644
---- a/osfmk/arm/cpu_common.c
-+++ b/osfmk/arm/cpu_common.c
-@@ -409,6 +409,21 @@ cpu_immediate_xcall(int cpu_number, broadcastFunc func, void *param)
- 	return cpu_xcall_internal(SIGPxcallImm, cpu_number, func, param);
- }
- 
-+/* sheng (UniXNU): a started core whose SIGPdisabled is still set lost the self-IPI that should have cleared it (seen as random early hangs
-+ * and UFS root failures under SMP: the I/O thread's wakeup IPI to that core was silently dropped). A core in InitState|StartedState runs and
-+ * takes interrupts, so the flag is cleared here and the signal sent. Counted in sheng_sigp_recovered. */
-+volatile uint32_t sheng_sigp_recovered;
-+bool
-+sheng_sigp_recover(cpu_data_t *target_proc)
-+{
-+	if ((os_atomic_load(&target_proc->cpu_flags, relaxed) & (InitState | StartedState)) != (InitState | StartedState)) {
-+		return false;
-+	}
-+	os_atomic_andnot(&target_proc->cpu_signal, SIGPdisabled, acq_rel);
-+	os_atomic_inc(&sheng_sigp_recovered, relaxed);
-+	return true;
-+}
-+
- static kern_return_t
- cpu_signal_internal(cpu_data_t *target_proc,
-     cpu_signal_t signal,
-@@ -438,6 +453,9 @@ cpu_signal_internal(cpu_data_t *target_proc,
- 
- 		do {
- 			current_signals = target_proc->cpu_signal;
-+			if ((current_signals & SIGPdisabled) == SIGPdisabled && sheng_sigp_recover(target_proc)) {
-+				current_signals = target_proc->cpu_signal;
-+			}
- 			if ((current_signals & SIGPdisabled) == SIGPdisabled) {
- 				ml_set_interrupts_enabled(interruptible);
- 				return KERN_FAILURE;
-@@ -481,6 +499,9 @@ cpu_signal_internal(cpu_data_t *target_proc,
- 	} else {
- 		do {
- 			current_signals = target_proc->cpu_signal;
-+			if ((current_signals & SIGPdisabled) == SIGPdisabled && current_proc != target_proc && sheng_sigp_recover(target_proc)) {
-+				current_signals = target_proc->cpu_signal;
-+			}
- 			if ((current_signals & SIGPdisabled) == SIGPdisabled) {
- 				if (current_proc == target_proc) {
- 					panic("cpu_signal of self while signals are disabled");
 diff --git a/osfmk/arm64/cpu.c b/osfmk/arm64/cpu.c
 index 53f9ce5..8312c43 100644
 --- a/osfmk/arm64/cpu.c
@@ -857,40 +811,6 @@ index b27d291..01e48b2 100644
  #endif /* DEVELOPMENT || DEBUG */
  	splx(s);
  }
-diff --git a/osfmk/kern/stack.c b/osfmk/kern/stack.c
-index 1111ccf..069db94 100644
---- a/osfmk/kern/stack.c
-+++ b/osfmk/kern/stack.c
-@@ -154,6 +154,13 @@ roundup_pow2(vm_offset_t size)
- static vm_offset_t stack_alloc_internal(void);
- static void stack_free_stack(vm_offset_t);
- 
-+/*
-+ * log2 of the stack allocation alignment (stack_addr_mask + 1). Original components measure the stack room left as
-+ * sp & ((1 << shift) - 1) and read PAGE_SHIFT_CONST for the shift, which is right only where the lower guard pages
-+ * keep the stack base aligned (16 KiB pages). XnuPrelink binds those reads here (reviewed sites in its fixtures).
-+ */
-+__attribute__((used)) SECURITY_READ_ONLY_LATE(uint32_t) unixnu_kernel_stack_shift;
-+
- static void
- stack_init(void)
- {
-@@ -173,8 +180,14 @@ stack_init(void)
- 		    (void *) kernel_stack_size, PAGE_SIZE);
- 	}
- 
--	stack_addr_mask = roundup_pow2(kernel_stack_size) - 1;
-+	/*
-+	 * Align the whole allocation (two guard pages below the stack, one above) rather than the stack size alone:
-+	 * with 4 KiB pages the stack then starts at least 8 KiB above an aligned address, so sp & stack_addr_mask
-+	 * never comes near zero inside a stack (see unixnu_kernel_stack_shift).
-+	 */
-+	stack_addr_mask = roundup_pow2(kernel_stack_size + ptoa(3)) - 1;
- 	kernel_stack_mask = ~stack_addr_mask;
-+	unixnu_kernel_stack_shift = (uint32_t)__builtin_ctzl(stack_addr_mask + 1);
- }
- STARTUP(TUNABLES, STARTUP_RANK_MIDDLE, stack_init);
- 
 diff --git a/osfmk/vm/vm_shared_region_pager.c b/osfmk/vm/vm_shared_region_pager.c
 index 543e621..1571e29 100644
 --- a/osfmk/vm/vm_shared_region_pager.c
@@ -950,21 +870,3 @@ index 1ef8caa..36275ba 100644
  }
  
  #if defined(CONFIG_XNUPOST)
-diff --git a/pexpert/pexpert/arm64/BCM2837.h b/pexpert/pexpert/arm64/BCM2837.h
-index b12c67b..10454e8 100644
---- a/pexpert/pexpert/arm64/BCM2837.h
-+++ b/pexpert/pexpert/arm64/BCM2837.h
-@@ -8,6 +8,13 @@
- #define NO_MONITOR 1
- #define NO_ECORE 1
- 
-+/*
-+ * UniXNU: 16-bit hardware ASIDs (TCR_EL1.AS), one per address space. With 8 bits the pmap shares each hardware ASID among
-+ * several address spaces once more than 255 exist and flushes it from the switching CPU's TLB at every switch between them;
-+ * iPadOS runs several hundred processes. Every ARMv8.2+ core (sheng's A510/A715/X3) has 16-bit ASIDs; pmap_bootstrap() checks.
-+ */
-+#define HAS_16BIT_ASID 1
-+
- #define BCM2837
- #define ARM_ARCH_TIMER
- 
