@@ -97,7 +97,7 @@ index d3cd6e8..17a842c 100644
  		delta = (value >> 51) & 0x7FF;
  		delta *= step_multiplier;
 +		static int sheng_fixup64_logged = 0;
-+		if (sheng_fixup64_logged < 12) {
++		if (sheng_fixup64_logged < 64) {
 +			printf("sheng-chain[%d]: off=0x%llx value=0x%llx\n",
 +			    sheng_fixup64_logged, (unsigned long long)((uintptr_t)chain - contents), (unsigned long long)value);
 +			sheng_fixup64_logged++;
@@ -291,7 +291,7 @@ index d3cd6e8..17a842c 100644
  		bcopy((const char *)src_vaddr, (char *)dst_vaddr, PAGE_SIZE);
  
 +		static int sheng_src_logged = 0;
-+		if (sheng_src_logged < 4) {
++		if (sheng_src_logged < 16) {
 +			uint64_t src8 = 0;
 +			memcpy(&src8, (const void *)src_vaddr, sizeof(src8));
 +			printf("sheng-src[%d]: off=0x%llx src8=0x%llx src_pnum=0x%x\n",
