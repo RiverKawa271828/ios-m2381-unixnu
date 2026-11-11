@@ -270,7 +270,7 @@ index 17a842c..1fd7434 100644
  		static int sheng_sign_logged = 0;
 -		if (!sheng_sign_logged) {
 -			sheng_sign_logged = 1;
-+		if (sheng_sign_logged < 8) {
++		if (sheng_sign_logged < 32) {
 +			sheng_sign_logged++;
  			printf("sheng-sign: unsignedAddr=0x%llx key=%d addrDiv=%d diversity=0x%x disc=0x%llx a_key=0x%llx result=0x%llx\n",
  			    (unsigned long long)unsignedAddr, key, addrDiv, diversity,
@@ -282,9 +282,9 @@ index 17a842c..1fd7434 100644
 +		/* The entry as written (after any rebase/bind/sign), next to the raw
 +		 * value the sheng-chain line prints - the poisoned-slot check. */
 +		static int sheng_wrote_logged = 0;
-+		if (sheng_wrote_logged < 12) {
-+			printf("sheng-wrote[%d]: off=0x%llx now=0x%llx\n",
-+			    sheng_wrote_logged, (unsigned long long)((uintptr_t)chain - contents), (unsigned long long)*chain);
++		if (sheng_wrote_logged < 64) {
++			printf("sheng-wrote[%d] tid=%llu: off=0x%llx now=0x%llx\n",
++			    sheng_wrote_logged, (unsigned long long)thread_tid(current_thread()), (unsigned long long)((uintptr_t)chain - contents), (unsigned long long)*chain);
 +			sheng_wrote_logged++;
 +		}
  		valid_chain = _delta_ptr_within_page_nospec(&chain, delta, &crossing_page, (uintptr_t)userVA, page_shift);
@@ -308,11 +308,11 @@ index 17a842c..1fd7434 100644
 +					/* Completion line with the first delivered bytes - the
 +					 * poisoned-slot check against the donor truth. */
 +					static int mwl_page_logged = 0;
-+					if (mwl_page_logged < 64) {
++					if (mwl_page_logged < 256) {
 +						uint64_t wrote8 = 0;
 +						memcpy(&wrote8, (const void *)((uintptr_t)fixup_buffer + (vm_offset_t)part * PAGE_SIZE), sizeof(wrote8));
-+						printf("[mwl-page] va=0x%llx part=%u wrote8=0x%llx\n",
-+						    (unsigned long long)base_userVA, part, (unsigned long long)wrote8);
++						printf("[mwl-page] tid=%llu va=0x%llx part=%u wrote8=0x%llx\n",
++						    (unsigned long long)thread_tid(current_thread()), (unsigned long long)base_userVA, part, (unsigned long long)wrote8);
 +						mwl_page_logged++;
 +					}
  				}
