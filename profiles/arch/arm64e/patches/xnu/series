@@ -18,8 +18,6 @@
 ../../../../../patches/xnu-12377/kernel-sdk-root.patch
 ../../../../../patches/xnu-12377/source-machine-layer.patch
 ../../../../../patches/xnu-12377/native-pac-keys.patch
-../../../../../patches/xnu-12377/native-pac-arm64-user-jop.patch
-../../../../../patches/xnu-12377/native-at-par-sync.patch
 ../../../../../patches/xnu-12377/public-entitlements-v2-header.patch
 ../../../../../patches/xnu-12377/no-apple-cpu-counters.patch
 ../../../../../patches/xnu-12377/apple-only-core-type.patch
@@ -65,17 +63,7 @@
 ../../../../../patches/xnu-12377/trustcache-runtime-layout.patch
 ../../../../../patches/xnu-12377/fileset-unmapped-call.patch
 ../../../../../patches/xnu-12377/native-4k-block-split.patch
-../../../../../patches/xnu-12377/native-modload-lock-order.patch
-../../../../../patches/xnu-12377/native-union-readdir-eof.patch
-../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
-../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
-../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
-../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
-../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
-../../../../../patches/xnu-12377/zzye-sheng-cpu-idle.patch
-../../../../../patches/xnu-12377/zzyf-sheng-amp.patch
-../../../../../patches/xnu-12377/zzyd-sheng-audio-addon-mount.patch
 ../../../../../patches/xnu-12377/source-storage-runtime.patch
 ../../../../../patches/xnu-12377/zzzzzz-sheng-latency-trace.patch
 ../../../../../patches/xnu-12377/zzzzzzzz-sheng-exit-latency.patch
