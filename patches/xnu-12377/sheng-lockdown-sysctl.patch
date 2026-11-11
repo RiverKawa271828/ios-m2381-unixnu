@@ -1,0 +1,34 @@
+# 2026-11-12 (r105, s94 root-cause audit): the four-generation launchd SIGABRT
+# wall (~100.9s kernel time, r94/r101/r102/r103/r104 identical stack) resolves
+# to os_lockdown_mode_enabled+0x2c aborting inside its dispatch_once init when
+# the security.mac.lockdown_mode_state_public lookup fails. 24A446 libsystem
+# treats a missing node as fatal (donor 24A446 kernelcache registers it; the
+# strings seen in our own kernel binaries since r72 are prelinked donor-kext
+# baggage in __PRELINK_TEXT, not registration). This is the r95-era suspect #1
+# hunk, re-based onto our tree (our base keeps an #else between the two
+# STARTUP lines, so the vendored bringup hunk context does not apply here).
+diff --git a/bsd/kern/lockdown_mode.c b/bsd/kern/lockdown_mode.c
+--- a/bsd/kern/lockdown_mode.c
++++ b/bsd/kern/lockdown_mode.c
+@@ -84,5 +84,21 @@
+ #endif
+ 
++int get_lockdown_mode_state(void);
++
++/*
++ * Darwin 26 libsystem reads Lockdown Mode through this name (os_lockdown_mode_enabled aborts when the
++ * lookup fails). It reports the same state once lockdown_mode_init has run.
++ */
++static int
++sysctl_lockdown_mode_state_public SYSCTL_HANDLER_ARGS
++{
++#pragma unused(oidp, arg1, arg2)
++	int state = get_lockdown_mode_state();
++	return SYSCTL_OUT(req, &state, sizeof(state));
++}
++SYSCTL_PROC(_security_mac, OID_AUTO, lockdown_mode_state_public, CTLTYPE_INT | CTLFLAG_RD | CTLFLAG_LOCKED,
++    0, 0, sysctl_lockdown_mode_state_public, "I", "Lockdown Mode state");
++
+ int
+ get_lockdown_mode_state(void)
+ {

@@ -169,3 +169,9 @@ arch:../../../patches/xnu-12377/sheng-t0sz-user-47bit.patch
 # parks the cores (r94's abort message died in the message buffer, the window froze at the
 # previous round). Kit side: UniXNU-m2381 package/BootLog.c assigns the hook.
 arch:../../../patches/xnu-12377/sheng-death-flush.patch
+# 2026-11-12 (r105, s94 root-cause audit): 24A446 libsystem os_lockdown_mode_enabled aborts
+# inside its dispatch_once init when the security.mac.lockdown_mode_state_public lookup fails
+# (four-generation launchd SIGABRT @~100.9s; donor registers the node via its lockdown fileset
+# component, whose registration never runs in this hybrid). r95-era suspect #1, re-based onto
+# our tree (#else context difference).
+arch:../../../patches/xnu-12377/sheng-lockdown-sysctl.patch
