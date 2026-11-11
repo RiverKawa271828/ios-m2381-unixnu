@@ -156,12 +156,15 @@ arch:../../../patches/xnu-12377/sheng-v5-store-form-split.patch
 # (pmap.c pmap_switch_user_ttb/clear), and widens the fault/strip masks
 # (sleh.c, vm_param.h) to the 47-bit user range.
 arch:../../../patches/xnu-12377/sheng-t0sz-user-47bit.patch
-# r95: the rest of the sheng bring-up (19 of its 36 files apply clean on the full r94 series;
-# iokit_rpc/ipc_kobject/cpu need sheng-only symbols we do not carry). Suspects for the r94
-# launchd abort (ns2/0x6 after every boot task ran): lockdown_mode.c gives Darwin 26 libsystem
-# the sysctl os_lockdown_mode_enabled aborts without; kern_exec.c converts the Darwin 26
-# 0x100-byte posix_spawnattr; BCM2837.h flips on the 16-bit ASID face the pmap files carry.
-arch:../../../patches/xnu-12377/sheng-bringup-remaining.patch
+# r97 (2026-11-11, s88): BISECT - the pure r94 baseline plus ONLY our own deltas
+# (death-flush below, device-repo BootLog.c, the macOS ld alias for the ufs cached-write
+# hook); every sheng bring-up face is removed. r95 (bringup 19 files) and r96 (bringup 17
+# files, early faces dropped) both died bars-only BEFORE the kernel entry, so the early-face
+# hypothesis is falsified (r96 still bars) and the r95 white-text-under-magenta evidence
+# hints the kernel may reach display init but die before the first boot_log_tick. Branch:
+# bars again -> the culprit lives in our own deltas (death-flush hook / BootLog tick lock /
+# the alias link form; drop them one at a time next); launchd diagnostic page again ->
+# the culprit lives in the bringup files (bisect them by half).
 # r95 death capture: one synchronous window round on the critical-exit path, before the panic
 # parks the cores (r94's abort message died in the message buffer, the window froze at the
 # previous round). Kit side: UniXNU-m2381 package/BootLog.c assigns the hook.
