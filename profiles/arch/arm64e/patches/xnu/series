@@ -18,8 +18,14 @@
 ../../../../../patches/xnu-12377/kernel-sdk-root.patch
 ../../../../../patches/xnu-12377/source-machine-layer.patch
 ../../../../../patches/xnu-12377/native-pac-keys.patch
-../../../../../patches/xnu-12377/native-pac-arm64-user-jop.patch
-../../../../../patches/xnu-12377/native-at-par-sync.patch
+# r99 forward bisect (s89): the s85 sync rows first applied in r95 are the bars-only
+# suspect pool (r95-r98 all die before the first 2s window tick with bars up).
+# Group A of the bisect: the 12 rows below are OUT for r99 while the same-row patch
+# content drifts (native-pac-keys/4k-slide/union-statfs/zzy trio), the 8 driver pin
+# bumps, the XnuPrelink kit bump and the new RamBlock stay IN. Restore each row as
+# its face is exonerated or fixed for the 24A446 donor lane.
+#../../../../../patches/xnu-12377/native-pac-arm64-user-jop.patch
+#../../../../../patches/xnu-12377/native-at-par-sync.patch
 ../../../../../patches/xnu-12377/public-entitlements-v2-header.patch
 ../../../../../patches/xnu-12377/no-apple-cpu-counters.patch
 ../../../../../patches/xnu-12377/apple-only-core-type.patch
@@ -65,17 +71,19 @@
 ../../../../../patches/xnu-12377/trustcache-runtime-layout.patch
 ../../../../../patches/xnu-12377/fileset-unmapped-call.patch
 ../../../../../patches/xnu-12377/native-4k-block-split.patch
-../../../../../patches/xnu-12377/native-modload-lock-order.patch
-../../../../../patches/xnu-12377/native-union-readdir-eof.patch
-../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
-../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
-../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
+# r99 forward bisect group A, part 2 (s85 rows out; prng-getentropy-donor-discriminator
+# and source-storage-runtime predate the sync and stay).
+#../../../../../patches/xnu-12377/native-modload-lock-order.patch
+#../../../../../patches/xnu-12377/native-union-readdir-eof.patch
+#../../../../../patches/xnu-12377/sysctl-handler-donor-resign.patch
+#../../../../../patches/xnu-12377/crypto-funcs-unpack.patch
+#../../../../../patches/xnu-12377/kext-entry-donor-pptr.patch
 ../../../../../patches/xnu-12377/prng-getentropy-donor-discriminator.patch
-../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
-../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
-../../../../../patches/xnu-12377/zzye-sheng-cpu-idle.patch
-../../../../../patches/xnu-12377/zzyf-sheng-amp.patch
-../../../../../patches/xnu-12377/zzyd-sheng-audio-addon-mount.patch
+#../../../../../patches/xnu-12377/fileset-read-erandom-shim.patch
+#../../../../../patches/xnu-12377/mac-policy-ops-donor-resign.patch
+#../../../../../patches/xnu-12377/zzye-sheng-cpu-idle.patch
+#../../../../../patches/xnu-12377/zzyf-sheng-amp.patch
+#../../../../../patches/xnu-12377/zzyd-sheng-audio-addon-mount.patch
 ../../../../../patches/xnu-12377/source-storage-runtime.patch
 ../../../../../patches/xnu-12377/zzzzzz-sheng-latency-trace.patch
 ../../../../../patches/xnu-12377/zzzzzzzz-sheng-exit-latency.patch
