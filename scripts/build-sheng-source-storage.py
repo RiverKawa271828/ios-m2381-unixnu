@@ -223,6 +223,16 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
         sources.append(device_source('BootDiagExport.c'))
         sources.append(device_source('WifiFirmware.c'))
         sources.append(device_source('BluetoothFirmware.c'))
+        # r102 (no-SEP AppleKeyStore face, m2381): the publication probe plus the
+        # user client that answers libaks/MobileKeyBag state queries (sheng-aks=1),
+        # the upstream-proven sheng/sirius answer for boards without a SEP. The
+        # boot args (offline-keystore/offline-key-events/sheng-aks) keep both
+        # inert unless the board turns them on.
+        sources.append(device_source('KeyStoreProbe.cpp'))
+        keystore_events = ROOT / 'drivers/AppleKeyStoreState' / 'NativeKeyStoreEvents.cpp'
+        if not keystore_events.is_file():
+            parser.error(f'{keystore_events}: AppleKeyStoreState component checkout missing')
+        sources.append(keystore_events)
     latency = next((directory / 'BootLatencyTrace.c' for directory in package_dirs
                     if (directory / 'BootLatencyTrace.c').is_file()), None)
     if latency:
@@ -249,7 +259,8 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
         if result.returncode:
             raise SystemExit(result.stdout[-6000:])
         target.check_object(output.read_bytes(), source.name)
-        if source.name in ('IOBlockStorageDevice.cpp', 'NativeUfs.cpp', 'NativeRamBlock.cpp'):
+        if source.name in ('IOBlockStorageDevice.cpp', 'NativeUfs.cpp', 'NativeRamBlock.cpp',
+                           'NativeKeyStoreEvents.cpp'):
             late = output.with_suffix('.late.o')
             subprocess.run([objcopy, '--remove-section=__DATA,__mod_init_func',
                             f'--globalize-symbol=__GLOBAL__sub_I_{source.name}', output, late], check=True)
