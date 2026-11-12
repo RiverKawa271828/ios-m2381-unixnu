@@ -1,0 +1,78 @@
+diff --git a/config/Mach.exports b/config/Mach.exports
+--- a/config/Mach.exports
++++ b/config/Mach.exports
+@@ -42,4 +42,5 @@
+ _semaphore_dereference
+ _unixnu_amfi_devmode_config
++_unixnu_amfi_ent_copy_probe
+ _semaphore_destroy
+ _semaphore_reference
+diff --git a/security/mac_base.c b/security/mac_base.c
+--- a/security/mac_base.c
++++ b/security/mac_base.c
+@@ -1845,6 +1845,65 @@
+ __attribute__((used, noinline))
+ int
+ unixnu_amfi_devmode_config(void)
+ {
+ 	return 0;
+ }
++
++#include <pexpert/pexpert.h>
++
++extern unsigned long vm_kernel_slide;
++extern void (*sheng_death_flush_hook)(void);
++
++/*
++ * Fileset emission: donor AppleMobileFileIntegrity's entitlements copy
++ * panics (OSEntitlements.cpp:863, "failed to create OSDictionary copy:
++ * 14") when the blob deserializer under the copy helper fails.
++ * Instruction-level chain on this collection (s95 RE): the lambda at
++ * collection VA 0x925d014 reads the credential's blob holder at
++ * [x1+0xd0] and makes the single BL 0x925d040 -> 0x9264c90; the helper
++ * walks holder+8 (type switch, 1..6) through 0x9263780 (tag at
++ * holder+0x10) into the constructor 0x92638d8, whose NULL return is
++ * reported as the hardcoded errno 14 (mov w0, #0xe) the caller turns
++ * into the panic. Bind the BL to this probe (reviewed site in
++ * kits/XnuPrelink/fixtures/fileset-24A446-symbols.json), call the
++ * original first so behavior is unchanged, and on failure report the
++ * failing header shape and pull one synchronous log-window round (the
++ * sheng-death-flush hook) before the caller's panic freezes the writer.
++ * The original's live address is the collection VA plus vm_kernel_slide:
++ * the whole-collection rebase preserves donor-relative displacements and
++ * both halves of the hybrid image take the same boot slide.
++ */
++__attribute__((used, noinline))
++int
++unixnu_amfi_ent_copy_probe(void *holder, void *out)
++{
++	uintptr_t target = (uintptr_t)(0xfffffff009264c90ull + vm_kernel_slide);
++	int ret;
++
++	/* Plain blr: the helper lands on bti c and balances its own PAC
++	 * frame, so a raw-address call from this side is well-formed. */
++	{
++		register uintptr_t x0 __asm__("x0") = (uintptr_t)holder;
++		register uintptr_t x1 __asm__("x1") = (uintptr_t)out;
++		register uintptr_t x16 __asm__("x16") = target;
++
++		__asm__ volatile("blr x16"
++		    : "+r"(x0)
++		    : "r"(x1), "r"(x16)
++		    : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10",
++		    "x11", "x12", "x13", "x14", "x15", "x17", "x30", "memory");
++		ret = (int)x0;
++	}
++
++	if (ret != 0) {
++		kprintf("unixnu-amfi-entcopy: ret=%d holder=%p type=%llx tag=%llx shape=%llx\n",
++		    ret, holder,
++		    *(const unsigned long long *)((const char *)holder + 0x8),
++		    *(const unsigned long long *)((const char *)holder + 0x10),
++		    *(const unsigned long long *)((const char *)holder + 0x20));
++		if (sheng_death_flush_hook != NULL) {
++			sheng_death_flush_hook();
++		}
++	}
++	return ret;
++}
