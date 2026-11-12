@@ -10,7 +10,7 @@ diff --git a/config/Mach.exports b/config/Mach.exports
 diff --git a/security/mac_base.c b/security/mac_base.c
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -1845,6 +1845,65 @@
+@@ -1845,6 +1845,95 @@
  __attribute__((used, noinline))
  int
  unixnu_amfi_devmode_config(void)
@@ -19,6 +19,7 @@ diff --git a/security/mac_base.c b/security/mac_base.c
  }
 +
 +#include <pexpert/pexpert.h>
++#include <sys/proc.h>
 +
 +extern unsigned long vm_kernel_slide;
 +extern void (*sheng_death_flush_hook)(void);
@@ -27,17 +28,22 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 + * Fileset emission: donor AppleMobileFileIntegrity's entitlements copy
 + * panics (OSEntitlements.cpp:863, "failed to create OSDictionary copy:
 + * 14") when the blob deserializer under the copy helper fails.
-+ * Instruction-level chain on this collection (s95 RE): the lambda at
-+ * collection VA 0x925d014 reads the credential's blob holder at
-+ * [x1+0xd0] and makes the single BL 0x925d040 -> 0x9264c90; the helper
-+ * walks holder+8 (type switch, 1..6) through 0x9263780 (tag at
-+ * holder+0x10) into the constructor 0x92638d8, whose NULL return is
-+ * reported as the hardcoded errno 14 (mov w0, #0xe) the caller turns
-+ * into the panic. Bind the BL to this probe (reviewed site in
-+ * kits/XnuPrelink/fixtures/fileset-24A446-symbols.json), call the
-+ * original first so behavior is unchanged, and on failure report the
-+ * failing header shape and pull one synchronous log-window round (the
-+ * sheng-death-flush hook) before the caller's panic freezes the writer.
++ * Full chain (s96b RE on the 24A446 donor cache): the lambda at
++ * 0x925d014 reads the credential's blob at [x1+0xd0] and makes the
++ * single BL 0x925d040 -> 0x9264c90 (G). G walks blob+8 (H at
++ * 0x9263780: 40-byte header copy, 64-bit discriminator at blob+0x18,
++ * bitmap 0x381 fining types {0,7,8,9}) into the constructor K
++ * 0x92638d8, whose 32-bit type slot is [blob+0x8] -- the probe's
++ * "type" word -- and a switch miss there (observed: VA-shaped
++ * 0xce350bfa) returns NULL, reported as the hardcoded errno 14
++ * (mov w0, #0xe). H's discriminator PASSES (a miss would return 6,
++ * not 14), so the blob body is real and only its header slots are
++ * misplaced: the supplier side half-filled it. v2 rows bank the whole
++ * header and the victim identity. Bind the BL via the TEXT_WORD
++ * station (kits/XnuPrelink fileset_emit.py, donor VA 0xfffffe000925d040
++ * word 0x94001f14), call the original first so behavior is unchanged,
++ * and pull a synchronous log-window round (the sheng-death-flush hook)
++ * before the caller's panic freezes the writer.
 + * The original's live address is the collection VA plus vm_kernel_slide:
 + * the whole-collection rebase preserves donor-relative displacements and
 + * both halves of the hybrid image take the same boot slide.
@@ -65,14 +71,38 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 +	}
 +
 +	if (ret != 0) {
-+		kprintf("unixnu-amfi-entcopy: ret=%d holder=%p type=%llx tag=%llx shape=%llx\n",
-+		    ret, holder,
-+		    *(const unsigned long long *)((const char *)holder + 0x8),
-+		    *(const unsigned long long *)((const char *)holder + 0x10),
-+		    *(const unsigned long long *)((const char *)holder + 0x20));
-+		if (sheng_death_flush_hook != NULL) {
-+			sheng_death_flush_hook();
-+		}
++			/* Row 1 (r106-proven): the words G itself reads
++			 * (blob+8/+0x10/+0x20). */
++			kprintf("unixnu-amfi-entcopy: ret=%d holder=%p type=%llx tag=%llx shape=%llx\n",
++			    ret, holder,
++			    *(const unsigned long long *)((const char *)holder + 0x8),
++			    *(const unsigned long long *)((const char *)holder + 0x10),
++			    *(const unsigned long long *)((const char *)holder + 0x20));
++			if (sheng_death_flush_hook != NULL) {
++				sheng_death_flush_hook();
++			}
++			/* v2 rows (A14): one kprintf per read so one bad step
++			 * cannot take out the rows after it; the flush above
++			 * already banked the baseline row. +0x0 is the
++			 * container/isa word, +0x18 H's real 64-bit
++			 * discriminator, +0x28 the payload pointer G's
++			 * constructor consumes (print, never deref). */
++			kprintf("unixnu-amfi-entcopy: isa=%llx htag=%llx\n",
++			    *(const unsigned long long *)(const char *)holder,
++			    *(const unsigned long long *)((const char *)holder + 0x18));
++			kprintf("unixnu-amfi-entcopy: payload=%llx\n",
++			    *(const unsigned long long *)((const char *)holder + 0x28));
++			{
++				proc_t p = current_proc();
++
++				if (p != NULL) {
++					kprintf("unixnu-amfi-entcopy: victim pid=%d comm=%s\n",
++					    p->p_pid, p->p_comm);
++				}
++			}
++			if (sheng_death_flush_hook != NULL) {
++				sheng_death_flush_hook();
++			}
 +	}
 +	return ret;
 +}
