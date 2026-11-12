@@ -14,7 +14,7 @@
 
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -1848,3 +1848,287 @@
+@@ -1848,3 +1848,291 @@
  {
  	return 0;
  }
@@ -273,9 +273,13 @@
 +		register uintptr_t x0 __asm__("x0") = (uintptr_t)osstring;
 +		register uintptr_t x16 __asm__("x16") = target;
 +
++		/* x16 MUST be declared as an input operand: a bare register
++		 * variable is only a hint and clang is free to never load it
++		 * (r110 first-boot verdict: the blr jumped to leftover x16
++		 * garbage, 2s instruction fetch abort with lr in this probe). */
 +		__asm__ volatile("blr x16"
 +		    : "+r"(x0)
-+		    :
++		    : "r"(x16)
 +		    : "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
 +		    "x10", "x11", "x12", "x13", "x14", "x15", "x17",
 +		    "x30", "memory");
