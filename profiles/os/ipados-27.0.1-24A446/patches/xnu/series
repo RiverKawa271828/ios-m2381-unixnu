@@ -181,10 +181,14 @@ arch:../../../patches/xnu-12377/sheng-lockdown-sysctl.patch
 # launchd exec (pid 26/27 xpcproxy wave, page-clock 78s, after Early boot
 # complete). s95 instruction-level RE put the failure at constructor
 # 0x92638d8 returning NULL (hardcoded errno 14 at 0x92638c4) under helper
-# 0x9264c90, reached by the collection's single BL 0x925d040 inside lambda
-# 0x925d014. The reviewed site (fileset-24A446-symbols.json) routes that
-# one call through unixnu_amfi_ent_copy_probe (security/mac_base.c), which
-# mirrors the original's behavior and, on failure, kprintfs the failing
-# blob shape (type/tag/shape) and pulls one synchronous log-window round
-# via the sheng-death-flush hook before the panic freezes the writer.
+# 0x9264c90, reached by the collection's single intra-kext BL 0x925d040
+# inside lambda 0x925d014. SegmentedEmit.rewrite_branches only rebinds
+# calls whose target is mapped (kext->native), so the intra-kext call is
+# redirected by a TEXT_WORD_PATCHES station in the runtime-authority kit
+# (UniXNU-m2381 kits/XnuPrelink fileset_emit.py, donor VA 0xfffffe000925d040
+# word 0x94001f14 -> _bl_to_native('_unixnu_amfi_ent_copy_probe')). The
+# probe (security/mac_base.c) mirrors the original's behavior and, on
+# failure, kprintfs the failing blob shape (type/tag/shape) and pulls one
+# synchronous log-window round via the sheng-death-flush hook before the
+# panic freezes the writer.
 arch:../../../patches/xnu-12377/amfi-ent-copy-probe.patch
