@@ -10,7 +10,7 @@ diff --git a/config/Mach.exports b/config/Mach.exports
 diff --git a/security/mac_base.c b/security/mac_base.c
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -1845,6 +1845,95 @@
+@@ -1845,6 +1845,107 @@
  __attribute__((used, noinline))
  int
  unixnu_amfi_devmode_config(void)
@@ -28,25 +28,20 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 + * Fileset emission: donor AppleMobileFileIntegrity's entitlements copy
 + * panics (OSEntitlements.cpp:863, "failed to create OSDictionary copy:
 + * 14") when the blob deserializer under the copy helper fails.
-+ * Full chain (s96b RE on the 24A446 donor cache): the lambda at
-+ * 0x925d014 reads the credential's blob at [x1+0xd0] and makes the
-+ * single BL 0x925d040 -> 0x9264c90 (G). G walks blob+8 (H at
-+ * 0x9263780: 40-byte header copy, 64-bit discriminator at blob+0x18,
-+ * bitmap 0x381 fining types {0,7,8,9}) into the constructor K
-+ * 0x92638d8, whose 32-bit type slot is [blob+0x8] -- the probe's
-+ * "type" word -- and a switch miss there (observed: VA-shaped
-+ * 0xce350bfa) returns NULL, reported as the hardcoded errno 14
-+ * (mov w0, #0xe). H's discriminator PASSES (a miss would return 6,
-+ * not 14), so the blob body is real and only its header slots are
-+ * misplaced: the supplier side half-filled it. v2 rows bank the whole
-+ * header and the victim identity. Bind the BL via the TEXT_WORD
-+ * station (kits/XnuPrelink fileset_emit.py, donor VA 0xfffffe000925d040
-+ * word 0x94001f14), call the original first so behavior is unchanged,
-+ * and pull a synchronous log-window round (the sheng-death-flush hook)
-+ * before the caller's panic freezes the writer.
-+ * The original's live address is the collection VA plus vm_kernel_slide:
-+ * the whole-collection rebase preserves donor-relative displacements and
-+ * both halves of the hybrid image take the same boot slide.
++ * s108 static RE (24A446 donor, dis24.py) overturned the half-filled-
++ * header verdict: the record at [x1+0xd0] is a self-consistent
++ * CoreEntitlements TLV record {type/flags +0, DER TLV ptr +8,
++ * TLV length +0x10, dictionary tag +0x18, content ptr +0x20, content
++ * length +0x28} -- tag 0xa000000000000010 = DER byte 0xb0 ([16] ctx
++ * constructed), len 0x332c, content = len-4, and the 23F84 OS image
++ * shows the real blob shape {0x70 wrapper}[{02 01 01 version}][0xb0
++ * dict{0x30 pair{0c key, value}}]. H/K/L/M parse this record
++ * correctly, so the death must be the CONTENT bytes or the pointer
++ * lifetime, neither visible to v2. v3 hexdumps the TLV start
++ * ([holder+8]) and the content start ([holder+0x20]) -- csb_mem is
++ * wired, so a fault here is itself the lifetime verdict; every row
++ * is flushed before the next deref so a bad step cannot erase the
++ * rows before it. Same BL station, same original-first call.
 + */
 +__attribute__((used, noinline))
 +int
@@ -71,8 +66,7 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 +	}
 +
 +	if (ret != 0) {
-+			/* Row 1 (r106-proven): the words G itself reads
-+			 * (blob+8/+0x10/+0x20). */
++			/* Row 1 (r106/r107-proven): the words G itself reads. */
 +			kprintf("unixnu-amfi-entcopy: ret=%d holder=%p type=%llx tag=%llx shape=%llx\n",
 +			    ret, holder,
 +			    *(const unsigned long long *)((const char *)holder + 0x8),
@@ -81,17 +75,35 @@ diff --git a/security/mac_base.c b/security/mac_base.c
 +			if (sheng_death_flush_hook != NULL) {
 +				sheng_death_flush_hook();
 +			}
-+			/* v2 rows (A14): one kprintf per read so one bad step
-+			 * cannot take out the rows after it; the flush above
-+			 * already banked the baseline row. +0x0 is the
-+			 * container/isa word, +0x18 H's real 64-bit
-+			 * discriminator, +0x28 the payload pointer G's
-+			 * constructor consumes (print, never deref). */
++			/* v3 (A17): record tail (+0x30) and content length first. */
++			kprintf("unixnu-amfi-entcopy: end7=%llx clen=%llx\n",
++			    *(const unsigned long long *)((const char *)holder + 0x30),
++			    *(const unsigned long long *)((const char *)holder + 0x28));
++			/* The 0xb0 TLV header+first body words (expect b0 82 xx xx). */
++			{
++				const unsigned char *tp = (const unsigned char *)(uintptr_t)
++				    *(const unsigned long long *)((const char *)holder + 0x8);
++				kprintf("unixnu-amfi-entcopy: tlv=%llx %llx\n",
++				    *(const unsigned long long *)tp,
++				    *(const unsigned long long *)(tp + 8));
++			}
++			if (sheng_death_flush_hook != NULL) {
++				sheng_death_flush_hook();
++			}
++			/* The dict content start (expect 30 pair 0c key ...). */
++			{
++				const unsigned char *cp = (const unsigned char *)(uintptr_t)
++				    *(const unsigned long long *)((const char *)holder + 0x20);
++				kprintf("unixnu-amfi-entcopy: cnt=%llx %llx\n",
++				    *(const unsigned long long *)cp,
++				    *(const unsigned long long *)(cp + 8));
++			}
++			if (sheng_death_flush_hook != NULL) {
++				sheng_death_flush_hook();
++			}
 +			kprintf("unixnu-amfi-entcopy: isa=%llx htag=%llx\n",
 +			    *(const unsigned long long *)(const char *)holder,
 +			    *(const unsigned long long *)((const char *)holder + 0x18));
-+			kprintf("unixnu-amfi-entcopy: payload=%llx\n",
-+			    *(const unsigned long long *)((const char *)holder + 0x28));
 +			{
 +				proc_t p = current_proc();
 +
