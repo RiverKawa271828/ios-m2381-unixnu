@@ -1,24 +1,28 @@
 --- a/config/Mach.exports
 +++ b/config/Mach.exports
-@@ -41,6 +41,8 @@
+@@ -41,6 +41,10 @@
  _semaphore_create
  _semaphore_dereference
  _unixnu_amfi_devmode_config
 +_unixnu_amfi_ent_copy_probe
 +_unixnu_amfi_ent_copy_probe_l
++_unixnu_amfi_entconv_probe1
++_unixnu_amfi_entconv_probe2
  _semaphore_destroy
  _semaphore_reference
  _semaphore_signal
 
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -1848,3 +1848,172 @@
+@@ -1848,3 +1848,287 @@
  {
  	return 0;
  }
 +
 +#include <pexpert/pexpert.h>
 +#include <sys/proc.h>
++#include <kern/kalloc.h>
++#include <kern/zalloc.h>
 +
 +extern unsigned long vm_kernel_slide;
 +extern void (*sheng_death_flush_hook)(void);
@@ -118,6 +122,20 @@
 +	return ret;
 +}
 +
++/*
++ * A18 blade-2 (r109): station on K's bl L (donor 0x92639cc -> L-stub
++ * 0x9262690, word 0x97fffb31). The stub's gate reads [x0+0x10]
++ * (0x9262694) and accepts SET 0x2000000000000011 / dict
++ * 0xa000000000000010, rejecting everything else as normal control
++ * flow. Mirroring that comparison keeps routine gate rejects of
++ * non-dict containers silent; only a gate-passed container that still
++ * fails is worth a row. v5 fix: the inline asm now declares x1/x2
++ * clobbered (r109 verdict: without them the compiler keeps the cont/out
++ * arguments live in x1/x2 across the blr and the printed cont/out were
++ * the callee's leftover registers -- M's iterator state -- not the
++ * entry values; the "non-fall-through entry" A18 verdict was that
++ * artifact).
++ */
 +__attribute__((used, noinline))
 +int
 +unixnu_amfi_ent_copy_probe_l(void *container, void *cont, void *out)
@@ -126,22 +144,8 @@
 +	int ret;
 +	unsigned long long pre_gate;
 +
-+	/* A18 blade-2: station on K's bl L (donor 0x92639cc -> L-stub
-+	 * 0x9262690, word 0x97fffb31). The stub's gate reads [x0+0x10]
-+	 * (0x9262694) and accepts SET 0x2000000000000011 / dict
-+	 * 0xa000000000000010, rejecting everything else as normal control
-+	 * flow (r108 verdict: the record is legal DER and the L gate
-+	 * passes, so the kill sits deeper in the element walk). Mirroring
-+	 * that comparison keeps routine gate rejects silent; only a
-+	 * gate-passed container that still fails is worth a row. The
-+	 * writer thread copies the message buffer every 2s round and the
-+	 * F-station probe flushes at death, so rows need no flush here:
-+	 * zero UFS work keeps this station behavior-transparent on the
-+	 * hot path. */
 +	pre_gate = *(const unsigned long long *)((const char *)container + 0x10);
 +
-+	/* Plain blr: the stub lands on bti c and builds its own frame; the
-+	 * PAC-signed continuation in x1 passes through untouched. */
 +	{
 +		register uintptr_t x0 __asm__("x0") = (uintptr_t)container;
 +		register uintptr_t x1 __asm__("x1") = (uintptr_t)cont;
@@ -149,10 +153,11 @@
 +		register uintptr_t x16 __asm__("x16") = target;
 +
 +		__asm__ volatile("blr x16"
-+		    : "+r"(x0)
-+		    : "r"(x1), "r"(x2), "r"(x16)
-+		    : "x3", "x4", "x5", "x6", "x7", "x8", "x9", "x10",
-+		    "x11", "x12", "x13", "x14", "x15", "x17", "x30", "memory");
++		    : "+r"(x0), "+r"(x1), "+r"(x2)
++		    : "r"(x16)
++		    : "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++		    "x10", "x11", "x12", "x13", "x14", "x15", "x17", "x30",
++		    "memory");
 +		ret = (int)x0;
 +	}
 +
@@ -167,9 +172,6 @@
 +		    *(const unsigned long long *)(c + 0x18),
 +		    *(const unsigned long long *)(c + 0x20),
 +		    *(const unsigned long long *)(c + 0x28));
-+		/* M advances the walk cursor in place (0x9261108); the post
-+		 * bytes show how far the element walk got, and [c-8] is K's
-+		 * record base (x21) whenever x21 = container-8. */
 +		kprintf("unixnu-amfi-entcopy-l: post c8=%llx c18=%llx cm8=%llx\n",
 +		    *(const unsigned long long *)(c + 0x8),
 +		    *(const unsigned long long *)(c + 0x18),
@@ -179,6 +181,121 @@
 +
 +			if (p != NULL) {
 +				kprintf("unixnu-amfi-entcopy-l: victim pid=%d comm=%s\n",
++				    p->p_pid, p->p_comm);
++			}
++		}
++	}
++	return ret;
++}
++
++/*
++ * A19 blades 3/4 (r110): s99 instruction-level verdict -- the ret=14 is
++ * produced ONLY by the dict-walk element callback (donor 0x9263a90):
++ * path 1 = the pair's key tag != UTF8 (0x0c), path 2 = the key-string
++ * converter returning NULL. The converter wrapper (donor 0x9264b64) is
++ * exactly two calls: F1 = OSString::withCString(data, len) via auth
++ * stub 0x92714d8, then F2 = OSSymbol::withString(osstring) via auth
++ * stub 0x92714f8; the F2 result is the returned key object. All four
++ * GOT bindings were bit-verified correct against the r109 map
++ * (reviewed pairs to our native OSString::withCString/
++ * OSSymbol::withString), so the NULL is a real return from our own
++ * implementations. The stations sit on the wrapper's two bl words
++ * (donor 0x9264b80 word 0x94003256, 0x9264b88 word 0x9400325c) and
++ * print only on failure paths: blade-3 on an F1 NULL (with the key
++ * bytes), blade-4 when F1 handed in a NULL osstring (which would have
++ * panicked inside withString had we not been here) or when the F2
++ * result is NULL (with the OSString flags/string pointer and the
++ * kalloc-data heap health -- the withCString NULL exits are
++ * kalloc_data(23) and MetaClass::alloc, both of which bottom out in
++ * the KHEAP_DATA_PRIVATE zones). Cold-path kprintf only; the F-station
++ * probe flushes at death so the rows reach the window msg region.
++ */
++__attribute__((used, noinline))
++int
++unixnu_amfi_entconv_probe1(void *data, unsigned long long len)
++{
++	uintptr_t target = (uintptr_t)(0xfffffff0092714d8ull + vm_kernel_slide);
++	int ret;
++
++	{
++		register uintptr_t x0 __asm__("x0") = (uintptr_t)data;
++		register uintptr_t x1 __asm__("x1") = (uintptr_t)len;
++		register uintptr_t x16 __asm__("x16") = target;
++
++		__asm__ volatile("blr x16"
++		    : "+r"(x0), "+r"(x1)
++		    : "r"(x16)
++		    : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++		    "x10", "x11", "x12", "x13", "x14", "x15", "x17", "x30",
++		    "memory");
++		ret = (int)x0;
++	}
++
++	if (ret == 0 && data != NULL) {
++		kprintf("unixnu-amfi-entconv: f1=NULL data=%p len=%llx str=%llx %llx\n",
++		    data, len,
++		    *(const unsigned long long *)data,
++		    *(const unsigned long long *)((const char *)data + 8));
++		kprintf("unixnu-amfi-entconv: f1 heap=%s zstart=%d tag=%d\n",
++		    KHEAP_DATA_PRIVATE[0].kh_name, KHEAP_DATA_PRIVATE[0].kh_zstart,
++		    KHEAP_DATA_PRIVATE[0].kh_tag);
++		{
++			proc_t p = current_proc();
++
++			if (p != NULL) {
++				kprintf("unixnu-amfi-entconv: f1 victim pid=%d comm=%s\n",
++				    p->p_pid, p->p_comm);
++			}
++		}
++	}
++	return ret;
++}
++
++__attribute__((used, noinline))
++int
++unixnu_amfi_entconv_probe2(void *osstring)
++{
++	uintptr_t target = (uintptr_t)(0xfffffff0092714f8ull + vm_kernel_slide);
++	int ret;
++
++	if (osstring == NULL) {
++		kprintf("unixnu-amfi-entconv: f1-handed-NULL osstring=%p\n", osstring);
++		{
++			proc_t p = current_proc();
++
++			if (p != NULL) {
++				kprintf("unixnu-amfi-entconv: pre-f2 victim pid=%d comm=%s\n",
++				    p->p_pid, p->p_comm);
++			}
++		}
++	}
++	{
++		register uintptr_t x0 __asm__("x0") = (uintptr_t)osstring;
++		register uintptr_t x16 __asm__("x16") = target;
++
++		__asm__ volatile("blr x16"
++		    : "+r"(x0)
++		    :
++		    : "x1", "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++		    "x10", "x11", "x12", "x13", "x14", "x15", "x17",
++		    "x30", "memory");
++		ret = (int)x0;
++	}
++
++	if (ret == 0 && osstring != NULL) {
++		kprintf("unixnu-amfi-entconv: f2=NULL ostr=%p flg=%x s8=%llx s10=%llx\n",
++		    osstring,
++		    *(const unsigned int *)((const char *)osstring + 0xc),
++		    *(const unsigned long long *)((const char *)osstring + 8),
++		    *(const unsigned long long *)((const char *)osstring + 0x10));
++		kprintf("unixnu-amfi-entconv: f2 heap=%s zstart=%d tag=%d\n",
++		    KHEAP_DATA_PRIVATE[0].kh_name, KHEAP_DATA_PRIVATE[0].kh_zstart,
++		    KHEAP_DATA_PRIVATE[0].kh_tag);
++		{
++			proc_t p = current_proc();
++
++			if (p != NULL) {
++				kprintf("unixnu-amfi-entconv: f2 victim pid=%d comm=%s\n",
 +				    p->p_pid, p->p_comm);
 +			}
 +		}
