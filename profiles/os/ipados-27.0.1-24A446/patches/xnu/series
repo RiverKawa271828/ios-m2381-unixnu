@@ -175,3 +175,16 @@ arch:../../../patches/xnu-12377/sheng-death-flush.patch
 # component, whose registration never runs in this hybrid). r95-era suspect #1, re-based onto
 # our tree (#else context difference).
 arch:../../../patches/xnu-12377/sheng-lockdown-sysctl.patch
+# r106 (2026-11-12, s95/A12 blade 1): diagnostic probe on the donor AMFI
+# entitlements copy path. The r105 retest boots die on "AMFI: failed to
+# create OSDictionary copy: 14" @OSEntitlements.cpp:863 during the per-user
+# launchd exec (pid 26/27 xpcproxy wave, page-clock 78s, after Early boot
+# complete). s95 instruction-level RE put the failure at constructor
+# 0x92638d8 returning NULL (hardcoded errno 14 at 0x92638c4) under helper
+# 0x9264c90, reached by the collection's single BL 0x925d040 inside lambda
+# 0x925d014. The reviewed site (fileset-24A446-symbols.json) routes that
+# one call through unixnu_amfi_ent_copy_probe (security/mac_base.c), which
+# mirrors the original's behavior and, on failure, kprintfs the failing
+# blob shape (type/tag/shape) and pulls one synchronous log-window round
+# via the sheng-death-flush hook before the panic freezes the writer.
+arch:../../../patches/xnu-12377/amfi-ent-copy-probe.patch
