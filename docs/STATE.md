@@ -141,7 +141,7 @@ userdata `fd43ee70` 不动。下会话工作单 = §7b（墙 21 判读单已毕�
 | 分区 | 件 | sha 前 8 | 状态 |
 |---|---|---|---|
 | boot_b | 本仓 UEFI（24A446 线配套） | `289614ba` | **现役**（不动） |
-| recovery_a | reader-esp（专用读者 ESP `reader-esp-d01bed78.img`，2026-11-14 重建现役；旧 `payload-reader-0f1013f4.img` 判坏已删） | `d01bed78` | **现态 = 用户测试中**（r115 已出件待刷/自测；拉窗流程不变） |
+| recovery_a | reader-esp（专用读者 ESP `reader-esp-d01bed78.img`，2026-11-14 重建+**实机验证通过**；旧 `payload-reader-0f1013f4.img` 判坏已删） | `d01bed78` | **现态 = reader（已验）**（r115 已出件待刷/自测中；拉窗流程不变） |
 | userdata | 24A446 tables-in-userdata 件 | `e01c27ae` | **现役**（不动） |
 
 - **读窗 = forensic reader**（专用读者 ESP `reader-esp-d01bed78.img`，
