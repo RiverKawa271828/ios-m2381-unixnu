@@ -1,6 +1,6 @@
 --- a/config/Mach.exports
 +++ b/config/Mach.exports
-@@ -41,6 +41,10 @@
+@@ -41,6 +41,12 @@
  _semaphore_create
  _semaphore_dereference
  _unixnu_amfi_devmode_config
@@ -8,13 +8,15 @@
 +_unixnu_amfi_ent_copy_probe_l
 +_unixnu_amfi_entconv_probe1
 +_unixnu_amfi_entconv_probe2
++_unixnu_amfi_entval_probe1
++_unixnu_amfi_entval_probe2
  _semaphore_destroy
  _semaphore_reference
  _semaphore_signal
 
 --- a/security/mac_base.c
 +++ b/security/mac_base.c
-@@ -1848,3 +1848,291 @@
+@@ -1848,3 +1848,384 @@
  {
  	return 0;
  }
@@ -26,6 +28,7 @@
 +
 +extern unsigned long vm_kernel_slide;
 +extern void (*sheng_death_flush_hook)(void);
++extern uint32_t unixnu_kernel_stack_shift;
 +
 +/*
 + * Fileset emission: donor AppleMobileFileIntegrity's entitlements copy
@@ -302,6 +305,98 @@
 +				kprintf("unixnu-amfi-entconv: f2 victim pid=%d comm=%s\n",
 +				    p->p_pid, p->p_comm);
 +			}
++		}
++	}
++	return ret;
++}
++/*
++ * r111 blades 5/6 (value-face confirmation): the r110-rev2 window closed the
++ * key face (conv rows absent = F1/F2 live) and the value face statically
++ * end-to-end (K dispatch/cb1/cb2/C1/M/shells/GOT all clean), leaving two
++ * suspects only: an inner M reject (stack-guard false trip, fixed by
++ * kernel-stack-shift-guard.patch) or corrupted blob bytes past pair[01]
++ * (the v3 rows only ever verified the first 16 bytes). These stations sit
++ * on the two intra-callback bl K sites -- donor 0x9263af8 (cb1 value
++ * conversion, word 0x97ffff78) and 0x9263b6c (cb2 sequence recursion, word
++ * 0x97ffff5b) -- pass x0/x1 through to K, and print the element record head
++ * only when K returns NULL: CEType@+0 (which value class died), tag@+0x18,
++ * content@+0x20, clen@+0x28, plus the victim. With the stack-shift fix live,
++ * silence here + a boot past the 72 s wall = the guard verdict confirmed;
++ * rows here name the exact element class the converter refuses.
++ */
++__attribute__((used, noinline))
++int
++unixnu_amfi_entval_probe1(void *record, void *handlers)
++{
++	uintptr_t target = (uintptr_t)(0xfffffff0092638d8ull + vm_kernel_slide);
++	int ret;
++
++	{
++		register uintptr_t x0 __asm__("x0") = (uintptr_t)record;
++		register uintptr_t x1 __asm__("x1") = (uintptr_t)handlers;
++		register uintptr_t x16 __asm__("x16") = target;
++
++		__asm__ volatile("blr x16"
++		    : "+r"(x0), "+r"(x1)
++		    : "r"(x16)
++		    : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++		    "x10", "x11", "x12", "x13", "x14", "x15", "x17", "x30",
++		    "memory");
++		ret = (int)x0;
++	}
++
++	if (ret == 0 && record != NULL) {
++		kprintf("unixnu-amfi-entval: v1=NULL rec=%p type=%llx tag=%llx ptr=%llx len=%llx\n",
++		    record,
++		    *(const unsigned long long *)record,
++		    *(const unsigned long long *)((const char *)record + 0x18),
++		    *(const unsigned long long *)((const char *)record + 0x20),
++		    *(const unsigned long long *)((const char *)record + 0x28));
++		kprintf("unixnu-amfi-entval: guard=%u victim pid=%d comm=%s\n",
++		    unixnu_kernel_stack_shift,
++		    (current_proc() ? current_proc()->p_pid : -1),
++		    (current_proc() ? current_proc()->p_comm : "?"));
++		if (sheng_death_flush_hook != NULL) {
++			sheng_death_flush_hook();
++		}
++	}
++	return ret;
++}
++
++__attribute__((used, noinline))
++int
++unixnu_amfi_entval_probe2(void *record, void *handlers)
++{
++	uintptr_t target = (uintptr_t)(0xfffffff0092638d8ull + vm_kernel_slide);
++	int ret;
++
++	{
++		register uintptr_t x0 __asm__("x0") = (uintptr_t)record;
++		register uintptr_t x1 __asm__("x1") = (uintptr_t)handlers;
++		register uintptr_t x16 __asm__("x16") = target;
++
++		__asm__ volatile("blr x16"
++		    : "+r"(x0), "+r"(x1)
++		    : "r"(x16)
++		    : "x2", "x3", "x4", "x5", "x6", "x7", "x8", "x9",
++		    "x10", "x11", "x12", "x13", "x14", "x15", "x17", "x30",
++		    "memory");
++		ret = (int)x0;
++	}
++
++	if (ret == 0 && record != NULL) {
++		kprintf("unixnu-amfi-entval: v2=NULL rec=%p type=%llx tag=%llx ptr=%llx len=%llx\n",
++		    record,
++		    *(const unsigned long long *)record,
++		    *(const unsigned long long *)((const char *)record + 0x18),
++		    *(const unsigned long long *)((const char *)record + 0x20),
++		    *(const unsigned long long *)((const char *)record + 0x28));
++		kprintf("unixnu-amfi-entval: guard=%u victim pid=%d comm=%s\n",
++		    unixnu_kernel_stack_shift,
++		    (current_proc() ? current_proc()->p_pid : -1),
++		    (current_proc() ? current_proc()->p_comm : "?"));
++		if (sheng_death_flush_hook != NULL) {
++			sheng_death_flush_hook();
 +		}
 +	}
 +	return ret;
