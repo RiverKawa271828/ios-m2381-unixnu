@@ -25,7 +25,13 @@
   - **C：G0 败+probe stage 行在** = display lane 内断点（stage 值→probe 语义→定点修；参考 sheng 同 stage 对照）。
   - **D：G0 败+probe stage 行无** = display lane 没跑（钩子面/offline-legacy-* args 消费面/注册面三侦察；XNU_NATIVE_LEGACY_DISPLAY=1 编译记录复核）。
   - **E：boot 比 r115 更早死** = 先怀疑 display archive 链接面或内核回归（G4 数据面对照 r114；sealed kernel 静态门复跑；回退锚=r115 d72c252b）。
-- **弹药**：sealed kernel 926e9282（Mac `~/unixnu/ios-m2381-unixnu/out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho`，display 串普查全绿在案）；r116 build-report（tree/build/native-legacy-display/build-report.json）；判读惯例=slide 减法工具算/去滑先核 N/bl-target 验活（STATE §4）。
+- **★★★★★★★★★★s106 先行取证（2026-11-14 会话一百零五收队补，窗 reader-r116/ log.bin sha 2f5ba038 双端对拍绿，90 轮 178s，state=2）**：
+- **G2 过（本轮最大正报答）**：`caught allocating too many kqworkloops` 全窗 **0 行**（r115 数百行）——darwin26-spawnattr-convert.patch 生效，daemon 误杀墙死透。CRASH=0 延续（r114 475→r115 0→r116 0）。数据面续绿（UFS requests=181946 verified4K=481796 failures=0 integrity=0 published=2；rounds=90 uptime=178s state=2 write_errors=0）。
+- **G0/G1 败（display lane 从未启动）**：`GOP actual mapping virtual=0 physical=0 bytes=0` 全 90 轮 + `DISPLAY stage=0 PM=0 calls=0 callbacks=0 guard=0 owned=0` 全程——lane 连 stage 1 都没进（pendingLegacyDisplay=NULL 形）→ **S3 分流树落 D 支**（lane 没跑）。probe 检查点打印（not published: stage 0）不在 msg 视图——**msg 环从 142s 起**（早期行被 200s 深用户态噪声挤掉）=本轮取证缺口。
+- **新墙=vnode_rele_ext usecount 下溢**：屏 `vnode_rele_ext: vp 0xffffff2d4435900 usecount -ve : 4294967295, v_tag = 0, v_type = 8, v_flag = 84801, @vfs_subr.c:2688`（v_type=8=VBAD、v_tag=0=已 detach 死 vnode 再 rele）@182s 屏显，pages/free/crc=诊断页页脚（**非 panic 停机**）。**OS 活到 ~203s**：SB[140] @200.47s 还在做 DYLD shared region unnest（史上最深 SB 执行）；launchd @201s 走 BOOTOUT_SERVICES→REMOVE_ALIASED_ENDPOINTS→SLAY_CHILD_DOMAIN→…→DOMAIN_DEACTIVATE 关停序列（deadline 响应），msg 止于 203.19s。
+- **SB 双生画像**：p126 早期 SB "Corpse allowed 4 of 5"（静默 crash-loop ≥4 次无 CRASH 行=CRASH 打印机不覆盖 corpse 死法=取证缺口②）→ p140 重生执行至 200s；spawn 波正常到 179s（parsec-fbf 2/1@179 收尾）；spawn=428。
+- **初步定性（细判读留下轮）**：用户"弄坏了什么东西"的直觉部分证伪——kq/spawnattr 补丁零回归迹象（G2 过+CRASH=0+数据面绿+spawn 正常）；display lane 没跑（其 VFS 代码根本没执行）也不指向 vnode 下溢。vnode 下溢=**deadline slay 拆卸路径的新暴露面**（r115 的 deadline 从未走到 201s 的 slay 序列——r116 的 SB 更深活着到 200s 才被关停，拆卸路径第一次真跑）或 SB/daemon 关停的 donor 侧行为。下轮细查序：①display lane 没跑三侦察（钩子执行面/probe mod_init+static_init/offline-legacy-* args 消费面；page 遥测 stage=0 已是断点器）②vnode 下溢定性（slay 路径 vs 我们的 VFS 代码面：BootDiagExport/BootWatchdogPolicy 在 slay 窗口的 vnode 行为）③SB p126 corpse 4/5 静默 crash-loop 死法定性（CRASH 打印机覆盖面）④msg 环 142s 截断的取证改造（更早快照/page 直读）。
+**弹药**：sealed kernel 926e9282（Mac `~/unixnu/ios-m2381-unixnu/out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho`，display 串普查全绿在案）；r116 build-report（tree/build/native-legacy-display/build-report.json）；判读惯例=slide 减法工具算/去滑先核 N/bl-target 验活（STATE §4）。
 
 
 **★★★★★★★★★★s104 r114 判读全轮（2026-11-14，用户令"判读+查没进桌面+参考 sheng"；窗口 reader-r114/ 全套+屏摄 IMG_010453）**：
