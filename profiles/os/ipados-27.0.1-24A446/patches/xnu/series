@@ -213,3 +213,16 @@ arch:../../../patches/xnu-12377/amfi-ent-copy-probe.patch
 # unixnu_kernel_stack_shift (15); the kit fixture re-binds donor GOT
 # 0x8136458 to it as a reviewed data record.
 arch:../../../patches/xnu-12377/kernel-stack-shift-guard.patch
+
+# r116 (2026-11-14, s105): the r115 window pinned the kqworkloops quota fatal
+# wall (identityservicesd x155 / profiled x134 / contextstored x101 /
+# SpringBoard, send_resource_violation_with_fatal_port error 0x10000004, 2-6
+# allocations then SIGKILL) to the Darwin 26 spawnattr layout mismatch, not a
+# quota: the native psa_kqworkloop_soft_limit slot (0xb4) reads the donor
+# launchd's psa_crash_count, so every restarted daemon trips the limit. No
+# arg/sysctl/rlimit channel exists; sheng's conversion (same donor, same SoC,
+# desktop-proven) reads the 0x100-byte donor struct and re-fields the tail.
+# This is the kern_exec.c section of sheng-bringup-remaining.patch (the r95
+# 17-file clean-apply cut) split standalone with the sign-gate/t0sz/stack-
+# shift recipe; static_asserts pin the native offsets the conversion relies on.
+arch:../../../patches/xnu-12377/darwin26-spawnattr-convert.patch
