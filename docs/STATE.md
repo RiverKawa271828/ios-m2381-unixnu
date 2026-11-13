@@ -1,8 +1,19 @@
 # STATE — 现势状态（m2381，2026-10-28 更新）
-## 0. 现势指针（每轮首更，2026-11-13 会话一百零二下半=**★★★★★★★★★★r112 首刷屏摄判读=policy 首笔 Data 写 EBUSY(16) panic（=r111 末段 cluster_push 16 同源：r111 thrash 把 RamBlock/D-store Data 卷写进不可写态）；r113 单发出件=payload-r113-datareset-8dbe873b（=r112 args+`data-reset=1` 卷复位，r43 先例原样）待刷；board.toml 已撤该 arg 留 NOTE**）：
+## 0. 现势指针（每轮首更，2026-11-13 会话一百零二收队=**★★★★★★★★★★r112/r113 双刷同点死（policy 首笔 Data 写 EBUSY(16)）；判读翻案=Data 卷自 24A446 换道起就是挥发性 RAM 盘（`sheng-data-persist` arg 在 Case-A 重写时被丢，storeMode()=0→store "off"），r113 data-reset=1 本为 no-op；下会话工作单 S1-S5（串口二分→sheng-data-persist=2 对齐 sheng→诊断件→apfs RE→定点修）**）：
 
-**r112 首刷判读（2026-11-13 屏摄 IMG_20261113_223717；窗未写 log=0 屏摄为唯一证据）**：2s 死于 `sheng watchdog launch policy failed: 16 @kern_exec.c:9136`（y 分支 tripwire 按预注册 G1 反噬分支响）。16=EBUSY 非 BSD 层（vfs_syscalls 的 EBUSY 全在 mount/unmount 面）= **APFS kext tx 层拒首笔 Data 写**。归因闭环：r111 末段 `cluster_push() failed with 16 on ino(249)` 同一个 16 + disk1(OwnerData=RamBlock 支撑)"device is not ready"风暴 = r111 的 90s crash-loop thrash 把 Data 卷写进满/坏态（RamBlock"store 写失败一次全停写"latch，NativeRamBlock.cpp:109），r112 首笔写撞墙。屏面 stage 止于 "kernel do post - done"+UFS requests=0 旁证一致（SystemOS/Data mount 已过——policy 调用在其后，先败会各自 panic）。
-**r113 工作单（已出件待刷）**：`payload-r113-datareset-8dbe873b.img`（sha 8dbe873ba8950f08…；kernel 不变 af2f055b/密封 7bb29a96=纯 cmdline；args 尾=`sheng-disable-watchdogd=1 sheng-container-db=1 data-reset=1`）。**data-reset=1 = NativeRamBlock discardRequested 丢弃 D-store delta 回 proven 种子（r43 先例：该通道首载 "temporary watchdog launch policy ready"）**。board.toml **不带**该 arg（NOTE 记档，普通出件严禁带回=带回即每 boot 清 Data）。判读 gates：**G0=stage 史越过 policy panic 出现 `temporary watchdog launch policy ready`**（卷复活+watchdogd 政策落地）→ 再走 R112-CARD.md G1-G5（cm 骨架应随卷复活生效）；若 reset 后仍 EBUSY → 种子/驱动层损伤，转 RamBlock store 写路径独立墙（rounds.md 挂账）。
+**★★★★★★★★★★s102 收队判读（2026-11-13，r112 IMG_223717 + r113 IMG_224800 两屏摄，窗 log=0 均未写）**：
+- **两轮同点死**：`sheng watchdog launch policy failed: 16 @kern_exec.c:9136`（y 分支 tripwire）= policy 第一笔 Data 写 EBUSY(16)。r113（data-reset=1 纯种子）与 r112 同报 → **EBUSY 与卷内容无关**，"r111 thrash 写坏卷"假设作废。stage 史同形（止于 kernel do post - done，UFS requests=0，SystemOS/Data mount 已过——policy 在其后，mount 败会有各自 panic 文本）。
+- **★本轮新铁证（代码取证）**：`storeMode()`（UniXNU-m2381/drivers/ShengUfs/NativeUfs.cpp:1265-1273）= PE arg **`sheng-data-persist`**，缺省 0；**本车道 board.toml args 无此 arg**（24A446 Case-A（10-30）把 21H461 时代 args 重写成 sheng 基线时丢掉——21H461 车道实证有它：r41a "D st=2 resumed wr=12"）→ `native_ufs_store_open` 第一行 `if(!storeMode()) reason="off"`（:1284）→ persistence 全关 → **Data=纯挥发性 RAM 稀疏盘（NativeRamBlock mode=0：连 overlay 结构都不分配）**。连带推论：①r113 data-reset=1 无 overlay 可弃=no-op（假设"卷 delta 坏"双杀）；②r111 的 179.7s `cluster_push() failed with 16` 风暴 + RamBlock"device is not ready"必须另有机制（挥发性盘上唯一自然候选=稀疏页 IOMalloc 分配压力/ready 门，未证）；③r111 用户态写 86-179s 能成功而 r112/13 policy 2s 写即败 = **时间差**（mount 后早期写 vs 稳态写）是核心矛盾。
+- **对照锚**：sheng 生产（同 SoC 同 donor 同 BootWatchdogPolicy 代码，SpringBoard 全绿）= args 带 **`sheng-data-persist=2`（direct 模式：写直落 UFS store 窗口）**= 唯一实机验证过的 persistence 配置；本车道=mode 0。
+- **下会话工作单（按序执行，病灶=policy 首笔 Data 写 EBUSY(16)，先取证后修）**：
+  - **S1（零成本二分）**：串口捕获一次 r113 boot（serial=3 已在 args）——三行定音：`sheng container db skeleton failed: 16 (continuing)`=骨架 mkdir 败点 / `sheng container db skeleton ready`=骨架过了败在 policy 主体（open/write）+ IOLog 有无 `NativeRamBlock: persistent store refused`（应无=mode 0 再证）。屏摄全页（DATA 行 `DATA st=%u hdr=%u gpt=%x/%x lba=%llx`+`pres/ld/wr/sy/er`——本轮两照片都没拍到该行，下轮必须入镜）。
+  - **S2（纯 arg 修复候选①）**：args 加 **`sheng-data-persist=2`**（direct 模式，对齐 sheng 生产）→ Mac 链重出 payload（kernel 不变）→ 刷 → 看 G0（`temporary watchdog launch policy ready`）。**注意**：direct 首开走 Fresh（state=3）路径，查 NativeUfs store 窗口几何（gStoreGeometry）在 24A446 board.toml 下的 first LBA 是否有效（窗口在分区尾，r41a 期 LBA 0x75dfff9≈471GiB 的老记录 vs 现 463.7GiB 分区——先验几何再刷）。
+  - **S3（诊断件，S1 证据不足时）**：内核把 `sheng_watchdog_policy_status`+失败 syscall 序号带进 panic 文本（骨架加 step id 全局）；ext 槽加 RamBlock ready/latch 行。Mac 链出件。
+  - **S4（RE 兜底）**：24A446 apfs EBUSY 位点（emitted kernel 内 apfs kext 或 macOS 27.3 cache 26C5035r 同家族二进制；无 dSYM，找 `mov w?,#0x10/ret` 模式沿 mkdir/open/setattr 调用面）；对照 20H392 代。
+  - **S5（定点修）**：按 S4 结果——apfs mount 后时序窗（policy 延后/重试）或 RamBlock 写路径 errno 改写；KDK 无 apfs dSYM（tools/kdk 仅 t8122 kernel）已核。
+- **挂账不变**：双修本体（sheng-disable-watchdogd=1 + sheng-container-db=1）在 r113 payload 里待卷写通后接受 G1/G2 判读；cache 符号化弹药 scratch-r112/（7.3GB）；KDK 无 apfs dSYM。主树 9377969e/设备仓 bdbd0e0 未推。**设备现态 = recovery_a=r113（data-reset=1 在 cmd 里但 mode=0 无 store=no-op，多刷无害）**。
+
+
 
 
 
