@@ -363,6 +363,7 @@ stubs.write_text('''// SPDX-License-Identifier: BSD-2-Clause-Patent
 // fence can never be satisfied, and the CPU-only presentation must not stall
 // on the fence wait. REMOVE THESE WHEN THE ADRENO740 ARCHIVE IS LINKED
 // (duplicate symbols at force_load).
+#include <stdint.h>
 int native_gpu_trace_enabled(void) { return 0; }
 void native_gpu_trace_record(uint32_t event,uint32_t pid,const uint64_t *values,uint32_t count) {
     (void)event;(void)pid;(void)values;(void)count;
