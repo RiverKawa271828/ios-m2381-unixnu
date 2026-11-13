@@ -163,7 +163,7 @@ boot_b 不动；Mu 会重新扫描 ESP。
 |---|---|---|
 | forensic-kernel.efi | nura ESP v71 BOOTAA64.EFI（pmOS r91 vmlinuz-efi，**m2381 实机验证过**：UART/USB/UFS/configfs 全通） | `4aad92b3` |
 | forensic-initrd.img | busybox 1.36.1 (Ubuntu arm64 static) + init（fork 上游 uefi-fuxi package/linux-log）+ rebootbl（自编译 aarch64 static） | `402fb431`（r55e；**cpio 必须 13 字段**——newc 头 110 字节含尾部 check、namesize 含 NUL，12 字段版本内核拒包 "damaged header"，即 r55d 根因） |
-| reader-esp.img | build-forensic-esp.py 出件：64 MiB FAT32 + 专用 toml（default=forensic） | `d3e6d468`（2026-10-30 首验件） |
+| reader-esp.img | build-forensic-esp.py 出件：64 MiB FAT32 + 专用 toml（default=forensic） | `d01bed78`（2026-11-14 重建件：同脚本同三构件（kernel `4aad92b3`/initrd `402fb431`/dtb `c061acd9` 全对账）；首验件 `d3e6d468` 因 FAT 卷时间戳不可复现，误删后按配方重出，用户拍板收用） |
 
 > **FAT32 下限陷阱（2026-10-30 实证）**：卷必须 ≥48 MiB——FAT32 要
 > ≥65525 个**数据簇**，32 MiB 卷扣除保留区与双 FAT 表后只剩 64,480 簇，
@@ -189,7 +189,7 @@ python3 ../UniXNU-m2381/forensic/build-forensic-esp.py \
 # 寄居其中；2026-11-08 起 reader-esp 与 payload 同走平铺命名）：
 # cp ../UniXNU-m2381/.cache/forensic/reader-esp.img \
 #    out/m2381/reader-esp-$(sha256sum ../UniXNU-m2381/.cache/forensic/reader-esp.img | cut -c1-8).img
-# fastboot flash recovery_a out/m2381/reader-esp-d3e6d468.img
+# fastboot flash recovery_a out/m2381/reader-esp-<现役sha8>.img（2026-11-14 起 = d01bed78；原 d3e6d468 首验件误删，payload-reader-0f1013f4.img 同日判定坏件删除）
 # 刷卡前对 ESP 验四样：scratch-data.img 在 / toml 有 initrd 行 /
 # trustcache 在 / ADT 有 PackedRAMDisk（r56 = 四缺三翻车实录）
 # 平铺出件照旧（payload-rNN-<sha8>.img / reader-esp-<sha8>.img）
