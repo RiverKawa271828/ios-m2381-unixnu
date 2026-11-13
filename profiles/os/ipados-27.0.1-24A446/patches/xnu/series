@@ -192,3 +192,24 @@ arch:../../../patches/xnu-12377/sheng-lockdown-sysctl.patch
 # synchronous log-window round via the sheng-death-flush hook before the
 # panic freezes the writer.
 arch:../../../patches/xnu-12377/amfi-ent-copy-probe.patch
+# r111 (2026-11-13, s100): the four-generation entitlements wall's final cut.
+# The r110-rev2 window closed the value path statically end to end (K/cb1/cb2/
+# C1/M/shell cluster/GOT imports all clean; the key symbolizers F1/F2 are
+# proven live by the absent conv rows) and pinned the one remaining donor
+# consumer of external state: the CoreEntitlements DER iterator M's stack
+# guard, sp & ((1 << *GOT_0x8136458) - 1) < 0x80 -> error 2. Donor binds that
+# GOT to a boot-filled page-shift global (kernel init writes 14 @0xb5a1d68);
+# on the 16 KiB-page donor the stack base stays 16 KiB-aligned, so the mask
+# never lies. Our auto channel bound the same slot to an unnamed 0x7DFA120
+# with a zero file value and zero writers in TEXT_EXEC/PRELINK_TEXT - the
+# 4 KiB kernel stack starts 8 KiB into a 32 KiB-aligned allocation, so the
+# donor's 14-based check false-trips at fixed call depths (sheng-proven wall,
+# retired s52 recon entry: "re-derived only if the first boot actually trips
+# the AMFI entitlements stack check" - it did). Ret = 2 inside the value
+# K recursion -> K NULL -> cb1 release -> 14, exactly the observed signature.
+# This is the stack.c section of zzzz-sheng-ipados27-bringup.patch split
+# standalone (same recipe as sheng-shared-region-sign-gate/t0sz): align the
+# whole kernel stack allocation (stack + 3 guard pages) and publish
+# unixnu_kernel_stack_shift (15); the kit fixture re-binds donor GOT
+# 0x8136458 to it as a reviewed data record.
+arch:../../../patches/xnu-12377/kernel-stack-shift-guard.patch
