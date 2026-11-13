@@ -364,6 +364,7 @@ stubs.write_text('''// SPDX-License-Identifier: BSD-2-Clause-Patent
 // on the fence wait. REMOVE THESE WHEN THE ADRENO740 ARCHIVE IS LINKED
 // (duplicate symbols at force_load).
 #include <stdint.h>
+extern "C" {
 int native_gpu_trace_enabled(void) { return 0; }
 void native_gpu_trace_record(uint32_t event,uint32_t pid,const uint64_t *values,uint32_t count) {
     (void)event;(void)pid;(void)values;(void)count;
@@ -378,6 +379,7 @@ bool native_adreno_fences_detail(uint32_t *submitted,uint32_t *retired,uint32_t 
     if(retired)*retired=1;
     if(detail){detail[0]=0;detail[1]=0;detail[2]=4;}
     return true;
+}
 }
 ''')
 compile_cpp(stubs, OUT / 'GpuTraceStubs27.o')
