@@ -8,7 +8,24 @@
 - **r116 出件链四坑（全当日付费）**：①**defconfig CONFIG_XNU_NATIVE_LEGACY_DISPLAY=is not set 覆盖链上 env**（xnu_env() 把 defconfig 值盖 os.environ——keystore=1 是 defconfig 来的所以只见 legacy=0；修=defconfig =y + `./unixnu defconfig m2381_defconfig` 必须带 NAME，缺名=只列出）②本板 ld64 未解析 weak=硬错（BootProgressTelemetryDefs 零链接配方即为此；probe 九个 weak 引用全剥）③**死桩 C++ 改名**（GpuTraceStubs27.cpp 无 extern "C" → __Z20… 桩名对不上 weak 导入；顺带 stdint.h 需自含）④**__DATA 洞墙**：native __DATA 必须塞进 collection __DATA 头洞=donor kernel 数据足迹 0x1e8000（Libm 220B 段钉住洞尾；区内其余 gap≤12KB，emitter 无路）——display 档案 ~11KB 把页圆整 0x1ec000 顶爆（`Native __DATA overlaps a retained segment`）；修=Wi-Fi 死车道环缩容（native_wifi_text[512][112]=57KB→[128]、wifi_note[128]→[64]，TelemetryDefs+BootLog.c 环取模协同改）→ __DATA=0x1e0000，**恢复 ~32KB P2 余量**。
 - **kq 墙根因（侦察代理定谳，全源码级）**：配额=filedesc 的 kqwl_dyn_soft/hard_limit（缺省 -1 无限），唯一写入通道=kern_exec proc_set_kqworkloop_limits←posix_spawnattr；donor libsystem 0x100 字节布局尾部 +8（sec_flags 32 位@0xac+0xb0 sanitizer 字节）vs native xnu-12377 布局 → native soft_limit 槽(0xb4)读到 psa_crash_count（重启循环中=2-6）→ 全员 daemon 2-6 个 kqworkloop 即 fatal。error 0x10000004=MACH_SEND_INVALID_DEST=通知发不出的噪声（真杀=fatal port 消息）。**无 arg/sysctl/rlimit 通道**；upstream 00762404 只有 macOS 车道变体。修=darwin26-spawnattr-convert.patch（psa_from_darwin26()+attr_size==0x100 分派，static_asserts 钉 native 偏移），kq+crash_count+throttle+conclave+sec_flags+ports 指针整族归位。
 - **出件静态门**：payload-r116-display-spawnattr-570ee8df.img（103,809,024B 双端对拍）；sealed kernel 926e9282 字符串普查倒置全过（offline-legacy-register/gop=1/1、NativeLegacyDisplay=73、NativeGOPPresenter=41、not published: stage=1、sheng-fb: default surface=2、IOMobileFramebufferLegacy=434）；`__DATA`=0x1e0000≤0x1e8000；emit stubbed 22→**10**（display 面 12 个此前零绑定的导入全部落位）missing=2 持平；args 行 fb-gpu=1 在件。Mac kit 的临时 DEBUG 补丁已撤。
-- **挂账**：①主树 6723c78d/3ea3cff8/29f58e57/92e3eb20/1d5190c6 + 设备仓 8a51317/89b912d/c53e957/002272a/3810813 未推；②Sandbox 容器族降级观察（r115 全窗仅 1 行与 locationd 的 kq 死亡同块——kq 墙死后 cm 注册循环才开跑，先不投机 mkdir）；③GpuTraceStubs27.o 的 fences 桩=P2 换真 provider 时删除（重复符号）；④sheng 组件 checkout 状态对账（Mac= e47c1b8+本地改动 vs 我方钉 d711e8c，本轮实测可用未动）；⑤scratch-r114/（9.6GB）仍在 /home/ri/work/ 待清；⑥设备现态 recovery_a=reader（d01bed78），刷 payload 前无需动 reader，判读后拉窗再刷回 reader。
+- **挂账（2026-11-14 收队更）**：①主树 6723c78d/3ea3cff8/29f58e57/92e3eb20/1d5190c6/4e2fac86 + 设备仓 8a51317/89b912d/c53e957/002272a/3810813 未推（STATE 提交再+1）；②Sandbox 容器族降级观察（r115 全窗仅 1 行与 locationd 的 kq 死亡同块——kq 墙死后 cm 注册循环才开跑，先不投机 mkdir）；③GpuTraceStubs27.o 的 fences 桩=P2 换真 provider 时删除（重复符号）；④sheng 组件 checkout 状态对账（Mac= e47c1b8+本地改动 vs 我方钉 d711e8c，本轮实测可用未动）；⑤scratch-r114/（9.6GB）仍在 /home/ri/work/ 待清；⑥**设备现态=recovery_a=r116 payload 570ee8df（已刷，用户报屏上"出现了新错误"，屏摄照片待传）**；⑦Mac kit 临时 DEBUG 补丁已撤（fileset_layout.py 已还原）。
+
+**★★★★★★★★★★下会话工作单 = s106 取证+判读轮（用户拍板"安排下个会话，取证和判读"；r116 已刷，屏上现"新错误"，图形墙过没过未知）**：
+- **S0（屏摄取证）**：新错误屏照片（IMG_*.jpg）先到手/转录——CRC 行照宏口径（panic_call.h 展开=fmt+" @"+基名+":"+行号，无尾换行；PAC 多行格式另有格式）+ `verify-panic-crc.py --msg` 验真；若屏已过/没拍到，重刷 r116（同件 sha 570ee8df 对拍）再等 ~3min 拍屏。
+- **S1（拉窗）**：设备现态 recovery_a=r116 payload → 硬断电 → 刷 reader ESP（recovery_a ← `reader-esp-d01bed78.img`）→ `acm-reader.py probe` → `read-m2381-ufs-log.py`/fetchchunk → `parse-m2381-window.py --msg` 存 `reader-r116/`（log.bin sha 双端对拍）。
+- **S2（判读序，照 R116-CARD G0-G6）**：第一看 `grep -E "GOP actual mapping|DISPLAY stage|not published|kqworkloops|caught allocating" reader-r116/parsed-msg.txt`：
+  - **G0（display lane 主判据）**：`GOP actual mapping virtual/physical/bytes` 三值非零（r115 全零全程）——非零=图形墙过了，SB 第一次带着 display 服务跑。
+  - **G1**：`DISPLAY stage>0`；G0 败时看 probe 断点行 `NativeLegacyDisplay: not published: stage %u meta %d init %u surface %d/%u probe %u start %u dt %u scale %d` 直接报 stage 断点（对照 probe stage 语义定修法）。
+  - **G2（spawnattr patch 判据）**：`caught allocating too many kqworkloops` 全窗 **0 次** + identityservicesd/profiled/contextstored 不再 sig9 循环 + `Process exits total/nonzero` 大幅降（r115=2552/1237）。
+  - **G3**：SB 无 sig5 死循环回归（r115 已过）。**G4**：数据面 r114 六项（policy enter/ready@2s、X2 DATA st=3、wr 计数、UFS failures=0、watchdogd/cm 零崩、not-ready 零）。
+  - **G5**：`no system container path found` 行计数（观察项）。**G6**：亮屏观察。
+- **S3（新错误分流树，按 G0/G2 矩阵）**：
+  - **A：G0 过+G2 过+新墙** = 前进（新墙照常判读——display 链活了，用户态往桌面推进的新断点）。
+  - **B：G0 过+G2 败** = spawnattr 转换面问题（kq 行+错误码定性；对照 sheng 原版逐 hunk 复核）。
+  - **C：G0 败+probe stage 行在** = display lane 内断点（stage 值→probe 语义→定点修；参考 sheng 同 stage 对照）。
+  - **D：G0 败+probe stage 行无** = display lane 没跑（钩子面/offline-legacy-* args 消费面/注册面三侦察；XNU_NATIVE_LEGACY_DISPLAY=1 编译记录复核）。
+  - **E：boot 比 r115 更早死** = 先怀疑 display archive 链接面或内核回归（G4 数据面对照 r114；sealed kernel 静态门复跑；回退锚=r115 d72c252b）。
+- **弹药**：sealed kernel 926e9282（Mac `~/unixnu/ios-m2381-unixnu/out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho`，display 串普查全绿在案）；r116 build-report（tree/build/native-legacy-display/build-report.json）；判读惯例=slide 减法工具算/去滑先核 N/bl-target 验活（STATE §4）。
 
 
 **★★★★★★★★★★s104 r114 判读全轮（2026-11-14，用户令"判读+查没进桌面+参考 sheng"；窗口 reader-r114/ 全套+屏摄 IMG_010453）**：
