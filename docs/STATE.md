@@ -13,7 +13,7 @@
   - **P3（板级差异，逐个判读）**：touch（sheng=Novatek，魅族 20 IC 不同→nura 仓面板/触摸知识）、backlight、DTS display 节点面板参数。
   - **兜底**：若 P1 后 SB 仍 brk 同点 → RE `_initWithDisplays:` .cold.6 前的判定条件（哪一步返回失败：display 服务查找/BS 参数），对照 sheng 的服务发布面定点补。
   - **风险注记**：payload 体积（fileset 内核 85.2MiB+Adreno kit+reader vs recovery_a 100MiB——r73 期曾超限）；kqworkloops 违规语义挂账观察。
-- **挂账**：**设备现态 recovery_a=reader（用户拉窗后刷回；r114 payload dd 读回证据作废，e6caa50）**——r115 出件后单件刷回 payload；r114 判读提交后主树/设备仓未推数累加；scratch-r114/（OS.dmg.raw 9.6GB+SB/dyld 本体）隔轮清。
+- **挂账（2026-11-14 收队更）**：**设备现态 = 用户测试中（r115 已出件，用户自刷/自测）**——下会话开工序：①确认设备现态（recovery_a 是 r115 d72c252b 还是 reader）+拉窗/屏摄；②按 R115-CARD 判读单走 G0-G5（**G0 主门=GOP mapping 三值非零；G1=DISPLAY stage>0；G2=SB 不再 sig5 循环@FBSDisplayMonitor cold.6**）；③G0 败→probe 的 native_legacy_stage/init_result/start_result 定位断点（LegacyDisplayProbe 消费 offline-legacy-*；屏摄 UEFI 阶段 splash 有无）；G2 败→RE cold.6 前判定条件；④G0-G2 过→P2（include+=Adreno740/AdrenoMetal+sheng-gpu-power 阶梯 1→9，蓝图=sheng 仓 package/GpuPowerProbe.cpp 头注）→P3（板级 touch/backlight/DTS 面板参数，nura 仓知识）。**out/m2381 已清理（~55G→2.7G）**：保留 4 件 payload（r115 d72c252b 现役/r114 f8bfc54d/r113 8dbe873b 回退链/reader 0f1013f4）+boot-b 两锚+reader-r114 全套（判读证据）+旧窗口 parsed/照片文本（log.bin 全清）+archive-23F84-ref/（冻结车道 trust 对抢救）；**ipados-27.0.1-24A446/m2381/ 的 userdata/tree/logs 已删（可重生成）**——Linux 链重出需 `./unixnu tree|kernel|payload` 全链重跑或继续走 Mac 链（Mac 侧 out/ 完好）。主树 4c6c61b0/设备仓 r115 两笔未推。scratch-r114/（OS.dmg.raw 9.6GB）仍在 /home/ri/work/ 下轮清。
 
 **★★★★★★★★★★s103 判读+施工全轮（2026-11-14，用户令"查两秒死"→开工；全静态+既有窗证据零新取证）**：
 
