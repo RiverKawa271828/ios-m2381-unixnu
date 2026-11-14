@@ -21,6 +21,11 @@ python3 scripts/audit-boot-face-delta.py GREEN_SEALED CANDIDATE_SEALED [--expect
 
 - 三类差异：A=戳/链区 churn；B=声明了 native 变更轮的全部其余；**C=不可解释 → 不刷**
   （或显式改判重锚轮并记录）。
+- **站哨兵门（s109 新增，不可被 --expect-native 覆盖）**：r120 定谳后 audit 内置 9 站
+  canon（wall76×3+entcopy×2+entconv×2+entval×2），候选面任一站=donor 原字 → FAIL
+  "STATIONS LOST"（r119/r120 丢 9 站=wall-76 复发，三个 16KB 区曾被 class B 吞掉）。
+  有意退役某站=同 commit 更新 canon。args 门同批：`audit-boot-args.py 绿payload
+  新payload`，撤/改 arg 必须显式声明（s102 sheng-data-persist 先例）。
 - 两个密封面提取：`7z x payload.img EFI/UniXNU/Payloads/kernel.macho`（payload 内嵌件
   = 密封面，≠ kernel 步输出——两个 sha 都要在卡上分列）。
 - 复核轮提问集三问：保真（编译/args/sha）？等价类（相对上个绿 boot 是哪类）？
@@ -33,7 +38,7 @@ python3 scripts/audit-boot-face-delta.py GREEN_SEALED CANDIDATE_SEALED [--expect
 | 墙 | 哨兵（窗内第一 grep） | 关账轮 |
 |---|---|---|
 | 2s instruction fetch abort | 屏序过 `kernel do post - done` 且 >10s 存活 | r118 |
-| AMFI "No PMGR?"（wall-42） | `signature accepted` 时标 ≤ 绿件水平；无该 panic 行 | r94-r118 |
+| AMFI "No PMGR?"（wall-42/76） | `signature accepted` 时标 ≤ 绿件水平；无该 panic 行 | r76（24A446）；**r119/r120 复发=emit kit 丢 9 站（非 AMFI 域），s109 站哨兵门关账** |
 | launchd abort（MKB/其他） | p1 spawn 后非零退出 = 0 | r102+ |
 | SB FBSDisplayMonitor cold.6 sig5 | `CRASH.*SpringBoard` = 0 | r115 |
 | kqworkloops 配额 fatal | `caught allocating too many kqworkloops` = 0 | r116 |
