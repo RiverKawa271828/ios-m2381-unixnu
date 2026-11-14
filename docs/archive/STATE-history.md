@@ -6299,3 +6299,13 @@ records `4706e64`；全文原样移档 2026-11-04 会话四十七）
 ## A¹⁷. r108 判读工作单（2026-11-13 会话九十七定稿，s108 静态 RE 收敛后的探针裁决单）：**病灶（现口径）** = donor AMFI OSEntitlements.cpp:863 EFAULT（ret=14 = K NULL 哨兵 0xe），记录头自洽（{0/1, TLV ptr, 0x332c, dict tag, content ptr, 0x3328}）+ 读者（H/K/L/M）合法 + 23F84 真 blob 格式吻合 ⇒ **唯一分歧 = [holder+8]/[holder+0x20] 两指针指向的运行时字节**。探针 v3 已出（A¹⁷ 行序），一次刷机三分支判读：①tlv/cnt 行 = 合法 DER 形（tlv=b0 82 33 28 开头、cnt=30 .. 0c.. 开头）→ 内容真 ⇒ 死因更深 ⇒ r109 探针站进链内：首选 K 的 `bl L`（0x92639cc，单字 BL 站）抓 L 入口 x0（容器拷贝）与返回 w0（0xa 门/0xc 体）；②tlv/cnt 行 = 垃圾/XML → 修我方 `csblob_find_blob_bytes`（ubc_subr.c:3269 一族）slot-7 提取/偏移；③探针自身 data abort → 指针生命周期失效（csb_mem wiring）。
 
 **A¹⁷ 判读结果（2026-11-13 会话九十八）**：①命中——tlv=`b0 82 33 28`+`30 4b 0c 18`、cnt=ASCII entitlement 键串、指针跨 4 次 flush 可解引；②③排除。死因进 L/M 元素级。判读通道教训：**探针行只落窗 msg 区（parsed-msg.txt），屏摄永不见**（r106=1行/r107=4行/r108=6行 对拍）；窗尾 flush 簇（4 连槽）=探针执行窗侧指纹；victim 行=权威死者（stage 行是并发事件）。
+
+
+**★★★★★★★★★★下会话工作单 = s107 r117 两秒死 RE+修（2026-11-14 会话一百零六收队定稿；用户拍板：**不拉窗**——2s 死日志来不及写，屏摄为准；设备现态=recovery_a=r117 payload 1853dbce 两秒死件）**：
+- **★先例钥匙（STATE s99 段：r110 首刷 2s fetch abort 定谳）**：r110 同型 2s fetch abort，判读定音 **slide=0（LR=link 地址直接证明，2s 早期死时 vm_kernel_slide 未应用/无害）**——r117 屏摄寄存器大概率=unslid VA，**unslid=VA−0xfffffff000000000**（kernel proper 链接基，r110 期 lr=0xfffffff00b51ccac↔probe2 链接位 0xB51CC58+0x54 同法）。屏摄+转录=out/m2381/reader-r117/（TRANSCRIPT-IMG_20261114_071107.txt）。
+- **S1（静态符号定位，屏摄为准）**：unslid 寄存器=pc 0xdc40c74/lr 0xb59bfb8/x17 0xb88d600/x1=x20 0xb93a078/x22 0xb8784c0/x23 0x7df0e78/x24=x25 0x7e23000（页对齐）/x0=x19 0xfffffff38b1a4000（heap VA）+x8=0x1ed8（对象尺寸）。对 Mac 符号面（kernel.macho 926e9282=r116 同件 + emit map/build-report 在 Mac out/m2381/…/m2381/）做**结构自洽验证**定 slide=0：lr 应落在某函数（caller）内、pc 应落在其被调函数/间接目标、x17=间接分支目标寄存器。验证过即反汇编死点；验证不过再想 slide（串口为兜底钥匙）。
+- **S2（嫌疑面，点火链激活暴露的存量槽）**：本轮零代码改动（kernel 逐字节同 r116）→炸点=2 arg 激活、r116 从未走的路径踩中**存量坏槽**。排查序：①emit **missing=2 悬空 GOT**（s105 静态门在案，AMFI 0xad3e8d8+另一；点火链若消费→跳垃圾=fetch abort）；②**stub=10 死桩**（display 面 12 落位后剩 10）；③fixture 215 original bindings 的目标面；④**vsync timer armed 面**（NativeLegacyDisplay.cpp:108 work-loop vsync=120Hz——晚探针 arm 后 2s 内必 fire，中断/定时器上下文踩坏槽时序吻合；cpsr=0x42400204 低5位=0x04=EL1t 异常态待考——若非转录错则指向异常返回面）。
+- **S3（定点修+r118 打包，用户拍板"一轮多做些"转正）**：修墙 + BootLog.c 日志扩容（msg 环+writer 抗 park——vnode panic@182s 已证 writer 核殉断流）+（如 RE 需要）探针增强一轮带全出件。
+- **历史对照（用户问"这种错误出现很多次"）**：2s 死族=r110（fetch abort=探针刀 asm）、r112/113（EBUSY panic）、r117（fetch abort=点火链踩存量槽）——**四轮四根因，同位置不同病**；fetch abort 型=第 2 次（上一次=我们的刀，这一次嫌疑也在我方 fork/archive 存量面——sheng 同位同参绿=sheng 无雷）。
+- **锚**：回退 r116 570ee8df（policy ready 绿基线）；r117=点火即崩件勿复刷（屏摄已足）。
+
