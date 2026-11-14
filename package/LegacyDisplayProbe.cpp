@@ -124,54 +124,93 @@ bool native_legacy_prepare_scanout(void) {
     if(boot_progress_cancel_scanout)boot_progress_cancel_scanout();
     return false;
 }
-// r124: IOMFB user-client selector probe. The iomfb-uc-selector-probe.patch
-// funnels every selector exchange with the donor IOMobileFramebufferUserClient
-// through IOUserClient::callExternalMethod (non-virtual: no donor override can
-// bypass it) into the recorder below: a ring of the last 8 calls plus totals,
-// printed to the window ext rows every 2 s by the report thread. The face
-// answers "which selector exchange does the render server stall in" — the
-// r123b window shows the CAWindowServer display creation opening the user
-// client (CLIENT calls=1 pid=64 status=0 at t=98 s) and the whole backboardd
-// parking in mach_msg2 (trap=-47) afterwards, with the client side (chronod)
-// aborting at QuartzCore query_displays' CASGetDisplays error exit.
+// r125: IOKit user-client traffic probe (r124 verdict widening). r124 proved
+// the hook itself works (armed=1, the bl into the recorder verified inside
+// __TEXT_EXEC) yet ZERO external methods reached IOUserClient::callExternal
+// Method on any IOMobileFramebuffer-prefixed class in 591 s -- while 4 swaps
+// were validated and 5 user clients opened. The render stall therefore lives
+// OUTSIDE the external-method surface (sibling entry or sibling class), so
+// this probe drops the class filter -- every external method is recorded with
+// its class name -- and the patch also hooks the sibling IOKit mach-port
+// entries: map/unmap memory, set properties, notification semaphore. The face
+// answers "which IOKit call does the render server hang in" without
+// pre-judging the surface. X7 row = totals (i = IOMFB-prefixed external
+// methods, a = all external methods, m = map, p = props, L = last IOMFB
+// exchange); W0 wide row = ring of the last 4 exchanges of any kind, tagged
+// E/x (IOMFB/other external method) or M/U/P/G (map/unmap/props/sem).
 extern char boot_progress_ext[8][48];
 extern char boot_progress_ext_wide[2][112];
 volatile uint32_t native_legacy_uc_probe_armed;
-volatile uint32_t native_legacy_uc_total,native_legacy_uc_last_selector,native_legacy_uc_last_time;
+// kinds: 0 = external method (callExternalMethod), 1 = map memory into task,
+// 2 = unmap memory from task, 3 = set properties, 4 = notification semaphore.
+volatile uint32_t native_legacy_uc_totals[8];
+volatile uint32_t native_legacy_uc_iomfb,native_legacy_uc_last_selector,native_legacy_uc_last_time;
 volatile int native_legacy_uc_last_kr,native_legacy_uc_last_pid;
-struct IomfbUcRecord {uint32_t time,selector;int32_t kr,pid;};
+struct IomfbUcRecord {uint32_t time,selector;int32_t kr,pid;uint8_t kind;char cls[19];};
 static IomfbUcRecord native_legacy_uc_ring[8];
 static volatile uint32_t native_legacy_uc_ring_at;
-void iomfb_uc_probe_record(IOUserClient *uc,uint32_t selector,IOReturn ret) {
-    const OSMetaClass *meta=uc->getMetaClass();
-    const char *name=meta?meta->getClassName():nullptr;
-    if(!name || strncmp(name,"IOMobileFramebuffer",19))return;
+static void uc_ring_push(uint8_t kind,uint32_t selector,IOReturn ret,const char *cls) {
     proc_t proc=current_proc();
     int pid=proc?(int)proc_pid(proc):-1;
     uint32_t now=(uint32_t)(probeNowUs()/1000000ull),at=native_legacy_uc_ring_at;
     native_legacy_uc_ring_at=at+1;at=at & 7u;
-    native_legacy_uc_ring[at].time=now;native_legacy_uc_ring[at].selector=selector;
-    native_legacy_uc_ring[at].kr=(int32_t)ret;native_legacy_uc_ring[at].pid=pid;
-    native_legacy_uc_total=native_legacy_uc_total+1;
-    native_legacy_uc_last_selector=selector;native_legacy_uc_last_kr=(int32_t)ret;
-    native_legacy_uc_last_pid=pid;native_legacy_uc_last_time=now;
+    IomfbUcRecord &e=native_legacy_uc_ring[at];
+    e.time=now;e.selector=selector;e.kr=(int32_t)ret;e.pid=pid;e.kind=kind;
+    unsigned i=0;
+    if(cls)for(;i+1<sizeof(e.cls) && cls[i];++i)e.cls[i]=cls[i];
+    for(e.cls[i]=0;++i<sizeof(e.cls);)e.cls[i]=0;
+}
+void iomfb_uc_probe_record(IOUserClient *uc,uint32_t selector,IOReturn ret) {
+    native_legacy_uc_totals[0]=native_legacy_uc_totals[0]+1;
+    const OSMetaClass *meta=uc->getMetaClass();
+    const char *name=meta?meta->getClassName():"";
+    uc_ring_push(0,selector,ret,name?name:"");
+    if(name && !strncmp(name,"IOMobileFramebuffer",19)) {
+        native_legacy_uc_iomfb=native_legacy_uc_iomfb+1;
+        native_legacy_uc_last_selector=selector;native_legacy_uc_last_kr=(int32_t)ret;
+        native_legacy_uc_last_pid=native_legacy_uc_ring[(native_legacy_uc_ring_at-1u)&7u].pid;
+        native_legacy_uc_last_time=native_legacy_uc_ring[(native_legacy_uc_ring_at-1u)&7u].time;
+    }
+}
+// The sibling entries (patch hooks is_io_connect_map_memory_into_task,
+// is_io_connect_unmap_memory_from_task, is_io_connect_set_properties and
+// is_io_connect_get_notification_semaphore with kinds 1..4).
+void iomfb_uc_probe_record_io(unsigned kind,IOReturn ret) {
+    if(!kind || kind>=8)return;
+    native_legacy_uc_totals[kind]=native_legacy_uc_totals[kind]+1;
+    uc_ring_push((uint8_t)kind,0,ret,"");
 }
 static void ucReportThread(void *,wait_result_t) {
     for(;;) {
         char row[112];
-        snprintf(row,sizeof(row),"UC total=%u last=s%u r=%d p%d t=%us",
-                 native_legacy_uc_total,native_legacy_uc_last_selector,
-                 native_legacy_uc_last_kr,native_legacy_uc_last_pid,native_legacy_uc_last_time);
-        for(unsigned i=0;i<47;++i)boot_progress_ext[7][i]=row[i]?row[i]:' ';
+        int u1=snprintf(row,sizeof(row),"UC i=%u a=%u m=%u p=%u L=s%u r=%d p%d",
+                 native_legacy_uc_iomfb,native_legacy_uc_totals[0],
+                 native_legacy_uc_totals[1]+native_legacy_uc_totals[2],
+                 native_legacy_uc_totals[3]+native_legacy_uc_totals[4],
+                 native_legacy_uc_last_selector,native_legacy_uc_last_kr,
+                 native_legacy_uc_last_pid);
+        unsigned used=u1<0?0:(unsigned)u1;
+        if(used>sizeof(row))used=sizeof(row);
+        for(unsigned i=used;i<sizeof(row);++i)row[i]=' ';
+        for(unsigned i=0;i<47;++i)boot_progress_ext[7][i]=row[i];
         boot_progress_ext[7][47]=0;
-        int used=snprintf(row,sizeof(row),"UCR");
-        for(unsigned k=0;k<6 && used<(int)sizeof(row)-24;++k) {
+        used=(unsigned)snprintf(row,sizeof(row),"UCR");
+        for(unsigned k=0;k<4 && used<(int)sizeof(row)-28;++k) {
             const IomfbUcRecord &entry=native_legacy_uc_ring[(native_legacy_uc_ring_at-1u-k)&7u];
             if(!entry.time)break;
-            used+=snprintf(row+used,sizeof(row)-used," | t%us%ur%dp%d",
-                           entry.time,entry.selector,entry.kr,entry.pid);
+            char kc=entry.kind?(char)" MUPG"[entry.kind]
+                              :(strncmp(entry.cls,"IOMobileFramebuffer",19)?'x':'E');
+            if(entry.kind==0 && kc=='x') {
+                used+=snprintf(row+used,sizeof(row)-used," | t%us%c r%dp%d %.6s",
+                               entry.time,kc,entry.kr,entry.pid,entry.cls);
+            } else {
+                used+=snprintf(row+used,sizeof(row)-used," | t%us%c s%u r%dp%d",
+                               entry.time,kc,entry.selector,entry.kr,entry.pid);
+            }
         }
-        for(unsigned i=0;i<111;++i)boot_progress_ext_wide[0][i]=row[i]?row[i]:' ';
+        if(used>=sizeof(row))used=sizeof(row)-1;
+        for(unsigned i=used;i<sizeof(row);++i)row[i]=' ';
+        for(unsigned i=0;i<111;++i)boot_progress_ext_wide[0][i]=row[i];
         boot_progress_ext_wide[0][111]=0;
         IOSleep(2000);
     }
