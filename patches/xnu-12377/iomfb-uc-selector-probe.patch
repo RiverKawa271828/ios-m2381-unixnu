@@ -1,12 +1,69 @@
 diff --git a/iokit/Kernel/IOUserClient.cpp b/iokit/Kernel/IOUserClient.cpp
 --- a/iokit/Kernel/IOUserClient.cpp
 +++ b/iokit/Kernel/IOUserClient.cpp
-@@ -6580,17 +6580,27 @@
- } /* extern "C" */
+@@ -3298,5 +3298,9 @@
+ }
  
 +extern "C" volatile uint32_t native_legacy_uc_probe_armed;
 +extern "C" void iomfb_uc_probe_record(IOUserClient *uc, uint32_t selector, IOReturn ret);
++extern "C" void iomfb_uc_probe_record_io(unsigned kind, IOReturn ret);
 +
+ /* Routine io_connect_get_semaphore */
+ kern_return_t
+ is_io_connect_get_notification_semaphore(
+@@ -3310,8 +3314,11 @@
+ 	IOStatisticsClientCall();
+ 	client->ipcEnter(kIPCLockWrite);
+ 	ret = client->getNotificationSemaphore((UInt32) notification_type,
+ 	    semaphore );
+ 	client->ipcExit(kIPCLockWrite);
++	if (native_legacy_uc_probe_armed) {
++		iomfb_uc_probe_record_io(4, ret);
++	}
+ 
+ 	return ret;
+ }
+@@ -4850,10 +4857,13 @@
+ 	}
+ 
+ 	client->ipcExit(client->defaultLocking ? kIPCLockWrite : kIPCLockNone);
++	if (native_legacy_uc_probe_armed) {
++		iomfb_uc_probe_record_io(1, (IOReturn) err);
++	}
+ 
+ 	return err;
+ }
+ 
+ /* Routine is_io_connect_map_memory */
+ kern_return_t
+ is_io_connect_map_memory(
+@@ -4967,9 +4977,12 @@
+ 	}
+ 
+ 	client->ipcExit(client->defaultLocking ? kIPCLockWrite : kIPCLockNone);
++	if (native_legacy_uc_probe_armed) {
++		iomfb_uc_probe_record_io(2, (IOReturn) err);
++	}
+ 
+ 	return err;
+ }
+ 
+ kern_return_t
+ is_io_connect_unmap_memory(
+@@ -5016,7 +5029,11 @@
+ 	io_connect_t connection,
+ 	io_buf_ptr_t properties,
+ 	mach_msg_type_number_t propertiesCnt,
+ 	kern_return_t * result)
+ {
+-	return is_io_registry_entry_set_properties( connection, properties, propertiesCnt, result );
++	kern_return_t kr = is_io_registry_entry_set_properties( connection, properties, propertiesCnt, result );
++	if (native_legacy_uc_probe_armed) {
++		iomfb_uc_probe_record_io(3, (IOReturn) kr);
++	}
++	return kr;
+ }
+@@ -6582,15 +6599,21 @@
  IOReturn
  IOUserClient::callExternalMethod(uint32_t selector, IOExternalMethodArguments * args)
  {
@@ -21,12 +78,10 @@ diff --git a/iokit/Kernel/IOUserClient.cpp b/iokit/Kernel/IOUserClient.cpp
  	ipcExit(defaultLocking ? (defaultLockingSingleThreadExternalMethod ? kIPCLockWrite : kIPCLockRead) : kIPCLockNone);
  
 +	if (native_legacy_uc_probe_armed) {
-+		/* r124: every user-client selector exchange funnels through this
-+		 * non-virtual routine (is_io_connect_method's three branches all
-+		 * call it), so the recorder in LegacyDisplayProbe.cpp sees every
-+		 * selector the donor IOMobileFramebufferUserClient serves. */
++		/* r125: record every UC class. r124 verdict: the hook works but the
++		 * IOMFB prefix filter saw zero exchanges in 591 s while the chain
++		 * stalls -- the talker must be a sibling class or entry. */
 +		iomfb_uc_probe_record(this, selector, ret);
 +	}
  	return ret;
  }
- 
