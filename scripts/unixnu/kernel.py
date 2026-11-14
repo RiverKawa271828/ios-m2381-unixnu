@@ -380,6 +380,11 @@ def prelink(ctx):
                     if os.environ.get('UNIXNU_MATCHER_STRICT') == '1':
                         raise Error(f'prelink map drifted from the lineage map ({drift} pairings); '
                                     'rerun with the previous map or set UNIXNU_MATCHER_STRICT=0')
+                # The pairing map is a hardware-validated lineage asset (the s108
+                # verdict): never destroy the previous generation on replace.
+                if saved_map.is_file():
+                    prev = saved_map.with_suffix('.json.prev')
+                    shutil.copyfile(saved_map, prev)
                 os.replace(candidate_map, saved_map)
             record_path = candidate.with_suffix('.json')
             if record_path.is_file():
