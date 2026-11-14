@@ -226,3 +226,13 @@ arch:../../../patches/xnu-12377/kernel-stack-shift-guard.patch
 # 17-file clean-apply cut) split standalone with the sign-gate/t0sz/stack-
 # shift recipe; static_asserts pin the native offsets the conversion relies on.
 arch:../../../patches/xnu-12377/darwin26-spawnattr-convert.patch
+# r124 (2026-11-15, s113): the render-service chain verdict — chronod aborts at
+# QuartzCore query_displays' CASGetDisplays error exit (0x1844eaf0c bl abort,
+# bt fully symbolicated) because backboardd's CAWindowServer never registers
+# displays; backboardd itself opened the IOMobileFramebufferUserClient (r123b
+# CLIENT calls=1 pid=64 status=0, t=98 s) and then parked in mach_msg2 forever.
+# This patch funnels every user-client selector exchange through the
+# non-virtual IOUserClient::callExternalMethod into the LegacyDisplayProbe
+# recorder (iomfb_uc_probe_record), whose 2 s thread prints the last-8 ring
+# into the window ext rows — the next boot names the selector that stalls.
+arch:../../../patches/xnu-12377/iomfb-uc-selector-probe.patch
