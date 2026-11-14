@@ -1,0 +1,32 @@
+diff --git a/iokit/Kernel/IOUserClient.cpp b/iokit/Kernel/IOUserClient.cpp
+--- a/iokit/Kernel/IOUserClient.cpp
++++ b/iokit/Kernel/IOUserClient.cpp
+@@ -6580,17 +6580,27 @@
+ } /* extern "C" */
+ 
++extern "C" volatile uint32_t native_legacy_uc_probe_armed;
++extern "C" void iomfb_uc_probe_record(IOUserClient *uc, uint32_t selector, IOReturn ret);
++
+ IOReturn
+ IOUserClient::callExternalMethod(uint32_t selector, IOExternalMethodArguments * args)
+ {
+ 	IOReturn ret;
+ 
+ 	ipcEnter(defaultLocking ? (defaultLockingSingleThreadExternalMethod ? kIPCLockWrite : kIPCLockRead) : kIPCLockNone);
+ 	if (uc2022) {
+ 		ret = ((IOUserClient2022 *) this)->externalMethod(selector, (IOExternalMethodArgumentsOpaque *) args);
+ 	} else {
+ 		ret = externalMethod(selector, args);
+ 	}
+ 	ipcExit(defaultLocking ? (defaultLockingSingleThreadExternalMethod ? kIPCLockWrite : kIPCLockRead) : kIPCLockNone);
+ 
++	if (native_legacy_uc_probe_armed) {
++		/* r124: every user-client selector exchange funnels through this
++		 * non-virtual routine (is_io_connect_method's three branches all
++		 * call it), so the recorder in LegacyDisplayProbe.cpp sees every
++		 * selector the donor IOMobileFramebufferUserClient serves. */
++		iomfb_uc_probe_record(this, selector, ret);
++	}
+ 	return ret;
+ }
+ 

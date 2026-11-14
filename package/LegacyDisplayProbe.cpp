@@ -124,6 +124,58 @@ bool native_legacy_prepare_scanout(void) {
     if(boot_progress_cancel_scanout)boot_progress_cancel_scanout();
     return false;
 }
+// r124: IOMFB user-client selector probe. The iomfb-uc-selector-probe.patch
+// funnels every selector exchange with the donor IOMobileFramebufferUserClient
+// through IOUserClient::callExternalMethod (non-virtual: no donor override can
+// bypass it) into the recorder below: a ring of the last 8 calls plus totals,
+// printed to the window ext rows every 2 s by the report thread. The face
+// answers "which selector exchange does the render server stall in" — the
+// r123b window shows the CAWindowServer display creation opening the user
+// client (CLIENT calls=1 pid=64 status=0 at t=98 s) and the whole backboardd
+// parking in mach_msg2 (trap=-47) afterwards, with the client side (chronod)
+// aborting at QuartzCore query_displays' CASGetDisplays error exit.
+extern char boot_progress_ext[8][48];
+extern char boot_progress_ext_wide[2][112];
+volatile uint32_t native_legacy_uc_probe_armed;
+volatile uint32_t native_legacy_uc_total,native_legacy_uc_last_selector,native_legacy_uc_last_time;
+volatile int native_legacy_uc_last_kr,native_legacy_uc_last_pid;
+struct IomfbUcRecord {uint32_t time,selector;int32_t kr,pid;};
+static IomfbUcRecord native_legacy_uc_ring[8];
+static volatile uint32_t native_legacy_uc_ring_at;
+void iomfb_uc_probe_record(IOUserClient *uc,uint32_t selector,IOReturn ret) {
+    const OSMetaClass *meta=uc->getMetaClass();
+    const char *name=meta?meta->getClassName():nullptr;
+    if(!name || strncmp(name,"IOMobileFramebuffer",19))return;
+    proc_t proc=current_proc();
+    int pid=proc?(int)proc_pid(proc):-1;
+    uint32_t now=(uint32_t)(probeNowUs()/1000000ull),at=native_legacy_uc_ring_at;
+    native_legacy_uc_ring_at=at+1;at=at & 7u;
+    native_legacy_uc_ring[at].time=now;native_legacy_uc_ring[at].selector=selector;
+    native_legacy_uc_ring[at].kr=(int32_t)ret;native_legacy_uc_ring[at].pid=pid;
+    native_legacy_uc_total=native_legacy_uc_total+1;
+    native_legacy_uc_last_selector=selector;native_legacy_uc_last_kr=(int32_t)ret;
+    native_legacy_uc_last_pid=pid;native_legacy_uc_last_time=now;
+}
+static void ucReportThread(void *,wait_result_t) {
+    for(;;) {
+        char row[112];
+        snprintf(row,sizeof(row),"UC total=%u last=s%u r=%d p%d t=%us",
+                 native_legacy_uc_total,native_legacy_uc_last_selector,
+                 native_legacy_uc_last_kr,native_legacy_uc_last_pid,native_legacy_uc_last_time);
+        for(unsigned i=0;i<47;++i)boot_progress_ext[7][i]=row[i]?row[i]:' ';
+        boot_progress_ext[7][47]=0;
+        int used=snprintf(row,sizeof(row),"UCR");
+        for(unsigned k=0;k<6 && used<(int)sizeof(row)-24;++k) {
+            const IomfbUcRecord &entry=native_legacy_uc_ring[(native_legacy_uc_ring_at-1u-k)&7u];
+            if(!entry.time)break;
+            used+=snprintf(row+used,sizeof(row)-used," | t%us%ur%dp%d",
+                           entry.time,entry.selector,entry.kr,entry.pid);
+        }
+        for(unsigned i=0;i<111;++i)boot_progress_ext_wide[0][i]=row[i]?row[i]:' ';
+        boot_progress_ext_wide[0][111]=0;
+        IOSleep(2000);
+    }
+}
 // Every exit of the display probes passes here. A probe that did not publish the display (stage 10) says where it stopped, once
 // per exit: without the display the OS finds no framebuffer, and the stage is otherwise visible only in memory.
 __attribute__((noinline)) void native_legacy_display_checkpoint(void) {
@@ -593,6 +645,16 @@ void busyReport(void *, wait_result_t) {
 
 void native_legacy_display_late_probe(void) {
     {thread_t thread = nullptr; if (kernel_thread_start(busyReport, nullptr, &thread) == KERN_SUCCESS) thread_deallocate(thread);}
+    // r124: the selector probe arms only behind iomfb-uc-probe=1 (board.toml
+    // carries it); the UC hook's hot path is a single volatile load.
+    {
+        unsigned enabled = 0;
+        if (PE_parse_boot_argn("iomfb-uc-probe", &enabled, sizeof(enabled)) && enabled == 1) {
+            thread_t thread = nullptr;
+            if (kernel_thread_start(ucReportThread, nullptr, &thread) == KERN_SUCCESS) thread_deallocate(thread);
+            native_legacy_uc_probe_armed = 1;
+        }
+    }
     // m2381 fork: the strong board-probe calls (keystore, cpufreq, GPU power, touch, WiFi,
     // ADSP, battery, audio, buttons, backlight, DPU, HID) are removed -- none of those
     // probes is compiled on this board and the keystore face keeps its own trigger
