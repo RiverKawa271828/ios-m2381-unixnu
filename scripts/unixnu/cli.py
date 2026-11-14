@@ -2,6 +2,7 @@ from pathlib import Path
 """Command line of the UniXNU build driver."""
 import argparse
 import json
+import os
 import platform
 import shutil
 import sys
@@ -343,6 +344,12 @@ def cmd_clean(ctx):
 def main(argv=None):
     if sys.version_info < (3, 11):
         sys.exit('unixnu needs Python 3.11 or newer')
+    # s107 determinism pin: every python3 child (matcher, emit, archives)
+    # inherits this before its interpreter starts, so dict/str hash order
+    # cannot reorder the fileset pairing or the TEXT_WORD station words
+    # between reruns. The current process's own order is already fixed, but
+    # all pairing work happens in children.
+    os.environ.setdefault('PYTHONHASHSEED', '0')
     if platform.system() == 'Linux':
         print('unixnu: on Linux the kernel step uses the toolchain of scripts/linux/setup-toolchain.py; '
               '--skip-setup and seed-data-grow need macOS hdiutil', file=sys.stderr)
