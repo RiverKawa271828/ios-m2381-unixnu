@@ -188,6 +188,8 @@ def build(ctx, modules):
     env = dict(os.environ)
     # ar records each member's mtime; without this the archives change on every build and the release reference never hits its cache.
     env['ZERO_AR_DATE'] = '1'
+    # PYTHONHASHSEED=0 is pinned chain-wide in cli.main() (every child python3
+    # — matcher, emit, archives — inherits it); see the s107 rerun verdict.
     if platform.system() == 'Linux':
         for name in ('git', 'make', 'cmake', 'ninja', 'unifdef'):
             tool(name, 'run sudo scripts/linux/setup-toolchain.py')
@@ -273,6 +275,25 @@ def stage_native(kernel, output):
     return output
 
 
+def map_drift(saved_map, candidate_map):
+    """Count pairing entries that changed between the lineage map and a fresh one (None = shapes differ)."""
+    try:
+        old = json.loads(Path(saved_map).read_text())
+        new = json.loads(Path(candidate_map).read_text())
+    except (ValueError, OSError):
+        return None
+    differing = 0
+    for kind in ('functions', 'data'):
+        old_values, new_values = old.get(kind), new.get(kind)
+        if not isinstance(old_values, dict) or not isinstance(new_values, dict):
+            return None
+        for key, value in old_values.items():
+            if new_values.get(key) != value:
+                differing += 1
+        differing += len(set(new_values) - set(old_values))
+    return differing
+
+
 def check_prelink_regressions(record, policy):
     """An experimental allow-missing build may improve, but cannot add gaps."""
     slide = int(record['collection_slide'], 16)
@@ -346,6 +367,19 @@ def prelink(ctx):
             success = True
         finally:
             if candidate_map.is_file():
+                # s107 determinism gate: a regenerated pairing that drifts
+                # from the lineage map means the matcher reordered again
+                # (station words would drift with it). Surface the drift;
+                # UNIXNU_MATCHER_STRICT=1 makes it a build failure.
+                if saved_map.is_file() and sha256_file(saved_map) != sha256_file(candidate_map):
+                    drift = map_drift(saved_map, candidate_map)
+                    if drift is None:
+                        log('kernel: prelink map changed shape vs the lineage map')
+                    else:
+                        log(f'kernel: prelink map drift vs lineage map: {drift} differing pairings')
+                    if os.environ.get('UNIXNU_MATCHER_STRICT') == '1':
+                        raise Error(f'prelink map drifted from the lineage map ({drift} pairings); '
+                                    'rerun with the previous map or set UNIXNU_MATCHER_STRICT=0')
                 os.replace(candidate_map, saved_map)
             record_path = candidate.with_suffix('.json')
             if record_path.is_file():
