@@ -26,6 +26,19 @@ top=0/27→改查 IPC/timer）、G2 SWAPQ 失配脸、G3 TCH5 拆前现场、G4 
 子模块仓 origin=UniXNU 无推送权）。**r135 工作单=GPU 执行面**（卡尾）；关键更正：r132 的
 "BV IB2 base 0xffff0000" 是 `peekFetch` 的"索引未知"编码 + 16×deadbeef=peek 读失败，不是坏基址。
 
+**s127 GPU 侦察（r132 窗重读，r135 的靶）**：①**帧不是 5 s 才被 GPU 画完**——`[swap timeline]` 每帧
+`offer=0ms done=12–18ms`（早退），慢的是**客户端每 ~5005 ms 才交下一帧**；②`[fence wait]` 全程冻结在
+`last=500 wrote=499 submitted=500 completed=9`：**fence 500 永不完成**，之后所有等它的 wait 全超时
+（2416 calls/2415 timeouts），9 = 冻结前完成的等待数；③stall 状态机以 `next=observed+1`（CP 正在做的
+fence）为键，`if(next!=stall_fence)` 每次新提交就把 kick/drain 计时**清零**（NativeAdrenoSubmit.cpp:590），
+fence 500 这一幕 stage 永远到不了 kick（窗里 kick=2 只是 fence 88/382 两次短 stall 的）——r135 候选修法=
+**跟踪最老未完成 fence**（不是最新），并让 kick 在等待线程无限阻塞时也能跑；④peek 失败只在 **>32-bit
+IOVA**：CP 的 IB1_BASE 实测 `0x1_c5e9000`（hi=1），`peekWordsUncached` 走不通 → 全部 deadbeef（先修
+peek 的 36/48-bit 走表再读 IB 字）；⑤SMMU `FSR=400 FAR=0x1b72e_fd2f4ffd` 是一条野地址翻译错，与 CP 的
+IB 地址不同域，需在 r135 用 linux arm-smmu 定义解码；⑥`nmb_command_buffer_wait(handle,0)` =
+`wait_until_completed()`（无期限，metal2vulkan-runtime command_buffer/mod.rs:3985），完成门由 Vulkan fence
+打开——门不开则客户端线程停在那；前端的 5 s 脸要查 CA/backboardd 帧循环的 5 s 上限（尚未定位，r135 第一刀）。
+
 **设备/件现态（交接时）**：用户已刷 **r133**（手机 UI 确认），`recovery_a`=r133 `07935d96`；
 `current-slot`=b，`boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。r132 窗
 （`out/m2381/reader-r132/`，sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，
