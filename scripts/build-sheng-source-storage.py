@@ -196,6 +196,10 @@ OSDefineOperatorMethods(IOBlockStorageDevice)
                 '-I', str(ROOT / 'drivers/VirtioMmioBlock'), '-I', str(tree / '.cache/xnu-work/osfmk')]
     flags = ['-DNATIVE_UFS_SOURCE_API=1', '-DNATIVE_VERIFIED_BLOCK=1',
              '-DNATIVE_VERIFIED_BLOCK_MULTI_POLICY=1', '-DNATIVE_VERIFIED_POLICY_HANDOFF=1']
+    # r131: with the Adreno740 archive linked, native_gpu_role_thread has a real definition; the device
+    # package's ShengLatencyHooks.c stand-in must not also define it (one duplicate symbol on the first link).
+    if os.environ.get('XNU_NATIVE_ADRENO') == '1':
+        flags.append('-DXNU_NATIVE_ADRENO_QUALIFIED')
     if os.environ.get('UNIXNU_XNU_TARGET') == 'macosx':
         # The kernel keeps the iOS target triple, so TargetConditionals gives TARGET_OS_OSX 0. The macOS
         # IOStorageFamily has the TARGET_OS_OSX members (doLockUnlockMedia, reportLockability,
