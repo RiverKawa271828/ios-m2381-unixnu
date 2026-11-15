@@ -193,10 +193,26 @@ for source_dir, relative in ((hid_headers / 'IOHIDFamily', 'IOKit/hid'),
     for path in sorted(source_dir.glob('*.h')):
         (destination / path.name).write_bytes(path.read_bytes())
 sdk = Path(run(['xcrun', '--sdk', 'iphoneos', '--show-sdk-path'], text=True).strip())
+# The pinned IOHIDFamily headers include <TargetConditionals.h> (the Apple SDK's platform switch header). The kernel
+# compile recipe has no SDK usr/include on its search path; the source-storage builder stages the same SDK header next
+# to its own includes (build/storage-abi/include), so this one is staged the same way.
+for source_file, relative in ((sdk / 'usr/include/TargetConditionals.h', 'TargetConditionals.h'),
+                              (Path(run(['xcrun', '--sdk', 'macosx', '--show-sdk-path'], text=True).strip())
+                               / 'System/Library/Frameworks/Kernel.framework/Versions/A/Headers/IOKit/graphics/IOGraphicsTypes.h',
+                               'IOKit/graphics/IOGraphicsTypes.h')):
+    require(source_file.is_file(), f'{source_file}: missing from the SDK')
+    (include / relative).parent.mkdir(parents=True, exist_ok=True)
+    (include / relative).write_bytes(source_file.read_bytes())
 sdk_kernel = sdk / 'System/Library/Frameworks/Kernel.framework/Versions/A/Headers'
 # XNU's own headers keep precedence; the SDK adds the generated DriverKit declarations the source checkout lacks.
+# The generated DriverKit class declaration of IOHIDDevice (HIDDriverKit/IOHIDDevice.h) is framework-style and lives in
+# the DriverKit SDK; the kernel recipe does not carry that SDK, so its framework and include paths are added here.
+driverkit = Path(run(['xcrun', '--sdk', 'driverkit', '--show-sdk-path'], text=True).strip())
 hid_object = compile_source(cpp_record, hid_source, OUT / 'NativeHidInput.o',
-                            ['-I', str(include), '-idirafter', str(sdk_kernel), '-DNATIVE_HID_SOURCE_API=1'])
+                            ['-I', str(include), '-idirafter', str(sdk_kernel),
+                             '-iframework', str(driverkit / 'System/DriverKit/System/Library/Frameworks'),
+                             '-idirafter', str(driverkit / 'System/DriverKit/usr/include'),
+                             '-DNATIVE_HID_SOURCE_API=1'])
 sources[str(hid_source)] = sha(hid_source)
 
 # ---- bind the original IOHIDDevice ------------------------------------------------------------------------------

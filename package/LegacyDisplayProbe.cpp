@@ -687,6 +687,15 @@ void busyReport(void *, wait_result_t) {
 
 void native_legacy_display_late_probe(void) {
     {thread_t thread = nullptr; if (kernel_thread_start(busyReport, nullptr, &thread) == KERN_SUCCESS) thread_deallocate(thread);}
+    // r130 (s123): the input lane. HidInputProbe (offline-hid-input=1) registers the owned IOHIDDevice once
+    // IOHIDFamily is loaded; the Goodix probe (touch=1..4) then reads the panel and publishes into that device
+    // (touch-hid=1 subscribes the sink). Both are weak: a kernel built without the Goodix archive skips them.
+    {
+        extern void native_hid_input_probe(void) __attribute__((weak_import));
+        extern void native_goodix_touch_probe(void) __attribute__((weak_import));
+        if (&native_hid_input_probe) native_hid_input_probe();
+        if (&native_goodix_touch_probe) native_goodix_touch_probe();
+    }
     // r124: the selector probe arms only behind iomfb-uc-probe=1 (board.toml
     // carries it); the UC hook's hot path is a single volatile load.
     {
