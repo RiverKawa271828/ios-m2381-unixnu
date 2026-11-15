@@ -74,8 +74,8 @@ metal2vulkan `963f0e64` + `.cache/mesa-venv`(meson 1.12.1) + rustup `1.98.0`
 （ccff5d20，含 addon 三 CDHash）、`build/gpuaddon-r131.bin`（13398d63）、`--unique-chip-id
 3645AD55D47E77C1`。GitHub/googlesource
 直连不通时用 Linux 代理 `192.168.10.185:7890`（时断，重试）；内核/payload 出件不需要代理。
-**未推提交**：主树 `9a120c69`/`edafbb8c`/`121faa2d`/`58a5ad52`/`15f9cc26`/`914e86c2`（+s124
-`b2132c08`）；设备仓 `678a8f9`/`50eb0fc`/`2c4cd4d`。用户点头再推。
+**未推提交**：主树 `b2132c08..HEAD`（s124+s125 共 7 笔，HEAD 含本交接审计）；设备仓
+`678a8f9`/`50eb0fc`/`2c4cd4d`。用户点头再推。
 
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
