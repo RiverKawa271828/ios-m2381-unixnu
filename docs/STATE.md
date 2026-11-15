@@ -7,13 +7,29 @@
 （99 MiB，sha `07935d96…`，Mac/Linux 双端对拍 ✓）——相对 r132 **唯一 delta = args `offline-legacy-unit-scale=2→3`**
 （1080x2400 → 360x800 pt）；kernel 输入 `544f19a7` **逐字节同 r132**（payload 步未重编内核，已核），payload kernel
 `325a222c`/LZMA `0f926828`、addon `13398d63`/trust `ccff5d20`/seed `9c28654c` 全同；ADT `fe4a0f3c` 只是
-`/chosen` random-seed 每轮新生成，非 delta。卡=`out/m2381/R133-CARD.md`，**待用户刷 recovery_a**。
-判据 U1 布局/U2 触控/U3 不回归/U4 门拒识别（scale 行不进窗，肉眼为主）。下一步=d 判读或直接进 r134 内核轮。
+`/chosen` random-seed 每轮新生成，非 delta。卡=`out/m2381/R133-CARD.md`。
 
-**设备/件现态**：用户已刷 **r132**（`payload-r132-irqfix-200f5279.img`）跑约 20 min（窗 `out/m2381/reader-r132/`，
-sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，uptime=1243s）。`current-slot`=b，
-`boot_b`=r129 `fc2e8f17`（未动），`recovery_a` 现=reader `d01bed78`；种子 `9c28654c` 零改动。
-**Setup 已走完、进入桌面**（About 屏：iPadOS 27.0.1 / 名称 iPad / 可用 15.53 GB）。
+**r133 判读（用户面，2026-11-16）**：**U1 通过——手机 UI 达成**（360x800 pt）。瑕疵=控件偏大
+（dock 栏太大，iPadOS 布局在手机画布上的固有脸，iPhone lane 才是解）+ Settings 滑动不可用（=0.2 fps
+帧拍，与 GPU/帧拍墙同源，用户拍板"等 GPU 修复"）。**scale=3 保留，不回退。**
+
+**s127 已做（r134 内核轮出件，2026-11-16）**：`out/m2381/payload-r134-irqring-b09ec0af.img`（99 MiB，
+sha `b09ec0af…`，双端对拍 ✓）。kernel 输入 **`161432cf`**（新）：①`ArmCpu::interrupt` 记 **INTID 环**
+（32 槽 `(core<<24)|INTID`，页 `IRQ RING` 打最后 8 个 + 窗口最高频 `top=<id> x<k>` + `long=`/`unh=`）；
+②Goodix identify 后**拆 gpio24/25 TLMM 引脚中断**（INTR_CFG/STATUS 清零，`TCH5 pinint` 留拆前现场；
+源=stock 节点 `goodix,irq-gpio` flags `0x2008` 武装 gpio25 下降沿，pinctrl-msm sm8550 +0x8/+0xc）；
+③页新增 **`SWAPQ` 行**（swapstat[16]+`native_legacy_swap_timeouts`+实时队列深度 `native_legacy_swap_pending`）。
+payload kernel `16c0fdb0`/LZMA `199db47f`；addon/trust/seed 全同；args 与 r133 逐字同（scale=3 保留）。
+卡=`out/m2381/R134-CARD.md`。**预期帧拍仍 ~5 s（不修 GPU）**；判据 G1 IRQ 命名（top=240→本修生效；
+top=0/27→改查 IPC/timer）、G2 SWAPQ 失配脸、G3 TCH5 拆前现场、G4 T0/崩族。
+源码：设备仓 `ad274ad`；ArmCpu/GopFramebuffer 为**工作树改动**（pin 未动，diff 存 `out/m2381/r134-diffs/`，
+子模块仓 origin=UniXNU 无推送权）。**r135 工作单=GPU 执行面**（卡尾）；关键更正：r132 的
+"BV IB2 base 0xffff0000" 是 `peekFetch` 的"索引未知"编码 + 16×deadbeef=peek 读失败，不是坏基址。
+
+**设备/件现态（交接时）**：用户已刷 **r133**（手机 UI 确认），`recovery_a`=r133 `07935d96`；
+`current-slot`=b，`boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。r132 窗
+（`out/m2381/reader-r132/`，sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，
+uptime=1243s）仍是最近一份完整取证。**Setup 已走完、进入桌面**（About：iPadOS 27.0.1 / 可用 15.53 GB）。
 
 **r132 判读（三句话）**：
 1. **沙箱通配生效，GPU 门开了**：`[gpu clients] backboardd 2/0/1 s0 4888M`（render server 首次拿到设备）、
