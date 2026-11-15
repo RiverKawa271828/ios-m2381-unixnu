@@ -7,4 +7,30 @@
 
 **④ADSP 固件迁移预案（addon 轮工作单素材，s122 拍板）**：正家=Data 活卷 /private/var/firmware（上游 AdspFirmware.c 本为 VFS loader，我 fork 源序 boot_b→/embedded→modem→VFS 的 VFS 源已在链上；交付走 addon 机制=Wi-Fi/蓝牙/VPU 同形态，种子零碰）；顺序=双源过渡（boot_b 先命中零变）→验证 [adsp] 从活卷吃→撤 package-m2381-boot.py 固件段（boot_b 缩回纯 boot image，固件升级变 recovery_a 单件轮）；**权衡=VFS 源等 Data 挂载，battery st=4 从 t≈22s 后移**（上游同款 "VFS loading waits for addon installation"）——时差不可接受则 boot_b 降级长期早源、活卷当更新源共存（四源序天然支持），退役是选项非必须；ESP 路（r129 后 79.3MiB 装得下 30.6MB）=备选需 DarwinBoot 加 member 管线，非首选。chronod -308 残余、dasd/gamed 根修 RE（禁表生效，紧迫性低）。
 
+### 下一轮工作单 r130（触屏轮，2026-11-15 s122 交接；开工即执行，不含未决策项）
+
+**目标**：Goodix GT9916 触屏 → 锁屏上滑解锁进桌面（= 身份/UI 题的 A 路线，asteroids 先例：同 donor 手机已带触屏进桌面）。
+
+**第一刀 = 判读债（先于一切构建）**：拉窗 reader-r129 核窗面哨兵 —— `[adsp] st=13 err=0`、`[battery] st=4`、AKS st=0 sg=3、SMP req=1、DATA st=2、无新崩族；全绿才在 r129 FD 上叠触屏变量（FD 换代后的单变量卫生）。窗口产出 `reader-r129/`（log.bin sha 双端 MATCH）。
+
+**第二刀 = 硬件侦察（只读，四个具体产出）**：
+1. dtbo 提取：`/dev/block/by-name/dtbo` 或与 nura 对照（nura `BOOT-CHAIN-RE.md`:86 实录 `ro.boot.dtbo_idx=9` = **goodix brl-d 触控 + BOE AMOLED cmd-mode DSC 面板**）；解 overlay 用 dtc 反编译。
+2. 触控节点五元数：**总线/地址**（记忆提示 i2c4@0x5d，须验证）、**IRQ GPIO**（提示 TLMM25）、**reset GPIO**（提示 TLMM24）、**供电轨**（提示 l14b+l12b）、**面板几何**（提示 1080×2400，横竖/原点方向要读 dts）。
+3. 固件来源：GT9916 固件在 dtbo/分区/内置？主线 `goodix_berlin_core.c`(nura 实证) 的 fw 路径与校验。产出=设备仓 `records/` 一条 + probes 脚本。
+4. 上游面读齐：`docs/porting/input.md` 的接口表（QcomGeniSpi / ShengNovatekTouch NvtProtocol / TouchBoard.h / TouchProbe.cpp / NativeHidInput.cpp / ButtonProbe.cpp）。**关键判定**：本机总线是 I2C 还是 SPI —— 决定是「复用 Novatek 协议核心、只写 Goodix 识别/固件/报帧模块」还是「照 TouchBoard.h 写板级路径 + 自写 Goodix 协议」。
+
+**第三刀 = 组件接线（依侦察结论单变量）**：`[components]` 加入触控传输（GENI I2C 或 SPI 组件，上游有则用）、ShengHidInput（OS 报告面）；板级文件按 TouchBoard.h 布局（电源/reset/传输回调/中断/坐标），arm64e 侧按 sheng 记录处理 IOHID 事件驱动 vtable 重签（220 判别子/64KB 表法，见 sheng 记录）。
+
+**args**：`touch=1→4` 分阶段（资源/时钟引脚/芯片识别/固件+扫描），逐阶段上，不一次全开。
+
+**门（预注册）**：
+- **T0** 到锁屏（回归不退化：ADSP st=13 / battery st=4 / AKS / SMP / DATA）。
+- **T1** `touch=3` 读到芯片 ID 与几何（矩阵行列数、坐标范围）。
+- **T2（主门）** 固件下载成功 + 首帧有效 → `touch=4` 扫描出点 → **锁屏上滑解锁进桌面**（屏摄为准）。
+- **T3** 回归哨 + 崩谱对照（新崩族记档）。
+
+**红线**：种子零改动、绝不 data-reset；只碰 boot_b + recovery_a；stall 脸先裸重启再判；每轮单变量（触屏轮不夹 GPU/WiFi）。
+
+**败则**：总线/引脚不可得 → 回 dtbo 与 nura DTS 对拍；芯片无响应 → 电源时序（l14b/l12b 电压与 enable 序）+ reset 时序；固件下载失败 → 保留 stage/CRC/SRAM 读回诊断（上游 advise）再重试；解锁仍提示 home → 转身份/按键题（B/C 路线，见立账⑤）。
+
 （长期挂账与硬律见 auto-memory 索引；轮史与判读全文=archive/STATE-history.md）
