@@ -1,4 +1,38 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★s125（11-16）r131 GPU+addon 轮出件 = 内核链入 Adreno740（上游 653e11c）+ m2381 板级输入 + Metal addon；待刷判**：
+- **内核链绿**：`kernel.macho` `228b0b69…`（native 96,108,544B；payload 内 sealed `e17c5c82…`/LZMA `d87501db…`）。
+  `CONFIG_XNU_NATIVE_ADRENO=y` force_load `libAdreno740.a`（上游驱动 + GMU/SMMU/PM4/AdrenoFirmware
+  kits + 内嵌 m2381 ZAP `3cc594a0`/SQE `2b49a172`/GMU `1a2a419c`）；`package/GpuPowerProbe.cpp` 编进
+  display 晚装 archive（`GPU m%u mapped` 串在核内实证）；`sheng_gpu_power_probe`/`native_adreno_gpu_interrupt`
+  符号在 kernel.macho 内。
+- **板级输入（stock FDT → upstream OPP）**：`dts/m2381.dts` 开 &gpu/&gmu/&gpu_smmu，加 GPU 9 档
+  OPP（220–719MHz，level/ACD/带宽）与 GMU 2 档、`aop_cmd_db_region@81c60000`、`gpu_micro_code_region@9b09a000`、
+  zap-shader（`qcom/sm8550/m2381/a740_zap.mbn`）；`scripts/audit-adreno-platform-m2381.py` +
+  `prepare-m2381-gmu{,-votes}.py` + `prepare-m2381-gpu-smmu.py` 从 DTB 生成 headers 并对拍
+  `scripts/data/adreno-board-m2381.json`（Windows/streams 0/1+GMU5/命令 DB/OPP 全 PASS）。
+- **链上修的四件**：①上游 pin 6fa7bae2→**653e11c**（`fix(wait): wake fence waiters from the
+  completion pass`，板级探针的 `native_adreno_gpu_interrupt`；components.toml 与 submodule 双落）；
+  ②`gScratch` 128KiB→32KiB（`drivers/ShengUfs/RootLayout.h`；GPU 数据把 native __DATA 顶出
+  donor 0x1e8000 窗口 0x8000，GPT entries 已被 count<=128 界住，16KiB 封顶）；
+  ③display archive 的 GPU trace/fence 零桩在 `XNU_NATIVE_ADRENO=1` 时不再生成；
+  ④`BootProgressTelemetryDefs.c` 的 Adreno 零数组 + `ShengLatencyHooks.c` 的 `native_gpu_role_thread`
+  零桩在 GPU archive 链入时以 `XNU_NATIVE_ADRENO_QUALIFIED` 排除（45+1 duplicate 清除）。
+- **addon 已出**：Mesa Turnip ios27（`libvulkan_freedreno.dylib` 18,113,360B）+ NativeAdrenoMetal
+  bundle（arm64e 4K 签名）+ publish → `gpuaddon.bin` 12,843,120B（`13398d63…`，6 files）；
+  owner trust = 原 dc655bcb 两模块 + 三 CDHash 模块（`ccff5d20…`）。Mac 侧工具链已就位
+  （brew meson/glslang/shaderc/spirv-tools/bison3/rustup 1.98.0+rust-src；Mesa pin 85fda3b3
+  17 patch 全 apply；metal2vulkan pin 963f0e64；crates.io 直连可用，代理仅 feed 拉取时需要）。
+- **件**（`out/m2381/`）：**A 主件** `payload-r131-gpu9addon-8bdb2265.img`（99MiB，
+  args `+gpu-power=9 gpu-metal=1 gpu-addon=1`，保留 touch 四件；trust `ccff5d20`；addon
+  `kernel.macho.gpuaddon` 12,843,120B）；**B 只读备件** `payload-r131-gpu1-19675c26.img`
+  （`gpu-power=1`，无 addon/原 trust）。卡=`out/m2381/R131-CARD.md`。
+- **下一步**：用户刷 A（recovery_a 单件，boot_b r129 `fc2e8f17` 不动）→ 上滑看桌面 → ≥8min
+  硬断电 → 刷 reader `d01bed78` 拉窗判 **G2 主门**（屏摄进桌面；窗面 GPU1-8 行、`[gpu windows]`
+  mount stage、`M`/`[gpu clients]`/`[gpu ibs]`、SWAP accepted/retired、T0、崩族对比 r130 s4b
+  chronod 408 / backboardd 372）。败则先刷 B 只读件定位 stage。
+
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
 **★★★★★★★★★★s124（11-16）r130 触屏轮收工 = 触屏打通（HID 1794 reports / 手势被识别）；解锁卡在共享 abort 墙；下一步 r131 GPU+addon**：
