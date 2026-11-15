@@ -1,5 +1,22 @@
-# STATE — 现势状态（m2381，2026-11-15 更新）
-## 0. 现势指针（每轮首更，2026-11-15 会话一百二十一；更早指针=archive/STATE-history.md）
+# STATE — 现势状态（m2381，2026-11-16 更新）
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十三；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★s123（11-16）r130 触屏轮 stage 1 已上机 + r131 排程改 GPU+addon（用户拍板）**：
+- **r129 窗面哨兵（r130 第一刀）全绿**：reader-r129（sha 564ae4c4…，1681s）ADSP st=13 / battery st=4 /
+  AKS st=0 sg=3 / DATA st=2 / crashes=2 全在册；唯一账 = **SMP run=0**（同内核同 args 在 r127/r128 窗
+  是 run=7 → 头号假设=**LZMA 启动路径改变解压后内核落位/物理地址面**，钉法=r128b plain 双件 A/B）。
+- **r130 stage 1（payload fd95aed5 / kernel 6c7bac76）已刷已判**：锁屏 6:12，T0 不回退；页行
+  `TCH1 gcc=40000200 c2x=00004000 core=00004000 mahb=00000000 sahb=80000002 s4=80004000 rcg=00100000`
+  = QUP wrap1 未投票 + S4 CLK_OFF（stage 2 靶面）。**首个 2s 死已定谳并修**：探针把 TLMM 映射建在
+  gpio44 页、访问又加一次 `gx_tlmm_ctl(44)`（4 处同类），改相对偏移后过。
+- **同款驱动侦察（用户要求，不闭门造车）**：pong（UniXNU-pong，SM8475/iPadOS18）`patches/xnu/
+  …-pong-touch-console.patch` = 完整 899 行 XNU Goodix Berlin-D 驱动（GENI SE4+TLMM+**RPMh 供电**+
+  GCC/RCG+复位+帧解析），另有 goodix-resume 与 physical-keys 补丁；ruby（GT9916R，iOS16）实机已上滑解锁；
+  nura 主线 goodix_berlin I2C 为总线形态参照。协议面逐项一致 → 已按 pong 补两缺口：**>2 指点区单次重读
+  （含尾部校验）** 与 **IC info misc+48/+50/+52/+54（ABI 8/8、真实坐标轴）**，另加 **RPMh 供电兜底**
+  （复用 QcomRpmh.c 的 cmd-db/RSC 实现，ldob14/ldob14/ldob9 候选，TCS 2）。
+- **r130 待办**：stage 2（touch=2，clocks/pins/engine）→ stage 3（touch=3，复位+识别+rails 兜底）→
+  stage 4（touch=4 + offline-hid-input=1 + touch-hid=1）到 T2 上滑解锁。件由主树出、**刷机一律用户执行**。
 
 ## 0. 现势指针（每轮首更，2026-11-15 会话一百二十二；更早指针=archive/STATE-history.md）
 
@@ -11,8 +28,8 @@
 |---|---|---|---|
 | 1 | 进 home screen（真实桌面） | 锁屏点亮，未解锁 | **r130 触屏（上滑）** = 主门 T2 |
 | 2 | 触屏（含多点/释放） | 无 | r130 |
-| 3 | 按键（power/vol → HID，ButtonProbe+sheng_buttons_press） | 无（ADT 无 buttons 节点；驱动面缺） | r131 按键轮（或 r130 若 touch 即通则顺手） |
-| 4 | GPU addon（Turnip + Metal，Adreno 810） | 仅 GOP 软件呈现（r129 前身） | GPU 大会话（上游 gpu-power=9/gpu-metal=1/gpu-addon=1 整拿） |
+| 3 | 按键（power/vol → HID，ButtonProbe+sheng_buttons_press） | 无（ADT 无 buttons 节点；驱动面缺） | **r132 按键轮**（GPU 提前，顺延） |
+| 4 | GPU addon（Turnip + Metal；本机 Adreno 740/SM8550 同 sheng） | 仅 GOP 软件呈现（r129 前身） | **r131 GPU+addon 轮**（用户拍板提前；上游整拿） |
 | 5 | 系统 App / 图标 | donor 卷内已有，未达桌面 | 随 1 解锁自然暴露 |
 | 6 | 壁纸（device-class 改造 `@3x~ipad`） | PosterBoard 在册未见绘出 | 随 4 之后（GPU）或独立小轮 |
 | 7 | Wi-Fi（WCN6750 ath11k，含 DHCP/上网） | 无 | addon+WiFi 同轮 |
@@ -55,5 +72,46 @@
 **红线**：种子零改动、绝不 data-reset；只碰 boot_b + recovery_a；stall 脸先裸重启再判；每轮单变量（触屏轮不夹 GPU/WiFi）。
 
 **败则**：总线/引脚不可得 → 回 dtbo 与 nura DTS 对拍；芯片无响应 → 电源时序（l14b/l12b 电压与 enable 序）+ reset 时序；固件下载失败 → 保留 stage/CRC/SRAM 读回诊断（上游 advise）再重试；解锁仍提示 home → 转身份/按键题（B/C 路线，见立账⑤）。
+
+### 下一轮工作单 r131（GPU+addon 轮，2026-11-16 用户拍板提前；原 r131 按键顺延 r132）
+
+**排程决定（用户 2026-11-16）**：GPU 与 addon **提前**到触屏之后、按键之前——理由=我们与上游 sheng
+**同款 SM8550**，sheng 的 GPU 栈已设备验证（Adreno 740 + Metal + addon），复用面最大。r130 触屏
+stage 2/3/4 仍在本轮收尾；按键轮顺延为 r132（ButtonProbe + `native_buttons_set_sink` 真实现替换现空桩）。
+
+**目标**：Metal/Turnip GPU addon + 原生 Adreno740 内核驱动，在 24A446 车道上出首帧 GPU 合成
+（壁纸/桌面由 GPU 画，代 GOP 软件呈现）。
+
+**已备资产（侦察结论，无需发明）**：
+- 组件：`Adreno740`（pin 6fa7bae2，hardware=Adreno 740/SM8550，**verified_devices=["sheng"]**；依赖
+  Sm8550Platform/AdrenoPM4/AdrenoFirmware/ArmSmmu4K）；`drivers/AdrenoMetal` 已在仓。
+- kits：`kits/AdrenoPM4`、`kits/AdrenoFirmware`、`kits/ArmSmmu4K` **已在本仓**（GPU 侧前置大半就位）。
+- 上游参数面：sheng 记录 = `gpu-power=9` / `gpu-metal=1` / `gpu-addon=1`；s123 立账原文「上游整拿」。
+- 容量：r129 后 recovery_a 卷余 **79.3 MiB**，gpuaddon（NGPUADD2）装得下。
+- 显示面：DISPLAY stage=10 / SWAP accepted=1（direct scanout 路径已在），GPU 首帧判据可用 SWAP/FB 计数对照。
+
+**第一刀 = host 侦察（只读，产出缺口清单）**：读 sheng 的 GPU area 记录 + `docs/porting/gpu.md`，逐项对
+M2381 的 DT/kit 输入：
+1. GPUCC/GMU/ZAP 固件（vendor 收割件是否齐；`proprietary-files.txt` 清单）；
+2. `ShengGmu*Source.h` 里的 **OPP/带宽表**（上游不放进 git 的板级输入，需从本机 DT/主频表推导）；
+3. apps SMMU 的 GPU stream id 与 stage-1 窗口（ArmSmmu4K 现成，ShengUfs 有 display bank 先例）；
+4. reserved memory / GMU pool（Adreno740 与 AdrenoMetal 的 ABI 记录是否同 kernelcache 38e6d9fa）。
+
+**第二刀 = 内核侧（单变量）**：Adreno740 编译进核（`CONFIG_XNU_NATIVE_ADRENO=y`）+ AdrenoFirmware/PM4
+kit，`gpu-power=1..9` 分阶段（资源/ZAP/GMU/CP ring/power perf），**先不带 addon**；门=内核 probe 行
+（CP ring/NMEM/GMU HFI）全绿且 T0 回归不退化。
+
+**第三刀 = addon**：`scripts/make-gpu-addon.py`（UniXNU）打 AdrenoMetal/Turnip 用户态 bundle →
+`./unixnu payload --gpu-addon kernel.macho.gpuaddon`；args `gpu-metal=1 gpu-addon=1`；门=addon 挂载 +
+Metal device 创建（用户态日志）+ 首帧 GPU 合成（SWAP accepted 增长、FB copy 退出）。
+
+**门（预注册）**：G0 内核 GPU probe（gmu/cp/smmu 全绿，T0 不回退）；G1 addon 挂载 + Metal 设备创建；
+G2 首帧 GPU 合成（屏摄 + 窗口计数）；G3 ≥8 min 稳定 + 崩谱对照。
+
+**红线**：payload 新增成员只有 `kernel.macho.gpuaddon`；seed/trust/vroot 零改动；只碰 boot_b+recovery_a；
+每轮单变量（GPU 轮不夹 WiFi/音频）；stall 脸先裸重启。
+
+**参考**：sheng（同 SoC、24A446、GPU 全栈设备验证）为主；asteroids（手机形态 + GPU addon）为形态参照；
+cupid 仅作 iPhone 身份线参考（r132+ 身份评估门用）。
 
 （长期挂账与硬律见 auto-memory 索引；轮史与判读全文=archive/STATE-history.md）
