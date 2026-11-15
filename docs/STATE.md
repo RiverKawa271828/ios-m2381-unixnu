@@ -5,7 +5,6 @@
 
 **s121·新崩族立账（非阻塞）**：DockFolderViewServic sig11 ×53（t=340→445s，2s 重生环，**全窗唯一崩族**；PC=LR=0x2124b23dc 去滑 **0x20f9723dc**（+2b40000），待符号化）。对照面净：chronod 本窗零崩（-308 残余待续察）、dasd 零出现（r121 族）、非零 exit 仅 4 条早期行（launchd/MSUEarlyBootTask sig1、sysstatuscheck st=100、prng_seedctl c00/12，@t=72-76s）。
 
-**s121·编排（r128b 闭环后顺位）**：**下一轮 = r129 容量轮**（ESP 内 kernel LZMA，uefi-m2381 单点改；任何内核长大的轮的前置，不变）；**音频车道自动解锁**（①已通=ADSP 起；nura CS35L45 直驱参照 + 上游 audio=12 全栈，排期用户定）→ r130 触屏（Goodix GT9916 NOT Novatek）→ addon+WiFi 同轮 → GPU 大会话，顺位不变。立账更新：chronod -308 残余（本窗零崩）、**DockFolderViewServic sig11 新族**、dasd/gamed 根修 RE（禁表生效，紧迫性低）。挂账=主树本轮推净；设备仓零改动。
+**s121·编排（r128b 闭环后顺位）**：**下一轮 = r129 容量轮**（工作单已立案，2026-11-15 会话一百二十一收队）：**第一刀=侦察定谳**（①上游现状核查=sheng/UniXNU 上游内核装载链有无现成 LZMA/压缩形态，upstream-first 不发明本地补丁；②现役容量实测=payload-r128-adsp-fef0ba91.img 实测 103,809,024B，出成员尺寸表+卷余量精确数+GPU/audio/addon 合入的增长预算；③修法拍板=内核 LZMA（出件侧压/UEFI-BootShim 侧解）vs 备选路）。**施工门**：host=出件链零告警/双端 sha/成员清单核；实机=R129-CARD 预注册 G0 到锁屏 + G1 ADSP st=13 + battery st=4（充电链不退化）+ G2 容量报告。**红线**：种子零改动无 reset；只刷 boot_b + recovery_a；**stall 脸先裸重启再刷**（s121 新协议）；刷写前设备现态确认。**顺手账（时间富余才做）**：DockFolderViewServic 符号化（去滑 PC 0x20f9723dc）；NativeUfs.cpp:1639 stall 源码侦察（只读）+ 长会话中断看门狗墙（658/625us@machine_routines_common.c，1797s 一杀）备忘。后续顺位：**音频车道已解锁**（ADSP 起；nura CS35L45 直驱参照 + 上游 audio=12 全栈，排期用户定）→ r130 触屏（Goodix GT9916 NOT Novatek）→ addon+WiFi 同轮 → GPU 大会话，不变。立账：chronod -308 残余（本窗零崩）、**DockFolderViewServic sig11 新族**、dasd/gamed 根修 RE（禁表生效，紧迫性低）。挂账=主树 49926a53 已推净；设备仓零改动。
 
-（长期挂账与硬律见 auto-memory 索引；轮史与判读全文=archive/STATE-history.md）
 （长期挂账与硬律见 auto-memory 索引；轮史与判读全文=archive/STATE-history.md）
