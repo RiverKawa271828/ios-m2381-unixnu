@@ -83,7 +83,12 @@ kind = "driver"
 function = "A740 kernel GPU driver"
 scope = "gpu"
 repository = "https://github.com/UniXNU/Adreno740.git"
-revision = "6fa7bae2a5b3b523e790eb3e0348af4d98969e4d"
+# r131: 653e11c "fix(wait): wake fence waiters from the completion pass" — the
+# r131 board probe (package/GpuPowerProbe.cpp) hands GPU interrupts to
+# native_adreno_gpu_interrupt, which upstream added in this commit four above
+# the old 6fa7bae2 tip. Everything after it (pool/ABI work) is deliberately not
+# taken so the AdrenoMetal userspace pin stays compatible.
+revision = "653e11c8392490b191fc163881005f756ecfd896"
 path = "drivers/Adreno740"
 hardware = ["Adreno 740", "SM8550"]
 os_abi = ["ipados-17.7.11-21H461"]
