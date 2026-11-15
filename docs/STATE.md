@@ -24,22 +24,31 @@
   owner trust = 原 dc655bcb 两模块 + 三 CDHash 模块（`ccff5d20…`）。Mac 侧工具链已就位
   （brew meson/glslang/shaderc/spirv-tools/bison3/rustup 1.98.0+rust-src；Mesa pin 85fda3b3
   17 patch 全 apply；metal2vulkan pin 963f0e64；crates.io 直连可用，代理仅 feed 拉取时需要）。
-- **首刷 r131 A（`8bdb2265`）= 2s 死，已定谳并修（r131b）**：屏摄 `kernel data abort`，
-  `PC=lck_mtx_unlock+0x1c`、`LR=hostRead4k+0x100`、`x0=gHost+0x30`(gHost.lock) 被踩成垃圾。
-  根因=**gScratch 128KiB→32KiB 切太狠**：`NativeUfs.cpp::readPolicyObject()` 读
-  `<window>.vroot`（OS 表 ~586KB）按 `kDataMax`(128KiB) 分块读进 gScratch，第一块越界写穿
-  gHost；GPU 探针当时还没跑（pid=0 source-storage root 读阶段）。修法=分块上限改
-  `sizeof gScratch`（32KiB=8 块）+ `static_assert`，gScratch 保持 32KiB（__DATA 窗口仍省 96KiB）。
-  r131b 内核 `2881cbc1…`（native）。
-- **件**（`out/m2381/`，r131b；首刷的 `8bdb2265`/`19675c26` 作废）：**A 主件**
-  `payload-r131b-gpu9addon-6a5ba18d.img`（99MiB，sha `6a5ba18d…`，args
-  `+gpu-power=9 gpu-metal=1 gpu-addon=1` + touch 四件；trust `ccff5d20`；addon
-  `kernel.macho.gpuaddon` 12,843,120B）；**B 只读备件** `payload-r131b-gpu1-c9ff50c0.img`
-  （`gpu-power=1`，无 addon/原 trust；sha `c9ff50c0…`）。卡=`out/m2381/R131-CARD.md`。
-- **下一步**：用户刷 A（recovery_a 单件，boot_b r129 `fc2e8f17` 不动）→ 上滑看桌面 → ≥8min
-  硬断电 → 刷 reader `d01bed78` 拉窗判 **G2 主门**（屏摄进桌面；窗面 GPU1-8 行、`[gpu windows]`
-  mount stage、`M`/`[gpu clients]`/`[gpu ibs]`、SWAP accepted/retired、T0、崩族对比 r130 s4b
-  chronod 408 / backboardd 372）。若 A 仍死，先刷 B 确认修复后的 2s 死消失并定位 GPU stage。
+- **刷机史（r131 系列）**：首刷 r131 A（`8bdb2265`）= 2s 死，屏摄 `kernel data abort`
+  `PC=lck_mtx_unlock+0x1c`/`LR=hostRead4k+0x100`/`x0=gHost+0x30`(gHost.lock)；根因=gScratch
+  128KiB→32KiB 后 `readPolicyObject()` 仍按 `kDataMax` 分块读 `<window>.vroot`（OS 表
+  ~586KB），首块越界写穿 gHost。修=`sizeof gScratch` 分块+static_assert（gScratch 保持
+  32KiB）→ r131b 内核 `2881cbc1`。**r131b 首刷判读（窗 `reader-r131b/`，sha `ecfb05ab`，
+  743s）**：**540s 进入语言选择界面 = 上滑解锁成功（里程碑）**；CPU 呈现 `SWAP calls=103
+  retired=103`、DISPLAY stage=10、touch HID 在册，但无 GPU 极卡、触屏回显迟；崩族仍在
+  （DockFolder sig11 627 / backboardd sig6 620 / duetexpertd 166 / chronod 116）。
+  **GPU 没起的根因=探针从未被调用**：`GPU1-8`/`X4-X7` 空、`[gpu windows] stage=0`、
+  `[gpu clients]`/`[gpu ibs]` 零；反汇编 r131b 内核 late probe 无 GPU 调用——display builder
+  编的是 `ROOT/package/LegacyDisplayProbe.cpp`（主树副本），上一轮 GPU 调用加在设备仓
+  `package/LegacyDisplayProbe.cpp`（非构建副本）=s107 同款遮蔽坑。修=主树副本同样加 weak
+  调用 → r131c 内核 `17d6c074`（反汇编实证 `bl sheng_gpu_power_probe` 在 touch 之后）。
+- **件（r131c）**：**A GPU 件** `payload-r131c-gpu9addon-bd65b52a.img`（99MiB，sha
+  `bd65b52a…`，args `gpu-power=9 gpu-metal=1 gpu-addon=1`+touch 四件，保留 boot-progress=2
+  供卡住时屏上定位）；**U UI 件** `payload-r131c-ui-2a007acb.img`（同内核/addon，args 追加
+  `boot-progress=0 sheng-exc-name=none`，关掉底部刷屏的 boot 页与崩溃转储，便于在 setup
+  界面操作）；addon `13398d63`/trust `ccff5d20`/种子 `9c28654c` 均未变。卡=`out/m2381/R131-CARD.md`。
+- **下一步**：刷 A → 锁屏上滑（已证解锁；看是否进桌面且不再卡）→ ≥8min 硬断电 → reader
+  `d01bed78` 拉窗判 GPU：`X4-X7`/GPU3-6 行 stage 1→9、`[gpu windows]` mount stage=5、
+  `M a5.0 k0 s5/0 r1`、`[gpu clients]`/`[gpu ibs]` 非零、SWAP accepted 增长、崩族是否收敛；
+  若 UI 被刷屏挡住则换 U 件。**iPhone 身份题已触发**（用户见 iPad 样式）：选项=①ADT 串
+  实验（cheap，单变量 payload，可回退）②整条 iPhone lane（新 IPSW/fixture/trust/userdata
+  +Data seed 重置=谱系清零，24A446 iPhone 支仅 iPhone17,1；本机 iPhone11=iPhone12,1 不在集）；
+  建议 GPU 判完再定。
 
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
