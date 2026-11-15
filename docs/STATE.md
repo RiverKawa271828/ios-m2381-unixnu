@@ -12,22 +12,46 @@ duetexpertd 166 / chronod 116；GPU 未起（探针未被调用，见下）。
 
 **下一会话开工序（照做）**：
 1. **先看用户手里的 r131c 结果**：若已拉窗→直接判；若只有屏摄→按 stage 判；若还没拉→
-   `acm-reader.py probe|fetchchunk` + `read-m2381-ufs-log.py --all` 拉窗（窗入
+   刷 reader `out/m2381/reader-esp-d01bed78.img` 后 `acm-reader.py probe|fetchchunk` +
+   `read-m2381-ufs-log.py --all` 拉窗（窗入
    `out/m2381/reader-r131c/`，先核 header rounds/slots_written/uptime 防环残影）。
 2. **GPU 判据**：`X4-X7`（探针 setRow 4-7）与页 `GPU3-6` 行应出现 `GPU m9 mapped=.. running`
    和 stage 1→9；`[gpu windows] mount fail stage`、`M a5.0 k0 s5/0 r1`、`[gpu clients]`/
    `[gpu ibs]` 非零、SWAP accepted 增长、崩族是否收敛；T0（run=7/adsp=13/battery=4/AKS/DATA=2/
    DISPLAY=10/touch HID）。
-3. **若探针行仍空（GP0）**：先核构建副本——display builder 编 `ROOT/package/LegacyDisplayProbe.cpp`
+3. **args 陷阱（必读）**：设备仓 `board.toml` 仍是 r130 stage1 的默认值
+   （`touch=1 offline-hid-input=0 touch-hid=0 gpu-power=1`），r131b/r131c 的 payload 全部靠
+   `--kernel-arg` 覆盖。**出新 payload 必须带**：`touch=4 offline-hid-input=1
+   offline-hid-home=1 touch-hid=1 gpu-power=9 gpu-metal=1 gpu-addon=1`（U 件再加
+   `boot-progress=0 sheng-exc-name=none`），行长 A=755/U=713（<1000 DarwinBoot 上限）。
+4. **若探针行仍空（GP0）**：先核构建副本——display builder 编 `ROOT/package/LegacyDisplayProbe.cpp`
    （**主树副本**，815 行），不是设备仓 package（716 行）。r131c 已在主树副本加 weak 调用，
    内核 `17d6c074` 反汇编实证 `ldr [got]; cbz; bl sheng_gpu_power_probe`（在 touch 之后）；
-   再核 payload 的 args 尾（`gpu-power=9 …`，行长 743 < 1000）。
-4. **若 stage 卡住**：按卡内表分级——`gpu-power=5`（只读 GMU 前置）/`6`（时钟树）/`7`（GMU 冷启）/
+   再核 payload 的 args 尾（`gpu-power=9 …`，行长 755 < 1000）。
+5. **若 stage 卡住**：按卡内表分级——`gpu-power=5`（只读 GMU 前置）/`6`（时钟树）/`7`（GMU 冷启）/
    `gpu-zap=0`（跳 ZAP）；`GPB` 行给失败步。若 A 件 2s/早期死，回滚 r130 `39533707`。
-5. **若 GPU 起但底部仍刷屏挡 UI**：换 U 件 `payload-r131c-ui-2a007acb.img`（`boot-progress=0
+6. **若 GPU 起但底部仍刷屏挡 UI**：换 U 件 `payload-r131c-ui-2a007acb.img`（`boot-progress=0
    sheng-exc-name=none`），同内核同 addon。
-6. GPU 判完再开 **iPhone 身份题**（下方 s122 立账⑥）：先做①ADT 串实验（cheap、单变量、可回退），
+7. GPU 判完再开 **iPhone 身份题**（下方 s122 立账⑥）：先做①ADT 串实验（cheap、单变量、可回退），
    不够再评估②整条 iPhone lane（Data seed 重置=谱系清零）。
+
+**出件命令模板（Mac，改 args 即出新 stage；kernel 不变时只跑 payload）**：
+```sh
+cd ~/unixnu/ios-m2381-unixnu
+./unixnu payload -D ../UniXNU-m2381 \
+  --kernel out/m2381/ipados-27.0.1-24A446/m2381/kernel/kernel.macho \
+  --data-ramdisk ~/unixnu/scratch-data.img \
+  --owner-trust-cache ~/unixnu/owner-trust-24A446-gpu.bundle \
+  --unique-chip-id 3645AD55D47E77C1 \
+  --gpu-addon build/gpuaddon-r131.bin \
+  --kernel-arg touch=4 --kernel-arg offline-hid-input=1 --kernel-arg offline-hid-home=1 \
+  --kernel-arg touch-hid=1 --kernel-arg gpu-power=9 --kernel-arg gpu-metal=1 \
+  --kernel-arg gpu-addon=1
+```
+改等级就换 `gpu-power=5|6|7|9`，加 `--kernel-arg gpu-zap=0` 跳 ZAP；出件后
+`cp payload/payload.img out/m2381/payload-r131d-<名>-<sha8>.img` 并回传 Linux（rsync 单文件）。
+**注意 kernel.macho 必须与 payload.json 的 kernel_sha256 一致**（17d6c074 是 r131c 内核；
+重编内核后内核 sha 会变，先跑 kernel 再 payload）。
 
 **r131c 件**（`out/m2381/`，双端 sha 对拍）：
 - **A GPU** `payload-r131c-gpu9addon-bd65b52a.img`（sha `bd65b52a…`，99MiB；native kernel
@@ -45,12 +69,13 @@ reset 打回**）；设备仓 `~/unixnu/UniXNU-m2381`。addon 工具链：brew m
 spirv-tools/bison3/rustup；Mesa pin `85fda3b3`（17 patch 已 apply，`.cache/mesa-work`）+
 metal2vulkan `963f0e64` + `.cache/mesa-venv`(meson 1.12.1) + rustup `1.98.0`
 （`/opt/homebrew/Cellar/rustup/1.29.3/bin` 进 PATH，crates.io 直连）。出件链
-`~/unixnu/r131-kernel.sh`（XNU 五 env + 五件 payload 输入在 `~/unixnu/`）。GitHub/googlesource
+`~/unixnu/r131-kernel.sh`（XNU 五 env）；五件 payload 输入：`~/unixnu/scratch-data.img`
+（9c28654c）、`~/unixnu/original-trust-24A446.bundle`（dc655bcb）、`~/unixnu/owner-trust-24A446-gpu.bundle`
+（ccff5d20，含 addon 三 CDHash）、`build/gpuaddon-r131.bin`（13398d63）、`--unique-chip-id
+3645AD55D47E77C1`。GitHub/googlesource
 直连不通时用 Linux 代理 `192.168.10.185:7890`（时断，重试）；内核/payload 出件不需要代理。
-**未推提交**：主树 `9a120c69`/`edafbb8c`/`121faa2d`/`58a5ad52`/`15f9cc26`（+s124
+**未推提交**：主树 `9a120c69`/`edafbb8c`/`121faa2d`/`58a5ad52`/`15f9cc26`/`914e86c2`（+s124
 `b2132c08`）；设备仓 `678a8f9`/`50eb0fc`/`2c4cd4d`。用户点头再推。
-
-## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五；更早指针=archive/STATE-history.md）
 
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
