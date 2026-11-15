@@ -9,10 +9,12 @@ Inputs that are not in a repository are options: the prelinked kernel (default: 
 The volume is written with mtools, without mounting, so it is the same on every run.
 """
 import hashlib
+import io
 import json
 import os
 import re
 import shutil
+import struct
 import tempfile
 from pathlib import Path
 
@@ -20,6 +22,25 @@ from . import kernel as kernel_step
 from .util import Error, expand, log, run, sha256_file, tool
 
 EPOCH = 315532800   # 1980-01-01, the first FAT timestamp; keeps the volume reproducible
+
+
+def compress_kernel(target):
+    """Rewrite the staged kernel as an LZMA-alone stream (DarwinBoot expands it before parsing).
+
+    The member keeps the kernel.macho name: the loader detects the encoding from
+    the props byte, so every sidecar path and the unixnu.toml entry stay
+    identical. The Python encoder leaves the uncompressed-size header field at
+    "unknown" (DarwinBoot refuses that); patch the real size in. Deterministic:
+    fixed filters and preset, fixed timestamps.
+    """
+    tool('python3')
+    import lzma
+    plain = target.read_bytes()
+    filters = [{'id': lzma.FILTER_LZMA1, 'preset': 9 | lzma.PRESET_EXTREME, 'dict_size': 1 << 24}]
+    packed = bytearray(lzma.compress(plain, format=lzma.FORMAT_ALONE, filters=filters))
+    struct.pack_into('<Q', packed, 5, len(plain))
+    target.write_bytes(bytes(packed))
+    return len(plain)
 
 
 def paths(ctx):
@@ -184,7 +205,11 @@ def build(ctx, kernel=None):
         cwd=ctx.tree, env=dict(os.environ, UNIXNU_DEVICE=str(ctx.device)),
         log_file=ctx.logs / 'payload-cpusub.log')
     # The entry probe (stage bars, optional reset) is wanted with either setting; the panic screen is only one part of it.
-    if spec.get('panic_screen') or spec.get('entry_probe_reset_delay'):
+    # A reused kernel from a previous round already carries the probe and the seal; the patch tool refuses
+    # a second run, so --kernel-probed skips both without touching the bytes.
+    if getattr(args, 'kernel_probed', False):
+        log('payload: kernel input is already probed and sealed; patch steps skipped')
+    elif spec.get('panic_screen') or spec.get('entry_probe_reset_delay'):
         probe = (['--reset-delay', str(int(spec['entry_probe_reset_delay']))]
                  if spec.get('entry_probe_reset_delay') else ['--no-reset'])
         screen = ['--panic-screen'] if spec.get('panic_screen') else []
@@ -294,6 +319,13 @@ def build(ctx, kernel=None):
                    'pd_ignore_unused icc-rpmh.qos_disable=1 icc_rpmh_qos_disable=1 '
                    'sysrq_always_enabled no_console_suspend"\n')
     (stage / 'EFI/UniXNU/unixnu.toml').write_text(config)
+    compression = str(spec.get('kernel_compression', 'none')).lower()
+    if compression not in ('none', 'lzma'):
+        raise Error(f'unsupported [payload] kernel_compression: {compression}')
+    plain_sha = sha256_file(payloads / 'kernel.macho')
+    if compression == 'lzma':
+        compress_kernel(payloads / 'kernel.macho')
+        log(f'payload: kernel compressed lzma to {(payloads / "kernel.macho").stat().st_size >> 20} MiB')
     for path in [stage, *stage.rglob('*')]:
         os.utime(path, (EPOCH, EPOCH))
     size = int(spec.get('size_mib', 192))
@@ -301,7 +333,9 @@ def build(ctx, kernel=None):
     if content > size * 1024 * 1024:
         raise Error(f'the payload files take {content >> 20} MiB; raise size_mib (now {size}) in board.toml [payload]')
     write_volume(stage, image, spec.get('volume', 'UNIXNU')[:11], size)
-    data_report = {'kernel_sha256': sha256_file(kernel), 'payload_kernel_sha256': sha256_file(payloads / 'kernel.macho'),
+    data_report = {'kernel_sha256': sha256_file(kernel), 'payload_kernel_sha256': plain_sha,
+                   'payload_kernel_lzma_sha256': sha256_file(payloads / 'kernel.macho') if compression == 'lzma' else None,
+                   'kernel_compression': compression,
                    'adt_sha256': sha256_file(payloads / 'kernel.macho.adt'), 'kernel_args': line,
                    'trust_cache_sha256': sha256_file(trust) if trust else None, 'gpu_addon_sha256': sha256_file(addon) if addon else None,
                    'data_ramdisk_sha256': sha256_file(data) if data else None, 'skip_setup': bool(getattr(args, 'skip_setup', False)), 'panic_screen': bool(spec.get('panic_screen')),
