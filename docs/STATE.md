@@ -1,54 +1,56 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
-## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五；更早指针=archive/STATE-history.md）
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五收队；更早指针=archive/STATE-history.md）
 
-**★★★★★★★★★★s125（11-16）r131 GPU+addon 轮出件 = 内核链入 Adreno740（上游 653e11c）+ m2381 板级输入 + Metal addon；待刷判**：
-- **内核链绿**：`kernel.macho` `228b0b69…`（native 96,108,544B；payload 内 sealed `e17c5c82…`/LZMA `d87501db…`）。
-  `CONFIG_XNU_NATIVE_ADRENO=y` force_load `libAdreno740.a`（上游驱动 + GMU/SMMU/PM4/AdrenoFirmware
-  kits + 内嵌 m2381 ZAP `3cc594a0`/SQE `2b49a172`/GMU `1a2a419c`）；`package/GpuPowerProbe.cpp` 编进
-  display 晚装 archive（`GPU m%u mapped` 串在核内实证）；`sheng_gpu_power_probe`/`native_adreno_gpu_interrupt`
-  符号在 kernel.macho 内。
-- **板级输入（stock FDT → upstream OPP）**：`dts/m2381.dts` 开 &gpu/&gmu/&gpu_smmu，加 GPU 9 档
-  OPP（220–719MHz，level/ACD/带宽）与 GMU 2 档、`aop_cmd_db_region@81c60000`、`gpu_micro_code_region@9b09a000`、
-  zap-shader（`qcom/sm8550/m2381/a740_zap.mbn`）；`scripts/audit-adreno-platform-m2381.py` +
-  `prepare-m2381-gmu{,-votes}.py` + `prepare-m2381-gpu-smmu.py` 从 DTB 生成 headers 并对拍
-  `scripts/data/adreno-board-m2381.json`（Windows/streams 0/1+GMU5/命令 DB/OPP 全 PASS）。
-- **链上修的四件**：①上游 pin 6fa7bae2→**653e11c**（`fix(wait): wake fence waiters from the
-  completion pass`，板级探针的 `native_adreno_gpu_interrupt`；components.toml 与 submodule 双落）；
-  ②`gScratch` 128KiB→32KiB（`drivers/ShengUfs/RootLayout.h`；GPU 数据把 native __DATA 顶出
-  donor 0x1e8000 窗口 0x8000，GPT entries 已被 count<=128 界住，16KiB 封顶）；
-  ③display archive 的 GPU trace/fence 零桩在 `XNU_NATIVE_ADRENO=1` 时不再生成；
-  ④`BootProgressTelemetryDefs.c` 的 Adreno 零数组 + `ShengLatencyHooks.c` 的 `native_gpu_role_thread`
-  零桩在 GPU archive 链入时以 `XNU_NATIVE_ADRENO_QUALIFIED` 排除（45+1 duplicate 清除）。
-- **addon 已出**：Mesa Turnip ios27（`libvulkan_freedreno.dylib` 18,113,360B）+ NativeAdrenoMetal
-  bundle（arm64e 4K 签名）+ publish → `gpuaddon.bin` 12,843,120B（`13398d63…`，6 files）；
-  owner trust = 原 dc655bcb 两模块 + 三 CDHash 模块（`ccff5d20…`）。Mac 侧工具链已就位
-  （brew meson/glslang/shaderc/spirv-tools/bison3/rustup 1.98.0+rust-src；Mesa pin 85fda3b3
-  17 patch 全 apply；metal2vulkan pin 963f0e64；crates.io 直连可用，代理仅 feed 拉取时需要）。
-- **刷机史（r131 系列）**：首刷 r131 A（`8bdb2265`）= 2s 死，屏摄 `kernel data abort`
-  `PC=lck_mtx_unlock+0x1c`/`LR=hostRead4k+0x100`/`x0=gHost+0x30`(gHost.lock)；根因=gScratch
-  128KiB→32KiB 后 `readPolicyObject()` 仍按 `kDataMax` 分块读 `<window>.vroot`（OS 表
-  ~586KB），首块越界写穿 gHost。修=`sizeof gScratch` 分块+static_assert（gScratch 保持
-  32KiB）→ r131b 内核 `2881cbc1`。**r131b 首刷判读（窗 `reader-r131b/`，sha `ecfb05ab`，
-  743s）**：**540s 进入语言选择界面 = 上滑解锁成功（里程碑）**；CPU 呈现 `SWAP calls=103
-  retired=103`、DISPLAY stage=10、touch HID 在册，但无 GPU 极卡、触屏回显迟；崩族仍在
-  （DockFolder sig11 627 / backboardd sig6 620 / duetexpertd 166 / chronod 116）。
-  **GPU 没起的根因=探针从未被调用**：`GPU1-8`/`X4-X7` 空、`[gpu windows] stage=0`、
-  `[gpu clients]`/`[gpu ibs]` 零；反汇编 r131b 内核 late probe 无 GPU 调用——display builder
-  编的是 `ROOT/package/LegacyDisplayProbe.cpp`（主树副本），上一轮 GPU 调用加在设备仓
-  `package/LegacyDisplayProbe.cpp`（非构建副本）=s107 同款遮蔽坑。修=主树副本同样加 weak
-  调用 → r131c 内核 `17d6c074`（反汇编实证 `bl sheng_gpu_power_probe` 在 touch 之后）。
-- **件（r131c）**：**A GPU 件** `payload-r131c-gpu9addon-bd65b52a.img`（99MiB，sha
-  `bd65b52a…`，args `gpu-power=9 gpu-metal=1 gpu-addon=1`+touch 四件，保留 boot-progress=2
-  供卡住时屏上定位）；**U UI 件** `payload-r131c-ui-2a007acb.img`（同内核/addon，args 追加
-  `boot-progress=0 sheng-exc-name=none`，关掉底部刷屏的 boot 页与崩溃转储，便于在 setup
-  界面操作）；addon `13398d63`/trust `ccff5d20`/种子 `9c28654c` 均未变。卡=`out/m2381/R131-CARD.md`。
-- **下一步**：刷 A → 锁屏上滑（已证解锁；看是否进桌面且不再卡）→ ≥8min 硬断电 → reader
-  `d01bed78` 拉窗判 GPU：`X4-X7`/GPU3-6 行 stage 1→9、`[gpu windows]` mount stage=5、
-  `M a5.0 k0 s5/0 r1`、`[gpu clients]`/`[gpu ibs]` 非零、SWAP accepted 增长、崩族是否收敛；
-  若 UI 被刷屏挡住则换 U 件。**iPhone 身份题已触发**（用户见 iPad 样式）：选项=①ADT 串
-  实验（cheap，单变量 payload，可回退）②整条 iPhone lane（新 IPSW/fixture/trust/userdata
-  +Data seed 重置=谱系清零，24A446 iPhone 支仅 iPhone17,1；本机 iPhone11=iPhone12,1 不在集）；
-  建议 GPU 判完再定。
+**★★★★★★★★★★s125 收队交接（r131 GPU 轮，2026-11-16 会话一百二十五）——下一会话第一刀=判 r131c 的 GPU 结果**：
+
+**设备现态（交接时）**：用户正在测 **r131c A**（`payload-r131c-gpu9addon-bd65b52a.img`，
+`gpu-power=9 gpu-metal=1 gpu-addon=1`，保留 boot-progress=2）。`current-slot`=b，`boot_b`=r129
+`fc2e8f17`（未动）；`recovery_a` 按用户动作=r131c A 或已换 reader `d01bed78`。**已判的上一次 =
+r131b A**：窗 `out/m2381/reader-r131b/`（sha `ecfb05ab…`，743s）——**540s 进语言选择界面（解锁
+成功）**，CPU 呈现 SWAP retired=103，崩族 DockFolder sig11 627 / backboardd sig6 620 /
+duetexpertd 166 / chronod 116；GPU 未起（探针未被调用，见下）。
+
+**下一会话开工序（照做）**：
+1. **先看用户手里的 r131c 结果**：若已拉窗→直接判；若只有屏摄→按 stage 判；若还没拉→
+   `acm-reader.py probe|fetchchunk` + `read-m2381-ufs-log.py --all` 拉窗（窗入
+   `out/m2381/reader-r131c/`，先核 header rounds/slots_written/uptime 防环残影）。
+2. **GPU 判据**：`X4-X7`（探针 setRow 4-7）与页 `GPU3-6` 行应出现 `GPU m9 mapped=.. running`
+   和 stage 1→9；`[gpu windows] mount fail stage`、`M a5.0 k0 s5/0 r1`、`[gpu clients]`/
+   `[gpu ibs]` 非零、SWAP accepted 增长、崩族是否收敛；T0（run=7/adsp=13/battery=4/AKS/DATA=2/
+   DISPLAY=10/touch HID）。
+3. **若探针行仍空（GP0）**：先核构建副本——display builder 编 `ROOT/package/LegacyDisplayProbe.cpp`
+   （**主树副本**，815 行），不是设备仓 package（716 行）。r131c 已在主树副本加 weak 调用，
+   内核 `17d6c074` 反汇编实证 `ldr [got]; cbz; bl sheng_gpu_power_probe`（在 touch 之后）；
+   再核 payload 的 args 尾（`gpu-power=9 …`，行长 743 < 1000）。
+4. **若 stage 卡住**：按卡内表分级——`gpu-power=5`（只读 GMU 前置）/`6`（时钟树）/`7`（GMU 冷启）/
+   `gpu-zap=0`（跳 ZAP）；`GPB` 行给失败步。若 A 件 2s/早期死，回滚 r130 `39533707`。
+5. **若 GPU 起但底部仍刷屏挡 UI**：换 U 件 `payload-r131c-ui-2a007acb.img`（`boot-progress=0
+   sheng-exc-name=none`），同内核同 addon。
+6. GPU 判完再开 **iPhone 身份题**（下方 s122 立账⑥）：先做①ADT 串实验（cheap、单变量、可回退），
+   不够再评估②整条 iPhone lane（Data seed 重置=谱系清零）。
+
+**r131c 件**（`out/m2381/`，双端 sha 对拍）：
+- **A GPU** `payload-r131c-gpu9addon-bd65b52a.img`（sha `bd65b52a…`，99MiB；native kernel
+  `17d6c074c4a1546bfec1ccb3330164f7926dcbfebb6baebbfd71a00025e2bb92`；addon `13398d63`；
+  owner trust `ccff5d20`；seed `9c28654c`；ESP 内 `kernel.macho.gpuaddon` 12,843,120B 已核）
+- **U UI** `payload-r131c-ui-2a007acb.img`（sha `2a007acb…`；同内核/addon，args 追加
+  `boot-progress=0 sheng-exc-name=none`）
+- 作废件：r131 `8bdb2265`/`19675c26`（2s 死：gScratch 越界写穿 gHost）、r131b
+  `6a5ba18d`/`c9ff50c0`（探针未被调用：主树副本遮蔽）。回滚 r130 `39533707`。
+- 卡=`out/m2381/R131-CARD.md`（含 r131b 判读、r131c 件、stage→修法表）。
+
+**Mac 构建环境（下一会话直接可用）**：主树 `~/unixnu/ios-m2381-unixnu`（HEAD `4ff74a4`+工作树
+同步；**Adreno740 gitlink 653e11c / AdrenoMetal gitlink c68f9a1 已在 Mac index `git add`，勿被
+reset 打回**）；设备仓 `~/unixnu/UniXNU-m2381`。addon 工具链：brew meson/glslang/shaderc/
+spirv-tools/bison3/rustup；Mesa pin `85fda3b3`（17 patch 已 apply，`.cache/mesa-work`）+
+metal2vulkan `963f0e64` + `.cache/mesa-venv`(meson 1.12.1) + rustup `1.98.0`
+（`/opt/homebrew/Cellar/rustup/1.29.3/bin` 进 PATH，crates.io 直连）。出件链
+`~/unixnu/r131-kernel.sh`（XNU 五 env + 五件 payload 输入在 `~/unixnu/`）。GitHub/googlesource
+直连不通时用 Linux 代理 `192.168.10.185:7890`（时断，重试）；内核/payload 出件不需要代理。
+**未推提交**：主树 `9a120c69`/`edafbb8c`/`121faa2d`/`58a5ad52`/`15f9cc26`（+s124
+`b2132c08`）；设备仓 `678a8f9`/`50eb0fc`/`2c4cd4d`。用户点头再推。
+
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五；更早指针=archive/STATE-history.md）
 
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
