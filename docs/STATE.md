@@ -3,6 +3,13 @@
 
 **★★★★★★★★★★s127 交接（r132 判读，2026-11-16 会话一百二十六收队）——桌面达成，GPU 门开但执行面 stall，5 s 帧拍/IRQ 风暴仍在**：
 
+**s127 已做（r133 payload-only 出件，2026-11-16）**：工作单第 1 项完成。`out/m2381/payload-r133-uiscale3-07935d96.img`
+（99 MiB，sha `07935d96…`，Mac/Linux 双端对拍 ✓）——相对 r132 **唯一 delta = args `offline-legacy-unit-scale=2→3`**
+（1080x2400 → 360x800 pt）；kernel 输入 `544f19a7` **逐字节同 r132**（payload 步未重编内核，已核），payload kernel
+`325a222c`/LZMA `0f926828`、addon `13398d63`/trust `ccff5d20`/seed `9c28654c` 全同；ADT `fe4a0f3c` 只是
+`/chosen` random-seed 每轮新生成，非 delta。卡=`out/m2381/R133-CARD.md`，**待用户刷 recovery_a**。
+判据 U1 布局/U2 触控/U3 不回归/U4 门拒识别（scale 行不进窗，肉眼为主）。下一步=d 判读或直接进 r134 内核轮。
+
 **设备/件现态**：用户已刷 **r132**（`payload-r132-irqfix-200f5279.img`）跑约 20 min（窗 `out/m2381/reader-r132/`，
 sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，uptime=1243s）。`current-slot`=b，
 `boot_b`=r129 `fc2e8f17`（未动），`recovery_a` 现=reader `d01bed78`；种子 `9c28654c` 零改动。
