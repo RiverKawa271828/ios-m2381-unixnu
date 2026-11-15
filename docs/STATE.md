@@ -1,4 +1,34 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★s124（11-16）r130 触屏轮收工 = 触屏打通（HID 1794 reports / 手势被识别）；解锁卡在共享 abort 墙；下一步 r131 GPU+addon**：
+
+**触屏闭环（四个 stage 逐级、每级一件）**：
+- **stage 2（`0860f56e`）**：时钟/引脚全绿（`s4` CLK_OFF 消、`rcg=0`、`sda/scl=0x7`=func1+pull-up），引擎步止于
+  `GENI_IF_DISABLE` —— **根因=该位被当致命门**（Linux i2c-qcom-geni 只拿它选 DMA，我们的 prepare 却 `return -1`）。
+- **stage 3（`4e564c8f`）**：去假门后 `engineInit` 全过（`fw=00000303 ifd=1 cfg=03000021 clk=21 scl=00502c16`），
+  但探针 `p=to`、`confirm=-2` → **FIFO 传输不执行**。
+- **stage 3b（`fce06286`）**：换 **SDA/SCL 开漏 GPIO 位bang（≤100 kHz）**（照 `RigoLigoRLC/unixnu-nativegenii2c`
+  的 sm-t733 同条件回退）→ **stage 3 主门过**：`pid=9916R addr=10308 axes=1080x2400 rail=ldob14/3200mV(1)`；
+  同时 `TCHE st=41 cmd=0800ba04 tx=0 irq=0` **钉死 FIFO 禁位**（命令在位、FIFO 不吃字节）。
+- **stage 4（`21482cd1`，args-only）**：帧线程跑起来（`[touch] strokes` 涨到 157）但 HID 未发布。
+- **stage 4b（`39533707`）**：补 `offline-hid-home=1`（`HidInputProbe.cpp:220` 的门，我漏了）→
+  `TOUCH HID started=1 touch-reports=1794 result=0 | h st=3 ld=0 rs=1 sz=208`、`[touch edge] installed=1
+  contacts=17 from_edge=9`。**用户的慢速上滑被识别（出现旋转进度条）＝触屏轮 T1/T2 手势面前通过。**
+
+**新墙（下一轮触屏侧的对手，非触屏 bug）**：解锁时 **backboardd sig6** 与 chronod/duetexpertd **同一
+PC/LR**（s4b `PC2382591fc LR18087145c`；s4 `PC237fe91fc LR18060145c` = 同一站点、跨 boot 只差 slide
+0x270000）→ 一个**共享框架 abort 点**被多个守护进程踩到；backboardd 崩→事件/渲染断→进度条回锁屏。
+账：symbolize 该站点（s117 管线：去滑 + 24A446 dyld cache），另立"解锁墙"工单。
+
+**其余**：T0 全绿（`run=7` / adsp st=13 / battery st=4 100% / AKS st=0 sg=3 / DATA st=2 / DISPLAY stage=10）；
+`duetexpertd sig6` 与 `backboardd sig6` 入册（新增两族，同 abort 站点）。190s 进锁屏 = 七核正常速度
+（早前 372s 那几轮应是 `run=0` 单核）。**排程不变**：r131 = GPU+addon（用户已拍板提前），按键顺延 r132。
+
+**交接（会话一百二十四）**：件全在 `out/m2381/`（stage2/3/3b/4/4b 五件 + 各自卡）；设备现态 = 已刷
+`39533707`（stage 4b），`boot_b` 仍是 r129 `fc2e8f17`（未动）。**未推提交**：设备仓 `GeniI2c.c/h`、
+`GoodixTouchProbe.cpp`、`BootProgress.c`（Linux/Mac 双端同 sha），主树无改动。
+
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十三；更早指针=archive/STATE-history.md）
 
 **★★★★★★★★★★s123（11-16）r130 触屏轮 stage 1 已上机 + r131 排程改 GPU+addon（用户拍板）**：
@@ -130,5 +160,53 @@ G2 首帧 GPU 合成（屏摄 + 窗口计数）；G3 ≥8 min 稳定 + 崩谱对
 
 **参考**：sheng（同 SoC、24A446、GPU 全栈设备验证）为主；asteroids（手机形态 + GPU addon）为形态参照；
 cupid 仅作 iPhone 身份线参考（r132+ 身份评估门用）。
+
+### r131 一并办的三件事（用户 2026-11-16 拍板"当然可以顺手做，一次解决三个"）
+
+三件事共用一次出件/一次刷机窗口，但**各自独立判据**（互不掩盖，任一件失败不阻塞另两件）：
+
+| # | 事 | 判据 | 说明 |
+|---|---|---|---|
+| ① | **共享 abort 站点 symbolize**（解锁墙） | 拿到该站点的模块+符号名 | 一个站点同时打崩 **chronod / duetexpertd / backboardd** 三个守护进程（s4b 三行同 `PC2382591fc LR18087145c`；s4 同站点 `PC237fe91fc LR18060145c`，跨 boot 只差 slide 0x270000）→ 改一处可望"一次解决三个" |
+| ② | **r131 GPU+addon**（工作单见上节） | G0/G1/G2/G3 | 与①并行：G0 是内核 probe，不吃 UI；G1/G2 若被①挡住则如实记"判据待①" |
+| ③ | 位bang 提速评估（顺手） | 每帧成本 | 仅评估不改码；触屏已通，提速是后话 |
+
+**①的具体做法（下一会话第一刀，只读；工具与料已在本机，无需重建）**：
+
+**已核实的字段语义（读生产者，非推测）**：`UniXNU-m2381/package/BootFaultProbe.c:90` 的格式串
+`… F%llx +%llx R%u …` 里 `+` 那一项印的是 `f.slide = current_task()->task_shared_region_slide`
+——**所以 `+330000` 就是共享区 slide**，不是别的位移。于是本窗：
+- PC → **VA = 0x2382591fc − 0x330000 = 0x2382261fc**
+- LR → **VA = 0x18087145c − 0x330000 = 0x18054145c**
+
+**已跑出的两条结果（s124 收队前，只读）**：
+- `0x18054145c` → `/usr/lib/system/libsystem_pthread.dylib +0x745c = _pthread_mach_thread_np.cold.2 + 0x1f0`
+- `0x2382261fc` → **“no image”**（`scratch-r112/scripts/symbolicate.py` 只用主缓存 `imagesText`（MAIN+0x88）
+  建镜像表，覆盖不到 0x238… 这一段）→ 下一刀必须换取镜像表的路子（`parse_cache.py` / 子缓存
+  `.dylddata` 的映射表），或先确认该 VA 落在哪个子缓存文件里再定镜像。
+
+**⚠ 本轮踩过的坑（硬律，已写进记忆）**：不要 `Path.read_bytes()` 整份 1.2GB `.symbols`，也不要
+对百万级候选 slide 做 Python 循环；`S.find(...)` 回 -1 时 `S[p:e]` 会退化成 `S[p:-1]` 的整段拷贝。
+本条已把 30GB 机器打到 zram swap 7.3G/8G 满、ZCode 被杀。正确姿势=**mmap 只读 + 全程有界切片 +
+find 结果先判 -1**，且**先读生产者代码确认字段语义再算 VA**。
+
+**②反查步骤**：`/home/ri/work/scratch-r112/`（24A446 缓存抽取件，7.3GB，已在位：子缓存 85 个在
+`extract/System/Library/Caches/com.apple.dyld/`，符号 1.2GB 在根）+ `scripts/re-tools/*`。
+命中镜像后看符号与反汇编前若干条；`sig6`=SIGABRT，优先找 `abort/__assert_rtn/raise` 类站点。
+
+**③判定**：三条 daemon 的 `bt` 字段差在哪一层——若都停在同一框架的同一断言，修面 = 该断言的前置条件
+（一处修三族）。
+
+**交接（会话一百二十四 → 一百二十五）**：
+- **设备现态**：已刷 stage 4b `39533707`；`boot_b` = r129 `fc2e8f17`（未动）；`recovery_a` = reader ESP
+  `d01bed78`（拉完 s4b 窗）。**触屏可用**（慢速上滑会出解锁进度条，然后回锁屏）。
+- **件**（`ios-m2381-unixnu/out/m2381/`）：stage2 `0860f56e` / stage3 `4e564c8f` / stage3b `fce06286` /
+  stage4 `21482cd1` / stage4b `39533707`；卡 = `R130-STAGE{2,3,3B,4,4B}-CARD.md`。
+  窗 = `reader-r130-{s1..s4b}/`（每份 `log.bin`+`parsed-all.txt`）。
+- **未推提交**：设备仓 `GeniI2c.c`、`GeniI2c.h`、`GoodixTouchProbe.cpp`、`BootProgress.c`（Linux/Mac 双端
+  sha 一致，Mac 上已参与构建）；主树仅文档改动（`docs/STATE.md`）。**推之前说一声**。
+- **本会话已修的路牌**：`AGENTS.md` 的构建命令序（旗标在子命令后）+ 明确"出件在 Mac、Linux 只改码/判读"。
+- **开局序**：①读本 §0 与本节；②`git status` 三仓，确认未推清单；③r131 第一刀 = host 侦察（工作单）
+  + ①的 symbolize 只读侦察（可同轮并行）。
 
 （长期挂账与硬律见 auto-memory 索引；轮史与判读全文=archive/STATE-history.md）
