@@ -765,6 +765,26 @@ PY_LEGACY_DISPLAY
     KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$LEGACY_DISPLAY_ARCHIVE"
     KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $LEGACY_DISPLAY_ARCHIVE"
   fi
+  # r130 (s123): the Goodix GT9916 touch archive (GENI I2C SE4 engine + Berlin protocol + the HID publisher). The
+  # probes are cmdline-gated (touch=, offline-hid-input=, touch-hid=); this gate only decides whether the objects
+  # are linked at all.
+  if [ "${XNU_NATIVE_GOODIX_TOUCH:-0}" = 1 ]; then
+    GOODIX_TOUCH_ARCHIVE=$ROOT/build/goodix-touch/libGoodixTouch.a
+    test -f "$GOODIX_TOUCH_ARCHIVE"
+    python3 - "$GOODIX_TOUCH_ARCHIVE" <<'PY_GOODIX_TOUCH'
+import hashlib, json, sys
+from pathlib import Path
+archive = Path(sys.argv[1])
+report = json.loads(archive.with_name('build-report.json').read_text())
+if hashlib.sha256(archive.read_bytes()).hexdigest() != report['archive_sha256']:
+    raise SystemExit('Rebuild and qualify the exact owned Goodix touch archive before linking')
+for path, digest in report['sources'].items():
+    if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
+        raise SystemExit('Rebuild the owned Goodix touch archive after changing ' + path)
+PY_GOODIX_TOUCH
+    KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$GOODIX_TOUCH_ARCHIVE"
+    KERNEL_ARCHIVE_DEPENDENCIES="$KERNEL_ARCHIVE_DEPENDENCIES $GOODIX_TOUCH_ARCHIVE"
+  fi
   if [ "${XNU_NATIVE_AES:-0}" = 1 ]; then
     AES_ARCHIVE=${XNU_NATIVE_AES_ARCHIVE:-$ROOT/build/software-aes/libSoftwareAES.a}
     test -f "$AES_ARCHIVE"
