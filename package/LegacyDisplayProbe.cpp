@@ -617,10 +617,13 @@ void native_legacy_display_probe(void) {
 void native_legacy_display_late_probe(void);
 // m2381 fork: the strong board-probe externs (native_hid_input_probe, native_keystore_probe,
 // native_touch_probe, sheng_cpufreq_probe, sheng_gpu_power_probe, sheng_wifi_probe,
-// sheng_adsp_probe, sheng_battery_probe, sheng_audio_probe, sheng_buttons_probe,
-// sheng_backlight_probe, sheng_dpu_probe) and their calls are removed -- none of those
-// probes is compiled on this board; the keystore face keeps its own trigger
-// (offline-keystore-start.patch). The weak imports below resolve to null and skip.
+// sheng_audio_probe, sheng_buttons_probe, sheng_backlight_probe, sheng_dpu_probe) and their
+// calls are removed -- those probes are not compiled on this board; the keystore face keeps
+// its own trigger (offline-keystore-start.patch). r128 (s119): the ADSP and battery probes
+// return -- the charging family rides this archive again (synced to upstream 70251d8, arg
+// names adsp/battery per the prefix retirement) and both self-gate on their boot args.
+extern "C" void sheng_adsp_probe(void);
+extern "C" void sheng_battery_probe(void);
 // IOKit's busy services while the registry is not quiet: the network configuration names interfaces only once IOKit is quiet (or after its
 // 240 s limit), and the TimeSync clock manager waits for quiet too, so a service whose matching never ends holds up the network, TimeSync
 // and everything waiting on them (macOS run28: en0 named after 240 s, WindowServer waiting on clocksyncd). Every 10 s for 10 minutes, while
@@ -695,9 +698,13 @@ void native_legacy_display_late_probe(void) {
         }
     }
     // m2381 fork: the strong board-probe calls (keystore, cpufreq, GPU power, touch, WiFi,
-    // ADSP, battery, audio, buttons, backlight, DPU, HID) are removed -- none of those
-    // probes is compiled on this board and the keystore face keeps its own trigger
-    // (offline-keystore-start.patch). The weak imports skip on their null checks.
+    // audio, buttons, backlight, DPU, HID) stay removed -- none of those probes is compiled
+    // on this board and the keystore face keeps its own trigger
+    // (offline-keystore-start.patch). r128 (s119): ADSP and battery are back -- the
+    // charging family rides this archive again (upstream 70251d8); both probes self-gate
+    // on their boot args (adsp=2, battery=1), so they stay inert without them.
+    sheng_adsp_probe();
+    sheng_battery_probe();
     IOService *display=pendingLegacyDisplay;if(!display){native_legacy_display_checkpoint();return;}pendingLegacyDisplay=nullptr;
     native_legacy_surface_status=OSKextLoadKextWithIdentifier("com.apple.iokit.IOSurface");
     // The IOSurface root service: iOS and iPadOS name it IOCoreSurfaceRoot; macOS leaves it unnamed, so its name is its class,

@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """Bind the owned GOP backend to the original IOMobileFramebufferLegacy of the iPadOS 27 (24A446) fileset.
 
-m2381 port of the sheng build-gop-legacy-display-27.py, display core only. The
-reviewed fixture legacy-display-24A446.json carries the class ABI (vtable targets and
-diversities, instance size, field offsets, original bindings) of this lane's donor
-kernelcache (38e6d9fa..., the same sha the board's prelink pins); its collected
-checks replace the iPadOS 17 audit/candidate flow (nothing to re-derive). The sheng
-board suite is not compiled on this board: HID, USB, WiFi, ADSP, audio, battery,
-backlight, GPU power and the keyboard stay out (their boot args stay inert), the
-keystore face rides build-sheng-source-storage.py (r102, offline-keystore-start.patch)
-and package/BootProgress.c provides the real boot_progress_* symbols, so this archive
-carries the display lane alone. package/LegacyDisplayProbe.cpp is the m2381 fork of
-the sheng 24A446 probe: the board probes its late sweep calls strongly are removed.
+m2381 port of the sheng build-gop-legacy-display-27.py: the display core plus, since
+r128 (s119), the charging family (AdspProbe/BatteryProbe/ShengBattery + the nine ADSP
+protocol cores + AdspFirmware.c and the zero-size blob placeholder), synced to upstream
+70251d8 and read from the device repository's package/ (UNIXNU_DEVICE or the sibling
+UniXNU-m2381). The rest of the sheng board suite stays out: HID, USB, WiFi, audio,
+backlight, GPU power and the keyboard (their boot args stay inert), the keystore face
+rides build-sheng-source-storage.py (r102, offline-keystore-start.patch)
+and package/BootProgress.c provides the real boot_progress_* symbols.
+package/LegacyDisplayProbe.cpp is the m2381 fork of the sheng 24A446 probe: its late
+sweep calls the ADSP and battery probes again (r128) and keeps the other board probes
+removed.
 The class ABI (vtable targets and diversities, instance size, field offsets, original
-bindings) comes from the reviewed fixture. The kernel is arm64e: every vtable entry of
-the owned subclass must carry the diversity the original callers authenticate with, so
-every original slot is declared under a name whose discriminator is that slot's
-diversity. Original code is bound at its fileset address plus the collection slide; no
-original instruction or vtable is changed.
+bindings) comes from the reviewed fixture legacy-display-24A446.json (kernelcache sha
+38e6d9fa..., the same sha the board's prelink pins); its collected checks replace the
+iPadOS 17 audit/candidate flow (nothing to re-derive). The kernel is arm64e: every
+vtable entry of the owned subclass must carry the diversity the original callers
+authenticate with, so every original slot is declared under a name whose discriminator
+is that slot's diversity. Original code is bound at its fileset address plus the
+collection slide; no original instruction or vtable is changed.
 """
 import hashlib
 import json
@@ -383,6 +385,77 @@ bool native_adreno_fences_detail(uint32_t *submitted,uint32_t *retired,uint32_t 
 }
 ''')
 compile_cpp(stubs, OUT / 'GpuTraceStubs27.o')
+
+# r128 (s119): the charging family rides this archive again, synced to upstream 70251d8
+# (70186fe's prefix retirement and the cmd-db heap copy are in; AdspProbe.cpp carries the
+# m2381 firmware-source fork: boot_b: / embedded blob / modem: / VFS, tried in that
+# order). Sources come from the device repository's package/ — the canonical fork —
+# like upstream's DEVICE split; no copy rides the main tree (the s107 copy trap).
+DEVICE = Path(os.environ.get('UNIXNU_DEVICE') or ROOT.parent / 'UniXNU-m2381')
+PKG = DEVICE / 'package'
+require((PKG / 'AdspProbe.cpp').is_file(), f'{PKG}: device package missing (set UNIXNU_DEVICE)')
+# The C++ trio compiles through the same IOKit display command as the probe; the battery
+# class's static initializer stages late like the other owned initializers.
+compile_cpp(PKG / 'AdspProbe.cpp', OUT / 'AdspProbe.o')
+compile_cpp(PKG / 'BatteryProbe.cpp', OUT / 'BatteryProbe.o')
+compile_cpp(PKG / 'ShengBattery.cpp', OUT / 'ShengBattery.o')
+battery_late = OUT / 'ShengBattery.late.o'
+run([llvm / 'llvm-objcopy', '--remove-section=__DATA,__mod_init_func',
+     '--globalize-symbol=__GLOBAL__sub_I_ShengBattery.cpp', OUT / 'ShengBattery.o', battery_late])
+# The nine ADSP protocol cores: plain kernel C through the startup.o record (the charging
+# lane's derivation; the IOKit display command stays C++-only). AdspFirmware.c goes
+# through the VFS, so it takes the BSD record, like upstream's builder does.
+record_c_path = ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json'
+require(record_c_path.is_file(), 'startup.o compile record missing (kernel build must have run in this tree)')
+record_c = json.loads(record_c_path.read_text().strip().rstrip(','))
+record_b_path = ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/kern_exec.o.json'
+require(record_b_path.is_file(), 'kern_exec.o compile record missing (kernel build must have run in this tree)')
+record_b = json.loads(record_b_path.read_text().strip().rstrip(','))
+
+
+def compile_c_record(record, src, dst):
+    cmd, args, i = [], record['arguments'], 0
+    while i < len(args):
+        value = args[i]
+        if value == record['file']:
+            cmd.append(str(src))
+        elif value == '-o':
+            cmd += ['-o', str(dst)]
+            i += 1
+        elif value in ('-MF', '-MT', '-MJ'):
+            i += 1
+        elif not value.startswith('-W'):
+            cmd.append(value)
+        i += 1
+    cmd += ['-mgeneral-regs-only', '-Wno-unused-parameter', '-I', str(PKG)]
+    run(cmd, cwd=record['directory'])
+
+
+family_c = ('QcomMdt', 'QcomQrtr', 'ShengQrtr', 'QcomSmem', 'QcomSmp2p', 'QcomGlink', 'QcomQmp', 'QcomRpmh', 'ShengBattmgr')
+for stem in family_c:
+    compile_c_record(record_c, PKG / (stem + '.c'), OUT / (stem + '.o'))
+compile_c_record(record_b, PKG / 'AdspFirmware.c', OUT / 'AdspFirmware.o')
+# The embedded-form placeholder (r80 decision): the squashed 30.5 MiB firmware rides the
+# boot_b segment (package-m2381-boot.py --adsp-mbn/--adsp-dtb-mbn, read in place through
+# ShengUfs) — the ESP arithmetic vetoed embedding it in the kernel. The zero-size blob
+# keeps AdspProbe.cpp's references resolved and its embedded branch inert: the probe
+# falls through to boot_b:.
+blob = OUT / 'AdspFirmwareBlob.c'
+blob.write_text(
+    '// Generated by scripts/build-gop-legacy-display-27.py: the embedded ADSP blob placeholder. Zero size —\n'
+    '// the firmware rides the boot_b segment; a real embed would be staged here instead.\n'
+    'const unsigned char sheng_fw_adsp_blob[1] = {0};\n'
+    'const unsigned long long sheng_fw_adsp_blob_size = 0;\n'
+    'const unsigned char sheng_fw_adsp_dtb_blob[1] = {0};\n'
+    'const unsigned long long sheng_fw_adsp_dtb_blob_size = 0;\n')
+compile_c_record(record_c, blob, OUT / 'AdspFirmwareBlob.o')
+family_objects = [OUT / 'AdspProbe.o', OUT / 'BatteryProbe.o', battery_late]
+family_objects += [OUT / (stem + '.o') for stem in family_c]
+family_objects += [OUT / 'AdspFirmware.o', OUT / 'AdspFirmwareBlob.o']
+family_sources = [PKG / 'AdspProbe.cpp', PKG / 'BatteryProbe.cpp', PKG / 'ShengBattery.cpp', PKG / 'ShengAdsp.h',
+                  PKG / 'ShengBattmgr.c', PKG / 'ShengBattmgr.h', PKG / 'ShengQrtr.c', PKG / 'QcomQrtr.c',
+                  PKG / 'QcomMdt.c', PKG / 'QcomQmp.c', PKG / 'QcomRpmh.c', PKG / 'QcomSmem.c', PKG / 'QcomSmp2p.c',
+                  PKG / 'QcomGlink.h', PKG / 'AdspFirmware.c']
 print(run(['python3', ROOT / 'scripts/build-arm-driver.py', 'NativeGOPPresenter'], text=True), end='')
 gop = ROOT / 'build/native-gop-presenter'
 gop_late = gop / 'NativeGOPPresenter.late.o'
@@ -390,11 +463,11 @@ run([llvm / 'llvm-objcopy', '--remove-section=__DATA,__mod_init_func', '--global
      gop / 'NativeGOPPresenter.o', gop_late])
 archive = OUT / 'libNativeLegacyDisplay.late.a'
 archive.unlink(missing_ok=True)
-run(['xcrun', 'ar', 'rcs', archive, late, OUT / 'original-bindings.o', OUT / 'original-addresses.o', OUT / 'LegacyDisplayProbe.o', OUT / 'LegacyDisplaySupport27.o', OUT / 'GpuTraceStubs27.o', gop_late])
+run(['xcrun', 'ar', 'rcs', archive, late, OUT / 'original-bindings.o', OUT / 'original-addresses.o', OUT / 'LegacyDisplayProbe.o', OUT / 'LegacyDisplaySupport27.o', OUT / 'GpuTraceStubs27.o', gop_late, *family_objects])
 sources = [ROOT / 'drivers/GopFramebuffer/NativeLegacyDisplay.cpp', ROOT / 'drivers/GopFramebuffer/NativeGpuTrace.h',
            ROOT / 'drivers/GopFramebuffer/NativeLegacyRequest.h', ROOT / 'drivers/GopFramebuffer/NativeGOPPresenter.cpp',
            ROOT / 'drivers/GopFramebuffer/NativeGOPWire.h', ROOT / 'drivers/GopFramebuffer/NativeHalfCodes.h',
-           source, ROOT / 'scripts' / ABI_PATH.name]
+           source, ROOT / 'scripts' / ABI_PATH.name, *family_sources]
 
 
 def source_name(path):
