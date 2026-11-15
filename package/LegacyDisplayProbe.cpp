@@ -616,7 +616,7 @@ void native_legacy_display_probe(void) {
 }
 void native_legacy_display_late_probe(void);
 // m2381 fork: the strong board-probe externs (native_hid_input_probe, native_keystore_probe,
-// native_touch_probe, sheng_cpufreq_probe, sheng_gpu_power_probe, sheng_wifi_probe,
+// native_touch_probe, sheng_cpufreq_probe, sheng_wifi_probe,
 // sheng_audio_probe, sheng_buttons_probe, sheng_backlight_probe, sheng_dpu_probe) and their
 // calls are removed -- those probes are not compiled on this board; the keystore face keeps
 // its own trigger (offline-keystore-start.patch). r128 (s119): the ADSP and battery probes
@@ -695,6 +695,15 @@ void native_legacy_display_late_probe(void) {
         extern void native_goodix_touch_probe(void) __attribute__((weak_import));
         if (&native_hid_input_probe) native_hid_input_probe();
         if (&native_goodix_touch_probe) native_goodix_touch_probe();
+    }
+    // r131 (GPU lane): the staged power/GMU/Metal probe. GpuPowerProbe.cpp rides this
+    // archive when CONFIG_XNU_NATIVE_ADRENO=y; gpu-power=1..9 arms it (1 = read-only
+    // snapshot, 9 = CP init + ZAP + IRQ). Weak so a GPU-less kernel skips it. NOTE
+    // (r131b): this main-tree copy is the one build-gop-legacy-display-27.py compiles;
+    // the device-repo package copy is not the built file.
+    {
+        extern void sheng_gpu_power_probe(void) __attribute__((weak_import));
+        if (&sheng_gpu_power_probe) sheng_gpu_power_probe();
     }
     // r124: the selector probe arms only behind iomfb-uc-probe=1 (board.toml
     // carries it); the UC hook's hot path is a single volatile load.
