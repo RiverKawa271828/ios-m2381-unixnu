@@ -24,14 +24,22 @@
   owner trust = 原 dc655bcb 两模块 + 三 CDHash 模块（`ccff5d20…`）。Mac 侧工具链已就位
   （brew meson/glslang/shaderc/spirv-tools/bison3/rustup 1.98.0+rust-src；Mesa pin 85fda3b3
   17 patch 全 apply；metal2vulkan pin 963f0e64；crates.io 直连可用，代理仅 feed 拉取时需要）。
-- **件**（`out/m2381/`）：**A 主件** `payload-r131-gpu9addon-8bdb2265.img`（99MiB，
-  args `+gpu-power=9 gpu-metal=1 gpu-addon=1`，保留 touch 四件；trust `ccff5d20`；addon
-  `kernel.macho.gpuaddon` 12,843,120B）；**B 只读备件** `payload-r131-gpu1-19675c26.img`
-  （`gpu-power=1`，无 addon/原 trust）。卡=`out/m2381/R131-CARD.md`。
+- **首刷 r131 A（`8bdb2265`）= 2s 死，已定谳并修（r131b）**：屏摄 `kernel data abort`，
+  `PC=lck_mtx_unlock+0x1c`、`LR=hostRead4k+0x100`、`x0=gHost+0x30`(gHost.lock) 被踩成垃圾。
+  根因=**gScratch 128KiB→32KiB 切太狠**：`NativeUfs.cpp::readPolicyObject()` 读
+  `<window>.vroot`（OS 表 ~586KB）按 `kDataMax`(128KiB) 分块读进 gScratch，第一块越界写穿
+  gHost；GPU 探针当时还没跑（pid=0 source-storage root 读阶段）。修法=分块上限改
+  `sizeof gScratch`（32KiB=8 块）+ `static_assert`，gScratch 保持 32KiB（__DATA 窗口仍省 96KiB）。
+  r131b 内核 `2881cbc1…`（native）。
+- **件**（`out/m2381/`，r131b；首刷的 `8bdb2265`/`19675c26` 作废）：**A 主件**
+  `payload-r131b-gpu9addon-6a5ba18d.img`（99MiB，sha `6a5ba18d…`，args
+  `+gpu-power=9 gpu-metal=1 gpu-addon=1` + touch 四件；trust `ccff5d20`；addon
+  `kernel.macho.gpuaddon` 12,843,120B）；**B 只读备件** `payload-r131b-gpu1-c9ff50c0.img`
+  （`gpu-power=1`，无 addon/原 trust；sha `c9ff50c0…`）。卡=`out/m2381/R131-CARD.md`。
 - **下一步**：用户刷 A（recovery_a 单件，boot_b r129 `fc2e8f17` 不动）→ 上滑看桌面 → ≥8min
   硬断电 → 刷 reader `d01bed78` 拉窗判 **G2 主门**（屏摄进桌面；窗面 GPU1-8 行、`[gpu windows]`
   mount stage、`M`/`[gpu clients]`/`[gpu ibs]`、SWAP accepted/retired、T0、崩族对比 r130 s4b
-  chronod 408 / backboardd 372）。败则先刷 B 只读件定位 stage。
+  chronod 408 / backboardd 372）。若 A 仍死，先刷 B 确认修复后的 2s 死消失并定位 GPU stage。
 
 ## 0. 现势指针（每轮首更，2026-11-16 会话一百二十四；更早指针=archive/STATE-history.md）
 
