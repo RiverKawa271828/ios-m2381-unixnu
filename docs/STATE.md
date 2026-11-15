@@ -39,6 +39,23 @@ IB 地址不同域，需在 r135 用 linux arm-smmu 定义解码；⑥`nmb_comma
 `wait_until_completed()`（无期限，metal2vulkan-runtime command_buffer/mod.rs:3985），完成门由 Vulkan fence
 打开——门不开则客户端线程停在那；前端的 5 s 脸要查 CA/backboardd 帧循环的 5 s 上限（尚未定位，r135 第一刀）。
 
+**上游更新侦察（s127，upstream/main `71400b56`，落后 143 commits，merge-base `3375ac9d`）**：**我们的内核补丁面零变化**
+（`patches/xnu-12377` 0 文件、`ipados-27.0.1-24A446` profile 0 文件、只有 `macos-27.3-26C5035r` 在长）——所以
+可以只挑驱动 pin 动，不必整分支 rebase。**关键更新**：
+1. **Adreno740 `653e11c→54b41b8`（+18）＝正是我们墙的修法系列**：`2a91aa1 把 BV 线程进度算作 GPU 进度`、
+   `9578923 stall handler 不打扰正在干活的 GPU`、`172f53f ring switch 未完成不归罪任何 job`、
+   `031f35c/a8fa18f 一个进程地址空间出错不再拖垮其它 AS`、`54b41b8 保留卡死 CP 快照并定位 fault 地址候选`。
+   fence 500 卡死 + BV 不推进 + 旁观者受害，逐条对脸。
+2. **AdrenoMetal `6d7f734→9f6a887`（+51，qualified Metal main）**：texture policy、Turnip concurrent binning 回
+   Mesa 默认、present/diag 修复——**必须内核+插件/addon 同轮重编**（客户端 ABI 对）。
+3. **DarwinBoot `b33d75a→5243c68`**：新增 memory-window 属性 `darwinboot-memory-excluded/-loader-inputs/
+   -memory-outside`（`scripts/unixnu/devicetree.py` +31 同批）——第 4 项 16 GiB 的正路（窗口跨多段 DRAM/收养窗外内存）。
+4. 其它：Data seed 脚本修复（seed-output 集成/kernel-only 绑定/APFS 发现）、payload/bootimg FAT 发布与 ramdisk
+   编码修复、ShengUfs/QcaBluetooth pin（macOS 修复，与我们无关）。
+**r135 建议**：只做**双 pin 上抬**（Adreno740+AdrenoMetal，components.toml 与 gitlink 双落，s125 教训），先读
+`2a91aa1/9578923/172f53f/031f35c` 四个 diff 确认，再出 kernel+plugin(addon+owner trust)；整分支 rebase 留到
+GPU/IRQ 收口后（Mac 镜像要重 rsync，且 seed/payload 行为会变）。
+
 **设备/件现态（交接时）**：用户已刷 **r133**（手机 UI 确认），`recovery_a`=r133 `07935d96`；
 `current-slot`=b，`boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。r132 窗
 （`out/m2381/reader-r132/`，sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，
