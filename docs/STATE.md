@@ -1,5 +1,117 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
-## 0. 现势指针（每轮首更，2026-11-16 会话一百二十五收队；更早指针=archive/STATE-history.md）
+## 0. 现势指针（每轮首更，2026-11-16 会话一百二十六收队 → 下一会话 s127 接续；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★s127 交接（r132 判读，2026-11-16 会话一百二十六收队）——桌面达成，GPU 门开但执行面 stall，5 s 帧拍/IRQ 风暴仍在**：
+
+**设备/件现态**：用户已刷 **r132**（`payload-r132-irqfix-200f5279.img`）跑约 20 min（窗 `out/m2381/reader-r132/`，
+sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，uptime=1243s）。`current-slot`=b，
+`boot_b`=r129 `fc2e8f17`（未动），`recovery_a` 现=reader `d01bed78`；种子 `9c28654c` 零改动。
+**Setup 已走完、进入桌面**（About 屏：iPadOS 27.0.1 / 名称 iPad / 可用 15.53 GB）。
+
+**r132 判读（三句话）**：
+1. **沙箱通配生效，GPU 门开了**：`[gpu clients] backboardd 2/0/1 s0 4888M`（render server 首次拿到设备）、
+   `[gpu ibs] submissions=492 ibs=7376 max=128 over16=137`、method 1/15=22（16 客户端 + 6 backboardd）、
+   `X7 K430`。GPU 合成路径已接上。
+2. **但 GPU 执行面 stall、帧仍 5 s 一拍**：`[gpu stall] fence=382`（3018 行，BV IB2 base `0xffff0000` deadbeef，
+   job>=1662 br=1658 bv=503）、`[gpu unstick] kick=2 last=382 … unit=0us`、`[fence wait] calls=2416 timeouts=2415
+   last=500 wrote=499 submitted=500 completed=9`（等待把 0 当超时）、`[scanout wait] calls=2369 timeouts=2162
+   asked=500ms mean=500.8ms`（scanout client 从未拿到 offer）。`[swap timeline]` p50=**5004ms**、p90=5123、max=49568；
+   `SWAP calls=208 accepted=1 copy=208 retired=208`。显示族 5 s 看门狗仍是帧率上限。
+3. **IRQ 风暴没被 r132 的 GENI 修复压住**：IRQ=23.87M/1246s（19k/s；尾部 34–36k/s），r131d 15.9k/s，
+   r130-s2 基线 2.5k/s。GENI `SE_IRQ_EN` 不是（唯一）风暴源；新候选=**TLMM gpio25 引脚中断**（bootloader
+   可能留着 intr_cfg 使能，帧线程只轮询、不清 intr_cfg/status）或 spawn churn/IPI。需 INTID 取证。
+
+**同时记录（判读债/新账）**：
+- **churn/内存压力**：spawn=56,473（尾部 435/s）、EXIT 28,548/nonzero 14,138、xpcproxy 28,419/14,325；
+  free 在 5k–58k 页间摆动（20–230 MiB）。`iconservicesagent` m2v `no-device VkResult(-5)`（内存分配失败）
+  且 10 open/10 close 循环。5 s 帧拍 + 4.75 GiB owned + churn 叠加=用户体感“惊天动地”。
+  窗里**没有 EXIT 记录**（sheng-banner=0 把 CRASH/EXIT 画布也关了）——下次取证窗要么开 banner，
+  要么把 exit 记录写进 [page]。
+- T0 全绿：SMP run=7 / ADSP st=13 / battery st=4 pct=100 / AKS st=0 sg=3 / DATA st=2 / DISPLAY stage=10 PM=4 /
+  touch HID started=1（142 strokes/1886 reports）/ UFS failures=0。
+
+**下一会话工作单（按序）**：
+1. **r133 payload-only（用户已点名）**：args 把 `offline-legacy-unit-scale` 改成 **3**（1080x2400→360x800 pt
+   像素精确；asteroids/Nothing Phone 3a 的 bring-up 同值），看 Setup/Settings 点尺寸与布局；不好就回退 2。
+   内核/种子不动。
+2. **5 s 帧拍/IRQ 取证（主墙）**：给异常入口加 **GIC INTID 环形记录**（page 打最后 N 个 IRQ 号）；单变量试验=
+   identify 后清 **gpio25 intr_cfg(+0x1008)/status(+0x100C)**（也查 gpio24）；同时把
+   `native_legacy_swap_timeouts` 与 validated/pending 队列状态打进 [page]，确认 family 的 5 s cancel 与
+   completeCurrentSwap 失配。
+3. **GPU 执行面**：BV ring 的 `0xffff0000` IB2 基址（插件命令编码/提交路径）；`nmb_command_buffer_wait(handle,0)`
+   的 0 超时语义（frontend）；scanout client 收不到 offer（fb-gpu=1 的 handoff）——先让一帧真正 GPU 完成/呈现，
+   再谈流畅度。
+4. **内存 16 GiB 题**：现 `owned_memory_size=0x130000000`=4.75 GiB（MEM totalMiB=4864）；board
+   `dram_size=0x400000000`、DTS memory@80000000 size 0x400000000 都是 16 GiB → 限制在 payload ADT 的
+   owned 窗口。要用满 16 GiB=平台轮（改 owned_memory_size + UEFI 内存图/ADT 预留 + 核 stock FDT
+   reserved-memory/TZ 区），先评估再动。
+5. **容量题**：Data 卷=16 GiB（RAMDISK capacityMiB=16384/DATA pages=4194304）；About 的“总容量 6 GB/
+   可用 15.53 GB”不一致，先查卷上报（系统卷 vs Data 卷）。要真加大 Data 卷=新 seed/overlay →
+   **data-reset 红线**（谱系清零），不当场做。
+6. **iPhone IPSW lane（用户已拍板 2026-11-16：跟上游同款）**：采用上游 `ios-27.0.1-24A446`
+   profile 的 iPhone 产品（s122 账=**iPhone17,1**；开工前先核上游当前树 + 24A446 restore 的
+   BuildManifest 产品集，17,1 与 17,4 是否同 restore/同 kernelcache 待确认）。列为**后期待办**，
+   当前 GPU/帧拍/IRQ 收口后再开，不切换设备。
+   - **注意（避免错误归因）**：现役墙（5 s swap 看门狗、GPU BV stall/0 超时 fence/scanout 无 offer、
+     IRQ 风暴、4.75 GiB 内存 churn）**与 donor 身份无关**，换 iPhone lane 不会自动消墙；
+     iPad 身份也不是“选错机型”——sheng/asteroids 都在 iPad17,3 上跑到桌面，asteroids 甚至是手机。
+   - 参考 recipe：asteroids iPhone17,4/d48ap（唯一完整 pin/remap/policy/seed 记录，仅供 recipe 参照）；
+     cupid iPhone17,2/D94AP（只到 BSD init、卡 root device=我们已通段）；peridot iPhone14,5（未完成）。
+   - 代价：**Data seed 重建=谱系清零**（红线，需单独拍板）+ display/HID fixture 按 17,1 重做
+     pin/remap（379/207 槽语义）+ 新 OS/SystemOS 窗口重签 root policy + trust cache/userdata 重建
+     + **Metal plugin 的 QuartzCore 地址按 17,1 dyld cache UUID 查表**（硬编码 iPad 地址会写错全局）。
+
+**s126 档（历史，r132 已出并已判）**：
+
+**★★★★★★★★★★s126（r131 接续，2026-11-16）——r131c/r131d 判读完成 + r132 已出件待刷**：
+
+**判读（窗 sha `cee4af59…`，header rounds=460 slots_written=460/503 uptime=919s，屏 t=922s → 当轮非残影）**：
+- **GPU 探针已活**（r131c 的 display-builder 链修复生效）：`GPU3 H278 R1 I0 F0 rd0/d0 f9 g1 s400 G0 q6 u0`、
+  `[gpu ibs] submissions=1`（内核自测；ring 空 r0/d0）、`GPU5 M a0.ffffffff/0.ffffffff k0 s5/0 r1`、
+  `GPU6 K0`、`[metal askers] backboardd:5 SpringBoard:6 Setup:5`。
+- **addon 三挂载从未执行**（GPU 未加速的根因）：`A files=-1 wr=0 same=0 fail=0 ... mount=0/-1 mount2=0/-1
+  mount3=0/-1`，`[gpu windows] mount fail stage 0`。根因=**arg 名退役失配**：内核构建树 `kern_exec.c:8576`
+  gate 读 `sheng-gpu-addon`，r131c payload 的 args 行实测是 `gpu-addon=1`（件内 strings 实录）→
+  `native_gpu_addon_prepare()` 直接 return。Metal 插件 `NativeAdrenoMetal.bundle` 不存在 → CA 无 GPU
+  后端（FB total=153/922s，swap 每 ~5s 一帧，offer→done 7-37ms=驱动侧不慢，慢在客户端）。
+- **CPU/UFS 清白**：SMP `req=1 run=7` 七核 step7；SCHED 30ms sleeps n=64 mean_late=880µs max=1101µs
+  >50ms=0；UFS failures=0 integrity=0、1.34M req（~0.13ms/req）、verified 6.7GiB。不是 CPU/UFS 瓶颈。
+- **Setup「看不到下一步」= 自家 live banner 盖住底部**：`BootProgress.c crash_banner()` 在 OS 接管后把
+  不透明黑底诊断行画进 scanout fb（最多 48 行；1080x2400→scale 2 ≈ ≥1000px）；touch 正常（77 触点/
+  944 HID），t≈790-801s 的右下角点击就是 Continue 位。开关=`sheng-banner=0`（只停 OS 接管后的屏上
+  绘制，UFS 窗照记）。
+- **崩族无新墙**：crashes=23/exits=824（922s）；DockFolder sig11 `0x211d6e3dc` − slide `0x23fc000` =
+  `0x20f9723dc` = 在册 `DesktopServicesPriv TNode::GetNodeFromPath+0x2b4`；duetexpertd sig6 NSException 在册。
+
+**r131d 判读（窗 `out/m2381/reader-r131d/`，sha `e357e6f4…`，header rounds=362/503 uptime=723s）——addon 门开了，GPU 仍卡 render-server**：
+- addon 挂载已执行：`A files=6 wr=6 mount=3/2 mount2=1/2 mount3=1/2`（**stage 3=挂载成功**；status 2 只是后校验
+  找密封面 `AGXMetalA10.bundle` 不存在，本 root 无该 bundle，属预期）；`M a3.2/1.2 k0 s5/0 r1 o22/0/19`、
+  `K24 …`（插件已打开）。
+- **客户端侧 GPU 已工作**：`[gpu clients]` cameracaptured/SpringBoard/Setup 均有 slot 与 4.1GB 映射；
+  `[gpu ibs] submissions=37 ibs=112 max=18 over16=1`；`[gpu methods] 1:16 2:445 3:463 5:36 15:16`。
+- **render server 仍无 Metal 设备**：backboardd 6 次 open 全关、peak 0M、0 映射；method 1/15 恰为 16 次 =
+  16 次客户端 open（2+6+8），即 backboardd 的 Turnip 连接在 **selector probe** 阶段就失败；m2v 报
+  `Vulkan(VkResultCode(-3))`。候选根因=**xnu grant 补丁只做字面名字比对**，驱动属性 `"*"` 从未生效 →
+  沙箱过滤面拒掉 backboardd 的 selectors。
+- **“卡”的根因（与 GPU 无关）**：r130 stage3 起 IRQ 率 2.5k/s→14.5k/s，swap 间隔 48ms→5005ms（显示族
+  `swap_wait_gated` 的 5 s 看门狗）。engineInit 打开了 GENI SE 中断线（0xe1c），本板 SE4 无 FIFO 面、切
+  GPIO 位bang 后无人清 → 12–15k/s 电平风暴；s1/s2（engineInit 未真跑）median 48–54ms，s3 起 5005ms。
+- Setup 按钮：banner 已关（sheng-banner=0 生效），仍看不到 = 0.2 fps 画面冻结的推断，待 r132 后验证。
+- 崩族：crashes=13；W0 SEGFAIL p450 = 在册 DockFolder（`0x211bd23dc`−slide=`0x20f9723dc`）；
+  W1 `PUB no device: Vulkan(VkResultCode(-3))`。
+
+**r132 已出件（内核两改 + payload，Mac 双端 sha 对拍）**：`out/m2381/payload-r132-irqfix-200f5279.img`
+（99MiB，sha `200f5279…`；kernel 输入 `544f19a7`；payload kernel `325a222c`/LZMA `0f926828`；addon
+`13398d63`/trust `ccff5d20`/seed `9c28654c` 全同）。改动：①`GoodixTouchProbe.cpp` 切 GPIO 后
+`wr32(se,0xe1c,0)` + 清 `GENI_M_IRQ_CLEAR`；②`native_sandbox_grant` 支持 `"*"`
+（`patches/xnu-12377/zzw-native-adreno-sandbox-grant.patch` + `patches/xnu/` 镜像）。
+卡=`out/m2381/R132-CARD.md`，**待用户刷 recovery_a**；门=G1 IRQ ~2.5k/s + swap ~50ms / G2 触屏不回退 +
+按钮可见 / G3 Query≥22、K 出 6802、backboardd 有映射、submissions 增长 / G4 T0+崩族不回归。
+**运维债**：addon gate 名待下次 kernel 构建改读 `gpu-addon`（保留 sheng- fallback）；若 G3 只到 Query 增长
+而设备仍 -3，下轮在 Turnip device-init（VMA/内存/feature）打点。
+
+---
+**s125 交接档（历史，r131c 判读已于 s126 完成）**：
 
 **★★★★★★★★★★s125 收队交接（r131 GPU 轮，2026-11-16 会话一百二十五）——下一会话第一刀=判 r131c 的 GPU 结果**：
 
