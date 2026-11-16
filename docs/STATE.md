@@ -44,7 +44,20 @@ UI 立即出帧）；GPU ✓ 内核执行面通（残留=上述三处）。
    唤醒"是 ring-switch 还是 power 路径；若 doorbell 未发→补发路径。
 3. **客户端 5 s 节奏**（用户态，s127 遗留）：m2v runtime wait_until_completed 计时打点 → addon 重编；
    CA/backboardd 帧循环 5 s 上限定位。
-4. **r136 判据**：稳态 wait 超时≈0；completedFence 贴住 fence 页（差≤在飞数）；主动滑动出现 ≥10 帧连续流
+4. **16 GiB 内存窗平台轮（s128 侦察已立，不消三堵墙但消内存压力类）**：16 GiB 物理（dts `memory@80000000
+   reg=<0 0x80000000 0x4 0x0>` 已声明），现行只给 XNU 4.75 GiB 单连续窗口（`board.toml [payload.adt]
+   owned_memory_size=0x130000000`；SM8550 物理映射连续段 ~5.5 GiB 扣 PIL 等 carve 的净值，现行生成器
+   只支持单窗口 256 MiB–8 GiB）。**上游全套可抄**：DarwinBoot tip `5243c68`（我们 pin `b33d75a`）带
+   `owned_memory_outside_ranges`/`owned_memory_outside_reserved`/"BASE:SIZE" 表 + `memory-outside` 开关
+   （窗外空闲 DRAM 内核逐页试读后接管为 VM 内存）；内核补丁 `window-outside-memory-adoption.patch`
+   （621 行，pmap/pmap_data/arm_vm_init/machine_routines）现只挂 macOS 27.3 profile，24A446 未带——抄入
+   我们 series（97→98）；carve 清单已盘点（PIL 0x8A800000–0xA2A80000、AOP 0x81C00000–0x81CA0000、
+   gpu_micro_code 0x9b09a000、zap、framebuffer、loader inputs=dts reserved-memory+UEFI MemoryMapLib）。
+   同批上游还有 Data seed 脚本修复（seed-output/kernel-only 绑定/APFS 发现）。**判据**：MEM totalMiB
+   4864→~16000、free 稳态显著抬升、r132 式 churn 风暴不再复发、T0/GPU 门不回归。**顺序**=GPU 三堵墙
+   收口后（r137 平台轮），或与 r136 内核轮合并由用户拍板。iconservicesagent VkResult(-5)
+   （MEMORY_MAP_FAILED）在内存轮后复看——可能是池/映射上限的脸。
+5. **r136 判据**：稳态 wait 超时≈0；completedFence 贴住 fence 页（差≤在飞数）；主动滑动出现 ≥10 帧连续流
    （W 间隔 <120 ms）；冻结相位不复发（t<60 s 内 fence 页推进）；T0 不回归。
 **回滚锚**：r134 `payload-r134-irqring-b09ec0af.img` / r133 `payload-r133-uiscale3-07935d96.img`。
 
