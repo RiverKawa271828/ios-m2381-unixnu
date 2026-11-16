@@ -4,7 +4,7 @@
 
 | 角色 | 仓库 | 本地 | 当前 pin |
 |---|---|---|---|
-| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 **`main`** 上（2026-11-08 谱系修正：feat tip `d2666583` 已被 main 吸收，"lane 跟 feat"规则过期）；remote `upstream`（fetch-only） | lane pin `3375ac9d`（2026-11-10，main） |
+| **基座上游** | https://github.com/UniXNU/UniXNU | 本仓 `m2381-ios27` 分支挂在其 **`main`** 上（2026-11-08 谱系修正：feat tip `d2666583` 已被 main 吸收，"lane 跟 feat"规则过期）；remote `upstream`（fetch-only） | lane pin `387267a5`（2026-11-17，main） |
 | **本设备设备仓（2026-10-29 拆出）** | https://github.com/RiverKawa271828/UniXNU-m2381 | `../UniXNU-m2381`（工作区根 `/home/ri/work/unixnu-meizu`） | subtree split `2f06128c`（93 提交全史）+ 拆分适配 |
 | **本设备 UEFI（2026-10-29 新建）** | https://github.com/RiverKawa271828/uefi-m2381（待建仓首推） | `../uefi-m2381`（分支 main） | 基座 = 上游 uefi-sheng `sheng@0eb4514` + overlay `5297334`；实证来源 = nura 链 |
 | **设备模板（UEFI）** | https://github.com/hanzi123-bilp/uefi-fuxi | `reference/uefi-fuxi` | `7b7ec15` |
@@ -37,6 +37,22 @@
   （`README.md`/`.gitignore` 除外，见 §2 冲突策略）。
 
 ### 1.1 同步记录
+
+- **2026-11-17：`upstream/main` `3375ac9d` → `387267a5`（gap 210 条，650 个工作区提交重放 →
+  638 落位，12 条 gitlink-only 变空自动掉；STATE/patches/AGENTS/FLASHING 与 rebase 前备份
+  分支 `m2381-pre-sync-20261117` 零 diff = 内容零损）。上游主题：sheng 渲染 checkpoint 波
+  （Adreno740 runtime changes `0f150e6`、AdrenoMetal 抬 `79a2d579`——uniform 容量/buffer
+  offset/texture row/half 算术/snapshot reuse/render target）、GPU 诊断新仪器（[gpu vm
+  fail]/[gpu global fault]——与我们的挂起/0x400 脸同类）、macOS 27.3 工作、Data seed 修复。
+  子模块重落：Adreno740 `1c9029bc`+诊断重放（39b98f5/b084e0a）、ArmCpu stats 波
+  `acba4ee`+IRQ ring 重放（5327d7d）、GopFramebuffer presented-format 计数 `b0d812d`+swap
+  depth 重放（be658c5）、DarwinBoot 保留 4583617（LZMA-alone 展开，含上游全部）、
+  RamBlock/SoftwareAES 跟上游、AdrenoMetal `9f6a887→79a2d579`。catalog 双落同 commit。
+  **流程大坑（分支指针脱节）**：11-10 同步起的全部提交（含 s88-s129）都发生在 detached
+  HEAD 上，`m2381` 分支指针停在 iOS16 侦察时代、origin/m2381 停在 s56——本次首次 rebase
+  因此错误地只重放了老链 232 条（老 Initial adf61e29 时代）；备份分支（创建于 detached
+  HEAD=48b94243）才是真链，`git checkout -B m2381` 归位后二次 rebase 才正确。**纪律：
+  rebase 前必核 `git rev-parse --abbrev-ref HEAD` 是真分支且 tip 与最近提交一致。**
 
 - **2026-11-10：`upstream/main` `5dc00d20` → `3375ac9d`（gap 61 条，463 个
   工作区提交标准 rebase 重放→460 落位；3 条重放中变空自动掉）。

@@ -1,5 +1,35 @@
-# STATE — 现势状态（m2381，2026-11-17 更新）
-## 0. 现势指针（2026-11-17 s129 收队交接 → 下会话两件事：①重刷恢复新况判读 ②上游 206 条 rebase 评估；更早指针=archive/STATE-history.md）
+# STATE — 现势状态（m2381，2026-11-17 s130 更新）
+## 0. 现势指针（2026-11-17 s130：①r141b 工作脸窗判读完=非确定性挂起坐实 ②上游 210 条 rebase 全部落位+子模块重落 ③r143 出件待刷；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★r141b 工作脸窗判读定谳（2026-11-17 s130，窗 out/m2381/reader-r141b/ sha 4ebe17f4 双端对拍 ✓，
+rounds=220/503 slots_written=220/503 uptime=438s write_errors=0 无回卷）**：
+- **主门=非确定性挂起坐实**：同镜像 r141（f5aefc7f）黑屏窗死脸（fence 118 out=1 挂+合成器 t=172 后沉默）
+  vs 本工作窗 **[gpu ring] seq=667 done=667 out=0 rewind=0 全 drain + 合成器 W1@119s→W31@449s 持续出帧**——
+  挂起类病时好时坏，代码无罪（判读定律"同镜像重跑翻脸=先怀疑非确定性"命中）。[gpu ring] **首个工作基线入档**
+  （subs=69、fence seq=667）。[gpu wptr] writes=667 dropped=0 stuck=0、[gpu ibs] 659/1771、4 客户端持设备。
+- **残留未变**：[fence wait] timeouts=378/450（等待检测滞后脸——completed=666 贴住 submitted=667=020f460 的
+  monotone 起效，超时次数仍高待新窗定位分布）；**5.0s 节拍器仍在**（W 间隔 4960-5106ms、offer/done 毫秒级）；
+  SWAPQ 尾 copy=30/31 仍 100% CPU copy 但 **xfer=1 首现**；dpu 脸同 r140（dead0005、rel=400,400,400 活崩环境脸
+  在案、go=0 fb=30）。
+- **T0 全绿**：SMP run=7、UFS 84.8 万请求零 fail、REJ 黑屏脸 0 行（pad 身份 ✓）、EXIT 1363/nonzero 563。
+- **结论**：主线回归卡顿收口。**r143=rebase 后首件**（上游 210 条渲染 checkpoint 波+fence face 仪器进 Mac），
+  判据=GPU 面不回归+[gpu ring] 新基线+5s 节拍是否被上游 m2v/CA 改动影响。
+
+**★★★★★★★★★★上游 210 条 rebase 全部落位（2026-11-17 s130）**：upstream/main `3375ac9d→387267a5`，
+650 条工作区提交重放→638 落位（12 条 gitlink-only 空掉），**STATE/patches/AGENTS/FLASHING 与备份分支
+`m2381-pre-sync-20261117` 零 diff=内容零损**。子模块重落（catalog 双落）：Adreno740 `1c9029bc`+诊断重放
+（39b98f5 fence face+b084e0a ring face——**等待检测滞后的 observeBookkeeping 修法随 pin 进树**）、ArmCpu
+stats 波 `acba4ee`+IRQ ring 重放（5327d7d）、GopFramebuffer `b0d812d`+swap depth 重放（be658c5）、
+DarwinBoot 保留 4583617、RamBlock/SoftwareAES/AdrenoMetal（`79a2d579` checkpoint 波）跟上游。M1 diag 扩面
+（outside-memory-diag.patch 五 hunk：init 入口 0xAA55/kept-killed 账本/table 计数/cap 0x400/adopt 入口
+0xABAD+runs；BootLog [boot mem+] init= 行新增，设备仓 5268fd4）。**流程大坑入档：11-10 起的提交全在
+detached HEAD 上（m2381 分支指针停在 11-10 前、origin 停在 s56），首次 rebase 错重放老链 232 条；
+checkout -B 归位后二次 rebase 才对——rebase 前必核 HEAD 是真分支且 tip=最近提交。** UPSTREAM §1.1 全记。
+
+**r143 出件工序**：Mac 侧 rsync 双仓（带完整排除清单 dry-run 核对）→ `./unixnu kernel`（重编：上游
+runtime changes+诊断重放+M1 diag 扩面+BootLog 扩行）→ `./unixnu payload`（args 不动 47=47）→ dd 读回
+对拍（**纪律恢复：r138 起历次刷写缺 dd 读回**）→ 用户刷 recovery_a。回滚锚=r141（f5aefc7f）。
+
 
 **★★★★★★★★★★收队新况（2026-11-17 深夜，用户报）：重刷 r137 boot_b + r141 payload → 正常进桌面**。
 设备现态 = boot_b `e9085e5a`（r137 件，重刷）+ recovery_a `f5aefc7f`（r141 payload = kernel
