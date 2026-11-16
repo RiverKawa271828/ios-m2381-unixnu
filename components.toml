@@ -95,8 +95,10 @@ repository = "https://github.com/UniXNU/Adreno740.git"
 # its qualified revision in the same round (client ABI pair).
 # r136: 020f460 adds the fence readers' face (native_adreno_ring_face) and a
 # monotone completed prefix — r135's window read a working GPU as a wedge
-# because completed_ only moved on held waits.
-revision = "020f460b2d93b9c6b243803fec6201438d7913f9"
+# because completed_ only moved on held waits. r137: the face's submitted
+# words also fill on submitFramed (the production path; the r136 window's
+# ring row was absent because Ring::submit never runs).
+revision = "a7d2ded00a35869436a6a6d4b97afe4d52e4f56e"
 path = "drivers/Adreno740"
 hardware = ["Adreno 740", "SM8550"]
 os_abi = ["ipados-17.7.11-21H461"]
