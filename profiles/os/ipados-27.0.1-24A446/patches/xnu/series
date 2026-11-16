@@ -243,3 +243,14 @@ arch:../../../patches/xnu-12377/iomfb-uc-selector-probe.patch
 # the macOS 27.3 profile; our lane needs it for the same driver. The patch only
 # adds the reserved fields, the close notification and its one-shot handler call.
 arch:../../../patches/xnu-12377/gpupool-device-pager-close.patch
+# r136 (2026-11-16, s128): the 16 GiB memory-window round. The board has DRAM
+# beyond the kernel's managed span (the single contiguous window tops out at
+# 4.75 GiB), which the loader lists in /chosen/darwinboot-memory-outside. The
+# adoption patch makes the kernel adopt it as VM memory one probed page at a
+# time (a refused load is an external abort; the platform error handler skips
+# it and the page stays unmanaged). Upstream ships both patches in the macOS
+# 27.3 profile (8f5a4e98 + 0a78e874/0282fdd9/4f3ff5c5); sheng (same SM8550)
+# ran them on hardware: 117264 pages (458 MiB) adopted. After t0sz (same
+# arm_vm_init ground) and last in the series like upstream's own order.
+arch:../../../patches/xnu-12377/platform-error-name-address.patch
+arch:../../../patches/xnu-12377/window-outside-memory-adoption.patch

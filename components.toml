@@ -63,7 +63,10 @@ kind = "driver"
 function = "UEFI XNU loader"
 scope = "firmware"
 repository = "https://github.com/UniXNU/DarwinBoot.git"
-revision = "3c75734014cdab0acd9541e88057b7606ee7ae08"
+# r136: the upstream memory-window series (a2cfbe4 excluded ranges, fae6e5c
+# loader inputs, 5243c68 outside ranges) under our LZMA expansion (4583617,
+# b33d75a rebased on top): the 16 GiB round's loader half.
+revision = "45836172fcef9e26542093d42c1a29b178870505"
 path = "drivers/DarwinBoot"
 hardware = ["ARM64 UEFI"]
 os_abi = []
@@ -87,11 +90,13 @@ repository = "https://github.com/UniXNU/Adreno740.git"
 # moves to the upstream stall/fault series: 2a91aa1 counts the BV thread's
 # progress as GPU progress (concurrent binning leaves BR standing while BV
 # works), 9578923 leaves a working GPU alone in the stall handler, 172f53f
-# blames no job for a ring switch the CP never finished, 031f35c/a8fa18f keep
-# the GPU usable when one process's address space faults, 54b41b8 retains the
+# blames no job for a ring switch the CP never finished, 54b41b8 retains the
 # hung CP snapshot and locates fault address candidates. AdrenoMetal moves to
 # its qualified revision in the same round (client ABI pair).
-revision = "54b41b8f59e90a167f6f75160739c5f825945fbc"
+# r136: 020f460 adds the fence readers' face (native_adreno_ring_face) and a
+# monotone completed prefix — r135's window read a working GPU as a wedge
+# because completed_ only moved on held waits.
+revision = "020f460b2d93b9c6b243803fec6201438d7913f9"
 path = "drivers/Adreno740"
 hardware = ["Adreno 740", "SM8550"]
 os_abi = ["ipados-17.7.11-21H461"]
