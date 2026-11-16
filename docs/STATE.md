@@ -1,20 +1,34 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
 ## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
 
-**s128 进行中（2026-11-16 深夜→11-17 凌晨）——r136 合并轮双件出件完毕，待用户刷**：用户拍板 GPU 内核刀 +
-16 GiB 内存窗**合并进 r136 一刷**。**件（双端对拍 ✓）**：boot_b `out/m2381/boot-b-b4849654-r136.img`
-（31,903,744B；FD `dee93e84`=DarwinBoot `4583617` 编入 [DarwinOutsideRanges/FindOutsideTable 实证]；ADSP
-段 a9b3fd8a/ee426dfc 逐字节同 r128b）+ recovery_a `out/m2381/payload-r136-mem16-ed154e4f.img`（99 MiB；
-kernel 输入 `c57b7cdb`；**series 97→100**=errname+excluded-ranges+outside-adoption——首跑 kernel 因 adoption
-依赖 `arm_vm_excluded_range_t`（window-memory-excluded-ranges.patch 定义）失败，补入后二跑干净；ADT
-outside/kept/loader-inputs 三属性 payload 内核实）。**代码提交**：主树 `fe2cae15`（builder 半）+`27ec2d7d`
-（交接）+设备仓 `0948a59`（板半+BootLog 五行）+`5c85837`（boot.json=b4849654）；Adreno740 `020f460`
-（ring face+单调 completed_+rewind 计数）、DarwinBoot `4583617`（LZMA rebase 到 5243c68）。**判定新认知**：
-生产只有单 ring（setPreemption 仅测试）；r135 的"双 ring 冻结"实为 **GPU 真冻结在 fence 9（t≈14s 起）+
-hangcheck 反复 reset/replay 的循环**（recover 机器全套存在但没进窗——五行补盲），completed 558→9=
-reset(completed) 重绕。**卡=`out/m2381/R136-CARD.md`（判据 M1/G1-G4 预注册；回滚可单回）**；已知良性差异=
-args 行顺序变（payload.py 8f5a4e98 extra 前置）。**下一轮第一刀=刷双件→拉窗 reader-r136→按卡判**。
-trust/addon/seed 全同 r135；args 集合同（顺序变）。
+**s128 判读（2026-11-17）——r136 窗已拉已判：GPU 三门过（冻结未复发+取证面立起），M1 未过（16 GiB 没接管）；存储三连答已给**：
+
+**刷写实证**：boot_b=sde43 dd 读回 sha 逐字节=`b4849654`（新 FD 确实启动）；recovery_a=sda10 首块
+`M2381`=r136 payload。窗 `out/m2381/reader-r136/`（sha `39f5b838`，rounds=253/503 uptime=504s 无回卷）。
+**G2/G3 过**：GPU 本轮健康——fence submitted=1590 completed=1588、`[gpu wptr] writes=1590 dropped=0
+repeated=0 stuck=0`（掉 WPTR 写=零）、无 `[gpu recover]`（=无 hang，门逻辑正确缺席）、无 stall/unstick；
+`[gpu ring]` 行缺席=待查（gate=ring_face[2]>0，fence_wait 850+ 次应已填 face——疑 020f460 未进内核或
+weak 未链，核 kernel.macho 符号）；`[gpu ring]`/`[gpu fault]`/`[gpu recover+]` 同查。T0 全绿（SMP run=7、
+ADSP st=13、battery st=4 ma=-462、AKS sg=3、UFS failures=0 922k reqs）；崩族=duetexpertd sig6 旧脸
+（slide +b24000），EXIT 1783/nonzero 754；PosterBoard 首现客户端（s3 4187M）。
+**M1 未过**：`MEM totalMiB=4864`——adoption 没发生。排查链：DarwinOutsideRanges 两侧都收（窗上/窗下，
+MemoryWindow.h 实证）、adoption 依赖链全接（QcomPkg.dsc.inc→RamManagerLib=XBL RamPartition 协议版；
+m2381.fdf:87 有 RamManagerDxe）、ADT 三属性在、内核 patch 在（series 100 干净应用）→ 缺口收窄到
+**UEFI 内存图里没有窗外的 conventional 段**（MemoryMapLib 静态表止于 0x100000000；RamManager gap-fill
+范围=XBL RamPartition 条目，bank2 是否在其中待 boot 屏实据）。**决定性实据=boot 屏 DARWINBOOT 行**
+（`ARM64 va=… pa=… owned=…` + `free memory outside the window: N ranges of 8, X bytes`）——请用户下轮
+boot 拍屏；或 r137 在内核侧把 outside 表打进窗。**注**：stock cmdline `memsize=3072000` 推 12G 一说不采信
+（用户定谳 16G，nura 已更正该误记）。
+**存储三连答（用户问"很卡是否空间不够/6G vs 15.79G/能否扩 128G"）**：①卡≠存储——Data store 16 GiB
+（`D st=2 … pages=4194304`）、present ~1.95 GiB、可用 15.79G 属实，无 thrashing 脸（UFS 0 fail；"数据不断
+转移"不存在）；卡=5s 交帧节奏（client 帧循环，s127 定谳未变，offer/done 毫秒级每帧秒完）。②About
+"总容量 6G"=卷上报 bug（s126 立案的 6GB/15.53GB 不一致，本轮 15.79G 与 16 GiB store 几何一致——错的是
+"总容量"栏）。③扩 128G 技术可行（userdata LUN 463.6 GiB，Data store 只占 16 GiB；扩=seed 重建+
+data-reset=清装机数据，红线决定）但**不消卡**，后置。
+**回滚锚**：boot_b `fc2e8f17`/payload `a29c87f9`（r135），或单回（新旧交叉自动 no-op）。
+**下一轮工作单（r137）**：①拍 boot 屏 DARWINBOOT 行定谳窗位/bank2；②按实据修 map（RamManager
+Print 增强 or MemoryMapLib 静态补 bank 2）+内核侧把 outside 表打进窗；③`[gpu ring]` 行缺席查因；
+④5s 交帧节奏（用户态）不变优先级。
 
 
 
