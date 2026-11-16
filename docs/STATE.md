@@ -1,5 +1,5 @@
 # STATE — 现势状态（m2381，2026-11-17 更新）
-## 0. 现势指针（2026-11-17 s129 r140 出件待刷 → 拉窗 reader-r140 按 R140-CARD 判；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 s129 r140 已判（黑屏=身份遗留自伤，仪器全命中）→ r141 出件待刷；更早指针=archive/STATE-history.md）
 
 **★★★★★★★★★★r139 黑屏判读+身份轮入档（11-17，窗 reader-r139 sha 0fe1c0fe/rounds 294/503/uptime 586s）**：
 **黑屏根因=格式拒绝**：`REJ acc=1 rej=90 r=4 wh=1080x2400 SURF 1080x2400 fmt=62336138("b3a8") pl=2
@@ -36,7 +36,18 @@ b3a8/双平面接受面+copy 转换**（显示格式工作项）；恢复=刷回
   必须 `--hard`；Mac"GopFramebuffer r134 脏树"=内容逐位等于 Linux 已提交态（sha 对拍后净化零风险）；
   `git bundle create <file> <裸SHA>`=Refusing to create empty bundle（必须经分支名）。
 
-**★★★★r140=dpu 证据轮（出件完毕待刷，2026-11-17；设备仓 `29277f4`，Mac 主树 `fb570cf`=a7d2ded gitlink）**：dpuEnable 入口清 FSR（c[8]=清后值）+ 症状
+**★★★★★★★★★★r140 已判（黑屏=身份遗留自伤+仪器全命中，11-17；窗 reader-r140 sha 1e045ebf/rounds 332/503/uptime 662s）**：
+①黑屏根因=**r139 的 phone 身份板级表没回滚就进了 r140 构建**（REJ fmt=b3a8 pl=2 rej=106 reason=4、
+W 只有 1 个 @t=119.35s=锁屏时刻合成器首帧被拒）——已回滚（设备仓 `c5928b3`）+ r141 出件
+`out/m2381/payload-r141-padrestore-f5aefc7f.img`（kernel member fd10084c 不变、args 47=47、ADT
+iPad17,3/J820 复核 ✓）。②**dpu 证据面命中**：rel=400,400,400=**0x400 活崩**（清了立即回挂、bypass
+下持续挂）；syn=b8746000,0,7e0020；dead0005 us=0、direct 全零=链结果与 r138 同。**r142 刀口改写：
+0x400 活崩=bypass 期显示银行持续崩的环境脸**（stream 映射/别的主机误路由 bank3/不支持事务类型），
+AF 只是伴生。③**a7d2ded 无罪且立功**：[gpu ring] 326 行首现（seq=done=1364、rewind=0）、fence
+1364/1363、wptr 零掉写=GPU 面史上最健康。④流程坑入账：**跨轮实验变量必须显式回滚**（r139 的
+board.toml 身份表顺位进了 r140——单变量纪律被自己打破）。
+
+**★★★★r140=dpu 证据轮（2026-11-17；设备仓 `29277f4`，Mac 主树 `fb570cf`=a7d2ded gitlink）**：dpuEnable 入口清 FSR（c[8]=清后值）+ 症状
 面化（c[4..6]=FSYNR0/1/0x68）+ undo 后 re-latch 采样（c[9]=清后即时、c[10]=50ms 后——**re-latch=
 bypass 模式也在崩=活崩；干净=翻译取数唯一真错**）；[dpu state] 行加 syn=/rel=；check[] 8→12。
 捎带 a7d2ded 进 Mac（[gpu ring] 行）。kernel `dc275537`（member fd10084c）+payload 重编，args 不动（47=47 PASS）。件=`out/m2381/payload-r140-dpuvidence-ce2455cb.img`（sha 双端逐位同）；回滚锚=r138（39de885c）。判据=R140-CARD（syn/rel 三值分叉定谳 + [gpu ring] 首现 + T0 不回归）。**判据**：syn/rel 面化后按
