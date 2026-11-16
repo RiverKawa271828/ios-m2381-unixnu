@@ -1,7 +1,56 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
-## 0. 现势指针（2026-11-16 会话一百二十七收队 → 下一会话 s128 接续；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
 
-**★★★★★★★★★★s127 收队（2026-11-16）——r135 已刷已测：硬件加速仍未起来，s128 第一刀=拉 r135 窗归因**：
+**★★★★★★★★★★s128 开窗判读（2026-11-16）——r135 窗已拉已判：GPU 执行面通了（fence 楔子破、stall 归零），三处残留=冻结相位 118 s/等待检测滞后/客户端 5 s 节奏；电源/触摸验证全过**：
+
+**窗核验**：`out/m2381/reader-r135/`（sha `72448ef7`，header rounds=276/503 slots_written=276/503 uptime=550s
+write_errors=0，无回卷残影）。`recovery_a`=reader（r135 窗已拉完， reader 可继续用或按刷写纪律覆盖）。
+
+**G1（GPU 执行面）主门过**：`[fence wait]` **submitted=1322 completed=1267**（r134: 204/9；r132: 500/9）——
+**楔子破了**；`[gpu stall]`/`[gpu unstick]` 全窗 **0 行**（r132 有 3018 行）。X4 `r1e8f/1e8f`=ring head==tail
+（CP 吃空）；`[ring]/[ib]` 快照是真命令流（`[ib] iova=10f311000` >32-bit peek 已修好，r132 的 deadbeef 消失）；
+`[fence page] dram==cached` 全程一致。method6=WaitFence 1826 calls/354 超时。54b41b8 系列（BV 进度/快照/fault
+隔离）+36/48-bit peek 修法**实机生效**。
+
+**新发现①双 ring + 冻结相位 118 s**：preemption 两 ring（high/low；`ringForFence`: fence≤ring0.lastSubmitted→
+ring0，否则→ring1）。fence 页 word1 **t=14→132 s 恒=0x9**（low ring 冻结，只执行过 9 个 fence），**t≈134 s
+瞬间解冻**（word1 9→0x4e9=1257，backlog 秒级执行完）；解冻点与 **[gpu clients] 从 2 客户端（cameracaptured+
+backboardd）变 4（+SpringBoard+iconservicesagent）** 同拍——Metal 客户端首次 open 与解冻相关。稳态后 fence 页
+每 5 s +2（=客户端交帧节奏，GPU 从不落后）。
+**新发现②等待检测滞后**：稳态（t>150 s）completed_=1267（落后 fence 页 55）且又超时 **328 次**——fence 页
+GPU 已写、wait() 仍超时；`completed_` 只在 wait() 成功时推进（NativeAdrenoRing.cpp:657），stall 机全程 0 行
+（r132 的 noteStall 盲区仍在，有积压的 low ring 从未被记录）。候选机制=fence 页映射属性/acquireDeviceWrites
+在本板不生效（cache_.acquire 已装、效果存疑），或 stall 机只看"最新提交的 ring"。
+**5 s 节奏=客户端侧未变（s127 预言坐实）**：W 间隔 t=165–268 s 恒 ~5.0 s（期间零触摸），尾部精确 60 s 间隔
+（419.995/480.003/540.004=定时器心跳）；7 次触摸各自立即出 1–2 帧（offer 0–2 ms/done 2–128 ms）。r134 的
+41–972 ms 窗是连续滑动时段不可比；但 r134 W82–W94 有 13 帧 0.65 s 减速流（flick 流）而 r135 触摸后 2 帧即停
+——手势流式是否还在待 r136 主动滑动验证。**GPU 每帧秒级完成，5 s 节奏=客户端交帧节奏**（内核 pin 上抬不消此墙）。
+**G4 addon 过**：`A files=6 wr=4 same=2 mount=3/2`（新 addon 件真落盘），M a3.2/1.2、K86、plugin opens=10/
+closes=7（无拒绝）、[gpu clients] 4 客户端持设备（backboardd s0 4709M）、owner trust 无签名失败。
+**G3 T0 全绿**：**SMP run=7**（c1–c7=step7，r134 run=0 观察点解除=当时瞬时态）、ADSP st=13 rx/tx 流动、
+battery st=4 pct=99 ma=-519 usb=1（充电链无回归）、DATA st=2 er=0、AKS st=0 sg=3、DISPLAY stage=10 owned=1、
+UFS failures=0（965k req）、IRQ top=27（timer；29k→10.5k/s 随 churn 回落，spawn 4376）。
+**崩族**：EXIT 1980/nonzero 850/crashsig 9（r132: 28548/14138——churn 塌一个量级）；DockFolder sig11 unslid
+**0x20f9723dc=r131c 同址**（TNode::GetNodeFromPath+0x2b4 旧脸）；duetexpertd sig6 同 abort 族；新脸=
+cameracaptured `pipelineLibrary:error: (answered nil)` + iconservicesagent VkResult(-5)（持续）。
+**DeepSeek 三域验证**：电源 ✓（r128b 里程碑保持）；触摸 ✓（TCH2–5 健康、TLMM 拆除在位、7 笔划到用户态且
+UI 立即出帧）；GPU ✓ 内核执行面通（残留=上述三处）。
+
+**s128 工作单（r136，按序）**：
+1. **等待检测滞后**（内核一刀）：静态核 fence 页映射属性与 acquireDeviceWrites 在本板路径（确认 cache_.acquire
+   是否真失效）；completed_ 改为 observe/完成路径也推进（不只 wait 成功）；BootLog 加 per-ring fence wait 行
+   （ring0/ring1 各自 lastSubmitted/completed/seqno + fence page PA）终结归属歧义。
+2. **冻结相位取证**：ring1 首个提交时刻 + WPTR doorbell/GMU AHB fence status 接口核对；确认"SpringBoard open
+   唤醒"是 ring-switch 还是 power 路径；若 doorbell 未发→补发路径。
+3. **客户端 5 s 节奏**（用户态，s127 遗留）：m2v runtime wait_until_completed 计时打点 → addon 重编；
+   CA/backboardd 帧循环 5 s 上限定位。
+4. **r136 判据**：稳态 wait 超时≈0；completedFence 贴住 fence 页（差≤在飞数）；主动滑动出现 ≥10 帧连续流
+   （W 间隔 <120 ms）；冻结相位不复发（t<60 s 内 fence 页推进）；T0 不回归。
+**回滚锚**：r134 `payload-r134-irqring-b09ec0af.img` / r133 `payload-r133-uiscale3-07935d96.img`。
+
+---
+
+**★★★★★★★★★★s127 收队（2026-11-16）——r135 已刷已测：硬件加速仍未起来，s128 第一刀=拉 r135 窗归因（已执行，见上）**：
 
 **设备现态**：用户已刷 **r135**（`payload-r135-gpuseries-a29c87f9.img`），实测**硬件加速仍未起**；`current-slot`=b，
 `boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。**设备重启**：reader 里 `/bin/rebootbl` 回 fastboot 后
