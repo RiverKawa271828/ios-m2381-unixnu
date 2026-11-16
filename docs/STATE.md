@@ -22,6 +22,17 @@ sha `b09ec0af…`，双端对拍 ✓）。kernel 输入 **`161432cf`**（新）�
 payload kernel `16c0fdb0`/LZMA `199db47f`；addon/trust/seed 全同；args 与 r133 逐字同（scale=3 保留）。
 卡=`out/m2381/R134-CARD.md`。**预期帧拍仍 ~5 s（不修 GPU）**；判据 G1 IRQ 命名（top=240→本修生效；
 top=0/27→改查 IPC/timer）、G2 SWAPQ 失配脸、G3 TCH5 拆前现场、G4 T0/崩族。
+**r134 判读（已刷已拉窗，窗 `out/m2381/reader-r134/`，sha `aed4934d…`，header rounds=353/503 uptime=711s 无回卷）**：
+- **5 s 帧拍消失**：`[swap timeline]` W 间隔 **+41–972 ms**（多数 41–67 ms，偶发 380/972），offer=0、done=6–18ms。
+- **IRQ 风暴定性=INTID 27（arch timer PPI）**：`IRQ RING last: 27… top=27 x32`，速率 3.3–4.7k/s（r132 19k/s），
+  `long=0/3`、`unh=0/0`；**TLMM 不是风暴源**（`TCH5 irq cfg=0x000000e2 status=0`=靴子武装过但从未挂起）；
+  r132 的 GENI/引脚两个假说都死。速率随 churn 崩塌而回落（spawn 1188 vs 56473）。
+- **SWAPQ**：`val=105 ret=105 to=0 fwait=0 copy=104 depth=0/2`——无 family 5 s cancel，显示走 CPU copy。
+- **GPU fence 楔子仍在**：`[fence wait] calls=202 timeouts=201 last=204 wrote=203 submitted=204 completed=9`；
+  `[gpu stall]` 0 行；`[scanout wait]` 970/865 超时（500ms 级）；`[gpu ibs] submissions=196 ibs=2511`；
+  `[gpu clients]` backboardd s0 4860M。
+- **T0 回归观察点：SMP `run=0`，c1..c7=step3**（r132 run=7）——LZMA/SMP 旧悬案或 r134 ArmCpu 环改动嫌疑，r135 观察。
+- T0 其余：ADSP st=13、battery st=4 pct=100、AKS st=0 sg=3、UFS failures=0、DISPLAY stage=10 owned=1。
 源码：设备仓 `ad274ad`；ArmCpu/GopFramebuffer 为**工作树改动**（pin 未动，diff 存 `out/m2381/r134-diffs/`，
 子模块仓 origin=UniXNU 无推送权）。**r135 工作单=GPU 执行面**（卡尾）；关键更正：r132 的
 "BV IB2 base 0xffff0000" 是 `peekFetch` 的"索引未知"编码 + 16×deadbeef=peek 读失败，不是坏基址。
@@ -56,10 +67,23 @@ IB 地址不同域，需在 r135 用 linux arm-smmu 定义解码；⑥`nmb_comma
 `2a91aa1/9578923/172f53f/031f35c` 四个 diff 确认，再出 kernel+plugin(addon+owner trust)；整分支 rebase 留到
 GPU/IRQ 收口后（Mac 镜像要重 rsync，且 seed/payload 行为会变）。
 
-**设备/件现态（交接时）**：用户已刷 **r133**（手机 UI 确认），`recovery_a`=r133 `07935d96`；
-`current-slot`=b，`boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。r132 窗
-（`out/m2381/reader-r132/`，sha `5dcdd522…`，header rounds=622 slots_written=622/503 **已回卷**，
-uptime=1243s）仍是最近一份完整取证。**Setup 已走完、进入桌面**（About：iPadOS 27.0.1 / 可用 15.53 GB）。
+**s127 已做（r135 出件，2026-11-16）**：`out/m2381/payload-r135-gpuseries-a29c87f9.img`（99 MiB，sha `a29c87f9…`，
+双端对拍 ✓）。**双 pin 上抬已落**：Adreno740 `653e11c→54b41b8`、AdrenoMetal `c68f9a1→9f6a887`（components.toml
+与 gitlink 双落；catalog 旧值 6d7f734 同改）；build-adreno-metal-bridge/plugin/turnip 与
+`scripts/data/gpu-metal-vulkan-inputs.json` 取上游版（translator `963f0e64→555b13d5`）；新增上游
+`macho-self-bind-weak-imports.py`；**内核新增补丁 `gpupool-device-pager-close`（96→97）**——新驱动 pool view
+（`NativeAdrenoPublish.cpp`）弱引 `iokit_physical_descriptor_close_notify`，上游只在 macOS 27.3 profile 带它；补丁是
+通用 IOKit 代码。kernel 输入 **`02a92612`**（`bvProgressState` 与 hook 已在符号表核实），payload kernel
+`d09b786f`/LZMA `eedaa24e`；**addon `c9dcedcc`**（plugin CDHash `17067100`/daemon `af0d0f86`/Turnip `f3449fcf`；
+plugin 用 `--no-replay`：新驱动 user-client TU 引 `sys/resource_private.h`，host 模拟缺该头；replay 只是 host 诊断）；
+**owner trust `3a7da3e9`**（`make-owner-trust-bundle.py` 已泛化 `--plugins/--originals/--output`，默认行为不变，24A446
+原始两模块字节未改）；seed 零改动、args 与 r134 逐字同（scale=3）。卡=`out/m2381/R135-CARD.md`，**待用户刷**。
+判据：G1 fence `completed` 上升/不冻结、帧间隔不回归；G2 unstick 动作下降；G3 **SMP run=7（重点）**+T0；G4 addon 挂载/插件。
+
+**设备/件现态（交接时）**：用户已刷 **r134**（`payload-r134-irqring-b09ec0af.img`），窗已拉
+（`out/m2381/reader-r134/`，sha `aed4934d…`，header rounds=353/503 uptime=711s 无回卷），recovery_a 现=reader（拉窗后）；
+`current-slot`=b，`boot_b`=r129 `fc2e8f17`（未动），种子 `9c28654c` 零改动。**Setup 已走完、进入桌面**
+（About：iPadOS 27.0.1 / 可用 15.53 GB）。
 
 **r132 判读（三句话）**：
 1. **沙箱通配生效，GPU 门开了**：`[gpu clients] backboardd 2/0/1 s0 4888M`（render server 首次拿到设备）、
