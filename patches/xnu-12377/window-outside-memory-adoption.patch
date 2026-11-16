@@ -321,7 +321,7 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
   * Bounds of the kernelcache; used for accounting.
   */
  SECURITY_READ_ONLY_LATE(vm_offset_t) arm_vm_kernelcache_phys_start;
-@@ -585,6 +608,113 @@
+@@ -585,6 +608,119 @@
  	arm_vm_excluded_size = arm_vm_excluded_bytes(gPhysBase, span_end);
  }
  
@@ -384,6 +384,8 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +	uint64_t base, end;
 +	pmap_paddr_t low = ~(pmap_paddr_t)0, high = 0;
 +
++	extern volatile uint64_t native_boot_memory[32] __attribute__((weak_import));
++	if (&native_boot_memory) { native_boot_memory[4] = 0xAA550000; }
 +	PE_parse_boot_argn("memory-outside", &wanted, sizeof(wanted));
 +	if (!wanted || SecureDTLookupEntry(NULL, "/chosen", &chosen) != kSuccess ||
 +	    SecureDTGetProperty(chosen, "darwinboot-memory-outside", (void const **)&pairs, &pairs_size) != kSuccess) {
@@ -395,9 +397,11 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +	}
 +	for (unsigned int i = 0; arm_vm_outside_pair(pairs, pairs_size, i, &base, &end); i++) {
 +		if (end <= base || base < gDramBase || end > gPhysBase) {
++		if (&native_boot_memory) { native_boot_memory[6] = native_boot_memory[6] + 1; }
 +			continue;
 +		}
 +		arm_vm_outside_add(base, end, reserved, reserved_size, 0);
++		if (&native_boot_memory) { native_boot_memory[5] = native_boot_memory[5] + 1; }
 +	}
 +	for (unsigned int i = 0; i < arm_vm_outside_count; i++) {
 +		low = MIN(low, arm_vm_outside_table[i].base);
@@ -413,11 +417,13 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +	}
 +	/* The aperture's addresses for the span come out of the kernel's address space: no more than 4 GiB of it. */
 +	if (high <= low || high - low > ((pmap_paddr_t)4 << 30)) {
++		if (&native_boot_memory) { native_boot_memory[4] |= 0x400; }
 +		arm_vm_outside_count = 0;
 +		return;
 +	}
 +	arm_vm_outside_base = low;
 +	arm_vm_outside_end = high;
++	if (&native_boot_memory) { native_boot_memory[7] = (uint64_t)arm_vm_outside_count; }
 +}
 +
 +/* The runs of memory outside the span, in the order the loader listed them; false past the last. */
@@ -478,7 +484,7 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 diff --color -ruN a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routines.c
 --- a/osfmk/arm64/machine_routines.c	2026-11-11 06:35:53
 +++ b/osfmk/arm64/machine_routines.c	2026-11-11 06:38:34
-@@ -2278,6 +2278,94 @@
+@@ -2278,6 +2278,96 @@
  }
  
  /*
@@ -535,7 +541,9 @@ diff --color -ruN a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routine
 +	pmap_paddr_t base, end;
 +	uint32_t adopted = 0, refused = 0;
 +
++	if (&native_boot_memory) { native_boot_memory[24] = 0xABAD0000; }
 +	for (unsigned int i = 0; arm_vm_outside_range(i, &base, &end); i++) {
++		if (&native_boot_memory) { native_boot_memory[25] = native_boot_memory[25] + 1; }
 +		for (pmap_paddr_t pa = base; pa < end; pa += PAGE_SIZE) {
 +			const ppnum_t pn = (ppnum_t)atop(pa);
 +

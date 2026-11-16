@@ -1,31 +1,31 @@
- The board log's memory face: the hand-off geometry and the loader's raw list
+The board log's memory face: the hand-off geometry and the loader's raw list
 
- The outside-memory machinery adopts only runs entirely below the managed span
- (arm_vm_outside_init refuses every pair with end > gPhysBase), so on a board
- whose window sits low in DRAM the loader's list vanishes silently and the
- window reads as if nothing was ever handed over. This records the hand-off
- geometry and the loader's raw pairs into native_boot_memory before the filter
- runs; the board log prints them next to the adopted/refused counters the
- adoption patch already keeps (ml_outside_memory_pages/refused).
+The outside-memory machinery adopts only runs entirely below the managed span
+(arm_vm_outside_init refuses every pair with end > gPhysBase), so on a board
+whose window sits low in DRAM the loader's list vanishes silently and the
+window reads as if nothing was ever handed over. This records the hand-off
+geometry and the loader's raw pairs into native_boot_memory before the filter
+runs; the board log prints them next to the adopted/refused counters the
+adoption patch already keeps (ml_outside_memory_pages/refused).
 diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 --- a/osfmk/arm64/arm_vm_init.c
 +++ b/osfmk/arm64/arm_vm_init.c
 @@ -400,6 +400,14 @@
-  SECURITY_READ_ONLY_LATE(static unsigned int)            arm_vm_outside_count;
+ SECURITY_READ_ONLY_LATE(static unsigned int)            arm_vm_outside_count;
 +	/* The board log memory face (native_boot_memory): the hand-off geometry and the loader raw outside
 +	 * list, before the below-span filter - the filter is exactly what refuses the runs above the window, so
 +	 * the raw list is the evidence a mis-placed window needs. [0] gPhysBase, [1] gDramBase, [2] raw pairs,
-+	 * [3] their bytes, [8..] up to eight (base, size) pairs as the loader listed them; [4] the init
-+	 * decision face (0xAA55 entry | 0x400 the aperture cap zeroed the count), [5] pairs the filter kept,
-+	 * [6] pairs it killed, [7] the table count after init, [24] the adopt loop's entry mark, [25] the
-+	 * runs it saw. */
++	 * [3] their bytes, [8..] up to eight (base, size) pairs as the loader listed them;
++	 * [4] the init decision face (0xAA55 entry | 0x400 the aperture cap zeroed the count),
++	 * [5] pairs the filter kept, [6] pairs it killed, [7] the table count after init, [24]
++	 * the adopt loop's entry mark, [25] the runs it saw. */
 +	volatile uint64_t native_boot_memory[32];
-  
-  /*
-   * Bounds of the kernelcache; used for accounting.
-   */
-  SECURITY_READ_ONLY_LATE(vm_offset_t) arm_vm_kernelcache_phys_start;
-@@ -663,11 +663,16 @@
+ 
+ /*
+  * Bounds of the kernelcache; used for accounting.
+  */
+ SECURITY_READ_ONLY_LATE(vm_offset_t) arm_vm_kernelcache_phys_start;
+@@ -663,11 +663,15 @@
  	DTEntry chosen;
  	const uint8_t *pairs, *reserved = NULL;
  	unsigned int pairs_size, reserved_size = 0;
@@ -36,13 +36,12 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +	/* The hand-off geometry for the board log: the window base and the DRAM base the kernel knows. */
 +	native_boot_memory[0] = (uint64_t)gPhysBase;
 +	native_boot_memory[1] = (uint64_t)gDramBase;
-+	native_boot_memory[4] = 0xAA550000;
-  
+ 
  	PE_parse_boot_argn("memory-outside", &wanted, sizeof(wanted));
  	if (!wanted || SecureDTLookupEntry(NULL, "/chosen", &chosen) != kSuccess ||
  	    SecureDTGetProperty(chosen, "darwinboot-memory-outside", (void const **)&pairs, &pairs_size) != kSuccess) {
  		return;
-@@ -673,10 +673,23 @@
+@@ -673,10 +673,20 @@
  		return;
  	}
  	if (SecureDTGetProperty(chosen, "darwinboot-memory-outside-kept", (void const **)&reserved, &reserved_size) != kSuccess) {
@@ -51,9 +50,7 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
  	}
  	for (unsigned int i = 0; arm_vm_outside_pair(pairs, pairs_size, i, &base, &end); i++) {
 +		/* Record the loader raw list before the filter refuses it: which side of the window the runs
-+		 * are on decides whether this kernel could ever adopt them. The r138 face (raw alive, adopted
-+		 * and refused both zero) needs the filter's own ledger: what the pairs died of and whether
-+		 * anything reached the table at all. */
++		 * are on decides whether this kernel could ever adopt them. */
 +		if (native_boot_memory[2] < 8) {
 +			const unsigned int at = (unsigned int)native_boot_memory[2];
 +
@@ -62,49 +59,6 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +			native_boot_memory[3] += (uint64_t)(end - base);
 +			native_boot_memory[2]++;
 +		}
--		if (end <= base || base < gDramBase || end > gPhysBase) {
--			continue;
--		}
-+		if (end <= base || base < gDramBase || end > gPhysBase) {
-+			native_boot_memory[6] = native_boot_memory[6] + 1;
-+			continue;
-+		}
-@@ -706,22 +716,25 @@
- 		arm_vm_outside_add(base, end, reserved, reserved_size, 0);
-+		native_boot_memory[5] = native_boot_memory[5] + 1;
- 	}
- 	for (unsigned int i = 0; i < arm_vm_outside_count; i++) {
- 		low = MIN(low, arm_vm_outside_table[i].base);
- 		high = MAX(high, arm_vm_outside_table[i].end);
- 	}
- 	if (arm_vm_outside_count == 0) {
- 		return;
- 	}
- 	low &= ~((pmap_paddr_t)ARM_TT_TWIG_OFFMASK);
- 	high = (high + ARM_TT_TWIG_OFFMASK) & ~((pmap_paddr_t)ARM_TT_TWIG_OFFMASK);
- 	if (high > gPhysBase) {
- 		high = gPhysBase & ~((pmap_paddr_t)ARM_TT_TWIG_OFFMASK);
- 	}
- 	/* The aperture's addresses for the span come out of the kernel's address space: no more than 4 GiB of it. */
- 	if (high <= low || high - low > ((pmap_paddr_t)4 << 30)) {
-+		native_boot_memory[4] |= 0x400;
- 		arm_vm_outside_count = 0;
- 		return;
- 	}
- 	arm_vm_outside_base = low;
- 	arm_vm_outside_end = high;
-+	native_boot_memory[7] = (uint64_t)arm_vm_outside_count;
- }
-@@ -831,11 +847,13 @@
- __startup_func
- static void
- ml_adopt_outside_memory(void)
- {
- 	pmap_paddr_t base, end;
- 	uint32_t adopted = 0, refused = 0;
-  
-+	native_boot_memory[24] = 0xABAD0000;
- 	for (unsigned int i = 0; arm_vm_outside_range(i, &base, &end); i++) {
-+		native_boot_memory[25] = native_boot_memory[25] + 1;
- 		for (pmap_paddr_t pa = base; pa < end; pa += PAGE_SIZE) {
- 			const ppnum_t pn = (ppnum_t)atop(pa);
+ 		if (end <= base || base < gDramBase || end > gPhysBase) {
+ 			continue;
+ 		}
