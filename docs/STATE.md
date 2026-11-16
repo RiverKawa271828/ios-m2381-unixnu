@@ -1,6 +1,22 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
 ## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
 
+**s128 进行中（2026-11-16 深夜）——r136 合并轮代码全落，构建卡 Mac 不可达**：用户拍板 GPU 内核刀 +
+16 GiB 内存窗**合并进 r136 一刷**。已落：主树 `fe2cae15`（devicetree.py 四表+payload.py args 前置+
+adoption/errname 两 patch 抄入 series **97→99**+components.toml：Adreno740→`020f460`（ring face+单调
+completed_，本地 commit），DarwinBoot→`4583617`（=LZMA b33d75a rebase 到上游 5243c68 之上，include 冲突
+已解）；设备仓 `0948a59`（board.toml outside/kept 表+loader_inputs；BootLog `[gpu ring]/[gpu wptr]/
+[gpu recover][+]/[gpu fault]` 五行）。**判定新认知**：生产只有单 ring（setPreemption 仅测试）；r135 的
+"双 ring 冻结"实为 **GPU 真冻结在 fence 9（t≈14s 起）+ hangcheck 反复 reset/replay 的循环**（recover 机器
+全套存在但没进窗——五行补盲），completed 558→9=reset(completed) 重绕。**待办（Mac 恢复后）**：ssh
+`naoniudeair@192.168.10.246`（已试 ping 通/SSH 超时/WoL 无效）→ rsync 两仓+子模块（带排除清单 dry-run
+核对）→ Mac 侧核 gitlink（tree 会重置）→ `./unixnu tree` → `kernel`（adoption patch 应用需实测，冲突面=
+t0sz 同 pmap/sleh 文件）→ `payload -D ../UniXNU-m2381 …` → 双端 sha 对拍 → R136 卡（判据见 s128 工作单第
+5 项：MEM totalMiB~16000、`[gpu recover]` 行数、稳态 wait 超时≈0、page 贴 done、冻结不复发、T0）。**args
+零改动**（memory-outside 默认接管，=0 是免重编开关）；trust/addon/seed 全同 r135。
+
+
+
 **★★★★★★★★★★s128 开窗判读（2026-11-16）——r135 窗已拉已判：GPU 执行面通了（fence 楔子破、stall 归零），三处残留=冻结相位 118 s/等待检测滞后/客户端 5 s 节奏；电源/触摸验证全过**：
 
 **窗核验**：`out/m2381/reader-r135/`（sha `72448ef7`，header rounds=276/503 slots_written=276/503 uptime=550s
