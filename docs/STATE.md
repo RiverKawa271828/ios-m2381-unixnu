@@ -1,5 +1,5 @@
 # STATE — 现势状态（m2381，2026-11-17 更新）
-## 0. 现势指针（2026-11-17 s129 r139 已判入档 → r140 dpu 证据轮出件中；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 s129 r140 出件待刷 → 拉窗 reader-r140 按 R140-CARD 判；更早指针=archive/STATE-history.md）
 
 **★★★★★★★★★★r139 黑屏判读+身份轮入档（11-17，窗 reader-r139 sha 0fe1c0fe/rounds 294/503/uptime 586s）**：
 **黑屏根因=格式拒绝**：`REJ acc=1 rej=90 r=4 wh=1080x2400 SURF 1080x2400 fmt=62336138("b3a8") pl=2
@@ -36,10 +36,10 @@ b3a8/双平面接受面+copy 转换**（显示格式工作项）；恢复=刷回
   必须 `--hard`；Mac"GopFramebuffer r134 脏树"=内容逐位等于 Linux 已提交态（sha 对拍后净化零风险）；
   `git bundle create <file> <裸SHA>`=Refusing to create empty bundle（必须经分支名）。
 
-**★★★★r140=dpu 证据轮（出件中；设备仓 `29277f4`）**：dpuEnable 入口清 FSR（c[8]=清后值）+ 症状
+**★★★★r140=dpu 证据轮（出件完毕待刷，2026-11-17；设备仓 `29277f4`，Mac 主树 `fb570cf`=a7d2ded gitlink）**：dpuEnable 入口清 FSR（c[8]=清后值）+ 症状
 面化（c[4..6]=FSYNR0/1/0x68）+ undo 后 re-latch 采样（c[9]=清后即时、c[10]=50ms 后——**re-latch=
 bypass 模式也在崩=活崩；干净=翻译取数唯一真错**）；[dpu state] 行加 syn=/rel=；check[] 8→12。
-捎带 a7d2ded 进 Mac（[gpu ring] 行）。kernel+payload 重编，args 不动。**判据**：syn/rel 面化后按
+捎带 a7d2ded 进 Mac（[gpu ring] 行）。kernel `dc275537`（member fd10084c）+payload 重编，args 不动（47=47 PASS）。件=`out/m2381/payload-r140-dpuvidence-ce2455cb.img`（sha 双端逐位同）；回滚锚=r138（39de885c）。判据=R140-CARD（syn/rel 三值分叉定谳 + [gpu ring] 首现 + T0 不回归）。**判据**：syn/rel 面化后按
 FSYNR0 定 AF 根因（walk level/类型）；若 re-latch=活崩 → 直扫失败与 r138 无关的环境脸。M1（r141）与
 手机身份（搁置）不在本轮。
 
