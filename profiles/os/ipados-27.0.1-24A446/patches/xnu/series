@@ -236,3 +236,10 @@ arch:../../../patches/xnu-12377/darwin26-spawnattr-convert.patch
 # recorder (iomfb_uc_probe_record), whose 2 s thread prints the last-8 ring
 # into the window ext rows — the next boot names the selector that stalls.
 arch:../../../patches/xnu-12377/iomfb-uc-selector-probe.patch
+# r135 (2026-11-16, s127): Adreno740's upstream tip (54b41b8, the stall/fault
+# series) calls iokit_physical_descriptor_close_notify from NativeAdrenoPublish's
+# pool view (weak import; the pool returns a viewed grant's pages once the device
+# pager closes, not at the descriptor's free). Upstream ships this IOKit hook in
+# the macOS 27.3 profile; our lane needs it for the same driver. The patch only
+# adds the reserved fields, the close notification and its one-shot handler call.
+arch:../../../patches/xnu-12377/gpupool-device-pager-close.patch
