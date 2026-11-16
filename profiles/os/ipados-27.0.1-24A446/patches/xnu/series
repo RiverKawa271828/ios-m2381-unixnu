@@ -253,4 +253,12 @@ arch:../../../patches/xnu-12377/gpupool-device-pager-close.patch
 # ran them on hardware: 117264 pages (458 MiB) adopted. After t0sz (same
 # arm_vm_init ground) and last in the series like upstream's own order.
 arch:../../../patches/xnu-12377/platform-error-name-address.patch
+# The excluded-ranges reader the adoption patch builds on (it defines
+# arm_vm_excluded_range_t); same order as the upstream macOS 27.3 series.
+arch:../../../patches/xnu-12377/window-memory-excluded-ranges.patch
 arch:../../../patches/xnu-12377/window-outside-memory-adoption.patch
+# r137: the board log's memory face — the hand-off geometry (gPhysBase/
+# gDramBase) and the loader's raw outside pairs recorded BEFORE the
+# below-span filter refuses them; without it a mis-placed window reads as
+# if nothing was ever handed over (the r136 face).
+arch:../../../patches/xnu-12377/outside-memory-diag.patch

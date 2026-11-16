@@ -1,0 +1,38 @@
+The board log's memory face: the hand-off geometry and the loader's raw list
+
+The outside-memory machinery adopts only runs entirely below the managed span
+(arm_vm_outside_init refuses every pair with end > gPhysBase), so on a board
+whose window sits low in DRAM the loader's list vanishes silently and the
+window reads as if nothing was ever handed over. This records the hand-off
+geometry and the loader's raw pairs into native_boot_memory before the filter
+runs; the board log prints them next to the adopted/refused counters the
+adoption patch already keeps (ml_outside_memory_pages/refused).
+diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
+--- a/osfmk/arm64/arm_vm_init.c
++++ b/osfmk/arm64/arm_vm_init.c
+@@ -400,1 +400,6 @@
+ SECURITY_READ_ONLY_LATE(static unsigned int)            arm_vm_outside_count;
++	/* The board log memory face (native_boot_memory): the hand-off geometry and the loader raw outside
++	 * list, before the below-span filter - the filter is exactly what refuses the runs above the window, so
++	 * the raw list is the evidence a mis-placed window needs. [0] gPhysBase, [1] gDramBase, [2] raw pairs,
++	 * [3] their bytes, [8..] up to eight (base, size) pairs as the loader listed them. */
++	volatile uint64_t native_boot_memory[24];
+@@ -668,1 +668,5 @@
+ 	pmap_paddr_t low = ~(pmap_paddr_t)0, high = 0;
++
++	/* The hand-off geometry for the board log: the window base and the DRAM base the kernel knows. */
++	native_boot_memory[0] = (uint64_t)gPhysBase;
++	native_boot_memory[1] = (uint64_t)gDramBase;
+@@ -681,2 +681,12 @@
+ 	for (unsigned int i = 0; arm_vm_outside_pair(pairs, pairs_size, i, &base, &end); i++) {
++		/* Record the loader raw list before the filter refuses it: which side of the window the runs
++		 * are on decides whether this kernel could ever adopt them. */
++		if (native_boot_memory[2] < 8) {
++			const unsigned int at = (unsigned int)native_boot_memory[2];
++
++			native_boot_memory[8 + 2 * at] = base;
++			native_boot_memory[8 + 2 * at + 1] = end - base;
++			native_boot_memory[3] += (uint64_t)(end - base);
++			native_boot_memory[2]++;
++		}
+ 		if (end <= base || base < gDramBase || end > gPhysBase) {
