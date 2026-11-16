@@ -1,5 +1,31 @@
 # STATE — 现势状态（m2381，2026-11-17 更新）
-## 0. 现势指针（2026-11-17 s129 r140 已判（黑屏=身份遗留自伤，仪器全命中）→ r141 出件待刷；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 s129 收队交接 → 下会话两件事：①重刷恢复新况判读 ②上游 206 条 rebase 评估；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★收队新况（2026-11-17 深夜，用户报）：重刷 r137 boot_b + r141 payload → 正常进桌面**。
+设备现态 = boot_b `e9085e5a`（r137 件，重刷）+ recovery_a `f5aefc7f`（r141 payload = kernel
+`fd10084c`（dpuEnable 被动版：无入口清位/5ms、a7d2ded 在）+ **pad 身份**）——**同镜像同配置，上一轮
+黑屏本轮正常** ⇒ 首选假设 = **非确定性挂起**（r141 黑屏窗的死脸就是挂起：fence 118 out=1、W3
+done=-1、合成器 t=172 后沉默；挂起类病天然时好时坏）；"重刷 boot 才恢复"=用户归因候选（boot 镜像
+无状态、r141 黑屏轮 boot 本就是同件——除非此前某次 flash 损坏，dd 读回纪律缺席了这几轮！）。**下会话
+第一刀 = 拉 reader-r141b（工作脸窗）**：与黑屏 r141 窗同镜像对拍——若 fence/ring 全 drain 无挂起=
+非确定性坐实；顺带收 [gpu ring] 首个工作脸基线。判读后主线回归卡顿（dpu dead0005 环境脸 + 0x400
+活崩仍在案）。**设备红线提醒：r138 起历次刷写缺 dd 读回对拍——下轮刷写恢复纪律。**
+
+**★★★★上游侦察（同日，用户令"查查上游先"）：fetch 完成未 rebase**。upstream/main `dc19c9f` 领先
+206 条（pin 3375ac9d 2026-11-10 起）：sheng 车道渲染 checkpoint 大波（uniform 容量/buffer offset/
+texture row/half 算术/render target——AdrenoMetal 子模块 bump）、GPU 诊断新行（[gpu vm fail]=地址
+空间被摘除计数+[gpu global fault]=SMMU 全局故障状态+恢复时清除——**与我们 fence 挂起/0x400 脸同类
+的仪器**）、macOS 27.3 工作。**Adreno740 子模块：上游 origin/main=1c9029b 只领先我们 2 条**
+（0f150e6 "qualified runtime changes"：NativeAdrenoPublish/Submit/Vm 六文件；**恢复修复
+a8fa18f/031f35c 已在我们基座 54b41b8 之下**——即 r141 的挂起不是缺这两个修复）；**AdrenoMetal
+fork 落后 37 条**（sheng checkpoint 波及）。**下会话决策点：全量 rebase（649 工作区提交重放，冲突
+面=子模块 gitlink/components/patches series）vs 先只抬 Adreno740（rebase 2 条本地诊断提交到
+0f150e6）小步走**。r141 黑屏新病的根因判读（挂起 vs 数据谱系）与 rebase 评估同场做。
+
+**★★★★r142 二分轮（出件中断，设备仓 `0648d68` 已推）：dpuEnable 行为回滚版**（入口清位撤、
+IODelay 50ms→5ms、被动读全保、a7d2ded 保留——a7d2ded=3 条纯计数器写 definitively 无罪且 ring 行
+是真仪器）。Mac kernel 链已在跑（可能已完成，产物不刷）；payload 未发。**若走上游 rebase 则本轮
+作废重编。**
 
 **★★★★★★★★★★r139 黑屏判读+身份轮入档（11-17，窗 reader-r139 sha 0fe1c0fe/rounds 294/503/uptime 586s）**：
 **黑屏根因=格式拒绝**：`REJ acc=1 rej=90 r=4 wh=1080x2400 SURF 1080x2400 fmt=62336138("b3a8") pl=2
