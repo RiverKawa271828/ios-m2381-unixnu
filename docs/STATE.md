@@ -1,5 +1,36 @@
 # STATE — 现势状态（m2381，2026-11-17 s130 更新）
-## 0. 现势指针（2026-11-17 s130：①r141b 工作脸窗判读完=非确定性挂起坐实 ②上游 210 条 rebase 全部落位+子模块重落 ③r143 出件待刷；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 s130 收队 → 下会话第一刀 = r143 prelink 布局墙专轮；r141b 判读/rebase 已闭环；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★r143 出件卡墙收队（2026-11-17 s130 深夜）：native __DATA 超 donor 洞 32KB**。rebase 后
+kernel 编译已过（patch 全落+链接过），prelink 布局校验拒：`Native __DATA overlaps a retained segment`
+（fileset_layout.py validate）。**账目**：native __DATA placement `0xfffffff00b834000-0xfffffff00ba24000`
+= 0x1f0000（2MB）；洞 = donor __DATA 头洞到 `com.apple.kec.Libm` 220B data 段（0xfffffff00ba1c000 钉尾）
+= **0x1e8000 硬顶**（s105 账）；超 **0x8000 = 32KB**。撞的 retained = 0xba27700 起的 5KB 块（首跑，
+删环前 0x1f4000）→ 本轮已删 wifi 死环 85KB（native_wifi_text[128][112]+note[64][112]+BootLog 读侧，
+写侧自 r88 冻结就不存在；设备仓 5268fd4 后续提交）→ 只缩到 0x1f0000（**-16KB**，环大半在 bss/zerofill
+路径、placement 只吃到 16KB）→ 仍超 32KB。
+
+**矛盾未解（下会话刀口）**：r143 的组件 tree 实为 r141 组合（tree 步对 .git 悬空的组件 skip——Adreno740
+a7d2ded/ArmCpu 64042533/GopFramebuffer 7bcb6d9/RamBlock 4be2d7e/ShengUfs 31c3d395，与 r137 kernel 编译
+态一致）、patch 集 = r137 同款（series md5 7dd5e6fba5 双端对拍 ✓，上游 210 条只动 patches/mesa 用户态），
+且删了 85KB——native __DATA 理应 ≤ r141 成功态，实测反超顶 32KB。**嫌疑排序**：①tree 步 skip 的组件
+残留态与 r141 出件态有隐藏差异（4be2d7e/31c3d395 是 r104"rsync freeze"提交——**先验证 r141 出件时 tree
+组件 HEAD 是否同款**，对 R140/R141-CARD 或 payload.json 谱系）②prelink pairing 判定变化（map drift
+813→642 两跑不同——lineage map 已被 os.replace 覆盖，**r141 lineage map 已丢，下次跑前先备份
+kernel.map.json**）③diagram：fileset_layout 的 describe()/validate diag 打印已在（设备仓 24cd397），
+跑一轮即得全段账。**快速候选刀**：再缩死重凑 32KB——wifi 车道残余（native_wifi_pmic[472]/dump[108]/
+stats[29]/nw_wifi_stats/nw_wifi_where + BootLog [wifi-*] 行，~3KB，写侧同样不存在）+ 各仪器环瘦身
+（boot_ui_trace_rows[14][120]=6.7KB 等）——**缩前先定位 64KB 增量，否则仪器面白伤**。
+
+**除障已闭环（本轮付费清单）**：①prepare-xnu-source.py 网络挂死（上游新脚本拉 Apple 头，Mac api 慢
+45s×3 重试）→ Linux 侧预热三份 json 缓存+头文件体推 tree/.cache/sources（TAG=xnu-10063.121.3）②diag
+patch 重构两轮：插桩最终落 adoption patch 自有 + 区（weak_import extern 双 profile 安全），diag 恢复
+原版 hunk+[32] 扩容+hunk2 重锚 ③ml_adopt 在 machine_routines.c 不在 arm_vm_init.c（extern 补）④
+RamBlock/ShengUfs prepare 链接墙：上游 737f6da 的 ml_static_mfree_prepare 定义只挂在 macOS 27.3 memwired
+patch（未实机验证）→ **两子模块 hold 回验证 pin**（RamBlock 60a54ce8/ShengUfs 99d8bcd3，catalog 双落）
+⑤tree 残留清扫（tree 步对 .git 悬空组件 skip——rsync 双仓后 tree 内残留旧态，需手工 rsync 修正）。
+主树推至 5bf7d2a9、设备仓 24cd397。
+
 
 **★★★★★★★★★★r141b 工作脸窗判读定谳（2026-11-17 s130，窗 out/m2381/reader-r141b/ sha 4ebe17f4 双端对拍 ✓，
 rounds=220/503 slots_written=220/503 uptime=438s write_errors=0 无回卷）**：
