@@ -1,6 +1,17 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
 ## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
 
+**s128 续（2026-11-17）——r137 取证轮双件出件完毕，待用户刷**：r136 窗判读（详块见下）后，M1 缺口
+取证刀落地：**boot_b `out/m2381/boot-b-e9085e5a-r137.img`**（FD `b7bd804e`=DarwinBoot 4583617 不变+
+RamManagerDxe `RAMRANGE` 印条（uefi-m2381 `dad0e255`，XBL RamPartition 上报的可用区间直读））+
+**recovery_a `out/m2381/payload-r137-bootmem-30e950c5.img`**（kernel 输入 `0483cdb4`；series **101**
+=+`outside-memory-diag.patch`（below-span 过滤**前**捕获 loader 原始 pairs+gPhysBase/gDramBase 进
+`native_boot_memory[]`）+BootLog `[boot mem]` 行+Adreno740 `a7d2ded`（face submitted 计数挪到
+submitFramed=修 r136 `[gpu ring]` 缺席——根因=Ring::submit 生产从不调用）。主树 `ff92b33f`/`638be888`
+（patch 重生成：首版单行上下文 hunk git-apply/patch(1) 双败）+设备仓 `62a1f55`/`28d743a`+uefi
+`dad0e255`。**判据=R137-CARD.md**：`[boot mem]` 一行定谳（raw>0/adopted=0=窗位错；raw=0=map 缺 bank2）。
+args/addon/trust/seed 全同；回滚锚同 r136。
+
 **s128 判读（2026-11-17）——r136 窗已拉已判：GPU 三门过（冻结未复发+取证面立起），M1 未过（16 GiB 没接管）；存储三连答已给**：
 
 **刷写实证**：boot_b=sde43 dd 读回 sha 逐字节=`b4849654`（新 FD 确实启动）；recovery_a=sda10 首块
