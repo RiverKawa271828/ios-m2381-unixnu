@@ -25,7 +25,7 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
   * Bounds of the kernelcache; used for accounting.
   */
  SECURITY_READ_ONLY_LATE(vm_offset_t) arm_vm_kernelcache_phys_start;
-@@ -663,11 +663,15 @@
+@@ -661,13 +661,17 @@
  	DTEntry chosen;
  	const uint8_t *pairs, *reserved = NULL;
  	unsigned int pairs_size, reserved_size = 0;
@@ -37,11 +37,13 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +	native_boot_memory[0] = (uint64_t)gPhysBase;
 +	native_boot_memory[1] = (uint64_t)gDramBase;
  
+ 	extern volatile uint64_t native_boot_memory[32] __attribute__((weak_import));
+ 	if (&native_boot_memory) { native_boot_memory[4] = 0xAA550000; }
  	PE_parse_boot_argn("memory-outside", &wanted, sizeof(wanted));
  	if (!wanted || SecureDTLookupEntry(NULL, "/chosen", &chosen) != kSuccess ||
  	    SecureDTGetProperty(chosen, "darwinboot-memory-outside", (void const **)&pairs, &pairs_size) != kSuccess) {
  		return;
-@@ -673,10 +673,20 @@
+@@ -671,10 +671,20 @@
  		return;
  	}
  	if (SecureDTGetProperty(chosen, "darwinboot-memory-outside-kept", (void const **)&reserved, &reserved_size) != kSuccess) {

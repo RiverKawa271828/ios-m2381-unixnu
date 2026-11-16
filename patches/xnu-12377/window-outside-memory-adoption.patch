@@ -484,7 +484,7 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 diff --color -ruN a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routines.c
 --- a/osfmk/arm64/machine_routines.c	2026-11-11 06:35:53
 +++ b/osfmk/arm64/machine_routines.c	2026-11-11 06:38:34
-@@ -2278,6 +2278,96 @@
+@@ -2278,6 +2278,97 @@
  }
  
  /*
@@ -541,6 +541,7 @@ diff --color -ruN a/osfmk/arm64/machine_routines.c b/osfmk/arm64/machine_routine
 +	pmap_paddr_t base, end;
 +	uint32_t adopted = 0, refused = 0;
 +
++	extern volatile uint64_t native_boot_memory[32] __attribute__((weak_import));
 +	if (&native_boot_memory) { native_boot_memory[24] = 0xABAD0000; }
 +	for (unsigned int i = 0; arm_vm_outside_range(i, &base, &end); i++) {
 +		if (&native_boot_memory) { native_boot_memory[25] = native_boot_memory[25] + 1; }
