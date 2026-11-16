@@ -1,5 +1,32 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
-## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 会话一百二十八收队 → 下一会话 s129 卡顿轮；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★s129 工作单=修卡顿（用户拍板 2026-11-17：r137 暂不刷，等卡顿新件；本轮已收尾）**：
+
+**卡顿机制画像（r136 窗实据，s128 判读定谳）**：①GPU/渲染清白——offer/done 毫秒级、每帧秒完、fence
+1588/1590、wptr 零掉写、零冻结零 stall；②**触摸→出帧链大半断**：8 次触摸只有 2 次在 2s 内出帧
+（S2@180→W6、S6@414→W27），其余 6 次几秒到几十秒无反应；③**5s 节拍器**：与输入无关的精确 5.0s 重绘
+贯穿全窗（t=166–541，40 次 swap=34 节拍+6 触摸响应）；④显示路径=**CPU copy**：SWAPQ copy=39/40、
+nohead=40（次次 latch 持有）、GPU handoff accepted 罕见；⑤r134 对照：其触摸也是 0/8 响应（"r134 能流"
+不成立——当时 41–972ms 流非触摸驱动），触摸丢帧是**全程常态不是回归**。
+
+**第一刀=args 实验（payload-only，消费者全在现役内核里）**：sheng（同 SoC 小米 Pad 6S Pro、同 donor
+24A446、上游车道全绿不卡）的 args 差量已挖出（/tmp/UniXNU-sheng-probe 浅克隆，仓=UniXNU/UniXNU-sheng
+revision bc05635a）：**`dpu-scanout=2`**（DPU 双管道直扫合成器 surface——消费者在 NativeLegacyDisplay.cpp:301，
+我们不传=一直走 CPU copy 路径！**头号嫌疑**）+ **`vsync-fixed=1`**（固定刷新率上报，:575）+
+**`offline-mobile-graphics-client=1`**（AGXDeviceUserClient boot 期客户端通道 probe，门在
+offline-component-load-probes.patch:87，要求 load 成功；我们只传过 load=1）+ `gpu-dcvs=1`。
+建议序：第一刷只加 `dpu-scanout=2`（+vsync-fixed=1 同刷可接受——同一显示面），判据=[swap timeline]
+触摸后流式、SWAPQ copy 数骤降（直扫=copy 路径停）、DPU 直翻计数、触摸响应率；不行再逐个上其余 arg。
+**second刀候选**：5s 节拍源定位（[display state] 代数/IOMFB refresh 行/[scanout prepare] refresh=1 谁驱动）
++ 触摸链丢单点（6 次触摸在显示族零痕迹——HID→SB→CA commit→swap 哪一环丢）。
+
+**搁置项（随下轮件捎带）**：r137 双件已出未刷——boot_b `e9085e5a`（FD b7bd804e=RamManager RAMRANGE
+印条）+ recovery_a `30e950c5`（kernel `0483cdb4`，series 101=outside-memory-diag+BootLog [boot mem] 行+
+Adreno740 a7d2ded ring-face 修正）。s129 出 payload 时**直接踩 r137 内核**（诊断行全在），boot_b 用 r137
+件（RAMRANGE 兜底证据顺带入账）。M1（16 GiB 未接管）与 [boot mem] 定谳随之而来。
+
+
 
 **s128 续（2026-11-17）——r137 取证轮双件出件完毕，待用户刷**：r136 窗判读（详块见下）后，M1 缺口
 取证刀落地：**boot_b `out/m2381/boot-b-e9085e5a-r137.img`**（FD `b7bd804e`=DarwinBoot 4583617 不变+
