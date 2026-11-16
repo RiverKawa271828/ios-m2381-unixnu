@@ -1,19 +1,20 @@
 # STATE — 现势状态（m2381，2026-11-16 更新）
 ## 0. 现势指针（2026-11-16 会话一百二十八 → 下一会话 s128 续；更早指针=archive/STATE-history.md）
 
-**s128 进行中（2026-11-16 深夜）——r136 合并轮代码全落，构建卡 Mac 不可达**：用户拍板 GPU 内核刀 +
-16 GiB 内存窗**合并进 r136 一刷**。已落：主树 `fe2cae15`（devicetree.py 四表+payload.py args 前置+
-adoption/errname 两 patch 抄入 series **97→99**+components.toml：Adreno740→`020f460`（ring face+单调
-completed_，本地 commit），DarwinBoot→`4583617`（=LZMA b33d75a rebase 到上游 5243c68 之上，include 冲突
-已解）；设备仓 `0948a59`（board.toml outside/kept 表+loader_inputs；BootLog `[gpu ring]/[gpu wptr]/
-[gpu recover][+]/[gpu fault]` 五行）。**判定新认知**：生产只有单 ring（setPreemption 仅测试）；r135 的
-"双 ring 冻结"实为 **GPU 真冻结在 fence 9（t≈14s 起）+ hangcheck 反复 reset/replay 的循环**（recover 机器
-全套存在但没进窗——五行补盲），completed 558→9=reset(completed) 重绕。**待办（Mac 恢复后）**：ssh
-`naoniudeair@192.168.10.246`（已试 ping 通/SSH 超时/WoL 无效）→ rsync 两仓+子模块（带排除清单 dry-run
-核对）→ Mac 侧核 gitlink（tree 会重置）→ `./unixnu tree` → `kernel`（adoption patch 应用需实测，冲突面=
-t0sz 同 pmap/sleh 文件）→ `payload -D ../UniXNU-m2381 …` → 双端 sha 对拍 → R136 卡（判据见 s128 工作单第
-5 项：MEM totalMiB~16000、`[gpu recover]` 行数、稳态 wait 超时≈0、page 贴 done、冻结不复发、T0）。**args
-零改动**（memory-outside 默认接管，=0 是免重编开关）；trust/addon/seed 全同 r135。
+**s128 进行中（2026-11-16 深夜→11-17 凌晨）——r136 合并轮双件出件完毕，待用户刷**：用户拍板 GPU 内核刀 +
+16 GiB 内存窗**合并进 r136 一刷**。**件（双端对拍 ✓）**：boot_b `out/m2381/boot-b-b4849654-r136.img`
+（31,903,744B；FD `dee93e84`=DarwinBoot `4583617` 编入 [DarwinOutsideRanges/FindOutsideTable 实证]；ADSP
+段 a9b3fd8a/ee426dfc 逐字节同 r128b）+ recovery_a `out/m2381/payload-r136-mem16-ed154e4f.img`（99 MiB；
+kernel 输入 `c57b7cdb`；**series 97→100**=errname+excluded-ranges+outside-adoption——首跑 kernel 因 adoption
+依赖 `arm_vm_excluded_range_t`（window-memory-excluded-ranges.patch 定义）失败，补入后二跑干净；ADT
+outside/kept/loader-inputs 三属性 payload 内核实）。**代码提交**：主树 `fe2cae15`（builder 半）+`27ec2d7d`
+（交接）+设备仓 `0948a59`（板半+BootLog 五行）+`5c85837`（boot.json=b4849654）；Adreno740 `020f460`
+（ring face+单调 completed_+rewind 计数）、DarwinBoot `4583617`（LZMA rebase 到 5243c68）。**判定新认知**：
+生产只有单 ring（setPreemption 仅测试）；r135 的"双 ring 冻结"实为 **GPU 真冻结在 fence 9（t≈14s 起）+
+hangcheck 反复 reset/replay 的循环**（recover 机器全套存在但没进窗——五行补盲），completed 558→9=
+reset(completed) 重绕。**卡=`out/m2381/R136-CARD.md`（判据 M1/G1-G4 预注册；回滚可单回）**；已知良性差异=
+args 行顺序变（payload.py 8f5a4e98 extra 前置）。**下一轮第一刀=刷双件→拉窗 reader-r136→按卡判**。
+trust/addon/seed 全同 r135；args 集合同（顺序变）。
 
 
 
