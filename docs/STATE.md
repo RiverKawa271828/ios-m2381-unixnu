@@ -1,44 +1,47 @@
 # STATE — 现势状态（m2381，2026-11-17 更新）
-## 0. 现势指针（2026-11-17 s129 r138 已判 → r139 手机身份出件中；更早指针=archive/STATE-history.md）
+## 0. 现势指针（2026-11-17 s129 r139 已判入档 → r140 dpu 证据轮出件中；更早指针=archive/STATE-history.md）
+
+**★★★★★★★★★★r139 黑屏判读+身份轮入档（11-17，窗 reader-r139 sha 0fe1c0fe/rounds 294/503/uptime 586s）**：
+**黑屏根因=格式拒绝**：`REJ acc=1 rej=90 r=4 wh=1080x2400 SURF 1080x2400 fmt=62336138("b3a8") pl=2
+st=1088 al=13058048`——几何相同但 phone 身份让合成器选**双平面 "b3a8"**（~5B/px），显示族校验器只收
+0/1 平面 BGRA/RGhA → **90/91 swap 全拒 → 黑屏**；W 事件 246 个全打转。kernel 同 binary → dpu/GPU 脸
+逐字同 r138（dead0005、us=1500、wptr 1274 零掉写）✓。**以后解决的刀口=nativeScanoutFormat 加
+b3a8/双平面接受面+copy 转换**（显示格式工作项）；恢复=刷回 r138 payload（39de885c）。phone idiom
+触摸框报 3048x2032（[touch] 行）——坐标映射面以后一并查。R139-CARD 有全节。
 
 **★★★★★★★★★★r138 窗判读定谳（11-17，窗 reader-r138 sha f092b310/rounds=398/503/uptime=795s 无回卷）**：
 **G1 FAIL（dpu 链死在最后一环）+ 画像面全未变 + 仪器面立起 + M1 几何全在案**：
 - **M1（r137 顺带门）定谳一半**：`[boot mem] phys=8c0004000 dram=80000000 raw=8/10262MiB adopted=0
   refused=0`——8 段窗外内存几何全在案（**窗落 bank2 中段**；窗下 0x880000000+0x38700000=903MiB、
-  窗上 0x9f0010000+0x20fff0000=8.25GiB 到 0xC00000000）；**adoption 循环一个没吃且 refused=0**（连
-  过滤都没记）——r140 刀口=adoption 过滤的 gPhysBase 对拍（0x880000000 run end=0x8b8700000 <
-  0x8c0004000 理应过 below-span 滤网却静默全拒）。
+  窗上 0x9f0010000+0x20fff0000=8.25GiB 到 0xC00000000）；adoption patch **默认开**（wanted=1，
+  sheng 账面"adopts the low DRAM bank by default"）且过滤器本应放行 7/8 段（窗下全部 end ≤
+  gPhysBase）——**adopted=0+refused=0 = ml_adopt_outside_memory（EARLY_BOOT adopt 循环）没跑或
+  pair 解析丢弃**，r141 刀口=init/adopt 内部可见性（diag patch 扩 arm_vm_outside_count 面）。
 - **G1（dpu 直扫主门）FAIL=仪器立功**：survey 健康（w0=80460669=105 组/70 流/4 银行、**found=30003
   i=3 bank=3=i562 假设命中**、s2cr/sctlr 条件全过、TTBR/TCR 写入回读 cc9ff000/800020 生效）→
   **st=dead0005**：50ms watch **us=0 第一拍**撞 fsr=0x402 撤退（0x400=旧账 bit10 不在 kDpuFaults
-  0xc00001fe 掩码里；**bit1=AF 对齐错误=新账**=显示流第一个取数就崩）。**刀口（r140）**：dpuEnable
-  入口清 FSR 再开 watch + FAR（undo 已读 c[4..6] 但行没印）面化——AF 根因等 FAR 定谳。
+  0xc00001fe 掩码里；**bit1=AF 对齐错误=新账**=显示流取数崩）。
 - **G2 未变**：SWAPQ 尾行 val=57 kick=2797 xfer=0 nohead=57 **copy=56/57 仍 100% CPU copy**（r136
-  基线 39/40；直扫没接上=回退设计按预期走，fb=0 因 directOn 未武装）。bytes=10368000=单 surface。
+  基线 39/40；直扫没接上=回退设计按预期走，fb=0 因 directOn 未武装）。
 - **G3 未变**：节拍器 5.0s 贯穿 + 尾部精确 60s 心跳（W53–57）；触摸 20 笔划只 W33/34@388s 一簇
   响应（+36ms 第二帧后即停）——触摸→出帧链照旧大半断。
 - **G4 全绿**：SMP run=7、ADSP st=13、battery st=4 pct=100 mv=4408 usb=1、AKS st=0 sg=3、UFS
   126 万请求零 fail、无 recover/fault/stall 行；fence 执行 884/882 健康、wptr 零掉写；
   **timeouts=1199/1369=s128 等待检测滞后残留未修（非本轮靶）**；EXIT 2643/nonzero 1173 同量级。
 - **[gpu ring] 仍 0 行——谜底=Mac Adreno740 HEAD=54b41b8，a7d2ded 修从未进 Mac**（r137 只改了
-  Linux 子模块；bundle 流只传了 GopFramebuffer/ArmCpu）。下一轮 kernel 重编时把 a7d2ded 带 Mac。
-- **仪器新知**：SWAPQ 行数据健康（此前"全零"判读=抓了窗头槽位；**计数器是累计值，判读必须取窗尾**）；
+  Linux 子模块；bundle 流只传了 GopFramebuffer/ArmCpu）。
+- **仪器新知**：SWAPQ=累计计数器**判读必须取窗尾**（窗头槽位恒零——r134/135/136/138 窗头全零假脸）；
   fwait=56 新脸（copy 路也有 fence wait）。
-- **r138 出件三坑补账**：树步按父仓 gitlink checkout 子模块（指针不记=链接丢符号，实炸两次）+
-  子模块对位必须 `--hard`；Mac"GopFramebuffer r134 脏树"=内容逐位等于 Linux 已提交态（sha 对拍后
-  checkout 净化零风险）。
+- **出件坑补账**：树步按父仓 gitlink checkout 子模块（指针不记=链接丢符号，实炸两次）+ 子模块对位
+  必须 `--hard`；Mac"GopFramebuffer r134 脏树"=内容逐位等于 Linux 已提交态（sha 对拍后净化零风险）；
+  `git bundle create <file> <裸SHA>`=Refusing to create empty bundle（必须经分支名）。
 
-**★★★★r139=手机身份轮（payload-only，kernel 5081facb 不动，与 r138 判读同会话出件）**：
-用户拍板修平板身份脸（r138 首看：iPad17,3 身份 + unit-scale=3 → UI 偏大裁切）。**身份真值全部取自
-Apple 真 DeviceTree.d48ap.im4p**（iPhone 16 Plus @ 24A446 同 build，从 Apple CDN 定点 range 抽取
-解析 2026-11-17）：root=model iPhone17,4/target D48/compatible D48AP；product=phone idiom/subtype
-2796/scale 3/P3/"iPhone 16 Plus"/fallback iPhone16,2/thin-bezel 1。落板级覆盖（board.toml [adt.*]，
-deep merge 板级后赢）设备仓 `c62a959`。**先例账**：uke（SM7675 手机）已在手机上跑同 24A446 profile
-（booted，dock UI 症状已解——仍是 pad 身份）；pong 备了 iPhone17,1 身份 on iPadOS 18.7 donor（设备
-结果 pending）；asteroids 把本条 iPhone17,4/24A446 车道备到 userdata 未刷。**做成=首例 iPhone 身份
-的 iOS 27 build 上机**。chip-id 0x207/board-id 12/donor [ipsw] product=iPad17,3 全不动（单变量）。
-回滚锚=r138 payload（39de885c）。判据：UI 换 phone 脸（dock/图标/状态栏）；dpu/GPU/T0 行为不回归
-（kernel 同 binary）；若仍 pad 脸→查 MobileGestalt Data 侧缓存（外科 prefs 注入，不用 data-reset）。
+**★★★★r140=dpu 证据轮（出件中；设备仓 `29277f4`）**：dpuEnable 入口清 FSR（c[8]=清后值）+ 症状
+面化（c[4..6]=FSYNR0/1/0x68）+ undo 后 re-latch 采样（c[9]=清后即时、c[10]=50ms 后——**re-latch=
+bypass 模式也在崩=活崩；干净=翻译取数唯一真错**）；[dpu state] 行加 syn=/rel=；check[] 8→12。
+捎带 a7d2ded 进 Mac（[gpu ring] 行）。kernel+payload 重编，args 不动。**判据**：syn/rel 面化后按
+FSYNR0 定 AF 根因（walk level/类型）；若 re-latch=活崩 → 直扫失败与 r138 无关的环境脸。M1（r141）与
+手机身份（搁置）不在本轮。
 
 
 
