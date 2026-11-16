@@ -10,20 +10,41 @@ adoption patch already keeps (ml_outside_memory_pages/refused).
 diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 --- a/osfmk/arm64/arm_vm_init.c
 +++ b/osfmk/arm64/arm_vm_init.c
-@@ -400,1 +400,6 @@
+@@ -400,6 +400,11 @@
  SECURITY_READ_ONLY_LATE(static unsigned int)            arm_vm_outside_count;
 +	/* The board log memory face (native_boot_memory): the hand-off geometry and the loader raw outside
 +	 * list, before the below-span filter - the filter is exactly what refuses the runs above the window, so
 +	 * the raw list is the evidence a mis-placed window needs. [0] gPhysBase, [1] gDramBase, [2] raw pairs,
 +	 * [3] their bytes, [8..] up to eight (base, size) pairs as the loader listed them. */
 +	volatile uint64_t native_boot_memory[24];
-@@ -668,1 +668,5 @@
+ 
+ /*
+  * Bounds of the kernelcache; used for accounting.
+  */
+ SECURITY_READ_ONLY_LATE(vm_offset_t) arm_vm_kernelcache_phys_start;
+@@ -663,11 +663,15 @@
+ 	DTEntry chosen;
+ 	const uint8_t *pairs, *reserved = NULL;
+ 	unsigned int pairs_size, reserved_size = 0;
+ 	uint32_t wanted = 1;
+ 	uint64_t base, end;
  	pmap_paddr_t low = ~(pmap_paddr_t)0, high = 0;
 +
 +	/* The hand-off geometry for the board log: the window base and the DRAM base the kernel knows. */
 +	native_boot_memory[0] = (uint64_t)gPhysBase;
 +	native_boot_memory[1] = (uint64_t)gDramBase;
-@@ -681,2 +681,12 @@
+ 
+ 	PE_parse_boot_argn("memory-outside", &wanted, sizeof(wanted));
+ 	if (!wanted || SecureDTLookupEntry(NULL, "/chosen", &chosen) != kSuccess ||
+ 	    SecureDTGetProperty(chosen, "darwinboot-memory-outside", (void const **)&pairs, &pairs_size) != kSuccess) {
+ 		return;
+@@ -673,10 +673,20 @@
+ 		return;
+ 	}
+ 	if (SecureDTGetProperty(chosen, "darwinboot-memory-outside-kept", (void const **)&reserved, &reserved_size) != kSuccess) {
+ 		reserved = NULL;
+ 		reserved_size = 0;
+ 	}
  	for (unsigned int i = 0; arm_vm_outside_pair(pairs, pairs_size, i, &base, &end); i++) {
 +		/* Record the loader raw list before the filter refuses it: which side of the window the runs
 +		 * are on decides whether this kernel could ever adopt them. */
@@ -36,3 +57,5 @@ diff --color -ruN a/osfmk/arm64/arm_vm_init.c b/osfmk/arm64/arm_vm_init.c
 +			native_boot_memory[2]++;
 +		}
  		if (end <= base || base < gDramBase || end > gPhysBase) {
+ 			continue;
+ 		}
